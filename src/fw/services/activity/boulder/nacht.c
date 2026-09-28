@@ -57,7 +57,7 @@ static DataLoggingSession *s_dls;
 // ---------------------------------------------------------------------------
 
 // Das Fenster, in dem `utc` liegt - oder das zuletzt vergangene.
-static void prv_fenster(time_t utc, time_t *beginn, time_t *ende) {
+void boulder_nacht_fenster(time_t utc, time_t *beginn, time_t *ende) {
   const time_t lokal = time_utc_to_local(utc);
   const int minute_des_tages = (lokal % SECONDS_PER_DAY) / SECONDS_PER_MINUTE;
   const time_t tagesbeginn_lokal = lokal - (lokal % SECONDS_PER_DAY);
@@ -220,6 +220,13 @@ static void prv_schicke(Rechnung *r, time_t beginn) {
   }
 }
 
+bool boulder_nacht_im_fenster(time_t utc) {
+  time_t beginn;
+  time_t ende;
+  boulder_nacht_fenster(utc, &beginn, &ende);
+  return utc >= beginn && utc < ende;
+}
+
 // ---------------------------------------------------------------------------
 
 void boulder_nacht_minute(time_t utc_sec) {
@@ -228,7 +235,7 @@ void boulder_nacht_minute(time_t utc_sec) {
   }
   time_t beginn;
   time_t ende;
-  prv_fenster(utc_sec, &beginn, &ende);
+  boulder_nacht_fenster(utc_sec, &beginn, &ende);
   if (s_erledigt_bis >= ende || utc_sec < beginn + MINUTES_PER_HOUR * SECONDS_PER_MINUTE ||
       utc_sec > ende + NACHLAUF_MIN * SECONDS_PER_MINUTE) {
     return;

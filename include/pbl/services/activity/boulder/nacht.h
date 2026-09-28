@@ -5,6 +5,7 @@
 
 #include "pbl/kernel/compiler.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -59,3 +60,8 @@ _Static_assert(sizeof(NachtDlsRecord) == 324, "NachtDlsRecord: Boulder erwartet 
 
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG), ausserhalb seiner Sperre.
 void boulder_nacht_minute(time_t utc_sec);
+
+// Das Nachtfenster, in dem `utc` liegt - oder das zuletzt vergangene.
+void boulder_nacht_fenster(time_t utc, time_t *beginn, time_t *ende);
+// Liegt `utc` im Nachtfenster?
+bool boulder_nacht_im_fenster(time_t utc);

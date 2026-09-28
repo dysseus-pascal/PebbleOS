@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "pbl/services/activity/boulder/messstufe.h"
 #include "quick_launch.h"
 #include "shell/normal/quick_launch.h"
 #include "shell/normal/watchface.h"
@@ -274,6 +275,10 @@ static uint8_t s_activity_prefs_workout_app_opened = 0;
 #define PREF_KEY_ALARMS_APP_OPENED "alarmsAppOpened"
 static uint8_t s_alarms_app_opened = 0;
 
+// Boulder: der Regler zwischen Genauigkeit und Akkulaufzeit (boulder/messstufe.h)
+#define PREF_KEY_BOULDER_MESSSTUFE "boulderMessstufe"
+static uint8_t s_boulder_messstufe = MESSSTUFE_VORGABE;
+
 #define PREF_KEY_ACTIVITY_HRM_PREFERENCES "hrmPreferences"
 static ActivityHRMSettings s_activity_hrm_preferences = ACTIVITY_HRM_DEFAULT_PREFERENCES;
 #if !UNITTEST
@@ -409,6 +414,15 @@ static bool prv_set_s_units_distance(uint8_t *new_unit) {
   s_units_distance = *new_unit;
   return true;
 };
+
+static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
+  if (*neu < MESSSTUFE_MIN || *neu > MESSSTUFE_MAX) {
+    s_boulder_messstufe = MESSSTUFE_VORGABE;
+    return false;
+  }
+  s_boulder_messstufe = *neu;
+  return true;
+}
 
 static bool prv_set_s_units_wind(uint8_t *new_unit) {
   if (*new_unit >= UnitsWindCount) {
@@ -2080,6 +2094,18 @@ HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
     return HRMonitoringInterval_10Min;
   }
   return (HRMonitoringInterval)interval;
+}
+
+uint8_t boulder_messstufe(void) {
+  return s_boulder_messstufe;
+}
+
+void boulder_messstufe_setzen(uint8_t stufe) {
+  if (stufe < MESSSTUFE_MIN || stufe > MESSSTUFE_MAX || stufe == s_boulder_messstufe) {
+    return;
+  }
+  s_boulder_messstufe = stufe;
+  prv_pref_set(PREF_KEY_BOULDER_MESSSTUFE, &s_boulder_messstufe, sizeof(s_boulder_messstufe));
 }
 
 void activity_prefs_set_hrm_measurement_interval(HRMonitoringInterval interval) {

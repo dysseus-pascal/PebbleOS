@@ -3,6 +3,7 @@
 #include "health.h"
 #include "menu.h"
 #include "option_menu.h"
+#include "pbl/services/activity/boulder/messstufe.h"
 #include "window.h"
 
 #include "applib/ui/option_menu_window.h"
@@ -24,11 +25,13 @@ static const char *s_units_distance_labels[] = {
 };
 
 #ifdef CONFIG_HRM
-static const char *s_hrm_interval_labels[] = {
-  i18n_noop("10 Minutes"),
-  i18n_noop("30 Minutes"),
-  i18n_noop("1 Hour"),
-  i18n_noop("Disabled"),
+// Boulder: die Messstufe (boulder/messstufe.h), sparsam zuerst.
+static const char *s_messstufe_labels[] = {
+  i18n_noop("Battery Saver"),
+  i18n_noop("Light"),
+  i18n_noop("Balanced"),
+  i18n_noop("Detailed"),
+  i18n_noop("Precise"),
 };
 #endif
 
@@ -36,52 +39,35 @@ enum SettingsHealthItem {
   SettingsHealthTrackingEnabled,
   SettingsHealthUnitDistance,
 #ifdef CONFIG_HRM
-  SettingsHealthHRMonitoringInterval,
+  // BOULDER: EIN REGLER STATT ZWEIER TAKTE. Puls- und SpO2-Takt stellt die
+  // Messstufe ein; die beiden Auswahlen "HR Monitoring" und "SpO2 Monitoring"
+  // entfallen hier, damit nicht zwei Einstellungen dasselbe behaupten.
+  SettingsHealthMessstufe,
   SettingsHealthHRActivityTracking,
   SettingsHealthBloodOxygenEnabled,
-  SettingsHealthSpO2MonitoringInterval,
   SettingsHealthBloodOxygenActivityTracking,
 #endif
   NumSettingsHealthItems
 };
 
 #ifdef CONFIG_HRM
-// HRM Interval option menu
+// Messstufe option menu
 /////////////////////////////
 
-static void prv_hrm_interval_menu_select(OptionMenu *option_menu, int selection, void *context) {
-  activity_prefs_set_hrm_measurement_interval((HRMonitoringInterval)selection);
+static void prv_messstufe_menu_select(OptionMenu *option_menu, int selection, void *context) {
+  boulder_messstufe_setzen((uint8_t)(selection + MESSSTUFE_MIN));
   app_window_stack_remove(&option_menu->window, true /*animated*/);
 }
 
-static void prv_hrm_interval_menu_push(SettingsHealthData *data) {
-  const int index = (int)activity_prefs_get_hrm_measurement_interval();
+static void prv_messstufe_menu_push(SettingsHealthData *data) {
+  const int index = (int)boulder_messstufe() - MESSSTUFE_MIN;
   const OptionMenuCallbacks callbacks = {
-    .select = prv_hrm_interval_menu_select,
+    .select = prv_messstufe_menu_select,
   };
-  const char *title = i18n_noop("HR Monitoring");
+  const char *title = i18n_noop("Precision");
   settings_option_menu_push(title, OptionMenuContentType_SingleLine, index, &callbacks,
-                            ARRAY_LENGTH(s_hrm_interval_labels), true /* icons_enabled */,
-                            s_hrm_interval_labels, data);
-}
-
-// SpO2 Interval option menu
-/////////////////////////////
-
-static void prv_spo2_interval_menu_select(OptionMenu *option_menu, int selection, void *context) {
-  activity_prefs_set_spo2_measurement_interval((HRMonitoringInterval)selection);
-  app_window_stack_remove(&option_menu->window, true /*animated*/);
-}
-
-static void prv_spo2_interval_menu_push(SettingsHealthData *data) {
-  const int index = (int)activity_prefs_get_spo2_measurement_interval();
-  const OptionMenuCallbacks callbacks = {
-    .select = prv_spo2_interval_menu_select,
-  };
-  const char *title = i18n_noop("Blood Oxygen");
-  settings_option_menu_push(title, OptionMenuContentType_SingleLine, index, &callbacks,
-                            ARRAY_LENGTH(s_hrm_interval_labels), true /* icons_enabled */,
-                            s_hrm_interval_labels, data);
+                            ARRAY_LENGTH(s_messstufe_labels), true /* icons_enabled */,
+                            s_messstufe_labels, data);
 }
 #endif
 
@@ -119,14 +105,12 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
       break;
     }
 #ifdef CONFIG_HRM
-    case SettingsHealthHRMonitoringInterval: {
-      title = i18n_noop("HR Monitoring");
-      HRMonitoringInterval interval = activity_prefs_get_hrm_measurement_interval();
-      if (interval >= HRMonitoringIntervalCount) {
-        subtitle = i18n_noop("Unknown");
-      } else {
-        subtitle = s_hrm_interval_labels[interval];
-      }
+    case SettingsHealthMessstufe: {
+      title = i18n_noop("Precision");
+      const uint8_t stufe = boulder_messstufe();
+      subtitle = (stufe >= MESSSTUFE_MIN && stufe <= MESSSTUFE_MAX)
+                     ? s_messstufe_labels[stufe - MESSSTUFE_MIN]
+                     : i18n_noop("Unknown");
       break;
     }
     case SettingsHealthHRActivityTracking: {
@@ -138,16 +122,6 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
     case SettingsHealthBloodOxygenEnabled: {
       title = i18n_noop("Blood Oxygen");
       subtitle = activity_prefs_blood_oxygen_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
-      break;
-    }
-    case SettingsHealthSpO2MonitoringInterval: {
-      title = i18n_noop("SpO2 Monitoring");
-      HRMonitoringInterval interval = activity_prefs_get_spo2_measurement_interval();
-      if (interval >= HRMonitoringIntervalCount) {
-        subtitle = i18n_noop("Unknown");
-      } else {
-        subtitle = s_hrm_interval_labels[interval];
-      }
       break;
     }
     case SettingsHealthBloodOxygenActivityTracking: {
@@ -187,8 +161,8 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
       break;
     }
 #ifdef CONFIG_HRM
-    case SettingsHealthHRMonitoringInterval:
-      prv_hrm_interval_menu_push((SettingsHealthData *)context);
+    case SettingsHealthMessstufe:
+      prv_messstufe_menu_push((SettingsHealthData *)context);
       break;
     case SettingsHealthHRActivityTracking: {
       bool new_value = !activity_prefs_hrm_activity_tracking_is_enabled();
@@ -201,9 +175,6 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
     }
     case SettingsHealthBloodOxygenEnabled:
       activity_prefs_set_blood_oxygen_enabled(!activity_prefs_blood_oxygen_is_enabled());
-      break;
-    case SettingsHealthSpO2MonitoringInterval:
-      prv_spo2_interval_menu_push((SettingsHealthData *)context);
       break;
     case SettingsHealthBloodOxygenActivityTracking:
       // Only togglable once HR During Activity is on (see draw); otherwise ignore the press.

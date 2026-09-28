@@ -33,6 +33,7 @@
 #include "pbl/services/activity/activity_calculators.h"
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/workout_service.h"
 #include "pbl/util/testing.h"
@@ -70,16 +71,10 @@ static bool prv_activity_allowed_to_be_enabled(void) {
 // ------------------------------------------------------------------------------------------------
 #ifdef CONFIG_HRM
 // Get the HRM measurement period in seconds based on the user's setting
+// BOULDER: DIE MESSSTUFE BESTIMMT DEN TAKT (boulder/messstufe.h), nicht mehr die
+// Auswahl 10/30/60 Minuten. "Aus" bleibt aus (prv_heart_rate_subscription_update).
 static uint32_t prv_get_hrm_period_sec(void) {
-  switch (activity_prefs_get_hrm_measurement_interval()) {
-    case HRMonitoringInterval_30Min:
-      return 30 * SECONDS_PER_MINUTE;
-    case HRMonitoringInterval_1Hour:
-      return SECONDS_PER_HOUR;
-    case HRMonitoringInterval_10Min:
-    default:
-      return 10 * SECONDS_PER_MINUTE;
-  }
+  return boulder_puls_takt_s(rtc_get_time(), s_activity_state.last_vmc);
 }
 #endif
 
@@ -276,16 +271,9 @@ static void prv_heart_rate_deinit(void) {
 // ------------------------------------------------------------------------------------------------
 #ifdef CONFIG_HRM
 // Get the SpO2 measurement period in seconds based on the user's setting
+// Boulder: wie beim Puls die Messstufe (boulder/messstufe.h).
 static uint32_t prv_get_spo2_period_sec(void) {
-  switch (activity_prefs_get_spo2_measurement_interval()) {
-    case HRMonitoringInterval_30Min:
-      return 30 * SECONDS_PER_MINUTE;
-    case HRMonitoringInterval_1Hour:
-      return SECONDS_PER_HOUR;
-    case HRMonitoringInterval_10Min:
-    default:
-      return 10 * SECONDS_PER_MINUTE;
-  }
+  return boulder_spo2_takt_s();
 }
 #endif
 
@@ -320,7 +308,8 @@ static void prv_spo2_subscription_update(uint32_t now_ts) {
   // If blood oxygen monitoring is disabled (master toggle off or "Disabled" interval), make sure
   // we're not sampling and skip.
   if (!activity_prefs_blood_oxygen_is_enabled() ||
-      activity_prefs_get_spo2_measurement_interval() == HRMonitoringInterval_Disabled) {
+      activity_prefs_get_spo2_measurement_interval() == HRMonitoringInterval_Disabled ||
+      boulder_spo2_takt_s() == 0) {
     if (s_activity_state.spo2.currently_sampling) {
       prv_spo2_set_sampling(false, now_ts);
     }
