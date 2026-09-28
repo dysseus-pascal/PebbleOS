@@ -201,11 +201,11 @@ void prv_add_nap_session(double offset_hours, double length_hours) {
   prv_add_sleep_or_nap_session(ActivitySessionType_Nap, offset_hours, length_hours);
 }
 
-void prv_add_walk_session(double offset_hours, double length_hours) {
+static void prv_add_session_of_type(ActivitySessionType type, double length_hours) {
   const uint32_t length_min = length_hours * MINUTES_PER_HOUR;
 
   s_data.activity_sessions[s_data.num_sessions++] = (ActivitySession){
-    .type = ActivitySessionType_Walk,
+    .type = type,
     .length_min = length_min,
     .start_utc = rtc_get_time(),
     .step_data = {
@@ -215,6 +215,10 @@ void prv_add_walk_session(double offset_hours, double length_hours) {
       .distance_meters = (length_min * 1000) / 30,
     },
   };
+}
+
+void prv_add_walk_session(double offset_hours, double length_hours) {
+  prv_add_session_of_type(ActivitySessionType_Walk, length_hours);
 }
 
 bool activity_get_sessions(uint32_t *session_entries, ActivitySession *sessions) {
@@ -896,6 +900,23 @@ void test_activity_insights__walk_session_power_cycle(void) {
   rtc_set_time(rtc_get_time() + 2 * SECONDS_PER_HOUR);
   activity_insights_process_minute_data(rtc_get_time());
   cl_assert_equal_i(s_data.notifs_shown, 2);
+}
+
+// Boulder: erkannte Bewegung ist kein Training, bekommt aber die Meldung wie
+// frueher ein Spaziergang - einmal.
+void test_activity_insights__movement_session_notifies_like_a_walk(void) {
+  activity_insights_init(rtc_get_time());
+  s_data.metric_history[ActivityMetricSleepState][0] = ActivitySleepStateAwake;
+  s_data.metric_history[ActivityMetricSleepStateSeconds][0] = 30 * SECONDS_PER_MINUTE;
+  s_data.metric_history[ActivityMetricSleepEnterAtSeconds][0] = 0;
+
+  rtc_set_time(rtc_get_time() + 5 * SECONDS_PER_HOUR);
+  prv_add_session_of_type(ActivitySessionType_Movement, 0.5);
+  rtc_set_time(rtc_get_time() + 2 * SECONDS_PER_HOUR);
+  activity_insights_process_minute_data(rtc_get_time());
+  cl_assert_equal_i(s_data.notifs_shown, 1);
+  activity_insights_process_minute_data(rtc_get_time());
+  cl_assert_equal_i(s_data.notifs_shown, 1);
 }
 
 // ---------------------------------------------------------------------------------------

@@ -21,8 +21,11 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_calculators.h"
+#include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/battery/battery_state.h"
+#include "pbl/services/new_timer/new_timer.h"
+#include "pbl/services/system_task.h"
 #include "pbl/services/persist.h"
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/util/math.h"
@@ -293,6 +296,21 @@ void ks_bewegung_erkennen(bool an) {
   activity_algorithm_enable_activity_tracking(an);
 }
 
+#define MELDUNG_NACH_MS (30 * MS_PER_SECOND)
+static ActivitySession s_meldung;
+static uint16_t s_meldung_puls;
+static TimerID s_meldung_takt = TIMER_INVALID_ID;
+
+static void prv_meldung_schicken(void *daten) {
+  activity_insights_push_activity_session_notification(rtc_get_time(), &s_meldung, s_meldung_puls,
+                                                       NULL);
+}
+
+static void prv_meldung_faellig(void *daten) {
+  // Der NewTimer hat einen kleinen Stapel; die Meldung baut KernelBG.
+  system_task_add_callback(prv_meldung_schicken, NULL);
+}
+
 void ks_sitzung_melden(const Trainingsstand *t) {
   // WIE DIE WORKOUT-APP: eine von Hand gestartete Sitzung im Verlauf der
   // Uhr. Laufen und Wandern haben dort ihre Art, alles andere ist ein
@@ -316,10 +334,19 @@ void ks_sitzung_melden(const Trainingsstand *t) {
     .step_data.resting_kcalories =
         ROUND(activity_private_compute_resting_calories(minuten), ACTIVITY_CALORIES_PER_KCAL),
   };
-  // OHNE DIE NACHRICHT DER WORKOUT-APP ("You're a machine!"): sie legte
-  // sich ueber den Schirm, den Kieselsport nach dem Speichern zeigt, und
-  // sagte dasselbe noch einmal - mit Pebbles drei Zonen statt unserer fuenf.
   activity_sessions_prv_add_activity_session(&sitzung);
+
+  // DIE MELDUNG DER WORKOUT-APP ("You're a machine!") gehoert zum Charme der
+  // Pebble - aber nicht sofort: da legte sie sich ueber den Schirm mit den
+  // Zonen, den Kieselsport nach dem Speichern zeigt. Also eine halbe Minute
+  // spaeter, mit unseren Zahlen. Die drei Zonen der Meldung sind Pebbles,
+  // nicht unsere fuenf - deshalb ohne sie.
+  s_meldung = sitzung;
+  s_meldung_puls = t->puls_mittel;
+  if (s_meldung_takt == TIMER_INVALID_ID) {
+    s_meldung_takt = new_timer_create();
+  }
+  new_timer_start(s_meldung_takt, MELDUNG_NACH_MS, prv_meldung_faellig, NULL, 0);
 }
 
 void ks_app_holen(void) {

@@ -1570,7 +1570,8 @@ static PBL_NOINLINE void prv_do_activity_summary(time_t now_utc) {
 // ------------------------------------------------------------------------------------------------
 static const char *prv_get_intro_str_for_activity(ActivitySession *session) {
   switch (session->type) {
-    case ActivitySessionType_Walk: {
+    case ActivitySessionType_Walk:
+    case ActivitySessionType_Movement: {
       static const InsightCopyVariants s_walking_intros = {
         .num_variants = 4,
         .variants = {
@@ -1641,7 +1642,8 @@ static void prv_add_metric_duration_info(StringList *headings, int headings_buf_
   const char *activity_label;
   if (session->type == ActivitySessionType_Run) {
     activity_label = i18n_get("Run", headings);
-  } else if (session->type == ActivitySessionType_Walk) {
+  } else if (session->type == ActivitySessionType_Walk ||
+             session->type == ActivitySessionType_Movement) {
     activity_label = i18n_get("Walk", headings);
   } else {
     activity_label = i18n_get("Workout", headings);
@@ -1779,7 +1781,10 @@ void activity_insights_push_activity_session_notification(time_t notif_time,
                                         session);
     prv_add_hr_metric_info(headings, headings_buf_size, values, values_buf_size, avg_hr,
                            hr_zone_time_s);
-  } else if (session->type == ActivitySessionType_Walk) {
+  } else if (session->type == ActivitySessionType_Walk ||
+             session->type == ActivitySessionType_Movement) {
+    // Boulder: Bewegung wird angezeigt wie ein Spaziergang - mit Schritten
+    // und Strecke, die die Uhr dafuer gezaehlt hat.
     type = ActivityInsightType_ActivitySessionWalk;
     icon = TIMELINE_RESOURCE_ACTIVITY;
 
@@ -1894,6 +1899,9 @@ void prv_process_activity_sessions(time_t now_utc) {
           break;
         case ActivitySessionType_Walk:
         case ActivitySessionType_Run:
+        // Boulder: erkannte Bewegung ist kein Training, bekommt aber dieselbe
+        // freundliche Meldung wie frueher ein Spaziergang.
+        case ActivitySessionType_Movement:
           prv_do_activity_session(now_utc, &sessions[i]);
           break;
         default:
