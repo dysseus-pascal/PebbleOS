@@ -43,4 +43,27 @@ kompiliert mit neuerem clang nicht):
 cd build-test && ninja fw/services/activity/test_kraepelin_algorithm/runme && ctest -R kraepelin
 ```
 
+Host-Tests des Trainingsdienstes:
+
+```
+cd build-test && ninja fw/services/kieselsport/test_kieselsport/runme && ./fw/services/kieselsport/test_kieselsport/runme
+```
+
+## Kieselsport in der Firmware (F4)
+
+Der Trainingsdienst `src/fw/services/kieselsport/` ist der Worker der
+Store-App Kieselsport, auf KernelBG. Die Logik (Training, Puls und Zonen,
+Wiederholungen, Bahnen, Kurve, Archiv) ist aus Kieselsport übernommen; nur
+`plattform.c` bildet ab, was dort über das SDK lief. Der Dienst schreibt in
+den Persist mit der Kennung von Kieselsport, damit die System-App dieselben
+Daten sieht wie vorher App und Worker.
+
+Anders als der Worker:
+
+- eigene Anmeldung am Pulssensor, mit Ablauf nach fünf Minuten ohne
+  Erneuerung; Pulsmodell je Sportart wie in der Workout-App
+- brummt selbst, statt die App nach vorn zu holen
+- keine automatische Bewegungserkennung, solange ein Training läuft
+- das fertige Training wird eine selbst gestartete Sitzung im Verlauf der Uhr
+
 Emulator: `pbl configure -b build-qemu --board qemu_emery && pbl build -b build-qemu && pbl qemu -b build-qemu`.

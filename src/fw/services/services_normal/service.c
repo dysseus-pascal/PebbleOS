@@ -30,6 +30,9 @@
 #include "pbl/services/timeline/event.h"
 #include "pbl/services/wakeup.h"
 #include "pbl/services/weather/weather_service.h"
+#ifdef CONFIG_SERVICE_KIESELSPORT
+#include "pbl/services/kieselsport/kieselsport.h"
+#endif
 #include "pbl/services/runlevel_impl.h"
 
 #ifdef CONFIG_ORIENTATION_MANAGER
@@ -117,6 +120,10 @@ void services_normal_init(void) {
   protobuf_log_init();
 
   weather_service_init();
+
+#ifdef CONFIG_SERVICE_KIESELSPORT
+  kieselsport_init();
+#endif
 
   speaker_service_init();
 

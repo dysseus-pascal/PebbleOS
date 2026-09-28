@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 dysseus-pascal
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_KIESELSPORT
+    bool "Kieselsport"
+    depends on SERVICE_ACTIVITY
+    help
+      Training service of Kieselsport: time, heart rate zones, reps and
+      laps on KernelBG, for the Kieselsport system app.
