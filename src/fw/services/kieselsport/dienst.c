@@ -47,6 +47,9 @@ static RegularTimerInfo s_takt;
 static KsEnde s_ende;
 static uint8_t s_ende_nr;
 
+// Eine einzelne HRV-Messung ohne Training.
+static bool s_hrv_messung;
+
 // Die Bestellung der App, bis KernelBG sie abholt.
 static Sportart s_bestellt_art;
 static uint32_t s_bestellt_beginn;
@@ -167,6 +170,55 @@ static void prv_takt_an(bool an) {
   }
 }
 
+// --- Nachsenden ---
+//
+// EIN GESPEICHERTES TRAINING, DAS NIE ANKAM. Die App schickt die
+// Zusammenfassung und wartet zwanzig Sekunden auf das Telefon; war es nicht
+// zu erreichen, geht sie zu, und das Training laege im Persist, bis jemand
+// die App wieder oeffnet. Also holt der Dienst sie selbst: nach 2, 10 und 30
+// Minuten, dann nicht mehr - ist das Telefon so lange weg, geht es beim
+// naechsten Oeffnen.
+static const uint8_t NACHSENDEN_MIN[] = { 2, 10, 30 };
+static RegularTimerInfo s_nachsenden_takt;
+static uint8_t s_nachsenden_versuch;
+static uint16_t s_nachsenden_minuten;
+
+static void prv_nachsenden_aus(void) {
+  if (regular_timer_is_scheduled(&s_nachsenden_takt)) {
+    regular_timer_remove_callback(&s_nachsenden_takt);
+  }
+}
+
+static void prv_nachsenden(void *daten) {
+  ks_sperren();
+  if (!wartend_da() || s_nachsenden_versuch >= ARRAY_LENGTH(NACHSENDEN_MIN)) {
+    prv_nachsenden_aus();
+    ks_entsperren();
+    return;
+  }
+  const bool holen = ++s_nachsenden_minuten >= NACHSENDEN_MIN[s_nachsenden_versuch];
+  if (holen) {
+    s_nachsenden_versuch++;
+  }
+  ks_entsperren();
+  if (holen) {
+    ks_app_holen();
+  }
+}
+
+static void prv_nachsenden_takt(void *daten) {
+  system_task_add_callback(prv_nachsenden, NULL);
+}
+
+static void prv_nachsenden_an(void) {
+  s_nachsenden_versuch = 0;
+  s_nachsenden_minuten = 0;
+  if (!regular_timer_is_scheduled(&s_nachsenden_takt)) {
+    s_nachsenden_takt = (RegularTimerInfo){ .cb = prv_nachsenden_takt };
+    regular_timer_add_minutes_callback(&s_nachsenden_takt);
+  }
+}
+
 // --- Befehle, auf KernelBG ---
 
 static void prv_starte(void *daten) {
@@ -175,6 +227,8 @@ static void prv_starte(void *daten) {
     ks_entsperren();
     return;
   }
+  // Das Training nimmt den Sensor; eine HRV-Messung daneben endet.
+  s_hrv_messung = false;
   // Waehrend des Trainings bleibt die Datei offen: an seinem Ende wird
   // viel geschrieben.
   ks_persist_offen_halten(true);
@@ -188,6 +242,7 @@ static void prv_starte(void *daten) {
   training_starte_ab(s_bestellt_art, s_bestellt_beginn);
   kurve_start();
   prv_takt_an(true);
+  ks_startmenue_oben(true);
   prv_schnappschuss();
   PBL_LOG_INFO("Kieselsport: Training gestartet, Art %d", (int)s_bestellt_art);
   ks_entsperren();
@@ -202,6 +257,7 @@ static void prv_pause(void *daten) {
 
 static void prv_beendet(KsEnde ende) {
   prv_takt_an(false);
+  ks_startmenue_oben(false);
   ks_bewegung_erkennen(true);
   s_ende = ende;
   s_ende_nr++;
@@ -228,6 +284,7 @@ static void prv_speichern(void *daten) {
     }
     wartend_merken(&t, s_liste);
     kurve_merken(t.beginn);
+    prv_nachsenden_an();
   }
   abschnitt_leeren();
   prv_beendet(behalten ? KsEndeGespeichert : KsEndeVerworfen);
@@ -248,6 +305,30 @@ static void prv_verwerfen(void *daten) {
   ks_entsperren();
 }
 
+static void prv_hrv_an(void *daten) {
+  ks_sperren();
+  if (training_zustand() == LaufAus && !s_hrv_messung) {
+    s_hrv_messung = true;
+    puls_beobachten();
+    puls_hrv_start();
+    puls_dicht_messen();
+  }
+  ks_entsperren();
+}
+
+static void prv_hrv_aus(void *daten) {
+  ks_sperren();
+  // Zurueck mitten in der Messung schaltet den Sensor ab - das ist die
+  // Zeile, die man sonst vergisst.
+  if (s_hrv_messung) {
+    s_hrv_messung = false;
+    puls_hrv_stop();
+    puls_normal_messen();
+    puls_ignorieren();
+  }
+  ks_entsperren();
+}
+
 // --- Oeffentlich ---
 
 void kieselsport_init(void) {
@@ -256,7 +337,12 @@ void kieselsport_init(void) {
   reps_laden();
   bahnen_laden();
   prv_schnappschuss();
+  // Nach einem Neustart: was vorher nicht ankam, wird wieder nachgereicht.
+  const bool wartet = wartend_da();
   ks_entsperren();
+  if (wartet) {
+    prv_nachsenden_an();
+  }
 }
 
 void kieselsport_starte(Sportart art, uint32_t beginn) {
@@ -277,6 +363,17 @@ void kieselsport_speichern(void) {
 
 void kieselsport_verwerfen(void) {
   system_task_add_callback(prv_verwerfen, NULL);
+}
+
+void kieselsport_hrv_messen(bool an) {
+  system_task_add_callback(an ? prv_hrv_an : prv_hrv_aus, NULL);
+}
+
+void kieselsport_hrv_stand(uint16_t *rmssd, uint16_t *anzahl) {
+  ks_sperren();
+  *rmssd = puls_hrv_rmssd();
+  *anzahl = puls_hrv_anzahl();
+  ks_entsperren();
 }
 
 void kieselsport_stand(KsStand *aus) {

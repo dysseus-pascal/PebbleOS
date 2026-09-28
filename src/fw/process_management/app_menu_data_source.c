@@ -46,6 +46,9 @@ static const struct {
 #ifdef APP_ID_WORKOUT
   {APP_ID_WORKOUT, true},
 #endif
+#ifdef APP_ID_KIESELSPORT
+  {APP_ID_KIESELSPORT, true},
+#endif
   {APP_ID_MUSIC, true},
 };
 

@@ -12,6 +12,10 @@
 #include "app_glance_watchfaces.h"
 #include "app_glance_weather.h"
 #include "app_glance_workout.h"
+#ifdef CONFIG_SERVICE_KIESELSPORT
+#include "app_glance_kieselsport.h"
+#include "pbl/services/kieselsport/kieselsport.h"
+#endif
 #include "menu_layer_private.h"
 
 #include "applib/app_glance.h"
@@ -250,6 +254,13 @@ static LauncherAppGlance *prv_load_glance_for_node(const AppMenuNode *node,
            0x3f},
       .constructor = launcher_app_glance_workout_create,
     },
+#ifdef CONFIG_SERVICE_KIESELSPORT
+    {
+      // Kieselsport (Boulder)
+      .uuid = KIESELSPORT_UUID_INIT,
+      .constructor = launcher_app_glance_kieselsport_create,
+    },
+#endif
   };
 
   LauncherAppGlance *glance = NULL;

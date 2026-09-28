@@ -167,7 +167,9 @@ void shell_event_loop_handle_event(PebbleEvent *e) {
       PebbleWorkoutEvent *workout_e = &e->workout;
       // Derive the pin from the workout state rather than the event type: closing the app while
       // the workout keeps running must not downgrade the pin to an expiring one.
+#ifdef APP_ID_WORKOUT
       app_install_mark_prioritized(APP_ID_WORKOUT, !workout_service_is_workout_ongoing());
+#endif
       workout_service_workout_event_handler(workout_e);
       return;
     }

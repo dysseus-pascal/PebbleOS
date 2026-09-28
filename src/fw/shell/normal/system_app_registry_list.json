@@ -394,7 +394,19 @@
       "id": -95,
       "enum": "WORKOUT",
       "md_fn": "workout_app_get_info",
-      "color_argb8": "GColorYellowARGB8"
+      "color_argb8": "GColorYellowARGB8",
+      "ifdefs": [
+        "DISABLED"
+      ]
+    },
+    {
+      "id": -102,
+      "enum": "KIESELSPORT",
+      "md_fn": "kieselsport_app_get_info",
+      "color_argb8": "GColorOrangeARGB8",
+      "ifdefs": [
+        "CONFIG_SERVICE_KIESELSPORT"
+      ]
     },
     {
       "id": -61,

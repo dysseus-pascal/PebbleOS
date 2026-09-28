@@ -65,5 +65,23 @@ Anders als der Worker:
 - brummt selbst, statt die App nach vorn zu holen
 - keine automatische Bewegungserkennung, solange ein Training läuft
 - das fertige Training wird eine selbst gestartete Sitzung im Verlauf der Uhr
+  (ohne Pebbles Insights-Meldung, die sich über den eigenen Schirm legte)
+- holt die App nach 2, 10 und 30 Minuten, wenn eine Zusammenfassung nicht
+  beim Telefon ankam - nur vom Zifferblatt aus
+
+Die Oberfläche ist die System-App `src/fw/apps/system/kieselsport/` mit
+**derselben UUID wie die Store-App** (6c386250-…): Kiesel-Helper und die
+Konfigseite erreichen sie mit denselben Nachrichten (Schlüssel ab 10000 wie
+im SDK), und sie teilt den Persist mit dem Dienst. `pebble_compat.h` bildet
+die SDK-Namen auf die Firmware ab (Muster der Wetter-App). Die Nacht ist
+nicht mehr Teil der App; das macht die Firmware (F2).
+
+- Startmenü: eigene Kachel (`launcher/default/app_glance_kieselsport.c`),
+  weil der Launcher Glance-Scheiben nur von Store-Apps nimmt; während eines
+  Trainings steht Kieselsport oben.
+- Die Workout-App ist abgeschaltet (`"ifdefs": ["DISABLED"]`).
+- Eine Store-App mit der UUID einer System-App erscheint nicht doppelt im
+  Startmenü, und ihr Entfernen löscht weder Persist noch Pins
+  (`app_install_manager.c`). Die Store-App Kieselsport muss von der Uhr.
 
 Emulator: `pbl configure -b build-qemu --board qemu_emery && pbl build -b build-qemu && pbl qemu -b build-qemu`.

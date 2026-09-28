@@ -18,3 +18,5 @@ void wartend_merken(const Trainingsstand *t, const char *liste);
 // true, wenn eine da ist; fuellt dann Stand und Liste.
 bool wartend_laden(Trainingsstand *t, char *liste, size_t platz);
 void wartend_vergessen(void);
+// Liegt eine da? Ohne sie zu lesen.
+bool wartend_da(void);

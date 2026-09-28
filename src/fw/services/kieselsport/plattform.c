@@ -9,6 +9,10 @@
 #include "reps.h"
 
 #include "applib/accel_service_private.h"
+#include "applib/app_launch_reason.h"
+#include "apps/system_app_ids.h"
+#include "process_management/app_install_manager.h"
+#include "process_management/app_manager.h"
 #include "applib/persist.h"
 #include "applib/ui/vibes.h"
 #include "kernel/event_loop.h"
@@ -17,7 +21,6 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_calculators.h"
-#include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/persist.h"
@@ -47,7 +50,7 @@ time_t ks_jetzt(void) {
 // Training, bleibt sie dazwischen offen, und das An- und Abmelden kostet
 // nur einen Zaehler.
 
-static const Uuid s_uuid = KIESELSPORT_UUID;
+static const Uuid s_uuid = KIESELSPORT_UUID_INIT;
 
 static SettingsFile *prv_auf(void) {
   persist_service_client_open(&s_uuid);
@@ -313,9 +316,27 @@ void ks_sitzung_melden(const Trainingsstand *t) {
     .step_data.resting_kcalories =
         ROUND(activity_private_compute_resting_calories(minuten), ACTIVITY_CALORIES_PER_KCAL),
   };
+  // OHNE DIE NACHRICHT DER WORKOUT-APP ("You're a machine!"): sie legte
+  // sich ueber den Schirm, den Kieselsport nach dem Speichern zeigt, und
+  // sagte dasselbe noch einmal - mit Pebbles drei Zonen statt unserer fuenf.
   activity_sessions_prv_add_activity_session(&sitzung);
-  // Die Zonen der Nachricht sind die drei von Pebble, nicht unsere fuenf -
-  // also ohne sie. Unsere zeigt die App.
-  activity_insights_push_activity_session_notification(rtc_get_time(), &sitzung, t->puls_mittel,
-                                                       NULL);
+}
+
+void ks_app_holen(void) {
+  // WIE FRUEHER DER WORKER, aber hoeflicher: der holte die App auch ueber
+  // eine andere hinweg. Hier nur vom Zifferblatt aus - wer gerade etwas
+  // anderes tut, bekommt die Zusammenfassung beim naechsten Versuch.
+  if (!app_manager_is_watchface_running()) {
+    return;
+  }
+  app_manager_put_launch_app_event(&(AppLaunchEventConfig){
+    .id = APP_ID_KIESELSPORT,
+    .common.reason = APP_LAUNCH_WORKER,
+  });
+}
+
+void ks_startmenue_oben(bool laeuft) {
+  // Wie die Workout-App: waehrend des Trainings ganz oben, danach rutscht
+  // sie nach der ueblichen Frist an ihren Platz zurueck.
+  app_install_mark_prioritized(APP_ID_KIESELSPORT, !laeuft);
 }

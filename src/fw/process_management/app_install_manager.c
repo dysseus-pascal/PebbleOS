@@ -256,9 +256,20 @@ typedef struct {
   AppInstallEntry *entry_buf;
 } EnumerateData;
 
+// Boulder: eine Store-App mit der Kennung einer System-App (Kieselsport) ist
+// deren Vorgaengerin. Sie erscheint nicht ein zweites Mal im Startmenue;
+// gestartet wird ohnehin die System-App (app_install_get_id_for_uuid fragt
+// zuerst die Registry).
+static bool prv_uuid_gehoert_system_app(const Uuid *uuid) {
+  return uuid && app_get_install_id_for_uuid_from_registry(uuid) != INSTALL_ID_INVALID;
+}
+
 static void prv_app_install_enumerate_app_db(AppInstallId install_id, AppDBEntry *db_entry,
                                              void *data) {
   EnumerateData *cb_data = (EnumerateData *)data;
+  if (prv_uuid_gehoert_system_app(&db_entry->uuid)) {
+    return;
+  }
 
   prv_app_install_entry_from_app_db_entry(install_id, db_entry, cb_data->entry_buf);
   cb_data->cb(cb_data->entry_buf, cb_data->data);
@@ -313,7 +324,9 @@ AppInstallId app_install_get_id_for_uuid(const Uuid *uuid) {
 
 static void prv_app_install_delete(AppInstallId id, Uuid *uuid, bool app_upgrade,
                                    bool delete_cache) {
-  if (!app_upgrade) {
+  // Pins und Persist einer abgeloesten Store-App gehoeren jetzt der
+  // System-App mit derselben Kennung - sie bleiben.
+  if (!app_upgrade && !prv_uuid_gehoert_system_app(uuid)) {
     // remove settings associated with the app
     pin_db_delete_with_parent(uuid);
   }
@@ -432,7 +445,7 @@ static void app_install_launcher_task_callback(void *context) {
                              app_upgrade, true /* delete cache entry */);
       // Only delete the app's persist file when the user explicitly removes the
       // app, not during an AppDB clear.
-      if (!app_upgrade) {
+      if (!app_upgrade && !prv_uuid_gehoert_system_app(s_install_callback_data.uuid)) {
         persist_service_delete_file(s_install_callback_data.uuid);
 #if !defined(CONFIG_RECOVERY_FW)
         comm_session_app_session_capabilities_evict(s_install_callback_data.uuid);

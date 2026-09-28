@@ -57,3 +57,7 @@ void wartend_vergessen(void) {
   ks_persist_delete(PERSIST_WARTET_LISTE_A);
   ks_persist_delete(PERSIST_WARTET_LISTE_B);
 }
+
+bool wartend_da(void) {
+  return ks_persist_exists(PERSIST_WARTET);
+}

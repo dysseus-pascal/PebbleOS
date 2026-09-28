@@ -77,3 +77,8 @@ uint8_t ks_akku_prozent(bool *am_kabel);
 void ks_bewegung_erkennen(bool an);
 // Das fertige Training als Sitzung in den Verlauf der Uhr.
 void ks_sitzung_melden(const Trainingsstand *t);
+// Die App nach vorn holen, damit sie eine wartende Zusammenfassung schickt -
+// nur vom Zifferblatt aus, nie ueber eine andere App.
+void ks_app_holen(void);
+// Solange ein Training laeuft, steht Kieselsport oben im Startmenue.
+void ks_startmenue_oben(bool laeuft);

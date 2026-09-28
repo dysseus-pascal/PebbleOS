@@ -27,17 +27,24 @@
 
 static time_t s_jetzt;
 static RegularTimerInfo *s_takt;
+static RegularTimerInfo *s_minutentakt;
 
 time_t ks_jetzt(void) { return s_jetzt; }
 
 void regular_timer_add_seconds_callback(RegularTimerInfo *cb) { s_takt = cb; }
+void regular_timer_add_minutes_callback(RegularTimerInfo *cb) { s_minutentakt = cb; }
 bool regular_timer_remove_callback(RegularTimerInfo *cb) {
   if (s_takt == cb) {
     s_takt = NULL;
   }
+  if (s_minutentakt == cb) {
+    s_minutentakt = NULL;
+  }
   return true;
 }
-bool regular_timer_is_scheduled(RegularTimerInfo *cb) { return s_takt == cb; }
+bool regular_timer_is_scheduled(RegularTimerInfo *cb) {
+  return s_takt == cb || s_minutentakt == cb;
+}
 
 // --- Persist ---
 
@@ -143,6 +150,11 @@ uint8_t ks_akku_prozent(bool *am_kabel) {
 static bool s_erkennen = true;
 void ks_bewegung_erkennen(bool an) { s_erkennen = an; }
 
+static int s_geholt;
+void ks_app_holen(void) { s_geholt++; }
+static bool s_oben;
+void ks_startmenue_oben(bool laeuft) { s_oben = laeuft; }
+
 static int s_gemeldet_zahl;
 static Trainingsstand s_gemeldet;
 void ks_sitzung_melden(const Trainingsstand *t) {
@@ -179,6 +191,8 @@ void test_kieselsport__initialize(void) {
   memset(s_zaehler, 0, sizeof(s_zaehler));
   s_jetzt = BEGINN;
   s_takt = NULL;
+  s_minutentakt = NULL;
+  s_geholt = 0;
   s_offen = 0;
   s_sensor_takt = 0;
   s_sensor_hrv = false;
@@ -223,6 +237,7 @@ void test_kieselsport__laufen_von_start_bis_telefon(void) {
   cl_assert(!s_erkennen);
   cl_assert_equal_i(s_offen, 1);
   cl_assert(!s_accel);
+  cl_assert(s_oben);
 
   for (int i = 0; i < 120; i++) {
     if (i == 100) {
@@ -251,6 +266,7 @@ void test_kieselsport__laufen_von_start_bis_telefon(void) {
   cl_assert(s_erkennen);
   cl_assert_equal_i(s_offen, 0);
   cl_assert(!s_takt);
+  cl_assert(!s_oben);
 
   // Im Verlauf der Uhr, im Archiv, und fuers Telefon.
   cl_assert_equal_i(s_gemeldet_zahl, 1);
@@ -514,4 +530,52 @@ void test_kieselsport__lange_liste_in_zwei_haelften(void) {
   cl_assert_equal_s(liste, lang);
   wartend_vergessen();
   cl_assert(!wartend_laden(&gelesen, liste, sizeof(liste)));
+}
+
+void test_kieselsport__nachsenden_nach_2_10_30_minuten(void) {
+  kieselsport_starte(ArtLaufen, 0);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  kieselsport_speichern();
+  cl_assert(s_minutentakt);
+  int geholt_bei[3] = { 0 };
+  for (int minute = 1; minute <= 45 && s_minutentakt; minute++) {
+    const int vorher = s_geholt;
+    s_minutentakt->cb(s_minutentakt->cb_data);
+    if (s_geholt > vorher) {
+      geholt_bei[s_geholt - 1] = minute;
+    }
+  }
+  cl_assert_equal_i(s_geholt, 3);
+  cl_assert_equal_i(geholt_bei[0], 2);
+  cl_assert_equal_i(geholt_bei[1], 10);
+  cl_assert_equal_i(geholt_bei[2], 30);
+}
+
+void test_kieselsport__nachsenden_hoert_auf_wenn_angekommen(void) {
+  kieselsport_starte(ArtLaufen, 0);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  kieselsport_speichern();
+  kieselsport_wartend_vergessen();
+  s_minutentakt->cb(s_minutentakt->cb_data);
+  cl_assert(!s_minutentakt);
+  cl_assert_equal_i(s_geholt, 0);
+}
+
+void test_kieselsport__hrv_messung_ohne_training(void) {
+  kieselsport_hrv_messen(true);
+  cl_assert(s_sensor_hrv);
+  cl_assert_equal_i(s_sensor_takt, 1);
+  for (int i = 0; i < 40; i++) {
+    puls_ereignis_ppi((i % 2) ? 1040 : 1000);
+  }
+  uint16_t rmssd, anzahl;
+  kieselsport_hrv_stand(&rmssd, &anzahl);
+  cl_assert_equal_i(rmssd, 40);
+  kieselsport_hrv_messen(false);
+  cl_assert_equal_i(s_sensor_takt, 0);
+  cl_assert(!s_sensor_hrv);
 }

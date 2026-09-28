@@ -23,9 +23,10 @@
 #include <stdint.h>
 
 // 6c386250-a6d7-4a19-a485-52541b5d7c0d, dieselbe wie die Store-App.
-#define KIESELSPORT_UUID                                                                  \
-  UuidMake(0x6c, 0x38, 0x62, 0x50, 0xa6, 0xd7, 0x4a, 0x19, 0xa4, 0x85, 0x52, 0x54, 0x1b, \
-           0x5d, 0x7c, 0x0d)
+#define KIESELSPORT_UUID_INIT                                                             \
+  {0x6c, 0x38, 0x62, 0x50, 0xa6, 0xd7, 0x4a, 0x19, 0xa4, 0x85, 0x52, 0x54, 0x1b, 0x5d, \
+   0x7c, 0x0d}
+#define KIESELSPORT_UUID ((Uuid)KIESELSPORT_UUID_INIT)
 
 #define KS_ZONEN 5
 
@@ -123,6 +124,13 @@ void kieselsport_verwerfen(void);
 
 void kieselsport_stand(KsStand *aus);
 bool kieselsport_laeuft(void);   //< laeuft oder pausiert
+
+// --- Eine einzelne HRV-Messung (Menuepunkt "Messen")
+//
+// Eine Minute still sitzen, der Sensor misst die Abstaende der Schlaege. Nur
+// ohne Training: das hat den Sensor dann fuer sich.
+void kieselsport_hrv_messen(bool an);
+void kieselsport_hrv_stand(uint16_t *rmssd, uint16_t *anzahl);
 
 // --- Arten und Zonen
 
