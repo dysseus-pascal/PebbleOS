@@ -117,3 +117,10 @@ pbl_clar_test(test_activity_calculators
     src/fw/services/activity/activity_calculators.c
   OVERRIDES dummy_board
 )
+
+# Boulder: die Schlafanalyse (Uebertragung von Kiesel-Helper), gegen eine echte
+# Nacht und erfundene.
+pbl_clar_test(test_boulder_schlaf
+  SOURCES
+    src/fw/services/activity/boulder/schlafanalyse.c
+)
