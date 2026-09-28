@@ -84,6 +84,20 @@ nicht mehr Teil der App; das macht die Firmware (F2).
   Startmenü, und ihr Entfernen löscht weder Persist noch Pins
   (`app_install_manager.c`). Die Store-App Kieselsport muss von der Uhr.
 
+## Releases (F5)
+
+```
+tools/boulder/release.sh <N>       # Tag v4.38.1-bN, beide Slots, Release in boulder-firmware
+```
+
+Die Pakete liegen im öffentlichen Repo
+[dysseus-pascal/boulder-firmware](https://github.com/dysseus-pascal/boulder-firmware),
+weil dieser Fork privat ist und Boulder ohne Anmeldung nach Updates fragt.
+Vorher `.github/release/v4.38.1-bN.md` anlegen (erste Zeile Titel ohne
+Version). Boulder vergleicht die Nummer nach dem `b` und bietet eine neue
+Fassung sofort an. Die geerbten GitHub-Actions dieses Forks sind abgeschaltet;
+gebaut wird lokal.
+
 ## Health-App (F4)
 
 `src/fw/apps/system/health/` ersetzt Pebbles Health-App unter derselben
