@@ -143,6 +143,9 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
     case KAlgActivityType_Run:
       activity = ActivitySessionType_Run;
       break;
+    case KAlgActivityType_Movement:
+      activity = ActivitySessionType_Movement;
+      break;
     case KAlgActivityType_RestfulSleep:
       activity = ActivitySessionType_RestfulSleep;
       break;

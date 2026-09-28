@@ -351,6 +351,7 @@ typedef struct KAlgState {
   // State for the activity detectors
   KAlgStepActivityState walk_state;
   KAlgStepActivityState run_state;
+  KAlgStepActivityState movement_state;
   KAlgSleepActivityState sleep_state;
   KAlgDeepSleepActivityState deep_sleep_state;
   KAlgNotWornState not_worn_state;
@@ -418,6 +419,9 @@ static void prv_reset_state(KAlgState *state) {
   }
   if (state->run_state.start_time == KALG_START_TIME_NONE) {
     prv_reset_step_activity_state(&state->run_state);
+  }
+  if (state->movement_state.start_time == KALG_START_TIME_NONE) {
+    prv_reset_step_activity_state(&state->movement_state);
   }
   state->sleep_state = (KAlgSleepActivityState){};
   state->deep_sleep_state = (KAlgDeepSleepActivityState){};
@@ -1966,6 +1970,7 @@ static const KAlgActivityAttributes *prv_get_step_activity_attributes(KAlgActivi
     {0, 0},     // KAlgActivityType_RestfulSleep
     {40, 130},  // KAlgActivityType_Walk
     {130, 255}, // KAlgActivityType_Run
+    {40, 255},  // KAlgActivityType_Movement: Gehen und Laufen zusammen
   };
 
   PBL_ASSERTN(activity < KAlgActivityTypeCount);
@@ -2044,7 +2049,11 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
 
     // Make sure we have a couple active minutes in a row before enabling the HRM to save battery
     const unsigned min_duration_for_hrm = 3 * SECONDS_PER_MINUTE;
-    if (state->hrm_session != HRM_INVALID_SESSION_REF) {
+    // Boulder: den Puls schalten Walk und Run; die Bewegung braucht keine eigene
+    // Messung, sonst liefe der Sensor doppelt.
+    if (activity_type == KAlgActivityType_Movement) {
+      // nichts
+    } else if (state->hrm_session != HRM_INVALID_SESSION_REF) {
       sys_hrm_manager_set_update_interval(state->hrm_session, hrm_interval_s,
                                           KALG_ACTIVITY_HRM_EXPIRE_S);
     } else if (duration_secs >= min_duration_for_hrm &&
@@ -2116,6 +2125,14 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
 }
 
 // ---------------------------------------------------------------------------------------
+// Boulder: Sitzungs-Rueckruf fuer Walk und Run, die keine Sitzungen mehr anlegen.
+static void prv_keine_sitzung(void *context, KAlgActivityType activity_type, time_t start_utc,
+                              uint32_t len_sec, bool ongoing, bool delete, uint32_t steps,
+                              uint32_t resting_calories, uint32_t active_calories,
+                              uint32_t distance_mm) {
+}
+
+// ---------------------------------------------------------------------------------------
 // Feed new minute data into the activity detection state machine. This logic looks for non-sleep
 // activities, like walks, runs, etc.
 void kalg_activities_update(KAlgState *state, time_t utc_now, uint16_t steps, uint16_t vmc,
@@ -2134,15 +2151,23 @@ void kalg_activities_update(KAlgState *state, time_t utc_now, uint16_t steps, ui
   state->last_activity_update_utc = utc_now;
 
   if (!state->disable_activity_session_tracking) {
-    // Pass onto the walk activity detector
+    // BOULDER: WALK UND RUN MELDEN KEINE SITZUNGEN MEHR. Aus jedem Weg zum Bus
+    // wurde sonst ein "Walk" - und in der Akte ein Training. Die beiden
+    // erkennen weiter, weil sie den Puls waehrend der Bewegung einschalten und
+    // dem Pulsalgorithmus sagen, ob gegangen oder gelaufen wird.
     prv_step_activity_update(state, &state->walk_state, utc_now, steps, resting_calories,
-                             active_calories, distance_mm, shutting_down, sessions_cb, context,
+                             active_calories, distance_mm, shutting_down, prv_keine_sitzung, context,
                              KAlgActivityType_Walk);
-
-    // Pass onto the run activity detector
     prv_step_activity_update(state, &state->run_state, utc_now, steps, resting_calories,
-                             active_calories, distance_mm, shutting_down, sessions_cb, context,
+                             active_calories, distance_mm, shutting_down, prv_keine_sitzung, context,
                              KAlgActivityType_Run);
+
+    // Die Sitzungen kommen von der Bewegung: Gehen und Laufen zusammen, damit
+    // ein Wechsel zwischen beiden nicht zwei sich ueberschneidende Abschnitte
+    // ergibt.
+    prv_step_activity_update(state, &state->movement_state, utc_now, steps, resting_calories,
+                             active_calories, distance_mm, shutting_down, sessions_cb, context,
+                             KAlgActivityType_Movement);
 
     // Pass onto the sleep detector
     prv_sleep_activity_update(state, utc_now, vmc, orientation, definitely_not_worn, shutting_down,
@@ -2159,6 +2184,7 @@ time_t kalg_activity_last_processed_time(KAlgState *state, KAlgActivityType acti
       break;
     case KAlgActivityType_Run:
     case KAlgActivityType_Walk:
+    case KAlgActivityType_Movement:
       return state->last_activity_update_utc;
     case KAlgActivityTypeCount:
       break;

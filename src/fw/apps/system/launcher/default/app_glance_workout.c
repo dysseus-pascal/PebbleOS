@@ -98,6 +98,7 @@ static uint32_t prv_get_workout_icon_resource_id_for_type(ActivitySessionType ty
     case ActivitySessionType_RestfulSleep:
     case ActivitySessionType_Nap:
     case ActivitySessionType_RestfulNap:
+    case ActivitySessionType_Movement:  // Boulder: kein Workout, nie in dieser Kachel
     case ActivitySessionTypeCount:
     case ActivitySessionType_None:
       break;

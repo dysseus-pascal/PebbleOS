@@ -1418,6 +1418,11 @@ void health_service_activities_iterate(HealthActivityMask activity_mask, time_t 
         case ActivitySessionType_Open:
           session_activity = HealthActivityOpenWorkout;
           break;
+        case ActivitySessionType_Movement:
+          // Boulder: Bewegung ist kein Workout und hat in der SDK-Schnittstelle
+          // keinen Namen. prv_activity_session_matches laesst sie ohnehin nicht
+          // durch; der Fall steht nur hier, damit der Schalter vollstaendig ist.
+          continue;
         case ActivitySessionType_None:
         case ActivitySessionTypeCount:
           WTF;

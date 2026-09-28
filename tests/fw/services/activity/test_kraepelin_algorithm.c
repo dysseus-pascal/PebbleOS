@@ -1959,6 +1959,9 @@ static void prv_feed_activity_minutes(KAlgTestActivityMinute *samples, int sampl
 
 // ---------------------------------------------------------------------------------------
 // Test that we correctly recognize walk and run activities
+// Boulder: Walk und Run legen keine Sitzungen mehr an. Erwartet wird jeweils die
+// Bewegung (KAlgActivityType_Movement) mit denselben Zeiten und Summen; Gehen und
+// Laufen mit mehr als sieben Pausenminuten dazwischen bleiben zwei Abschnitte.
 void test_kraepelin_algorithm__walks_and_runs(void) {
   const int k_minute_data_len = 60;
   const int k_minute_data_bytes = k_minute_data_len * sizeof(KAlgTestActivityMinute);
@@ -1978,7 +1981,7 @@ void test_kraepelin_algorithm__walks_and_runs(void) {
 
     int len = 20;
     KAlgTestActivitySession exp_session = {
-      .activity = KAlgActivityType_Walk,
+      .activity = KAlgActivityType_Movement,
       .start_utc = now + 10 * SECONDS_PER_MINUTE,
       .steps = len * 80, // 80 steps/min
       .len_minutes = len,
@@ -2004,7 +2007,7 @@ void test_kraepelin_algorithm__walks_and_runs(void) {
 
     int len = 30;
     KAlgTestActivitySession exp_session = {
-      .activity = KAlgActivityType_Run,
+      .activity = KAlgActivityType_Movement,
       .start_utc = now + 10 * SECONDS_PER_MINUTE,
       .steps = len * 150, // 150 steps/min
       .len_minutes = len,
@@ -2038,7 +2041,7 @@ void test_kraepelin_algorithm__walks_and_runs(void) {
 
     int len = 5;
     KAlgTestActivitySession exp_session = {
-      .activity = KAlgActivityType_Walk,
+      .activity = KAlgActivityType_Movement,
       .start_utc = now + 10 * SECONDS_PER_MINUTE,
       .steps = len * 80, // 80 steps/min
       .len_minutes = len,
@@ -2061,7 +2064,7 @@ void test_kraepelin_algorithm__walks_and_runs(void) {
 
     int walk_len = 15;
     KAlgTestActivitySession exp_session_walk = {
-      .activity = KAlgActivityType_Walk,
+      .activity = KAlgActivityType_Movement,
       .start_utc = now + 5 * SECONDS_PER_MINUTE,
       .steps = walk_len * 80, // 80 steps/min
       .len_minutes = walk_len,
@@ -2072,7 +2075,7 @@ void test_kraepelin_algorithm__walks_and_runs(void) {
 
     int run_len = 15;
     KAlgTestActivitySession exp_session_run = {
-      .activity = KAlgActivityType_Run,
+      .activity = KAlgActivityType_Movement,
       .start_utc = now + 30 * SECONDS_PER_MINUTE,
       .steps = run_len * 150, // 150 steps/min
       .len_minutes = run_len,

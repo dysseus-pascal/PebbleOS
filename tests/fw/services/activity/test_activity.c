@@ -2685,6 +2685,70 @@ void test_activity__activity_sessions_run_ongoing_then_end(void) {
 }
 
 // ---------------------------------------------------------------------------------------
+// Boulder: das Telefon muss eine erkannte Bewegung von einem selbst gestarteten
+// Training unterscheiden koennen. Beide gehen mit Version 7 hinaus, das Feld
+// `manual` traegt den Unterschied, und die Bewegung meldet die SDK-Schnittstelle
+// nicht als Workout.
+void test_activity__activity_sessions_movement_and_manual_flag(void) {
+  activity_start_tracking(false /*test_mode*/);
+  fake_system_task_callbacks_invoke_pending();
+
+  struct tm start_tm = {
+    // Jan 1, 2015, 9am
+    .tm_hour = 9,
+    .tm_mday = 1,
+    .tm_mon = 0,
+    .tm_year = 115
+  };
+  time_t utc_sec = mktime(&start_tm);
+  rtc_set_time(utc_sec);
+  prv_reset_captured_dls_data();
+
+  // Eine erkannte Bewegung, laeuft noch: kein Workout fuer die SDK-Schnittstelle
+  ActivitySession bewegung = {
+    .start_utc = utc_sec - 40 * SECONDS_PER_MINUTE,
+    .length_min = 25,
+    .type = ActivitySessionType_Movement,
+    .ongoing = true,
+    .step_data = { .steps = 2500 },
+  };
+  activity_sessions_prv_add_activity_session(&bewegung);
+  cl_assert_equal_i(0, health_service_peek_current_activities());
+
+  // Die Bewegung endet, danach ein selbst gestartetes Training
+  bewegung.ongoing = false;
+  activity_sessions_prv_add_activity_session(&bewegung);
+  ActivitySession training = {
+    .start_utc = utc_sec - 12 * SECONDS_PER_MINUTE,
+    .length_min = 10,
+    .type = ActivitySessionType_Open,
+    .manual = true,
+    .step_data = { .steps = 900 },
+  };
+  activity_sessions_prv_add_activity_session(&training);
+
+  activity_sessions_prv_minute_handler(utc_sec);
+
+  cl_assert_equal_i(s_num_dls_activity_records, 2);
+  bool bewegung_da = false, training_da = false;
+  for (int i = 0; i < s_num_dls_activity_records; i++) {
+    const ActivitySessionDataLoggingRecord *r = &s_dls_activity_records[i];
+    cl_assert_equal_i(r->version, ACTIVITY_SESSION_LOGGING_VERSION);
+    cl_assert_equal_i(r->version & 1, 1);  // Bit 0: das Telefon kann ihn lesen
+    cl_assert_equal_i(r->size, sizeof(ActivitySessionDataLoggingRecord));
+    if (r->activity == ActivitySessionType_Movement) {
+      cl_assert_equal_i(r->manual, 0);
+      cl_assert_equal_i(r->step_data.steps, 2500);
+      bewegung_da = true;
+    } else if (r->activity == ActivitySessionType_Open) {
+      cl_assert_equal_i(r->manual, 1);
+      training_da = true;
+    }
+  }
+  cl_assert(bewegung_da && training_da);
+}
+
+// ---------------------------------------------------------------------------------------
 // Test that we report the that a Sleep session is ongoing.
 void test_activity__activity_sessions_sleep_ongoing_then_delete(void) {
   // Start activity tracking. This method assumes it can be called from any task, so we must

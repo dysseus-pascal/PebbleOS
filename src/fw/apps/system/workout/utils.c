@@ -99,6 +99,7 @@ const char *workout_utils_get_name_for_activity(ActivitySessionType type) {
     case ActivitySessionType_RestfulSleep:
     case ActivitySessionType_Nap:
     case ActivitySessionType_RestfulNap:
+    case ActivitySessionType_Movement:  // Boulder: kein Workout
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
       // ActivitySessionType_Invalid should have the same value
@@ -123,6 +124,7 @@ const char *workout_utils_get_detection_text_for_activity(ActivitySessionType ty
     case ActivitySessionType_RestfulSleep:
     case ActivitySessionType_Nap:
     case ActivitySessionType_RestfulNap:
+    case ActivitySessionType_Movement:  // Boulder: kein Workout
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
       // ActivitySessionType_Invalid should have the same value

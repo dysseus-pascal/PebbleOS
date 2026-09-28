@@ -275,7 +275,10 @@ typedef struct PBL_PACKED {
 // add more fields to the end of ActivitySessionDataLoggingRecord and the mobile app
 // will continue to assume it can parse the blob. If bit 0 is cleared, the mobile app will know that
 // it has no chance of parsing the blob (until the mobile app is updated of course).
-#define ACTIVITY_SESSION_LOGGING_VERSION 3
+// Boulder: 7 statt 4. Die Version ist ein Bitfeld; Bit 0 muss gesetzt bleiben,
+// sonst gibt das Telefon auf, und Bit 1 sagt weiter "Schrittdaten dabei". Bit 2
+// kennzeichnet das neue Feld `manual` am Ende.
+#define ACTIVITY_SESSION_LOGGING_VERSION 7
 
 // Data logging record used to send activity sessions to the phone
 // NOTE: modifying this struct requires a bump to the ACTIVITY_SESSION_LOGGING_VERSION and
@@ -294,6 +297,11 @@ typedef struct PBL_PACKED {
     ActivitySessionDataStepping step_data;
     ActivitySessionDataSleeping sleep_data;
   };
+
+  // Boulder, Version 7: 1 = selbst gestartet (Training), 0 = von der Uhr erkannt.
+  // Bisher sah das Telefon keinen Unterschied zwischen einem Workout und einem
+  // erkannten Spaziergang.
+  uint8_t manual;
 } ActivitySessionDataLoggingRecord;
 
 // -----------------------------------------------------------------------------------------

@@ -44,6 +44,12 @@ typedef enum {
   // A run
   KAlgActivityType_Run,
 
+  // Boulder: zusammenhaengende Bewegung (Gehen oder Laufen) von mindestens zehn
+  // Minuten. Das ist KEIN Training - Training ist nur, was jemand selbst startet.
+  // Walk und Run erkennen weiter, legen aber keine Sitzungen mehr an; sie steuern
+  // nur noch den Puls waehrend der Bewegung.
+  KAlgActivityType_Movement,
+
   // Leave at end
   KAlgActivityTypeCount,
 } KAlgActivityType;

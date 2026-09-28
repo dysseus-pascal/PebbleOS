@@ -182,6 +182,11 @@ typedef enum {
   // Open workout. Basically a catch all / generic activity type
   ActivitySessionType_Open = 7,
 
+  // Boulder: erkannte Bewegung (Gehen oder Laufen, mindestens zehn Minuten),
+  // ausdruecklich KEIN Training. Wie Garmins Move IQ: steht im Tag, zaehlt aber
+  // nicht als Workout. Training sind nur selbst gestartete Sitzungen (manual).
+  ActivitySessionType_Movement = 8,
+
   // Leave at end
   ActivitySessionTypeCount,
   ActivitySessionType_Invalid = ActivitySessionTypeCount,

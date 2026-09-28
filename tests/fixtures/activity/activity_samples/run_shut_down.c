@@ -11,17 +11,19 @@
 AlgDlsMinuteData *activity_sample_run_shut_down_1(int *len) {
   // The unit tests parse the //> TEST_.* lines below for test values
   // NOTE: The TEST_ACTIVITY_TYPE is one of the KAlgActivityType enum values
+  // Boulder: Walk und Run legen keine Sitzungen mehr an; erwartet wird die
+  // Bewegung (KAlgActivityType_Movement = 4) ueber Gehen und Laufen zusammen.
   //> TEST_NAME run_shut_down_1
   //> TEST_VERSION 3
-  //> TEST_ACTIVITY_TYPE 3
-  //> TEST_ACTIVITY_TYPE_MIN 3
-  //> TEST_ACTIVITY_TYPE_MAX 3
-  //> TEST_LEN 30
-  //> TEST_LEN_MIN 22
-  //> TEST_LEN_MAX 26
-  //> TEST_START_AT 557
-  //> TEST_START_AT_MIN 554
-  //> TEST_START_AT_MAX 560
+  //> TEST_ACTIVITY_TYPE 4
+  //> TEST_ACTIVITY_TYPE_MIN 4
+  //> TEST_ACTIVITY_TYPE_MAX 4
+  //> TEST_LEN 28
+  //> TEST_LEN_MIN 26
+  //> TEST_LEN_MAX 30
+  //> TEST_START_AT 553
+  //> TEST_START_AT_MIN 551
+  //> TEST_START_AT_MAX 555
   //> TEST_WEIGHT 1.0
   //> TEST_FORCE_SHUT_DOWN_AT 581
 
@@ -731,17 +733,19 @@ AlgDlsMinuteData *activity_sample_run_shut_down_1(int *len) {
 AlgDlsMinuteData *activity_sample_run_shut_down_2(int *len) {
   // The unit tests parse the //> TEST_.* lines below for test values
   // NOTE: The TEST_ACTIVITY_TYPE is one of the KAlgActivityType enum values
+  // Boulder: Walk und Run legen keine Sitzungen mehr an; erwartet wird die
+  // Bewegung (KAlgActivityType_Movement = 4) ueber Gehen und Laufen zusammen.
   //> TEST_NAME run_shut_down_2
   //> TEST_VERSION 3
-  //> TEST_ACTIVITY_TYPE 0
-  //> TEST_ACTIVITY_TYPE_MIN 0
-  //> TEST_ACTIVITY_TYPE_MAX 0
-  //> TEST_LEN 0
-  //> TEST_LEN_MIN 0
-  //> TEST_LEN_MAX 0
-  //> TEST_START_AT 0
-  //> TEST_START_AT_MIN 0
-  //> TEST_START_AT_MAX 0
+  //> TEST_ACTIVITY_TYPE 4
+  //> TEST_ACTIVITY_TYPE_MIN 4
+  //> TEST_ACTIVITY_TYPE_MAX 4
+  //> TEST_LEN 11
+  //> TEST_LEN_MIN 10
+  //> TEST_LEN_MAX 13
+  //> TEST_START_AT 553
+  //> TEST_START_AT_MIN 551
+  //> TEST_START_AT_MAX 555
   //> TEST_WEIGHT 1.0
   //> TEST_FORCE_SHUT_DOWN_AT 564
 

@@ -85,6 +85,7 @@ bool activity_sessions_prv_is_sleep_activity(ActivitySessionType activity_type) 
     case ActivitySessionType_Walk:
     case ActivitySessionType_Run:
     case ActivitySessionType_Open:
+    case ActivitySessionType_Movement:
       return false;
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
@@ -105,6 +106,7 @@ static bool prv_is_valid_activity_session(ActivitySession *session) {
     case ActivitySessionType_Walk:
     case ActivitySessionType_Run:
     case ActivitySessionType_Open:
+    case ActivitySessionType_Movement:
       break;
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
@@ -243,6 +245,7 @@ void activity_sessions_prv_send_activity_session_to_data_logging(ActivitySession
     .utc_to_local = start_local - session->start_utc,
     .start_utc = (uint32_t)session->start_utc,
     .elapsed_sec = session->length_min * SECONDS_PER_MINUTE,
+    .manual = session->manual,
   };
   if (activity_sessions_prv_is_sleep_activity(session->type)) {
     dls_record.sleep_data = session->sleep_data;
@@ -524,6 +527,7 @@ static void prv_log_activities(time_t now_utc) {
       case ActivitySessionType_Walk:
       case ActivitySessionType_Run:
       case ActivitySessionType_Open:
+      case ActivitySessionType_Movement:
         params = &class_settings[ActivityClass_Step];
         break;
       case ActivitySessionType_None:
