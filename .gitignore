@@ -68,3 +68,6 @@ artifacts/
 .claude/settings.local.json
 .envrc
 .direnv
+# Boulder
+build-boulder
+build-qemu
