@@ -955,13 +955,10 @@ PBL_T_STATIC void prv_minute_system_task_cb(void *data) {
   // Do our minute processing
   prv_process_minute_data(utc_sec);
 
-  // Process insights
-  pbl_mutex_lock(&s_activity_state.mutex, PBL_FOREVER);
-  {
-    activity_insights_process_sleep_data(utc_sec);
-    activity_insights_process_minute_data(utc_sec);
-  }
-  pbl_mutex_unlock(&s_activity_state.mutex);
+  // Boulder: KEINE INSIGHTS MEHR. Pebbles Meldungen und Timeline-Pins
+  // (Schlafzusammenfassung, Tagesbilanz, Belohnungen, Nickerchen, Spaziergaenge)
+  // rechneten mit Pebbles Sicht auf den Tag: ohne REM und Leichtschlaf, mit
+  // "Walk" statt Bewegung. Was die Uhr misst, zeigt die eigene Health-App.
 }
 
 // ------------------------------------------------------------------------------------------------
