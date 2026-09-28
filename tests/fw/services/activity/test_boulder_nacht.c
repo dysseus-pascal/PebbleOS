@@ -9,6 +9,7 @@
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
+#include "pbl/services/battery/battery_state.h"
 
 #include "stubs_logging.h"
 #include "stubs_pbl_malloc.h"
@@ -41,6 +42,12 @@ static HealthMinuteData s_minuten[MINUTEN];
 int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
   return 0;
 }
+
+// Der Akku faellt im Test um ein Prozent je Stunde, ab 80 um 20 Uhr.
+BatteryChargeState battery_get_charge_state(void) {
+  return (BatteryChargeState){ .charge_percent = 80 - (s_jetzt - s_beginn) / 3600 };
+}
+uint8_t boulder_messstufe(void) { return 3; }
 
 time_t time_utc_to_local(time_t utc) {
   return utc + OFFSET_LOKAL;
@@ -188,6 +195,12 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   cl_assert_equal_i(s->beginn_utc, s_beginn);
   cl_assert_equal_i(s->utc_to_local, OFFSET_LOKAL);
   cl_assert_equal_i(s_gesendet_um, s_beginn + (11 * 60 + 45) * SECONDS_PER_MINUTE);
+  // Das Akku-Protokoll: Schlaf zuerst gesehen um 22:45 (78 %), fertig 07:45 (69 %).
+  cl_assert_equal_i(s->version, NACHT_DLS_VERSION);
+  cl_assert_equal_i(s->akku_beginn, 78);
+  cl_assert_equal_i(s->akku_ende, 69);
+  cl_assert_equal_i(s->flags, 0);
+  cl_assert_equal_i(s->messstufe, 3);
   // Eingeschlafen 22:17, aufgewacht 07:00.
   cl_assert_equal_i(s->einschlafen, 120 + 17);
   cl_assert_equal_i(s->aufwachen, 660);

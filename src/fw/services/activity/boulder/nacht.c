@@ -9,6 +9,8 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/boulder/hrv.h"
+#include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/battery/battery_state.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "util/time/time.h"
@@ -55,6 +57,13 @@ static int s_gemeldet_anzahl;
 // einer fertigen Nacht noch einmal ein, wird das eine eigene.
 static time_t s_erledigt_bis;
 static DataLoggingSession *s_dls;
+// DAS AKKU-PROTOKOLL: der Stand bei jedem Rechentakt im Fenster. Am Ende zaehlt
+// der beim Einschlafen - nicht der, als die Rechnung den Schlaf zum ersten Mal
+// sah; das ist erst nach einer Stunde Schlaf, und nach einem Wachliegen spaeter.
+#define AKKU_TAKTE ((FENSTER_DAUER_MIN + NACHLAUF_MIN) / TAKT_MIN + 1)
+static uint8_t s_akku[AKKU_TAKTE];
+static time_t s_akku_fenster;
+static bool s_geladen;
 
 // ---------------------------------------------------------------------------
 
@@ -181,6 +190,18 @@ static void prv_melde(const SchlafErgebnis *e, time_t beginn, bool fertig) {
   }
 }
 
+// Der Akkustand zum ersten Takt ab `utc`; 0xFF, wenn keiner da ist.
+static uint8_t prv_akku_bei(time_t utc) {
+  for (int i = (utc - s_akku_fenster + TAKT_MIN * SECONDS_PER_MINUTE - 1) /
+               (TAKT_MIN * SECONDS_PER_MINUTE);
+       i >= 0 && i < AKKU_TAKTE; i++) {
+    if (s_akku[i] != 0xFF) {
+      return s_akku[i];
+    }
+  }
+  return 0xFF;
+}
+
 // Die ganze Nacht an Boulder, in Teilen zu NACHT_DLS_ABSCHNITTE Abschnitten.
 static void prv_schicke(Rechnung *r, time_t beginn) {
   const SchlafErgebnis *e = &r->ergebnis;
@@ -209,6 +230,10 @@ static void prv_schicke(Rechnung *r, time_t beginn) {
       .teil = teil,
       .teile = teile,
       .hrv = e->hrv,
+      .akku_beginn = prv_akku_bei(beginn + e->einschlafen * SECONDS_PER_MINUTE),
+      .akku_ende = battery_get_charge_state().charge_percent,
+      .flags = s_geladen ? NACHT_DLS_FLAG_GELADEN : 0,
+      .messstufe = boulder_messstufe(),
     };
     for (int k = teil * NACHT_DLS_ABSCHNITTE;
          k < e->abschnitt_anzahl && s->anzahl < NACHT_DLS_ABSCHNITTE; k++) {
@@ -238,6 +263,20 @@ void boulder_nacht_minute(time_t utc_sec) {
   time_t beginn;
   time_t ende;
   boulder_nacht_fenster(utc_sec, &beginn, &ende);
+
+  // Das Akku-Protokoll laeuft ab Beginn des Fensters mit, auch in der ersten
+  // Stunde, in der noch nicht gerechnet wird.
+  if (s_akku_fenster != beginn) {
+    s_akku_fenster = beginn;
+    memset(s_akku, 0xFF, sizeof(s_akku));
+    s_geladen = false;
+  }
+  const BatteryChargeState akku = battery_get_charge_state();
+  const int takt = (utc_sec - beginn) / (TAKT_MIN * SECONDS_PER_MINUTE);
+  if (takt >= 0 && takt < AKKU_TAKTE) {
+    s_akku[takt] = akku.charge_percent;
+  }
+
   if (s_erledigt_bis >= ende || utc_sec < beginn + MINUTES_PER_HOUR * SECONDS_PER_MINUTE ||
       utc_sec > ende + NACHLAUF_MIN * SECONDS_PER_MINUTE) {
     return;
@@ -263,6 +302,9 @@ void boulder_nacht_minute(time_t utc_sec) {
   };
   schlafanalyse_werte(&eingabe, &r->arbeit, &r->ergebnis);
 
+  // Hing die Uhr, seit Schlaf da ist, am Kabel? Dann sagt der Verbrauch nichts.
+  s_geladen = s_geladen || (r->ergebnis.gefunden && akku.is_plugged);
+
   // Fertig: nach einer Stunde wach - an vorhandenen Minuten gemessen, nicht an
   // der Uhrzeit - oder am Ende des Fensters.
   const SchlafErgebnis *e = &r->ergebnis;
@@ -277,6 +319,7 @@ void boulder_nacht_minute(time_t utc_sec) {
     s_erledigt_bis = (e->gefunden && utc_sec < ende)
         ? ab + e->aufwachen * SECONDS_PER_MINUTE : ende;
     s_gemeldet_anzahl = 0;
+    s_geladen = false;
   }
   kernel_free(r);
 }

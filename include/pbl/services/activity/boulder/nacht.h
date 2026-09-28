@@ -27,7 +27,9 @@
 // gerechnet; fertig ist sie nach einer Viertelstunde wach oder am Ende des
 // Fensters.
 
-#define NACHT_DLS_VERSION 1
+// Bitfeld wie bei den Sitzungen: Bit 0 muss gesetzt sein, Bit 1 heisst "mit
+// Akku und Messstufe am Ende" (ab Fassung 3).
+#define NACHT_DLS_VERSION 3
 #define NACHT_DLS_ABSCHNITTE 60
 
 typedef struct PBL_PACKED {
@@ -52,11 +54,19 @@ typedef struct PBL_PACKED {
   uint16_t hrv;            //< ms, 0 = keine
   uint8_t anzahl;          //< Abschnitte in diesem Teil
   NachtDlsAbschnitt abschnitte[NACHT_DLS_ABSCHNITTE];
+  // Ab Fassung 3: was die Nacht den Akku kostete, und bei welcher Messstufe.
+  // So laesst sich der Regler an echten Naechten eichen statt an Schaetzungen.
+  uint8_t akku_beginn;     //< % beim Einschlafen (erste Rechnung mit Schlaf), 0xFF = unbekannt
+  uint8_t akku_ende;       //< % als die Nacht fertig war
+  uint8_t flags;           //< Bit 0: nachts am Ladekabel - dann sagt der Verbrauch nichts
+  uint8_t messstufe;       //< 1..5
 } NachtDlsRecord;
 
 // Boulder liest den Satz Byte fuer Byte (NachtParser.kt); aendert sich die
 // Groesse, muss dort dieselbe Aenderung hin - und NACHT_DLS_VERSION hoch.
-_Static_assert(sizeof(NachtDlsRecord) == 324, "NachtDlsRecord: Boulder erwartet 324 Byte");
+_Static_assert(sizeof(NachtDlsRecord) == 328, "NachtDlsRecord: Boulder erwartet 328 Byte");
+
+#define NACHT_DLS_FLAG_GELADEN 0x01
 
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG), ausserhalb seiner Sperre.
 void boulder_nacht_minute(time_t utc_sec);
