@@ -11,6 +11,7 @@ set(sources
   boulder/messstufe.c
   boulder/nacht.c
   boulder/schlafanalyse.c
+  boulder/spo2.c
   health_util.c
   hr_util.c
   insights_settings.c

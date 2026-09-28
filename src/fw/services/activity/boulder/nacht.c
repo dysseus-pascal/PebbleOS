@@ -13,6 +13,8 @@
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
+#include "pbl/services/settings/settings_file.h"
+#include "pbl/kernel/mutex.h"
 #include "util/time/time.h"
 #include <pbl/logging/logging.h>
 
@@ -64,6 +66,17 @@ static DataLoggingSession *s_dls;
 static uint8_t s_akku[AKKU_TAKTE];
 static time_t s_akku_fenster;
 static bool s_geladen;
+
+// DIE LETZTE NACHT FUER DIE HEALTH-APP. Geschrieben auf KernelBG, gelesen aus
+// der App - daher die Sperre. Die fertige Nacht liegt zusaetzlich in einer
+// Datei, damit sie einen Neustart uebersteht.
+#define BILD_DATEI "boulder_nacht"
+#define BILD_DATEI_GROESSE 2048
+static const char BILD_SCHLUESSEL[] = "letzte";
+static PBL_MUTEX_DEFINE(s_bild_sperre);
+static NachtBild s_bild;
+static bool s_bild_da;
+static bool s_bild_gelesen;
 
 // ---------------------------------------------------------------------------
 
@@ -190,6 +203,115 @@ static void prv_melde(const SchlafErgebnis *e, time_t beginn, bool fertig) {
   }
 }
 
+// Die Abschnitte fuer die Anzeige verdichten, bis sie passen: der kuerzeste
+// geht im laengeren Nachbarn auf, und gleiche Nachbarn werden eins. So
+// bleiben die langen Phasen stehen, und nur das Flackern verschwindet.
+int boulder_nacht_verdichten(SchlafAbschnitt *a, int n, int max) {
+  while (n > max && n > 1) {
+    int k = 0;
+    for (int i = 1; i < n; i++) {
+      if (a[i].bis - a[i].von < a[k].bis - a[k].von) {
+        k = i;
+      }
+    }
+    int ziel;
+    if (k == 0) {
+      ziel = 1;
+    } else if (k == n - 1) {
+      ziel = n - 2;
+    } else {
+      ziel = (a[k - 1].bis - a[k - 1].von >= a[k + 1].bis - a[k + 1].von) ? k - 1 : k + 1;
+    }
+    if (ziel < k) {
+      a[ziel].bis = a[k].bis;
+    } else {
+      a[ziel].von = a[k].von;
+    }
+    memmove(&a[k], &a[k + 1], (n - k - 1) * sizeof(*a));
+    n--;
+    // Stehen jetzt zwei gleiche nebeneinander, werden sie einer. Der
+    // gewachsene Nachbar steht nach dem Entfernen bei `ziel` (links) oder
+    // bei `k` (rechts); zu pruefen ist er mit seinem anderen Nachbarn.
+    const int links = (ziel < k) ? ziel : k - 1;
+    if (links >= 0 && links + 1 < n && a[links].phase == a[links + 1].phase) {
+      a[links].bis = a[links + 1].bis;
+      memmove(&a[links + 1], &a[links + 2], (n - links - 2) * sizeof(*a));
+      n--;
+    }
+  }
+  return n;
+}
+
+static void prv_bild_merken(Rechnung *r, time_t beginn, bool fertig) {
+  const SchlafErgebnis *e = &r->ergebnis;
+  if (!e->gefunden) {
+    return;
+  }
+  // Die Arbeitsliste der Rechnung ist jetzt frei - sie dient als Ablage.
+  SchlafAbschnitt *a = r->arbeit.liste;
+  memcpy(a, e->abschnitte, e->abschnitt_anzahl * sizeof(*a));
+  const int n = boulder_nacht_verdichten(a, e->abschnitt_anzahl, NACHT_BILD_ABSCHNITTE);
+
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  s_bild = (NachtBild){
+    .beginn_utc = (uint32_t)beginn,
+    .utc_to_local = time_utc_to_local(beginn) - beginn,
+    .einschlafen = e->einschlafen,
+    .aufwachen = e->aufwachen,
+    .schlaf_minuten = e->schlaf_minuten,
+    .hrv = e->hrv,
+    .ruhepuls = e->ruhepuls,
+    .fertig = fertig,
+    .anzahl = (uint8_t)n,
+  };
+  // Die Minuten je Phase aus der ungekuerzten Liste - die verdichtete
+  // verschoebe sie.
+  for (int k = 0; k < e->abschnitt_anzahl; k++) {
+    if (e->abschnitte[k].phase < NACHT_PHASEN) {
+      s_bild.minuten[e->abschnitte[k].phase] += e->abschnitte[k].bis - e->abschnitte[k].von;
+    }
+  }
+  for (int k = 0; k < n; k++) {
+    s_bild.abschnitte[k] = (NachtDlsAbschnitt){
+      .von = a[k].von, .bis = a[k].bis, .phase = a[k].phase,
+    };
+  }
+  s_bild_da = true;
+  if (fertig) {
+    SettingsFile datei;
+    if (settings_file_open(&datei, BILD_DATEI, BILD_DATEI_GROESSE) == S_SUCCESS) {
+      settings_file_set(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL), &s_bild,
+                        sizeof(s_bild));
+      settings_file_close(&datei);
+    }
+  }
+  pbl_mutex_unlock(&s_bild_sperre);
+}
+
+bool boulder_nacht_letzte(NachtBild *aus) {
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  if (!s_bild_da && !s_bild_gelesen) {
+    // Nach einem Neustart: die zuletzt fertige Nacht aus der Datei.
+    s_bild_gelesen = true;
+    SettingsFile datei;
+    if (settings_file_open(&datei, BILD_DATEI, BILD_DATEI_GROESSE) == S_SUCCESS) {
+      if (settings_file_get_len(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL)) ==
+              (int)sizeof(s_bild) &&
+          settings_file_get(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL), &s_bild,
+                            sizeof(s_bild)) == S_SUCCESS) {
+        s_bild_da = true;
+      }
+      settings_file_close(&datei);
+    }
+  }
+  const bool da = s_bild_da;
+  if (da) {
+    *aus = s_bild;
+  }
+  pbl_mutex_unlock(&s_bild_sperre);
+  return da;
+}
+
 // Der Akkustand zum ersten Takt ab `utc`; 0xFF, wenn keiner da ist.
 static uint8_t prv_akku_bei(time_t utc) {
   for (int i = (utc - s_akku_fenster + TAKT_MIN * SECONDS_PER_MINUTE - 1) /
@@ -311,6 +433,7 @@ void boulder_nacht_minute(time_t utc_sec) {
   const bool fertig = (utc_sec >= ende) ||
                       (e->gefunden && anzahl - e->aufwachen >= WACH_FERTIG_MIN);
   prv_melde(e, ab, fertig);
+  prv_bild_merken(r, ab, fertig);
   if (fertig) {
     if (e->gefunden) {
       PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);

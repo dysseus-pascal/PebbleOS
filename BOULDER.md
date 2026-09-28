@@ -84,4 +84,17 @@ nicht mehr Teil der App; das macht die Firmware (F2).
   Startmenü, und ihr Entfernen löscht weder Persist noch Pins
   (`app_install_manager.c`). Die Store-App Kieselsport muss von der Uhr.
 
+## Health-App (F4)
+
+`src/fw/apps/system/health/` ersetzt Pebbles Health-App unter derselben
+Kennung (Zifferblatt-Taste und Übergang bleiben). Vier Karten, Oben/Unten
+blättert: **Heute** (Schritte, km, kcal, aktive Minuten, Schritte je Stunde),
+**Schlaf** (letzte Nacht aus `boulder_nacht_letzte`: Dauer, Zeiten,
+Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live, Ruhepuls und HRV
+der Nacht, letzter SpO2, Puls der letzten 24 h, tiefster SpO2 der Nacht),
+**Woche** (Schritte und Schlaf der letzten sieben Tage mit Schnitt).
+
+Dafür merkt sich die Firmware die letzte Nacht (auch über einen Neustart, Datei
+`boulder_nacht`) und die SpO2-Werte im Ring (`boulder/spo2.c`, 96 Werte).
+
 Emulator: `pbl configure -b build-qemu --board qemu_emery && pbl build -b build-qemu && pbl qemu -b build-qemu`.

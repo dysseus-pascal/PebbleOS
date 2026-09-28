@@ -13,6 +13,7 @@
 
 #include "stubs_logging.h"
 #include "stubs_pbl_malloc.h"
+#include "stubs_mutex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -249,6 +250,28 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
     }
   }
   cl_assert_equal_i(bis, s->aufwachen);
+
+  // DIE UHR SELBST KENNT DIE NACHT (Health-App): dieselben Zahlen, die
+  // Minuten je Phase wie im Satz, die Abschnitte lueckenlos und hoechstens
+  // NACHT_BILD_ABSCHNITTE.
+  NachtBild b;
+  cl_assert(boulder_nacht_letzte(&b));
+  cl_assert(b.fertig);
+  cl_assert_equal_i(b.beginn_utc, s->beginn_utc);
+  cl_assert_equal_i(b.einschlafen, s->einschlafen);
+  cl_assert_equal_i(b.aufwachen, s->aufwachen);
+  cl_assert_equal_i(b.schlaf_minuten, s->schlaf_minuten);
+  cl_assert_equal_i(b.ruhepuls, s->ruhepuls);
+  for (int p = 0; p < NACHT_PHASEN; p++) {
+    cl_assert_equal_i(b.minuten[p], je_phase[p]);
+  }
+  cl_assert(b.anzahl > 0 && b.anzahl <= NACHT_BILD_ABSCHNITTE);
+  cl_assert_equal_i(b.abschnitte[0].von, b.einschlafen);
+  for (int k = 1; k < b.anzahl; k++) {
+    cl_assert_equal_i(b.abschnitte[k].von, b.abschnitte[k - 1].bis);
+    cl_assert(b.abschnitte[k].phase != b.abschnitte[k - 1].phase);
+  }
+  cl_assert_equal_i(b.abschnitte[b.anzahl - 1].bis, b.aufwachen);
 }
 
 void test_boulder_nacht__ausserhalb_des_fensters_ruhe(void) {
@@ -290,4 +313,25 @@ void test_boulder_nacht__langes_wachliegen_gibt_zwei_naechte(void) {
   // Die zweite Nacht zaehlt ab ihrem eigenen Beginn: 06:30 ist Minute 330.
   cl_assert_equal_i(zweite->aufwachen, 330);
   cl_assert(erste->schlaf_minuten >= 170 && zweite->schlaf_minuten >= 270);
+}
+
+void test_boulder_nacht__verdichten_laesst_die_langen_phasen_stehen(void) {
+  // Leicht 60, Tief 2, Leicht 30, REM 40, Wach 1, REM 20. Auf vier verdichtet
+  // verschwindet das Wachflackern, und die beiden REM werden einer.
+  SchlafAbschnitt a[] = {
+    { 0, 60, SchlafPhaseLeicht }, { 60, 62, SchlafPhaseTief }, { 62, 92, SchlafPhaseLeicht },
+    { 92, 132, SchlafPhaseRem }, { 132, 133, SchlafPhaseWach }, { 133, 153, SchlafPhaseRem },
+  };
+  cl_assert_equal_i(boulder_nacht_verdichten(a, 6, 4), 4);
+  cl_assert_equal_i(a[3].phase, SchlafPhaseRem);
+  cl_assert_equal_i(a[3].von, 92);
+  cl_assert_equal_i(a[3].bis, 153);
+  // Auf drei: der kurze Tiefschlaf geht, und die beiden Leicht werden einer.
+  const int n = boulder_nacht_verdichten(a, 4, 3);
+  cl_assert_equal_i(n, 2);
+  cl_assert_equal_i(a[0].phase, SchlafPhaseLeicht);
+  cl_assert_equal_i(a[0].von, 0);
+  cl_assert_equal_i(a[0].bis, 92);
+  cl_assert_equal_i(a[1].phase, SchlafPhaseRem);
+  cl_assert_equal_i(a[1].bis, 153);
 }

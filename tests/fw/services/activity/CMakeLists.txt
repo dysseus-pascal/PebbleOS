@@ -16,6 +16,7 @@ pbl_clar_test(test_activity
     src/fw/services/activity/activity_sessions.c
     src/fw/services/activity/activity_calculators.c
     src/fw/services/activity/boulder/messstufe.c
+    src/fw/services/activity/boulder/spo2.c
     src/fw/services/activity/hr_util.c
     src/fw/services/filesystem/flash_translation.c
     src/fw/services/filesystem/pfs.c
@@ -131,6 +132,8 @@ pbl_clar_test(test_boulder_nacht
   SOURCES
     src/fw/services/activity/boulder/nacht.c
     src/fw/services/activity/boulder/schlafanalyse.c
+    src/fw/util/crc8.c
+    tests/fakes/fake_settings_file.c
 )
 
 # Boulder: HRV-Fenster in der Nacht.

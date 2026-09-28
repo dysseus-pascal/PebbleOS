@@ -69,6 +69,34 @@ _Static_assert(sizeof(NachtDlsRecord) == 328, "NachtDlsRecord: Boulder erwartet 
 #define NACHT_DLS_FLAG_GELADEN 0x01
 
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG), ausserhalb seiner Sperre.
+// DIE LETZTE NACHT FUER DIE UHR SELBST - die Health-App zeigt sie. Dieselben
+// Zahlen wie im Satz fuer Boulder, dazu die Minuten je Phase und die
+// Abschnitte fuer das Hypnogramm. Mehr als NACHT_BILD_ABSCHNITTE werden fuer
+// die Anzeige verdichtet: der kuerzeste geht im Nachbarn auf.
+#define NACHT_BILD_ABSCHNITTE 96
+#define NACHT_PHASEN 5   //< SchlafPhase: Wach, Leicht, Tief, REM, Schlaf ohne Phase
+
+typedef struct {
+  uint32_t beginn_utc;     //< Minute 0 der Rechnung
+  int32_t utc_to_local;
+  uint16_t einschlafen;    //< Minuten ab beginn_utc
+  uint16_t aufwachen;
+  uint16_t schlaf_minuten;
+  uint16_t minuten[NACHT_PHASEN];
+  uint16_t hrv;            //< ms, 0 = keine
+  uint8_t ruhepuls;        //< 0 = keiner
+  bool fertig;             //< false: die Nacht laeuft noch
+  uint8_t anzahl;
+  NachtDlsAbschnitt abschnitte[NACHT_BILD_ABSCHNITTE];
+} NachtBild;
+
+// false, wenn es noch keine gibt.
+bool boulder_nacht_letzte(NachtBild *aus);
+
+// Testhilfe: verdichtet `a` auf hoechstens `max` Abschnitte, Rueckgabe: wie viele.
+#include "pbl/services/activity/boulder/schlafanalyse.h"
+int boulder_nacht_verdichten(SchlafAbschnitt *a, int n, int max);
+
 void boulder_nacht_minute(time_t utc_sec);
 
 // Das Nachtfenster, in dem `utc` liegt - oder das zuletzt vergangene.
