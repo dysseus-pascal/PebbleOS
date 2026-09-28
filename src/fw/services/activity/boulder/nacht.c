@@ -21,8 +21,12 @@
 // So oft wird gerechnet. Jede Minute waere Strom fuer nichts: die Minutendatei
 // haelt ohnehin die letzten rund zwanzig Minuten zurueck, bis sie sicher sind.
 #define TAKT_MIN 15
-// So lange wach nach dem letzten Schlaf, und die Nacht ist vorbei.
-#define WACH_FERTIG_MIN 60
+// So lange wach nach dem letzten Schlaf, und die Nacht ist vorbei. Kurz, damit
+// die Nacht bald nach dem Aufstehen da ist; ein laengeres Wachliegen mitten in
+// der Nacht zerlegt sie trotzdem nicht - was danach kommt, wird eine eigene
+// Nacht (siehe s_erledigt_bis), und ein Schlaf unter einer Stunde davor ist
+// keine.
+#define WACH_FERTIG_MIN 15
 // Nach dem Fenster noch so lange, um eine offene Nacht abzuschliessen.
 #define NACHLAUF_MIN 60
 // Mehr Schlafbloecke und Tiefschlaf-Abschnitte traegt keine Nacht ein; die Uhr
@@ -44,7 +48,9 @@ typedef struct {
 // Die laufenden Sitzungen dieser Nacht - sie werden bei jeder Rechnung ersetzt.
 static ActivitySession s_gemeldet[SITZUNGEN_MAX];
 static int s_gemeldet_anzahl;
-// Das Ende des zuletzt abgeschlossenen Fensters: danach ist Ruhe bis zum naechsten.
+// Bis hierher ist gerechnet: das Aufwachen der zuletzt fertigen Nacht, oder das
+// Ende des Fensters. Die naechste Rechnung beginnt dort - schlaeft man nach
+// einer fertigen Nacht noch einmal ein, wird das eine eigene.
 static time_t s_erledigt_bis;
 static DataLoggingSession *s_dls;
 
@@ -233,8 +239,9 @@ void boulder_nacht_minute(time_t utc_sec) {
     PBL_LOG_WRN("Nacht: kein Speicher fuer die Rechnung");
     return;
   }
+  const time_t ab = (s_erledigt_bis > beginn) ? s_erledigt_bis : beginn;
   const time_t bis = (utc_sec < ende) ? utc_sec : ende;
-  const int anzahl = prv_lies(r, beginn, bis);
+  const int anzahl = prv_lies(r, ab, bis);
   const SchlafEingabe eingabe = {
     .bewegung = r->bewegung,
     .puls = r->puls,
@@ -249,13 +256,14 @@ void boulder_nacht_minute(time_t utc_sec) {
   const SchlafErgebnis *e = &r->ergebnis;
   const bool fertig = (utc_sec >= ende) ||
                       (e->gefunden && anzahl - e->aufwachen >= WACH_FERTIG_MIN);
-  prv_melde(e, beginn, fertig);
+  prv_melde(e, ab, fertig);
   if (fertig) {
     if (e->gefunden) {
       PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);
-      prv_schicke(r, beginn);
+      prv_schicke(r, ab);
     }
-    s_erledigt_bis = ende;
+    s_erledigt_bis = (e->gefunden && utc_sec < ende)
+        ? ab + e->aufwachen * SECONDS_PER_MINUTE : ende;
     s_gemeldet_anzahl = 0;
   }
   kernel_free(r);

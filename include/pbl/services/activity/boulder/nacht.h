@@ -23,7 +23,8 @@
 //
 // NUR IM NACHTFENSTER (20 bis 11 Uhr): eine abgelegte Uhr auf dem Tisch saehe
 // tagsueber aus wie Schlaf. Alle fuenfzehn Minuten wird die laufende Nacht neu
-// gerechnet; fertig ist sie nach einer Stunde wach oder am Ende des Fensters.
+// gerechnet; fertig ist sie nach einer Viertelstunde wach oder am Ende des
+// Fensters.
 
 #define NACHT_DLS_VERSION 1
 #define NACHT_DLS_ABSCHNITTE 60
@@ -39,7 +40,7 @@ typedef struct PBL_PACKED {
 typedef struct PBL_PACKED {
   uint16_t version;        //< NACHT_DLS_VERSION; Bit 0 gesetzt, wie bei den Sitzungen
   uint16_t size;           //< sizeof(NachtDlsRecord)
-  uint32_t beginn_utc;     //< Minute 0: Beginn des Nachtfensters
+  uint32_t beginn_utc;     //< Minute 0: Beginn der Rechnung (Fenster oder letztes Aufwachen)
   int32_t utc_to_local;
   uint16_t einschlafen;    //< Minuten ab beginn_utc
   uint16_t aufwachen;

@@ -172,15 +172,16 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
     boulder_nacht_minute(s_jetzt);
   }
 
-  // Genau eine Nacht, fertig nach einer Stunde wach (07:00 + 60 min, dazu die
-  // zurueckgehaltenen Minuten und der Takt): um 08:30.
+  // Genau eine Nacht - das Wachliegen um 23 Uhr zerlegt sie nicht, der Schlaf
+  // davor ist kuerzer als eine Stunde. Fertig nach einer Viertelstunde wach
+  // (07:00 + 15 min, dazu die zurueckgehaltenen Minuten und der Takt): 07:45.
   cl_assert(s_saetze_anzahl >= 1);
   const NachtDlsRecord *s = &s_saetze[0];
   cl_assert_equal_i(s->teil, 0);
   cl_assert_equal_i(s_saetze_anzahl, s->teile);
   cl_assert_equal_i(s->beginn_utc, s_beginn);
   cl_assert_equal_i(s->utc_to_local, OFFSET_LOKAL);
-  cl_assert_equal_i(s_gesendet_um, s_beginn + (12 * 60 + 30) * SECONDS_PER_MINUTE);
+  cl_assert_equal_i(s_gesendet_um, s_beginn + (11 * 60 + 45) * SECONDS_PER_MINUTE);
   // Eingeschlafen 22:17, aufgewacht 07:00.
   cl_assert_equal_i(s->einschlafen, 120 + 17);
   cl_assert_equal_i(s->aufwachen, 660);
@@ -240,4 +241,34 @@ void test_boulder_nacht__ausserhalb_des_fensters_ruhe(void) {
   }
   cl_assert_equal_i(s_sitzungen_anzahl, 0);
   cl_assert_equal_i(s_saetze_anzahl, 0);
+}
+
+void test_boulder_nacht__langes_wachliegen_gibt_zwei_naechte(void) {
+  // 22:00 bis 01:00 Schlaf, 40 Minuten wach und unterwegs, dann Schlaf bis 06:30.
+  // Nach einer Viertelstunde wach ist die erste Nacht fertig; die zweite beginnt
+  // bei ihrem Aufwachen und geht nicht verloren.
+  // Einen Tag spaeter: die Nachtrechnung merkt sich, was schon erledigt ist.
+  s_beginn += SECONDS_PER_DAY;
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  for (int i = 120; i < MINUTEN; i++) {
+    const bool wach = (i >= 300 && i < 340) || i >= 630;
+    s_minuten[i] = (HealthMinuteData){
+      .vmc = wach ? 3000 : 2,
+      .steps = wach ? 60 : 0,
+      .heart_rate_bpm = wach ? 85 : (i % 4 == 0 ? 55 : 0),
+    };
+  }
+  for (s_jetzt = s_beginn; s_jetzt <= s_beginn + MINUTEN * SECONDS_PER_MINUTE;
+       s_jetzt += SECONDS_PER_MINUTE) {
+    boulder_nacht_minute(s_jetzt);
+  }
+  cl_assert_equal_i(s_saetze_anzahl, 2);
+  const NachtDlsRecord *erste = &s_saetze[0];
+  const NachtDlsRecord *zweite = &s_saetze[1];
+  cl_assert_equal_i(erste->beginn_utc, s_beginn);
+  cl_assert_equal_i(erste->aufwachen, 300);
+  cl_assert_equal_i(zweite->beginn_utc, s_beginn + 300 * SECONDS_PER_MINUTE);
+  // Die zweite Nacht zaehlt ab ihrem eigenen Beginn: 06:30 ist Minute 330.
+  cl_assert_equal_i(zweite->aufwachen, 330);
+  cl_assert(erste->schlaf_minuten >= 170 && zweite->schlaf_minuten >= 270);
 }

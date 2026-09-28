@@ -17,13 +17,16 @@ cd "$(dirname "$0")/../.."
 . .venv/bin/activate
 AUS=build-boulder
 rm -rf "$AUS" && mkdir -p "$AUS"
+# Die Fassung aus git describe, wie sie auch im Paketnamen steht. Nur genau
+# diese Dateien kopieren: im Bauordner liegen sonst Pakete frueherer Staende.
+VERSION=$(git describe --tags)
 for SLOT in 0 1; do
+  rm -f build/*.pbz
   pbl configure --board "$BOARD" -DCONFIG_FIRMWARE_SLOT=$SLOT -DCONFIG_RELEASE=y >/dev/null
   pbl build >/dev/null
   pbl bundle >/dev/null
-  cp build/normal_${NAME}_*_slot${SLOT}.pbz "$AUS/"
+  cp "build/normal_${NAME}_${VERSION}_slot${SLOT}.pbz" "$AUS/"
 done
-VERSION=$(ls "$AUS"/normal_${NAME}_*_slot0.pbz | sed -E "s/^.*normal_${NAME}_//; s/_slot0\.pbz$//")
 python3 tools/merge_pbz.py \
   --slot0-pbz "$AUS/normal_${NAME}_${VERSION}_slot0.pbz" \
   --slot1-pbz "$AUS/normal_${NAME}_${VERSION}_slot1.pbz" \
