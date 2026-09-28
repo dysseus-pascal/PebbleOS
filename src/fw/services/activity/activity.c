@@ -33,6 +33,7 @@
 #include "pbl/services/activity/activity_calculators.h"
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/workout_service.h"
 #include "pbl/util/testing.h"
 
@@ -899,6 +900,11 @@ static void PBL_NOINLINE prv_process_minute_data_tail(time_t utc_sec) {
 #endif
   }
   pbl_mutex_unlock(&s_activity_state.mutex);
+
+  // Boulder: die laufende Nacht neu rechnen (alle 15 Minuten im Nachtfenster).
+  // Ausserhalb der Sperre - die Rechnung braucht etwas, und in der Zeit sollen
+  // Apps weiter Werte lesen koennen.
+  boulder_nacht_minute(utc_sec);
 
   // Send the history update event now if history has changed
   if (need_history_update_event) {

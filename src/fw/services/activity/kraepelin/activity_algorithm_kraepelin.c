@@ -158,6 +158,14 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
   }
   PBL_ASSERTN(activity != ActivitySessionTypeCount);
 
+  // BOULDER: DEN SCHLAF TRAEGT boulder/nacht.c EIN, mit Kiesels Verfahren.
+  // Kraepelins Schlaferkennung laeuft weiter - ihr "schlaeft gerade" und das
+  // Nullen der Schritte im Schlaf braucht der Rest der Firmware -, aber ihre
+  // Sitzungen fallen hier weg. Sonst stuende jede Nacht doppelt da.
+  if (activity == ActivitySessionType_Sleep || activity == ActivitySessionType_RestfulSleep) {
+    return;
+  }
+
   ActivitySession session = {
     .type = activity,
     .start_utc = start_utc,

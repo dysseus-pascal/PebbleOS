@@ -221,6 +221,11 @@ typedef enum {
   DataLoggingSession_ActivitySessions = 2,
 } DataLoggingSession_ID;
 
+// Boulder: die Nachtrechnung (boulder/nacht.c) hat ihren eigenen Test. Hier
+// wuerde sie aus den erfundenen Minuten des Test-Algorithmus einen zweiten
+// Schlaf neben dessen Sitzungen legen.
+void boulder_nacht_minute(time_t utc_sec) {}
+
 // Logged items
 static bool s_dls_accel_samples_created;
 static int s_num_dls_accel_records;

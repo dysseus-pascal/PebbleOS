@@ -124,3 +124,10 @@ pbl_clar_test(test_boulder_schlaf
   SOURCES
     src/fw/services/activity/boulder/schlafanalyse.c
 )
+
+# Boulder: die Nachtrechnung im Takt der Uhr, mit der echten Nacht.
+pbl_clar_test(test_boulder_nacht
+  SOURCES
+    src/fw/services/activity/boulder/nacht.c
+    src/fw/services/activity/boulder/schlafanalyse.c
+)

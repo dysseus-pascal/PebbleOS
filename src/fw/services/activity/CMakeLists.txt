@@ -7,6 +7,8 @@ set(sources
   activity_insights.c
   activity_metrics.c
   activity_sessions.c
+  boulder/nacht.c
+  boulder/schlafanalyse.c
   health_util.c
   hr_util.c
   insights_settings.c
