@@ -225,6 +225,7 @@ typedef enum {
 // wuerde sie aus den erfundenen Minuten des Test-Algorithmus einen zweiten
 // Schlaf neben dessen Sitzungen legen.
 void boulder_nacht_minute(time_t utc_sec) {}
+void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung) {}
 // Die Tests hier laufen tagsueber; das Nachtfenster gehoert zur Nachtrechnung.
 bool boulder_nacht_im_fenster(time_t utc) { return false; }
 

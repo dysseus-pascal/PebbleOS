@@ -8,6 +8,7 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/hrv.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "util/time/time.h"
@@ -40,6 +41,7 @@ typedef struct {
   uint8_t puls[SCHLAF_MINUTEN_MAX];
   bool gueltig[SCHLAF_MINUTEN_MAX];
   HealthMinuteData block[LESE_BLOCK];
+  SchlafHrv hrv[SCHLAF_HRV_MAX];
   SchlafArbeit arbeit;
   SchlafErgebnis ergebnis;
   NachtDlsRecord satz;
@@ -249,12 +251,15 @@ void boulder_nacht_minute(time_t utc_sec) {
   const time_t ab = (s_erledigt_bis > beginn) ? s_erledigt_bis : beginn;
   const time_t bis = (utc_sec < ende) ? utc_sec : ende;
   const int anzahl = prv_lies(r, ab, bis);
+  const int hrv_anzahl = boulder_hrv_fenster(ab, bis, r->hrv, SCHLAF_HRV_MAX);
   const SchlafEingabe eingabe = {
     .bewegung = r->bewegung,
     .puls = r->puls,
     .gueltig = r->gueltig,
     .anzahl = anzahl,
     .schwelle = SCHLAF_SCHWELLE_VMC,
+    .hrv = r->hrv,
+    .hrv_anzahl = hrv_anzahl,
   };
   schlafanalyse_werte(&eingabe, &r->arbeit, &r->ergebnis);
 

@@ -36,6 +36,12 @@ static HealthMinuteData s_minuten[MINUTEN];
 
 // --- Was die Uhr sonst liefert -------------------------------------------------
 
+// HRV-Fenster kommen hier keine: die Nacht wird wie in der Firmware ohne sie
+// gerechnet, wenn der Sensor keine liefert.
+int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
+  return 0;
+}
+
 time_t time_utc_to_local(time_t utc) {
   return utc + OFFSET_LOKAL;
 }

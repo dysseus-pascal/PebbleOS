@@ -132,3 +132,9 @@ pbl_clar_test(test_boulder_nacht
     src/fw/services/activity/boulder/nacht.c
     src/fw/services/activity/boulder/schlafanalyse.c
 )
+
+# Boulder: HRV-Fenster in der Nacht.
+pbl_clar_test(test_boulder_hrv
+  SOURCES
+    src/fw/services/activity/boulder/hrv.c
+)
