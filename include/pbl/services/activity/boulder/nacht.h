@@ -52,5 +52,9 @@ typedef struct PBL_PACKED {
   NachtDlsAbschnitt abschnitte[NACHT_DLS_ABSCHNITTE];
 } NachtDlsRecord;
 
+// Boulder liest den Satz Byte fuer Byte (NachtParser.kt); aendert sich die
+// Groesse, muss dort dieselbe Aenderung hin - und NACHT_DLS_VERSION hoch.
+_Static_assert(sizeof(NachtDlsRecord) == 324, "NachtDlsRecord: Boulder erwartet 324 Byte");
+
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG), ausserhalb seiner Sperre.
 void boulder_nacht_minute(time_t utc_sec);
