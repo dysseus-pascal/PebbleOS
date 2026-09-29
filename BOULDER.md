@@ -94,6 +94,9 @@ tools/boulder/release.sh <N>       # Tag v4.38.3-bN, beide Slots, Release in bou
 Die Pakete liegen im öffentlichen Repo
 [dysseus-pascal/boulder-firmware](https://github.com/dysseus-pascal/boulder-firmware),
 weil dieser Fork privat ist und Boulder ohne Anmeldung nach Updates fragt.
+Jedes Release trägt eine Ed25519-Signatur (`<paket>.sig`, siehe
+`tools/boulder/SIGNATUR.md`); ohne den privaten Schlüssel bricht `release.sh`
+ab, und Boulder nimmt nichts Unsigniertes an.
 Vorher `.github/release/v4.38.3-bN.md` anlegen (erste Zeile Titel ohne
 Version). Boulder vergleicht erst die PebbleOS-Fassung, dann die Nummer nach
 dem `b`, und bietet eine neue Fassung sofort an. Die Nummer zählt über die
