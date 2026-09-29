@@ -12,7 +12,6 @@
 // Aktivitaetsdienst, die Nacht aus der Boulder-Nachtrechnung, SpO2 aus ihrem
 // Ring. Das Telefon braucht es fuer keine dieser Zahlen.
 
-#define DATEN_TAGE 7
 #define DATEN_PULS_SPALTEN 48   //< halbe Stunden der letzten 24 Stunden
 
 typedef struct {
@@ -30,17 +29,13 @@ typedef struct {
 
   // Herz
   uint8_t puls;              //< 0 = keiner
+  bool puls_live;            //< der Sensor misst gerade, puls ist frisch
   time_t puls_zeit;
   uint8_t puls_min[DATEN_PULS_SPALTEN];   //< 0 = keine Messung in der halben Stunde
   uint8_t puls_max[DATEN_PULS_SPALTEN];
   uint8_t spo2;              //< letzter Wert, 0 = keiner
   time_t spo2_zeit;
   uint8_t spo2_nacht_tief;   //< tiefster Wert der letzten Nacht, 0 = keiner
-
-  // Woche, [0] ist heute
-  int32_t woche_schritte[DATEN_TAGE];
-  int32_t woche_schlaf_min[DATEN_TAGE];
-  int wochentag_heute;       //< 0 = Sonntag, wie tm_wday
 } HealthDaten;
 
 // DIE MINUTENHISTORIE STUECKWEISE. Ein Tag sind 24 Aufrufe in den

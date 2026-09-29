@@ -564,18 +564,3 @@ void test_kieselsport__nachsenden_hoert_auf_wenn_angekommen(void) {
   cl_assert(!s_minutentakt);
   cl_assert_equal_i(s_geholt, 0);
 }
-
-void test_kieselsport__hrv_messung_ohne_training(void) {
-  kieselsport_hrv_messen(true);
-  cl_assert(s_sensor_hrv);
-  cl_assert_equal_i(s_sensor_takt, 1);
-  for (int i = 0; i < 40; i++) {
-    puls_ereignis_ppi((i % 2) ? 1040 : 1000);
-  }
-  uint16_t rmssd, anzahl;
-  kieselsport_hrv_stand(&rmssd, &anzahl);
-  cl_assert_equal_i(rmssd, 40);
-  kieselsport_hrv_messen(false);
-  cl_assert_equal_i(s_sensor_takt, 0);
-  cl_assert(!s_sensor_hrv);
-}

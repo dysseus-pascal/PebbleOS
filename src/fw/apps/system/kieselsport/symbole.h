@@ -15,6 +15,3 @@
 //
 // `mitte` ist der Mittelpunkt, `groesse` die Kantenlaenge in Punkten.
 void symbol_sport(GContext *ctx, Sportart art, GPoint mitte, int16_t groesse, GColor farbe);
-
-// Ein Herz - fuer den Menuepunkt "HRV", in derselben Groesse wie die Arten.
-void symbol_herz(GContext *ctx, GPoint mitte, int16_t groesse, GColor farbe);

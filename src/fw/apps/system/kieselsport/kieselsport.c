@@ -4,9 +4,6 @@
 #include "pebble_compat.h"
 #include "art_text.h"
 #include "lauf_window.h"
-#include "spo2_window.h"
-#include "hrv_window.h"
-#include "messen_window.h"
 #include "sende_window.h"
 #include "symbole.h"
 #include "telefon.h"
@@ -35,11 +32,8 @@
 static Window *s_menue;
 static MenuLayer *s_liste;
 
-// Die Arten, und darunter "Messen": HRV und SpO2.
-#define KS_ZEILE_HRV ArtAnzahl
-
 static uint16_t prv_zeilen(MenuLayer *liste, uint16_t abschnitt, void *ctx) {
-  return ArtAnzahl + 1;
+  return ArtAnzahl;
 }
 
 static int16_t prv_zeilenhoehe(MenuLayer *liste, MenuIndex *index, void *ctx) {
@@ -55,12 +49,11 @@ static void prv_zeichne_zeile(GContext *ctx, const Layer *zelle,
   // stehen im Menue nicht beieinander - die Zahl einer Art darf sich nie
   // verschieben, also kam MTB hinten dazu.
   const Sportart art = (Sportart)index->row;
-  const bool hrv = index->row == KS_ZEILE_HRV;
   const GRect b = layer_get_bounds(zelle);
   const bool hell = menu_cell_layer_is_highlighted(zelle);
   // DIE GEWAEHLTE ZEILE TRAEGT DIE FARBE IHRER ART - dieselbe wie der Balken
   // im Training, also sieht man schon hier, wohin Select fuehrt.
-  const GColor grund = PBL_IF_COLOR_ELSE(hrv ? KS_FARBE_LEISTE : thema_sportfarbe(art), KS_FARBE_LEISTE);
+  const GColor grund = PBL_IF_COLOR_ELSE(thema_sportfarbe(art), KS_FARBE_LEISTE);
   if (hell) {
     graphics_context_set_fill_color(ctx, grund);
     graphics_fill_rect(ctx, b, 0, GCornerNone);
@@ -68,16 +61,15 @@ static void prv_zeichne_zeile(GContext *ctx, const Layer *zelle,
   const GColor farbe = hell ? gcolor_legible_over(grund) : KS_FARBE_TEXT;
   const int16_t g = KS_BREIT ? 32 : 26;
   const int16_t links = PBL_IF_ROUND_ELSE(30, 6);
-  if (hrv) symbol_herz(ctx, GPoint(links + g / 2, b.size.h / 2), g, farbe);
-  else symbol_sport(ctx, art, GPoint(links + g / 2, b.size.h / 2), g, farbe);
+  symbol_sport(ctx, art, GPoint(links + g / 2, b.size.h / 2), g, farbe);
 
   const int16_t tx = links + g + 8;
-  const char *gruppe = hrv ? S(STR_MESSEN_UNTER) : art_gruppe(art);
+  const char *gruppe = art_gruppe(art);
   graphics_context_set_text_color(ctx, farbe);
   const GFont name = fonts_get_system_font(KS_BREIT ? FONT_KEY_GOTHIC_24_BOLD : FONT_KEY_GOTHIC_18_BOLD);
   const int16_t nh = KS_BREIT ? 28 : 22;
   const int16_t ny = gruppe ? b.size.h / 2 - nh + 4 : (b.size.h - nh) / 2 - 3;
-  graphics_draw_text(ctx, hrv ? S(STR_MESSEN) : art_name(art), name, GRect(tx, ny, b.size.w - tx - 2, nh),
+  graphics_draw_text(ctx, art_name(art), name, GRect(tx, ny, b.size.w - tx - 2, nh),
                      GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
   if (gruppe) {
     graphics_draw_text(ctx, gruppe, fonts_get_system_font(FONT_KEY_GOTHIC_14),
@@ -87,8 +79,7 @@ static void prv_zeichne_zeile(GContext *ctx, const Layer *zelle,
 }
 
 static void prv_gewaehlt(MenuLayer *liste, MenuIndex *index, void *daten) {
-  if (index->row == KS_ZEILE_HRV) messen_window_zeige();
-  else lauf_window_zeige((Sportart)index->row);
+  lauf_window_zeige((Sportart)index->row);
 }
 
 static void prv_laden(Window *fenster) {
@@ -123,9 +114,6 @@ static void prv_init(void) {
   telefon_zuruecksetzen();
   lauf_window_zuruecksetzen();
   sende_window_zuruecksetzen();
-  hrv_window_zuruecksetzen();
-  spo2_window_zuruecksetzen();
-  messen_window_zuruecksetzen();
 
   // Die Sprache der Uhr einmal lesen, bevor irgendein Text gezeichnet wird.
   // Auch der Glance beim Beenden nimmt sie von hier.

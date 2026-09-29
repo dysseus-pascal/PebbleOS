@@ -5,16 +5,16 @@
 
 #include "daten.h"
 
-// Die vier Karten der Health-App: Heute, Schlaf, Herz & SpO2, Woche.
+// Die drei Karten der Health-App: Heute, Schlaf, Herz & SpO2.
 typedef enum {
   KarteHeute = 0,
   KarteSchlaf,
   KarteHerz,
-  KarteWoche,
   KartenAnzahl,
 } Karte;
 
 // Die Sprache der Uhr einmal lesen - Deutsch oder, sonst, Englisch.
 void karten_sprache(void);
 
-void karten_zeichnen(GContext *ctx, GRect b, Karte karte, const HealthDaten *d);
+// herz: 0 = keines (der Puls ist nicht live), 1 = klein, 2 = gross im Schlag.
+void karten_zeichnen(GContext *ctx, GRect b, Karte karte, const HealthDaten *d, int herz);

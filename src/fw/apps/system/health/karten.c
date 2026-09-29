@@ -10,16 +10,15 @@
 // --- Texte: Deutsch, sonst Englisch ---
 
 typedef enum {
-  T_HEUTE, T_SCHLAF, T_HERZ, T_WOCHE, T_SCHRITTE, T_KM, T_KCAL, T_AKTIV_MIN,
+  T_HEUTE, T_SCHLAF, T_HERZ, T_SCHRITTE, T_KM, T_KCAL, T_AKTIV_MIN,
   T_KEINE_NACHT, T_LAEUFT, T_WACH, T_REM, T_LEICHT, T_TIEF, T_BPM, T_JETZT, T_VOR_MIN,
-  T_RUHE, T_HRV, T_SPO2, T_NACHT_TIEF, T_24H, T_SCHNITT, T_TAGE, T_ANZAHL,
+  T_RUHE, T_HRV, T_SPO2, T_NACHT_TIEF, T_24H, T_ANZAHL,
 } Text;
 
 static const char *const s_texte[T_ANZAHL][2] = {
   [T_HEUTE] = { "Today", "Heute" },
   [T_SCHLAF] = { "Sleep", "Schlaf" },
   [T_HERZ] = { "Heart & SpO2", "Herz & SpO2" },
-  [T_WOCHE] = { "Week", "Woche" },
   [T_SCHRITTE] = { "steps", "Schritte" },
   [T_KM] = { "km", "km" },
   [T_KCAL] = { "kcal", "kcal" },
@@ -38,8 +37,6 @@ static const char *const s_texte[T_ANZAHL][2] = {
   [T_SPO2] = { "SpO2 %", "SpO2 %" },
   [T_NACHT_TIEF] = { "SpO2 night %d %%", "SpO2 Nacht %d %%" },
   [T_24H] = { "last 24 h", "letzte 24 h" },
-  [T_SCHNITT] = { "avg", "Schnitt" },
-  [T_TAGE] = { "SuMoTuWeThFrSa", "SoMoDiMiDoFrSa" },
 };
 
 static int s_de;
@@ -59,8 +56,7 @@ static GColor prv_kartenfarbe(Karte k) {
   switch (k) {
     case KarteHeute: return GColorOrange;
     case KarteSchlaf: return GColorIndigo;
-    case KarteHerz: return GColorFolly;
-    default: return GColorTiffanyBlue;
+    default: return GColorFolly;
   }
 }
 
@@ -92,7 +88,7 @@ static void prv_balken(GContext *ctx, GRect b, Karte k) {
   const GColor grund = prv_kartenfarbe(k);
   graphics_context_set_fill_color(ctx, grund);
   graphics_fill_rect(ctx, GRect(0, 0, b.size.w, BALKEN_H), 0, GCornerNone);
-  const Text titel[] = { T_HEUTE, T_SCHLAF, T_HERZ, T_WOCHE };
+  const Text titel[] = { T_HEUTE, T_SCHLAF, T_HERZ };
   prv_text(ctx, T(titel[k]), FONT_KEY_GOTHIC_24_BOLD, GRect(0, 0, b.size.w, BALKEN_H),
            GTextAlignmentCenter, gcolor_legible_over(grund));
 }
@@ -240,7 +236,19 @@ static void prv_schlaf(GContext *ctx, GRect b, const HealthDaten *d) {
 
 // --- Herz ---
 
-static void prv_herz(GContext *ctx, GRect b, const HealthDaten *d) {
+// Ein Herz aus zwei Kreisen und einem Dreieck, s ist die halbe Breite.
+static void prv_herzform(GContext *ctx, GPoint m, int16_t s) {
+  graphics_context_set_fill_color(ctx, GColorFolly);
+  graphics_fill_circle(ctx, GPoint(m.x - s / 2, m.y - s / 4), s / 2 + 1);
+  graphics_fill_circle(ctx, GPoint(m.x + s / 2, m.y - s / 4), s / 2 + 1);
+  GPoint ecken[3] = {
+    GPoint(m.x - s, m.y), GPoint(m.x + s, m.y), GPoint(m.x, m.y + s),
+  };
+  GPath dreieck = { .num_points = 3, .points = ecken };
+  gpath_draw_filled(ctx, &dreieck);
+}
+
+static void prv_herz(GContext *ctx, GRect b, const HealthDaten *d, int herz) {
   char zahl[8], unter[32];
   if (d->puls) {
     snprintf(zahl, sizeof(zahl), "%d", d->puls);
@@ -257,6 +265,9 @@ static void prv_herz(GContext *ctx, GRect b, const HealthDaten *d) {
     snprintf(unter, sizeof(unter), "%s", T(T_BPM));
   }
   prv_gross(ctx, b, BALKEN_H + 8, zahl, unter);
+  if (herz) {
+    prv_herzform(ctx, GPoint(RAND + 34, BALKEN_H + 26), herz == 2 ? 12 : 9);
+  }
 
   char ruhe[8] = "--", hrv[8] = "--", spo2[8] = "--";
   if (d->nacht_da && d->nacht.ruhepuls) snprintf(ruhe, sizeof(ruhe), "%d", d->nacht.ruhepuls);
@@ -315,72 +326,14 @@ static void prv_herz(GContext *ctx, GRect b, const HealthDaten *d) {
            GTextAlignmentCenter, GColorDarkGray);
 }
 
-// --- Woche ---
-
-static void prv_saeulen(GContext *ctx, GRect r, const int32_t werte[DATEN_TAGE], GColor farbe,
-                        int wochentag_heute) {
-  int32_t hoechst = 1;
-  for (int i = 0; i < DATEN_TAGE; i++) {
-    if (werte[i] > hoechst) hoechst = werte[i];
-  }
-  const int16_t breite = r.size.w / DATEN_TAGE;
-  const int16_t hoehe = r.size.h - 16;
-  for (int i = 0; i < DATEN_TAGE; i++) {
-    // Links der aelteste Tag, rechts heute.
-    const int tag = DATEN_TAGE - 1 - i;
-    const int16_t x = r.origin.x + i * breite;
-    const int16_t h = (int16_t)(werte[tag] * hoehe / hoechst);
-    graphics_context_set_fill_color(ctx, tag == 0 ? farbe : GColorDarkGray);
-    graphics_fill_rect(ctx, GRect(x + 2, r.origin.y + hoehe - h, breite - 4, h), 0, GCornerNone);
-    const int wtag = (wochentag_heute - tag + 7) % 7;
-    const char kurz[3] = { T(T_TAGE)[2 * wtag], T(T_TAGE)[2 * wtag + 1], 0 };
-    prv_text(ctx, kurz, FONT_KEY_GOTHIC_14, GRect(x, r.origin.y + hoehe - 2, breite, 16),
-             GTextAlignmentCenter, GColorDarkGray);
-  }
-}
-
-// Der Schnitt ueber die Tage mit Werten - ein Tag ohne getragene Uhr zoege
-// ihn sonst nach unten. Heute zaehlt nicht mit: der Tag ist nicht zu Ende.
-static int32_t prv_schnitt(const int32_t werte[DATEN_TAGE]) {
-  int32_t summe = 0, n = 0;
-  for (int i = 1; i < DATEN_TAGE; i++) {
-    if (werte[i] > 0) {
-      summe += werte[i];
-      n++;
-    }
-  }
-  return n ? summe / n : 0;
-}
-
-static void prv_woche(GContext *ctx, GRect b, const HealthDaten *d) {
-  const int16_t halb = (b.size.h - BALKEN_H - 14) / 2;
-  char titel[40];
-  snprintf(titel, sizeof(titel), "%s  %s %d", T(T_SCHRITTE), T(T_SCHNITT),
-           (int)prv_schnitt(d->woche_schritte));
-  prv_text(ctx, titel, FONT_KEY_GOTHIC_14_BOLD, GRect(RAND, BALKEN_H + 2, b.size.w - 2 * RAND, 18),
-           GTextAlignmentLeft, GColorBlack);
-  prv_saeulen(ctx, GRect(RAND, BALKEN_H + 20, b.size.w - 2 * RAND, halb - 22), d->woche_schritte,
-              GColorOrange, d->wochentag_heute);
-
-  char dauer_text[16];
-  prv_dauer(dauer_text, sizeof(dauer_text), prv_schnitt(d->woche_schlaf_min));
-  snprintf(titel, sizeof(titel), "%s  %s %s", T(T_SCHLAF), T(T_SCHNITT), dauer_text);
-  const int16_t y = BALKEN_H + halb;
-  prv_text(ctx, titel, FONT_KEY_GOTHIC_14_BOLD, GRect(RAND, y + 2, b.size.w - 2 * RAND, 18),
-           GTextAlignmentLeft, GColorBlack);
-  prv_saeulen(ctx, GRect(RAND, y + 20, b.size.w - 2 * RAND, halb - 22), d->woche_schlaf_min,
-              GColorIndigo, d->wochentag_heute);
-}
-
-void karten_zeichnen(GContext *ctx, GRect b, Karte karte, const HealthDaten *d) {
+void karten_zeichnen(GContext *ctx, GRect b, Karte karte, const HealthDaten *d, int herz) {
   graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_rect(ctx, b, 0, GCornerNone);
   prv_balken(ctx, b, karte);
   switch (karte) {
     case KarteHeute: prv_heute(ctx, b, d); break;
     case KarteSchlaf: prv_schlaf(ctx, b, d); break;
-    case KarteHerz: prv_herz(ctx, b, d); break;
-    default: prv_woche(ctx, b, d); break;
+    default: prv_herz(ctx, b, d, herz); break;
   }
   prv_striche(ctx, b, karte);
 }

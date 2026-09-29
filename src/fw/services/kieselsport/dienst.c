@@ -47,9 +47,6 @@ static RegularTimerInfo s_takt;
 static KsEnde s_ende;
 static uint8_t s_ende_nr;
 
-// Eine einzelne HRV-Messung ohne Training.
-static bool s_hrv_messung;
-
 // Die Bestellung der App, bis KernelBG sie abholt.
 static Sportart s_bestellt_art;
 static uint32_t s_bestellt_beginn;
@@ -227,8 +224,6 @@ static void prv_starte(void *daten) {
     ks_entsperren();
     return;
   }
-  // Das Training nimmt den Sensor; eine HRV-Messung daneben endet.
-  s_hrv_messung = false;
   // Waehrend des Trainings bleibt die Datei offen: an seinem Ende wird
   // viel geschrieben.
   ks_persist_offen_halten(true);
@@ -305,30 +300,6 @@ static void prv_verwerfen(void *daten) {
   ks_entsperren();
 }
 
-static void prv_hrv_an(void *daten) {
-  ks_sperren();
-  if (training_zustand() == LaufAus && !s_hrv_messung) {
-    s_hrv_messung = true;
-    puls_beobachten();
-    puls_hrv_start();
-    puls_dicht_messen();
-  }
-  ks_entsperren();
-}
-
-static void prv_hrv_aus(void *daten) {
-  ks_sperren();
-  // Zurueck mitten in der Messung schaltet den Sensor ab - das ist die
-  // Zeile, die man sonst vergisst.
-  if (s_hrv_messung) {
-    s_hrv_messung = false;
-    puls_hrv_stop();
-    puls_normal_messen();
-    puls_ignorieren();
-  }
-  ks_entsperren();
-}
-
 // --- Oeffentlich ---
 
 void kieselsport_init(void) {
@@ -363,17 +334,6 @@ void kieselsport_speichern(void) {
 
 void kieselsport_verwerfen(void) {
   system_task_add_callback(prv_verwerfen, NULL);
-}
-
-void kieselsport_hrv_messen(bool an) {
-  system_task_add_callback(an ? prv_hrv_an : prv_hrv_aus, NULL);
-}
-
-void kieselsport_hrv_stand(uint16_t *rmssd, uint16_t *anzahl) {
-  ks_sperren();
-  *rmssd = puls_hrv_rmssd();
-  *anzahl = puls_hrv_anzahl();
-  ks_entsperren();
 }
 
 void kieselsport_stand(KsStand *aus) {

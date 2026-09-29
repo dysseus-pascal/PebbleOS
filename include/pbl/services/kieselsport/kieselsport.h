@@ -125,13 +125,6 @@ void kieselsport_verwerfen(void);
 void kieselsport_stand(KsStand *aus);
 bool kieselsport_laeuft(void);   //< laeuft oder pausiert
 
-// --- Eine einzelne HRV-Messung (Menuepunkt "Messen")
-//
-// Eine Minute still sitzen, der Sensor misst die Abstaende der Schlaege. Nur
-// ohne Training: das hat den Sensor dann fuer sich.
-void kieselsport_hrv_messen(bool an);
-void kieselsport_hrv_stand(uint16_t *rmssd, uint16_t *anzahl);
-
 // --- Arten und Zonen
 
 const ArtInfo *kieselsport_art_info(Sportart art);

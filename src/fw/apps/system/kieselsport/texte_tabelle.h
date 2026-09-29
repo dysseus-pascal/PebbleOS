@@ -93,25 +93,6 @@ STR(STR_TEL_AUFGEGEBEN, 0,  "Phone unreachable,\nsent on next launch", "Telefon 
 STR(STR_TEL_WARTET,     0,  "sending to phone …", "geht ans Telefon …", "envoi au téléphone …", "invio al telefono …", "enviando al teléfono …")
 STR(STR_TEL_ANGEKOMMEN, 0,  "received by phone", "beim Telefon angekommen", "reçu par le téléphone", "ricevuto dal telefono", "recibido en el teléfono")
 
-// ---- HRV auf Knopfdruck (Menuepunkt "HRV", Puffer zahl[16]) --------------
-STR(STR_HRV_UNTER,      0,  "1 min measurement", "1 Minute messen", "Mesure 1 min", "Misura 1 min", "Medir 1 min")
-STR(STR_HRV_BEREIT,     0,  "Sit still.\nSelect starts.", "Ruhig sitzen.\nSelect startet.", "Restez calme.\nSelect démarre.", "Stai fermo.\nSelect avvia.", "Quieto.\nSelect inicia.")
-STR(STR_HRV_SCHLAEGE,   16, "%u beats",     "%u Schläge",     "%u battements", "%u battiti",   "%u latidos")
-STR(STR_HRV_STILL,      0,  "Keep still",   "Nicht bewegen",  "Ne bougez pas", "Non muoverti", "No te muevas")
-STR(STR_HRV_ZUWENIG,    0,  "Too few beats. Select again.", "Zu wenig Schläge. Select nochmal.", "Trop peu de battements. Select encore.", "Troppo pochi battiti. Select ancora.", "Pocos latidos. Select otra vez.")
-
-// ---- Messen: HRV und SpO2 ----------------------------------------------------
-STR(STR_MESSEN,         0,  "Measure",      "Messen",         "Mesurer",      "Misura",        "Medir")
-STR(STR_MESSEN_UNTER,   0,  "HRV · SpO2",   "HRV · SpO2",     "HRV · SpO2",   "HRV · SpO2",    "HRV · SpO2")
-STR(STR_SPO2_UNTER,     0,  "Last value from phone", "Letzter Wert vom Telefon", "Dernière valeur du tél.", "Ultimo valore dal tel.", "Último valor del tel.")
-STR(STR_SPO2_FRAGT,     0,  "Asking phone …", "Frage das Telefon …", "Demande au tél. …", "Chiedo al tel. …", "Preguntando al tel. …")
-STR(STR_SPO2_KEIN_TEL,  0,  "No phone. Select tries again.", "Kein Telefon. Select fragt nochmal.", "Pas de tél. Select réessaie.", "Nessun tel. Select riprova.", "Sin teléfono. Select reintenta.")
-STR(STR_SPO2_KEINER,    0,  "No SpO2 in Health Connect yet.", "Noch kein SpO2 in Health Connect.", "Pas encore de SpO2 dans Health Connect.", "Ancora nessuna SpO2 in Health Connect.", "Aún no hay SpO2 en Health Connect.")
-STR(STR_SPO2_VOR_MIN,   32, "%u min ago",   "vor %u min",     "il y a %u min", "%u min fa",    "hace %u min")
-STR(STR_SPO2_VOR_H,     32, "%u h ago",     "vor %u h",       "il y a %u h",  "%u h fa",       "hace %u h")
-STR(STR_SPO2_NACHT,     0,  "LAST NIGHT",   "LETZTE NACHT",   "NUIT DERNIÈRE", "NOTTE SCORSA", "ANOCHE")
-STR(STR_SPO2_NACHT_WERTE, 40, "avg %u %% · low %u %%", "Ø %u %% · tief %u %%", "moy. %u %% · min %u %%", "media %u %% · min %u %%", "media %u %% · mín %u %%")
-
 // ---- Die Nacht am Morgen --------------------------------------------------
 STR(STR_NACHT_SENDEN,   0,  "Sending sleep to phone …", "Schlaf geht ans Telefon …", "Envoi du sommeil …", "Invio del sonno …", "Enviando el sueño …")
 STR(STR_NACHT_FERTIG,   0,  "Sleep sent",   "Schlaf übertragen", "Sommeil envoyé", "Sonno inviato", "Sueño enviado")

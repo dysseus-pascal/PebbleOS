@@ -34,12 +34,6 @@
 #define MESSAGE_KEY_NACHT_AN 10023
 #define MESSAGE_KEY_NACHT_VON 10024
 #define MESSAGE_KEY_NACHT_BIS 10025
-#define MESSAGE_KEY_HRV_ZEIT 10031
-#define MESSAGE_KEY_SPO2_FRAGE 10032
-#define MESSAGE_KEY_SPO2_WERT 10033
-#define MESSAGE_KEY_SPO2_ZEIT 10034
-#define MESSAGE_KEY_SPO2_NACHT_MITTEL 10035
-#define MESSAGE_KEY_SPO2_NACHT_TIEF 10036
 
 // Was nur die App im Persist haelt: der Timeline-Pin, den die Konfigseite
 // und Kiesel-Helper stellen. Dieselben Nummern wie in services/kieselsport.

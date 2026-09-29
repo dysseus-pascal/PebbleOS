@@ -91,14 +91,16 @@ static void prv_spo2(HealthDaten *d, time_t jetzt) {
   app_free(werte);
 }
 
+// Der rohe Wert des Sensors mit seiner Zeit: nur so laesst sich sagen, ob er
+// gerade misst - ein gleichbleibender Puls aendert den Wert nicht.
 void daten_puls(HealthDaten *d) {
-  const HealthValue bpm = health_service_peek_current_value(HealthMetricHeartRateBPM);
-  const uint8_t neu = (bpm > 0 && bpm < 256) ? (uint8_t)bpm : 0;
-  if (neu && neu != d->puls) {
-    d->puls_zeit = time(NULL);
-  }
-  if (neu) {
-    d->puls = neu;
+  int32_t bpm = 0, zeit = 0;
+  activity_get_metric(ActivityMetricHeartRateRawBPM, 1, &bpm);
+  activity_get_metric(ActivityMetricHeartRateRawUpdatedTimeUTC, 1, &zeit);
+  d->puls_live = bpm > 0 && bpm < 256 && time(NULL) - zeit <= 5;
+  if (d->puls_live) {
+    d->puls = (uint8_t)bpm;
+    d->puls_zeit = zeit;
   }
 }
 
@@ -118,22 +120,11 @@ void daten_sammeln(HealthDaten *d) {
   const time_t jetzt = time(NULL);
   const time_t mitternacht = time_start_of_today();
   d->stunde_jetzt = (jetzt - mitternacht) / SECONDS_PER_HOUR;
-  d->wochentag_heute = localtime(&jetzt)->tm_wday;
 
   d->schritte = prv_metrik(ActivityMetricStepCount);
   d->meter = prv_metrik(ActivityMetricDistanceMeters);
   d->kcal = prv_metrik(ActivityMetricActiveKCalories);
   d->aktiv_min = prv_metrik(ActivityMetricActiveSeconds) / SECONDS_PER_MINUTE;
-
-  activity_get_metric(ActivityMetricStepCount, DATEN_TAGE, d->woche_schritte);
-  int32_t schlaf_s[DATEN_TAGE] = { 0 };
-  activity_get_metric(ActivityMetricSleepTotalSeconds, DATEN_TAGE, schlaf_s);
-  for (int i = 0; i < DATEN_TAGE; i++) {
-    d->woche_schlaf_min[i] = schlaf_s[i] > 0 ? schlaf_s[i] / SECONDS_PER_MINUTE : 0;
-    if (d->woche_schritte[i] < 0) {
-      d->woche_schritte[i] = 0;
-    }
-  }
 
   d->nacht_da = boulder_nacht_letzte(&d->nacht);
 

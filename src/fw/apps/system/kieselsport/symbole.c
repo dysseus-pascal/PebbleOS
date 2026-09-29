@@ -137,21 +137,3 @@ void symbol_sport(GContext *ctx, Sportart art, GPoint m, int16_t g, GColor farbe
   }
   graphics_context_set_stroke_width(ctx, 1);
 }
-
-void symbol_herz(GContext *ctx, GPoint m, int16_t g, GColor farbe) {
-  // Zwei Kreise oben, darunter ein Dreieck aus waagrechten Strichen - ohne
-  // GPath, das haette je Groesse eigene Punkte gebraucht.
-  const int16_t r = g * 7 / 28;
-  const int16_t oben = m.y - g / 7;
-  graphics_context_set_fill_color(ctx, farbe);
-  graphics_context_set_stroke_color(ctx, farbe);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_fill_circle(ctx, GPoint(m.x - r + 1, oben), (uint16_t)r);
-  graphics_fill_circle(ctx, GPoint(m.x + r - 1, oben), (uint16_t)r);
-  const int16_t spitze = m.y + g * 11 / 28;
-  const int16_t halb = 2 * r - 1;
-  for (int16_t y = oben; y <= spitze; y++) {
-    const int16_t b = (int16_t)(halb * (spitze - y) / (spitze - oben));
-    graphics_draw_line(ctx, GPoint(m.x - b, y), GPoint(m.x + b, y));
-  }
-}

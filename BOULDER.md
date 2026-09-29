@@ -101,12 +101,14 @@ gebaut wird lokal.
 ## Health-App (F4)
 
 `src/fw/apps/system/health/` ersetzt Pebbles Health-App unter derselben
-Kennung (Zifferblatt-Taste und Übergang bleiben). Vier Karten, Oben/Unten
+Kennung (Zifferblatt-Taste und Übergang bleiben). Drei Karten, Oben/Unten
 blättert: **Heute** (Schritte, km, kcal, aktive Minuten, Schritte je Stunde),
 **Schlaf** (letzte Nacht aus `boulder_nacht_letzte`: Dauer, Zeiten,
-Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live, Ruhepuls und HRV
-der Nacht, letzter SpO2, Puls der letzten 24 h, tiefster SpO2 der Nacht),
-**Woche** (Schritte und Schlaf der letzten sieben Tage mit Schnitt).
+Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live mit schlagendem
+Herz, Ruhepuls und HRV der Nacht, letzter SpO2, Puls der letzten 24 h,
+tiefster SpO2 der Nacht). Nur auf der Herz-Karte misst der Sensor
+sekündlich. Die Minutenhistorie für die Kurven liest ein Timer stückweise,
+damit die App sofort erscheint.
 
 Dafür merkt sich die Firmware die letzte Nacht (auch über einen Neustart, Datei
 `boulder_nacht`) und die SpO2-Werte im Ring (`boulder/spo2.c`, 96 Werte).

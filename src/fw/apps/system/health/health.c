@@ -13,11 +13,11 @@
 //
 // DIESELBE KENNUNG WIE PEBBLES APP: so fuehrt die untere Taste am Zifferblatt
 // weiter hierher, mit derselben Animation, und die Einstellungen der Uhr
-// finden sie. Inhalt und Aussehen sind neu: vier Karten, zwischen denen Oben
-// und Unten blaettern - Heute, Schlaf, Herz & SpO2, Woche.
+// finden sie. Inhalt und Aussehen sind neu: drei Karten, zwischen denen Oben
+// und Unten blaettern - Heute, Schlaf, Herz & SpO2.
 //
-// DER PULS IST LIVE, solange die App offen ist: sie bittet den Sensor um
-// einen Wert je Sekunde und gibt ihn beim Schliessen wieder frei.
+// DER PULS IST LIVE auf der Herz-Karte: dort bittet die App den Sensor um
+// einen Wert je Sekunde, und ein Herz schlaegt im Takt, solange er misst.
 
 typedef struct {
   Window *fenster;
@@ -26,11 +26,14 @@ typedef struct {
   HealthDaten daten;
   MinutenLesen lesen;
   AppTimer *minuten_timer;
+  AppTimer *herz_timer;
+  bool herz_gross;
 } HealthApp;
 
 static void prv_zeichne(Layer *layer, GContext *ctx) {
   HealthApp *app = app_state_get_user_data();
-  karten_zeichnen(ctx, layer_get_bounds(layer), app->karte, &app->daten);
+  const int herz = app->herz_timer ? (app->herz_gross ? 2 : 1) : 0;
+  karten_zeichnen(ctx, layer_get_bounds(layer), app->karte, &app->daten, herz);
 }
 
 static void prv_minuten_schritt(void *data) {
@@ -52,6 +55,36 @@ static void prv_minuten_lesen(HealthApp *app) {
   app->minuten_timer = app_timer_register(30, prv_minuten_schritt, NULL);
 }
 
+// DAS HERZ SCHLAEGT IM TAKT DES PULSES, solange der Sensor live misst: kurz
+// gross, dann klein bis zum naechsten Schlag.
+#define SCHLAG_MS 150
+
+static bool prv_herz_schlaegt(HealthApp *app) {
+  return app->karte == KarteHerz && app->daten.puls_live;
+}
+
+static void prv_schlag(void *data) {
+  HealthApp *app = app_state_get_user_data();
+  app->herz_timer = NULL;
+  if (!prv_herz_schlaegt(app)) {
+    app->herz_gross = false;
+    layer_mark_dirty(app->flaeche);
+    return;
+  }
+  app->herz_gross = !app->herz_gross;
+  const uint32_t pause = 60000 / app->daten.puls;
+  app->herz_timer = app_timer_register(app->herz_gross ? SCHLAG_MS : pause - SCHLAG_MS,
+                                       prv_schlag, NULL);
+  layer_mark_dirty(app->flaeche);
+}
+
+static void prv_herz_pruefen(HealthApp *app) {
+  if (prv_herz_schlaegt(app) && !app->herz_timer) {
+    app->herz_gross = false;
+    prv_schlag(NULL);
+  }
+}
+
 static void prv_tick(struct tm *zeit, TimeUnits einheiten) {
   HealthApp *app = app_state_get_user_data();
   // Jede Minute die Tageswerte, alle fuenf Minuten die Kurven, dazwischen nur der Puls.
@@ -62,6 +95,7 @@ static void prv_tick(struct tm *zeit, TimeUnits einheiten) {
     }
   }
   daten_puls(&app->daten);
+  prv_herz_pruefen(app);
   layer_mark_dirty(app->flaeche);
 }
 
@@ -71,7 +105,13 @@ static void prv_blaettern(int richtung) {
   if (neu < 0 || neu >= KartenAnzahl) {
     return;
   }
+  // DER SENSOR MISST SEKUENDLICH NUR AUF DER HERZ-KARTE - sonst zeigt nichts
+  // den Puls, und der Akku zahlte umsonst.
+  if (app->karte == KarteHerz || neu == KarteHerz) {
+    health_service_set_heart_rate_sample_period(neu == KarteHerz ? 1 : 0);
+  }
   app->karte = (Karte)neu;
+  prv_herz_pruefen(app);
   layer_mark_dirty(app->flaeche);
 }
 
@@ -113,7 +153,6 @@ static void prv_main(void) {
 
   prv_minuten_lesen(app);
 
-  health_service_set_heart_rate_sample_period(1 /* interval_s */);
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick);
 
   app_event_loop();
@@ -121,6 +160,9 @@ static void prv_main(void) {
   tick_timer_service_unsubscribe();
   if (app->minuten_timer) {
     app_timer_cancel(app->minuten_timer);
+  }
+  if (app->herz_timer) {
+    app_timer_cancel(app->herz_timer);
   }
   health_service_set_heart_rate_sample_period(0 /* zurueck zur Vorgabe */);
   window_destroy(app->fenster);
