@@ -26,12 +26,16 @@
 // So oft wird gerechnet. Jede Minute waere Strom fuer nichts: die Minutendatei
 // haelt ohnehin die letzten rund zwanzig Minuten zurueck, bis sie sicher sind.
 #define TAKT_MIN 15
-// So lange wach nach dem letzten Schlaf, und die Nacht ist vorbei. Kurz, damit
-// die Nacht bald nach dem Aufstehen da ist; ein laengeres Wachliegen mitten in
-// der Nacht zerlegt sie trotzdem nicht - was danach kommt, wird eine eigene
-// Nacht (siehe s_erledigt_bis), und ein Schlaf unter einer Stunde davor ist
-// keine.
+// So lange wach nach dem letzten Schlaf, und die Nacht gilt als fertig: sie
+// wird gemeldet und geschickt, damit sie bald nach dem Aufstehen da ist. Die
+// Rechnung laeuft aber weiter - schlaeft man noch einmal ein, waechst dieselbe
+// Nacht, und die Uhr schickt sie mit demselben Beginn noch einmal. Frueher
+// wurde aus dem Schlaf danach eine zweite Nacht; das Telefon zeigte dann nur
+// den Rest.
 #define WACH_FERTIG_MIN 15
+// So lange wach, und die Nacht ist endgueltig: Schlaf danach ist eine eigene
+// Nacht (siehe s_erledigt_bis) - der Morgenschlaf nach zwei Stunden auf.
+#define WACH_ENDGUELTIG_MIN 120
 // Nach dem Fenster noch so lange, um eine offene Nacht abzuschliessen.
 #define NACHLAUF_MIN 60
 // Mehr Schlafbloecke und Tiefschlaf-Abschnitte traegt keine Nacht ein; die Uhr
@@ -54,10 +58,13 @@ typedef struct {
 // Die laufenden Sitzungen dieser Nacht - sie werden bei jeder Rechnung ersetzt.
 static ActivitySession s_gemeldet[SITZUNGEN_MAX];
 static int s_gemeldet_anzahl;
-// Bis hierher ist gerechnet: das Aufwachen der zuletzt fertigen Nacht, oder das
-// Ende des Fensters. Die naechste Rechnung beginnt dort - schlaeft man nach
-// einer fertigen Nacht noch einmal ein, wird das eine eigene.
+// Bis hierher ist gerechnet: das Aufwachen der zuletzt endgueltigen Nacht, oder
+// das Ende des Fensters. Die naechste Rechnung beginnt dort.
 static time_t s_erledigt_bis;
+// Was zuletzt ans Telefon ging - dieselbe Nacht geht nur, wenn sie sich aendert.
+static time_t s_gesendet_beginn;
+static uint16_t s_gesendet_aufwachen;
+static uint16_t s_gesendet_schlaf;
 static DataLoggingSession *s_dls;
 // DAS AKKU-PROTOKOLL: der Stand bei jedem Rechentakt im Fenster. Am Ende zaehlt
 // der beim Einschlafen - nicht der, als die Rechnung den Schlaf zum ersten Mal
@@ -427,18 +434,25 @@ void boulder_nacht_minute(time_t utc_sec) {
   // Hing die Uhr, seit Schlaf da ist, am Kabel? Dann sagt der Verbrauch nichts.
   s_geladen = s_geladen || (r->ergebnis.gefunden && akku.is_plugged);
 
-  // Fertig: nach einer Stunde wach - an vorhandenen Minuten gemessen, nicht an
-  // der Uhrzeit - oder am Ende des Fensters.
+  // Fertig: nach einer Viertelstunde wach - an vorhandenen Minuten gemessen,
+  // nicht an der Uhrzeit - oder am Ende des Fensters. Endgueltig erst nach
+  // zwei Stunden wach; bis dahin kann die Nacht noch wachsen.
   const SchlafErgebnis *e = &r->ergebnis;
-  const bool fertig = (utc_sec >= ende) ||
-                      (e->gefunden && anzahl - e->aufwachen >= WACH_FERTIG_MIN);
+  const int wach = e->gefunden ? anzahl - e->aufwachen : 0;
+  const bool fertig = (utc_sec >= ende) || wach >= WACH_FERTIG_MIN;
+  const bool endgueltig = (utc_sec >= ende) || wach >= WACH_ENDGUELTIG_MIN;
   prv_melde(e, ab, fertig);
   prv_bild_merken(r, ab, fertig);
-  if (fertig) {
-    if (e->gefunden) {
-      PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);
-      prv_schicke(r, ab);
-    }
+  if (fertig && e->gefunden &&
+      (ab != s_gesendet_beginn || e->aufwachen != s_gesendet_aufwachen ||
+       e->schlaf_minuten != s_gesendet_schlaf)) {
+    PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);
+    prv_schicke(r, ab);
+    s_gesendet_beginn = ab;
+    s_gesendet_aufwachen = e->aufwachen;
+    s_gesendet_schlaf = e->schlaf_minuten;
+  }
+  if (endgueltig) {
     s_erledigt_bis = (e->gefunden && utc_sec < ende)
         ? ab + e->aufwachen * SECONDS_PER_MINUTE : ende;
     s_gemeldet_anzahl = 0;

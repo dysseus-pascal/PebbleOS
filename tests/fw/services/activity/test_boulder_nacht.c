@@ -285,10 +285,12 @@ void test_boulder_nacht__ausserhalb_des_fensters_ruhe(void) {
   cl_assert_equal_i(s_saetze_anzahl, 0);
 }
 
-void test_boulder_nacht__langes_wachliegen_gibt_zwei_naechte(void) {
+void test_boulder_nacht__langes_wachliegen_bleibt_eine_nacht(void) {
   // 22:00 bis 01:00 Schlaf, 40 Minuten wach und unterwegs, dann Schlaf bis 06:30.
-  // Nach einer Viertelstunde wach ist die erste Nacht fertig; die zweite beginnt
-  // bei ihrem Aufwachen und geht nicht verloren.
+  // Nach einer Viertelstunde wach geht die Nacht vorlaeufig ans Telefon; kommt
+  // der zweite Schlaf dazu, geht dieselbe Nacht - gleicher Beginn - noch einmal,
+  // jetzt bis 06:30. Frueher wurden es zwei Naechte, und das Telefon zeigte nur
+  // den Rest.
   // Einen Tag spaeter: die Nachtrechnung merkt sich, was schon erledigt ist.
   s_beginn += SECONDS_PER_DAY;
   memset(s_minuten, 0xFF, sizeof(s_minuten));
@@ -304,15 +306,22 @@ void test_boulder_nacht__langes_wachliegen_gibt_zwei_naechte(void) {
        s_jetzt += SECONDS_PER_MINUTE) {
     boulder_nacht_minute(s_jetzt);
   }
-  cl_assert_equal_i(s_saetze_anzahl, 2);
+  cl_assert(s_saetze_anzahl >= 2);
   const NachtDlsRecord *erste = &s_saetze[0];
-  const NachtDlsRecord *zweite = &s_saetze[1];
+  const NachtDlsRecord *letzte = &s_saetze[s_saetze_anzahl - 1];
   cl_assert_equal_i(erste->beginn_utc, s_beginn);
   cl_assert_equal_i(erste->aufwachen, 300);
-  cl_assert_equal_i(zweite->beginn_utc, s_beginn + 300 * SECONDS_PER_MINUTE);
-  // Die zweite Nacht zaehlt ab ihrem eigenen Beginn: 06:30 ist Minute 330.
-  cl_assert_equal_i(zweite->aufwachen, 330);
-  cl_assert(erste->schlaf_minuten >= 170 && zweite->schlaf_minuten >= 270);
+  cl_assert(erste->schlaf_minuten >= 170);
+  // Dieselbe Nacht, gewachsen: gleicher Beginn, Aufwachen 06:30 = Minute 630,
+  // beide Schlafbloecke zusammen.
+  cl_assert_equal_i(letzte->beginn_utc, s_beginn);
+  cl_assert_equal_i(letzte->aufwachen, 630);
+  cl_assert(letzte->schlaf_minuten >= 440);
+  // Nichts laeuft mehr, und dieselbe Nacht geht nicht ein drittes Mal, ohne
+  // dass sich etwas aendert.
+  for (int k = 0; k < s_sitzungen_anzahl; k++) {
+    cl_assert(!s_sitzungen[k].ongoing);
+  }
 }
 
 void test_boulder_nacht__verdichten_laesst_die_langen_phasen_stehen(void) {
