@@ -24,6 +24,8 @@ typedef struct {
   Layer *flaeche;
   Karte karte;
   HealthDaten daten;
+  MinutenLesen lesen;
+  AppTimer *minuten_timer;
 } HealthApp;
 
 static void prv_zeichne(Layer *layer, GContext *ctx) {
@@ -31,11 +33,33 @@ static void prv_zeichne(Layer *layer, GContext *ctx) {
   karten_zeichnen(ctx, layer_get_bounds(layer), app->karte, &app->daten);
 }
 
+static void prv_minuten_schritt(void *data) {
+  HealthApp *app = app_state_get_user_data();
+  app->minuten_timer = NULL;
+  if (daten_minuten_schritt(&app->lesen, &app->daten)) {
+    layer_mark_dirty(app->flaeche);
+    return;
+  }
+  // Zwischen zwei Stuecken kommen Tasten und Zeichnen zum Zug.
+  app->minuten_timer = app_timer_register(10, prv_minuten_schritt, NULL);
+}
+
+static void prv_minuten_lesen(HealthApp *app) {
+  if (app->minuten_timer) {
+    return;
+  }
+  daten_minuten_beginnen(&app->lesen);
+  app->minuten_timer = app_timer_register(30, prv_minuten_schritt, NULL);
+}
+
 static void prv_tick(struct tm *zeit, TimeUnits einheiten) {
   HealthApp *app = app_state_get_user_data();
-  // Jede Minute alles neu, dazwischen nur der Puls.
+  // Jede Minute die Tageswerte, alle fuenf Minuten die Kurven, dazwischen nur der Puls.
   if (zeit->tm_sec == 0) {
     daten_sammeln(&app->daten);
+    if (zeit->tm_min % 5 == 0) {
+      prv_minuten_lesen(app);
+    }
   }
   daten_puls(&app->daten);
   layer_mark_dirty(app->flaeche);
@@ -87,12 +111,17 @@ static void prv_main(void) {
   });
   window_stack_push(app->fenster, true);
 
+  prv_minuten_lesen(app);
+
   health_service_set_heart_rate_sample_period(1 /* interval_s */);
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick);
 
   app_event_loop();
 
   tick_timer_service_unsubscribe();
+  if (app->minuten_timer) {
+    app_timer_cancel(app->minuten_timer);
+  }
   health_service_set_heart_rate_sample_period(0 /* zurueck zur Vorgabe */);
   window_destroy(app->fenster);
   app_free(app);

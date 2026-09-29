@@ -17,45 +17,56 @@ static int32_t prv_metrik(ActivityMetric m) {
   return wert > 0 ? wert : 0;
 }
 
-// Die letzten 24 Stunden in einem Lauf: Schritte je Stunde fuer heute, Puls
-// je halbe Stunde fuer die Kurve.
-static void prv_minuten(HealthDaten *d, time_t jetzt, time_t mitternacht) {
-  HealthMinuteData *puffer = app_malloc_check(STUECK * sizeof(HealthMinuteData));
-  const time_t kurve_beginn = jetzt - 24 * SECONDS_PER_HOUR;
-  time_t ab = kurve_beginn;
-  while (ab < jetzt) {
-    time_t von = ab;
-    time_t bis = jetzt;
+void daten_minuten_beginnen(MinutenLesen *m) {
+  memset(m, 0, sizeof(*m));
+  m->jetzt = time(NULL);
+  m->mitternacht = time_start_of_today();
+  m->kurve_beginn = m->jetzt - 24 * SECONDS_PER_HOUR;
+  m->ab = m->kurve_beginn;
+}
+
+// Ein Stueck der letzten 24 Stunden: Schritte je Stunde fuer heute, Puls je
+// halbe Stunde fuer die Kurve.
+bool daten_minuten_schritt(MinutenLesen *m, HealthDaten *d) {
+  if (m->ab < m->jetzt) {
+    HealthMinuteData *puffer = app_malloc_check(STUECK * sizeof(HealthMinuteData));
+    time_t von = m->ab;
+    time_t bis = m->jetzt;
     const uint32_t n = health_service_get_minute_history(puffer, STUECK, &von, &bis);
-    if (n == 0 || bis <= ab) {
-      break;
-    }
     for (uint32_t i = 0; i < n; i++) {
       const time_t t = von + (time_t)i * SECONDS_PER_MINUTE;
-      const HealthMinuteData *m = &puffer[i];
-      if (m->is_invalid) {
+      const HealthMinuteData *e = &puffer[i];
+      if (e->is_invalid) {
         continue;
       }
-      if (t >= mitternacht) {
-        const int stunde = (t - mitternacht) / SECONDS_PER_HOUR;
+      if (t >= m->mitternacht) {
+        const int stunde = (t - m->mitternacht) / SECONDS_PER_HOUR;
         if (stunde >= 0 && stunde < 24) {
-          d->schritte_stunde[stunde] += m->steps;
+          m->schritte_stunde[stunde] += e->steps;
         }
       }
-      const int spalte = (t - kurve_beginn) / (30 * SECONDS_PER_MINUTE);
-      const uint8_t bpm = m->heart_rate_bpm;
+      const int spalte = (t - m->kurve_beginn) / (30 * SECONDS_PER_MINUTE);
+      const uint8_t bpm = e->heart_rate_bpm;
       if (bpm > 0 && spalte >= 0 && spalte < DATEN_PULS_SPALTEN) {
-        if (d->puls_min[spalte] == 0 || bpm < d->puls_min[spalte]) {
-          d->puls_min[spalte] = bpm;
+        if (m->puls_min[spalte] == 0 || bpm < m->puls_min[spalte]) {
+          m->puls_min[spalte] = bpm;
         }
-        if (bpm > d->puls_max[spalte]) {
-          d->puls_max[spalte] = bpm;
+        if (bpm > m->puls_max[spalte]) {
+          m->puls_max[spalte] = bpm;
         }
       }
     }
-    ab = bis;
+    app_free(puffer);
+    // Nichts mehr da, oder die Historie kommt nicht weiter: fertig.
+    m->ab = (n == 0 || bis <= m->ab) ? m->jetzt : bis;
+    if (m->ab < m->jetzt) {
+      return false;
+    }
   }
-  app_free(puffer);
+  memcpy(d->schritte_stunde, m->schritte_stunde, sizeof(d->schritte_stunde));
+  memcpy(d->puls_min, m->puls_min, sizeof(d->puls_min));
+  memcpy(d->puls_max, m->puls_max, sizeof(d->puls_max));
+  return true;
 }
 
 static void prv_spo2(HealthDaten *d, time_t jetzt) {
@@ -92,7 +103,18 @@ void daten_puls(HealthDaten *d) {
 }
 
 void daten_sammeln(HealthDaten *d) {
+  // Die Kurven aus der Minutenhistorie ueberleben das Neusammeln; sie liest
+  // daten_minuten_schritt.
+  uint16_t schritte_stunde[24];
+  uint8_t puls_min[DATEN_PULS_SPALTEN];
+  uint8_t puls_max[DATEN_PULS_SPALTEN];
+  memcpy(schritte_stunde, d->schritte_stunde, sizeof(schritte_stunde));
+  memcpy(puls_min, d->puls_min, sizeof(puls_min));
+  memcpy(puls_max, d->puls_max, sizeof(puls_max));
   memset(d, 0, sizeof(*d));
+  memcpy(d->schritte_stunde, schritte_stunde, sizeof(schritte_stunde));
+  memcpy(d->puls_min, puls_min, sizeof(puls_min));
+  memcpy(d->puls_max, puls_max, sizeof(puls_max));
   const time_t jetzt = time(NULL);
   const time_t mitternacht = time_start_of_today();
   d->stunde_jetzt = (jetzt - mitternacht) / SECONDS_PER_HOUR;
@@ -120,6 +142,5 @@ void daten_sammeln(HealthDaten *d) {
   d->puls = (uint8_t)prv_metrik(ActivityMetricHeartRateFilteredBPM);
   d->puls_zeit = prv_metrik(ActivityMetricHeartRateFilteredUpdatedTimeUTC);
 
-  prv_minuten(d, jetzt, mitternacht);
   prv_spo2(d, jetzt);
 }

@@ -43,6 +43,25 @@ typedef struct {
   int wochentag_heute;       //< 0 = Sonntag, wie tm_wday
 } HealthDaten;
 
+// DIE MINUTENHISTORIE STUECKWEISE. Ein Tag sind 24 Aufrufe in den
+// Minutenspeicher im Flash - zusammen so lang, dass die App spuerbar spaet
+// erschien und jede Minute kurz stand. Jetzt zeichnet sie sofort, und ein
+// Timer liest ein Stueck nach dem anderen; die Kurven kommen, wenn alles da ist.
+typedef struct {
+  time_t kurve_beginn;
+  time_t mitternacht;
+  time_t jetzt;
+  time_t ab;
+  uint16_t schritte_stunde[24];
+  uint8_t puls_min[DATEN_PULS_SPALTEN];
+  uint8_t puls_max[DATEN_PULS_SPALTEN];
+} MinutenLesen;
+
+// Alles ausser der Minutenhistorie - schnell genug fuer den Start. Was die
+// Minutenhistorie schon geliefert hat, bleibt stehen.
 void daten_sammeln(HealthDaten *d);
+void daten_minuten_beginnen(MinutenLesen *m);
+// Ein Stueck lesen; true, wenn fertig - dann steht das Ergebnis in d.
+bool daten_minuten_schritt(MinutenLesen *m, HealthDaten *d);
 // Nur der Puls - fuer den Sekundentakt auf der Herz-Karte.
 void daten_puls(HealthDaten *d);
