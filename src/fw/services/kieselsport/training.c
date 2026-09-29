@@ -34,6 +34,13 @@ static void prv_zaehler_start(void) {
   }
 }
 
+// Ab jetzt weiterzaehlen, die Summe behalten - nach einer Pause.
+static void prv_zaehler_start_ab_jetzt(void) {
+  for (int z = 0; z < 3; z++) {
+    s_zaehler[z].letzt = prv_metrik((KsZaehler)z);
+  }
+}
+
 static void prv_zaehler_tick(void) {
   for (int z = 0; z < 3; z++) {
     const uint32_t jetzt = prv_metrik((KsZaehler)z);
@@ -109,6 +116,9 @@ void training_pause_umschalten(void) {
     bahnen_pause(true);
   } else if (s_zustand == LaufPause) {
     s_zustand = LaufLaeuft;
+    // Was in der Pause lief, zaehlt nicht: sonst kaeme es mit dem ersten Takt
+    // danach auf einmal dazu.
+    prv_zaehler_start_ab_jetzt();
     puls_dicht_messen();
     reps_pause(false);
     bahnen_pause(false);

@@ -161,7 +161,11 @@ static void prv_inbox(DictionaryIterator *iter, void *context) {
   if (pin_art) einstellungen_pin_art(prv_zahl(pin_art));
 
   Tuple *pin_zeit = dict_find(iter, MESSAGE_KEY_PIN_ZEIT);
-  if (pin_zeit && pin_zeit->type == TUPLE_CSTRING) einstellungen_pin_zeit(pin_zeit->value->cstring);
+  // Nur eine abgeschlossene Zeichenkette - strlen liefe sonst hinter das Ende.
+  if (pin_zeit && pin_zeit->type == TUPLE_CSTRING && pin_zeit->length > 0 &&
+      strnlen(pin_zeit->value->cstring, pin_zeit->length) < pin_zeit->length) {
+    einstellungen_pin_zeit(pin_zeit->value->cstring);
+  }
 
   // DIE NACHT KOMMT NICHT MEHR HIERHER: die misst jetzt die Firmware. Was
   // Kiesel-Helper dazu schickt, bleibt liegen - die Antwort sagt ihm, dass

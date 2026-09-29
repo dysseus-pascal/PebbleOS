@@ -583,3 +583,19 @@ void test_kieselsport__training_ueber_mitternacht_verliert_nichts(void) {
   cl_assert_equal_i(s.t.schritte, 240);
   cl_assert_equal_i(s.t.kcal, 0);
 }
+
+void test_kieselsport__pause_zaehlt_keine_schritte(void) {
+  s_zaehler[KsZaehlerSchritte] = 1000;
+  kieselsport_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  kieselsport_pause_umschalten();
+  // In der Pause laeuft man zum Kiosk: die Uhr zaehlt, das Training nicht.
+  s_zaehler[KsZaehlerSchritte] += 500;
+  kieselsport_pause_umschalten();
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  cl_assert_equal_i(prv_stand().t.schritte, 120);
+}
