@@ -894,7 +894,9 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
 // ------------------------------------------------------------------------------------
 // We use PBL_NOINLINE to reduce the stack requirements during the minute handler (see PBL-38130)
 // Returns distance we traveled in the last minute, in mm.
-static uint32_t PBL_NOINLINE prv_fill_minute_record(time_t utc_sec, AlgMinuteDLSSample *m_rec) {
+// Boulder: `spo2_verbrauchen` nur beim Datalogging - die Historie schaut nur.
+static uint32_t PBL_NOINLINE prv_fill_minute_record(time_t utc_sec, AlgMinuteDLSSample *m_rec,
+                                                    bool spo2_verbrauchen) {
   bool still;
   kalg_minute_stats(s_alg_state->k_state, &m_rec->base.vmc, &m_rec->base.orientation, &still);
 
@@ -934,7 +936,11 @@ static uint32_t PBL_NOINLINE prv_fill_minute_record(time_t utc_sec, AlgMinuteDLS
   m_rec->heart_rate_zone = activity_metrics_prv_get_hr_zone();
 
   // Fill in any SpO2 reading taken this minute (0 = none)
-  activity_metrics_prv_get_spo2_sample(&m_rec->spo2_percent, &m_rec->spo2_quality);
+  if (spo2_verbrauchen) {
+    activity_metrics_prv_get_spo2_sample(&m_rec->spo2_percent, &m_rec->spo2_quality);
+  } else {
+    activity_metrics_prv_peek_spo2_sample(&m_rec->spo2_percent, &m_rec->spo2_quality);
+  }
 
   return minute_distance_mm;
 }
@@ -954,7 +960,7 @@ static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_o
   // Fill in the minute data structure that we log
   record_out->utc_sec = utc_sec - SECONDS_PER_MINUTE; // this data is for the previous minute
   AlgMinuteDLSSample *m_rec = &record_out->data;
-  uint32_t minute_distance_mm = prv_fill_minute_record(utc_sec, m_rec);
+  uint32_t minute_distance_mm = prv_fill_minute_record(utc_sec, m_rec, true /*spo2_verbrauchen*/);
 
   prv_reset_state_minute_handler(m_rec);
 
@@ -1031,9 +1037,31 @@ bool activity_algorithm_metrics_changed_notification(void) {
 }
 
 // ------------------------------------------------------------------------------------
+// BOULDER: LAUFENDE ERKANNTE ABSCHNITTE ABSCHLIESSEN, wenn die Erkennung
+// pausiert - so macht es der Workout-Dienst der Vorlage beim Start. Ohne das
+// blieb eine Bewegung "laufend", die Zustandsmaschine wurde darunter
+// zurueckgesetzt, und die Bewegung wuchs nach dem Training weiter: fuenf
+// Minuten Gehen und eine Stunde Training ergaben eine Bewegung von 65 Minuten.
+static void prv_laufende_abschnitte_beenden(void) {
+  uint32_t anzahl = 0;
+  ActivitySession *sessions =
+      kernel_zalloc_check(sizeof(ActivitySession) * ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT);
+  activity_get_sessions(&anzahl, sessions);
+  for (unsigned i = 0; i < anzahl; i++) {
+    if (sessions[i].ongoing) {
+      sessions[i].ongoing = false;
+      activity_sessions_prv_add_activity_session(&sessions[i]);
+    }
+  }
+  kernel_free(sessions);
+}
+
 void activity_algorithm_enable_activity_tracking(bool enable) {
   if (!activity_tracking_on()) {
     return;
+  }
+  if (!enable) {
+    prv_laufende_abschnitte_beenden();
   }
 
   if (!prv_lock()) {
@@ -1211,7 +1239,7 @@ static void prv_read_minute_history_buffer(AlgReadMinutesContext *context) {
   if (seconds_into_minute > 0) {
     minute_utc -= seconds_into_minute;
     AlgMinuteDLSSample current_minute;
-    prv_fill_minute_record(minute_utc, &current_minute);
+    prv_fill_minute_record(minute_utc, &current_minute, false /*spo2_verbrauchen*/);
     prv_insert_health_minute_record(context, minute_utc, &current_minute.base,
                                     current_minute.heart_rate_bpm);
   }

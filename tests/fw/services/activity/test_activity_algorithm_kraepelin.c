@@ -128,11 +128,12 @@ bool activity_sessions_prv_is_sleep_activity(ActivitySessionType activity_type) 
 uint16_t s_activity_sessions_count;
 ActivitySession s_activity_sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT];
 void activity_sessions_prv_add_activity_session(ActivitySession *session) {
-  // If this is a duplicate activity, ignore it
+  // An existing activity is updated, as in activity_sessions.c
   ActivitySession *stored_session = s_activity_sessions;
   for (uint16_t i = 0; i < s_activity_sessions_count; i++, stored_session++) {
     if ((session->type == stored_session->type) &&
         (session->start_utc == stored_session->start_utc)) {
+      *stored_session = *session;
       return;
     }
   }
@@ -149,6 +150,12 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
 
 // ------------------------------------------------------------------------------------
 void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
+}
+
+bool activity_get_sessions(uint32_t *session_entries, ActivitySession *sessions) {
+  *session_entries = s_activity_sessions_count;
+  memcpy(sessions, s_activity_sessions, s_activity_sessions_count * sizeof(ActivitySession));
+  return true;
 }
 
 // =============================================================================================
@@ -223,7 +230,14 @@ void activity_metrics_prv_get_median_hr_bpm(int32_t *median, int32_t *total_weig
   }
 }
 
+static int s_spo2_verbraucht;
 void activity_metrics_prv_get_spo2_sample(uint8_t *percent_out, uint8_t *quality_out) {
+  s_spo2_verbraucht++;
+  *percent_out = 0;
+  *quality_out = 0;
+}
+
+void activity_metrics_prv_peek_spo2_sample(uint8_t *percent_out, uint8_t *quality_out) {
   *percent_out = 0;
   *quality_out = 0;
 }
@@ -939,4 +953,40 @@ void test_activity_algorithm_kraepelin__minute_data_steps_during_sleep(void) {
         ambient_light_level_to_enum(minute_data[i].base.light * ALG_RAW_LIGHT_SENSOR_DIVIDE_BY));
     cl_assert_equal_i(retrieve[i].heart_rate_bpm, minute_data[i].heart_rate_bpm);
   }
+}
+
+// ---------------------------------------------------------------------------------------
+// Boulder: die Minutenhistorie darf den SpO2-Wert der laufenden Minute nicht verbrauchen -
+// den braucht das Datalogging fuer den Minutensatz ans Telefon.
+void test_activity_algorithm_kraepelin__history_read_keeps_spo2(void) {
+  const int num_minutes = 5;
+  time_t start_utc = rtc_get_time() + 7 * SECONDS_PER_MINUTE;
+  rtc_set_time(start_utc);
+  AlgMinuteDLSSample minute_data[num_minutes];
+  prv_create_test_data(num_minutes, minute_data);
+  prv_feed_minute_data(num_minutes, minute_data, false /*simulate_bg_delays*/);
+  // Mitten in der Minute lesen, damit die laufende Minute gefuellt wird.
+  rtc_set_time(rtc_get_time() + 30);
+  const int vorher = s_spo2_verbraucht;
+  uint32_t num_records = num_minutes;
+  time_t start = rtc_get_time() - num_minutes * SECONDS_PER_MINUTE;
+  HealthMinuteData received[num_minutes];
+  activity_algorithm_get_minute_history(received, &num_records, &start);
+  cl_assert_equal_i(s_spo2_verbraucht, vorher);
+}
+
+// ---------------------------------------------------------------------------------------
+// Boulder: pausiert die Erkennung (Kieselsport startet), enden laufende erkannte Abschnitte.
+void test_activity_algorithm_kraepelin__disable_tracking_ends_ongoing_sessions(void) {
+  s_activity_sessions_count = 0;
+  ActivitySession walk = {
+    .type = ActivitySessionType_Walk,
+    .start_utc = rtc_get_time() - 5 * SECONDS_PER_MINUTE,
+    .length_min = 5,
+    .ongoing = true,
+  };
+  activity_sessions_prv_add_activity_session(&walk);
+  activity_algorithm_enable_activity_tracking(false);
+  cl_assert_equal_i(s_activity_sessions_count, 1);
+  cl_assert(!s_activity_sessions[0].ongoing);
 }

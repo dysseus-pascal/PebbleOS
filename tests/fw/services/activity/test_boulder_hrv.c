@@ -14,14 +14,28 @@
 
 static bool s_ruhe = true;
 static uint16_t s_takt = 30;
+static bool s_puls_an = true;
 bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung) { return s_ruhe; }
 uint16_t boulder_hrv_takt_min(void) { return s_takt; }
+bool activity_prefs_heart_rate_is_enabled(void) { return s_puls_an; }
 
 #define BEGINN 1790445600  // 26.9.2026, 18:00 UTC - durch 30 Minuten teilbar
 
 void test_boulder_hrv__initialize(void) {
   s_ruhe = true;
   s_takt = 30;
+  s_puls_an = true;
+}
+
+void test_boulder_hrv__kein_fenster_bei_puls_aus(void) {
+  s_puls_an = false;
+  boulder_hrv_minute(BEGINN, 10);
+  for (int i = 0; i < 40; i++) {
+    boulder_hrv_intervall((i % 2) ? 1040 : 1000);
+  }
+  boulder_hrv_minute(BEGINN + 12 * 60, 10);
+  SchlafHrv f[4];
+  cl_assert_equal_i(boulder_hrv_fenster(BEGINN - 60, BEGINN + 20 * 60, f, 4), 0);
 }
 
 void test_boulder_hrv__rmssd_wie_kieselsport(void) {

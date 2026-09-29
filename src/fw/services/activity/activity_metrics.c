@@ -573,6 +573,21 @@ void activity_metrics_prv_get_spo2_sample(uint8_t *percent_out, uint8_t *quality
 }
 
 // --------------------------------------------------------------------------------------------
+// BOULDER: NUR SCHAUEN. Die Minutenhistorie fuellt die laufende Minute mit
+// demselben Code wie das Datalogging - und verbrauchte dabei den SpO2-Wert.
+// Jede App, die die Historie las (Health-App, Zifferblaetter), nahm ihn so
+// dem Telefon weg, und der gespeicherte Minutensatz trug eine Null.
+void activity_metrics_prv_peek_spo2_sample(uint8_t *percent_out, uint8_t *quality_out) {
+  ActivityState *state = activity_private_state();
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  {
+    *percent_out = state->spo2.pending_percent;
+    *quality_out = state->spo2.pending_quality;
+  }
+  pbl_mutex_unlock(&state->mutex);
+}
+
+// --------------------------------------------------------------------------------------------
 void activity_metrics_prv_reset_hr_stats(void) {
   ActivityState *state = activity_private_state();
   pbl_mutex_lock(&state->mutex, PBL_FOREVER);

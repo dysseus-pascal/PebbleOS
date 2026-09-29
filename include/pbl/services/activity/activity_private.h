@@ -591,6 +591,8 @@ void activity_metrics_prv_reset_hr_stats(void);
 //! and quality (0-7 HeartRateQuality scale) to the out params (0 if none pending) and clears the
 //! pending state, so each reading is logged to exactly one minute.
 void activity_metrics_prv_get_spo2_sample(uint8_t *percent_out, uint8_t *quality_out);
+//! Boulder: dasselbe ohne Verbrauch - fuer die Minutenhistorie, die Apps lesen.
+void activity_metrics_prv_peek_spo2_sample(uint8_t *percent_out, uint8_t *quality_out);
 
 //! Feed in a new heart rate sample that will be used to update the median. This updates
 //! the value returned by activity_metrics_prv_get_median_hr_bpm().

@@ -3,6 +3,7 @@
 
 #include "pbl/services/activity/boulder/hrv.h"
 
+#include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "util/time/time.h"
 #include <pbl/logging/logging.h>
@@ -123,8 +124,10 @@ void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung) {
     }
     return;
   }
+  // "Puls aus" gilt auch hier: sonst leuchtete nachts die LED, obwohl der
+  // Schalter aus ist.
   const uint16_t takt = boulder_hrv_takt_min();
-  if (takt == 0 || (utc / SECONDS_PER_MINUTE) % takt != 0) {
+  if (takt == 0 || (utc / SECONDS_PER_MINUTE) % takt != 0 || !activity_prefs_heart_rate_is_enabled()) {
     return;
   }
   // Nur in Ruhe: wer sich bewegt, liefert Abstaende voller Stoerungen.
