@@ -65,6 +65,7 @@ static time_t s_erledigt_bis;
 static time_t s_gesendet_beginn;
 static uint16_t s_gesendet_aufwachen;
 static uint16_t s_gesendet_schlaf;
+static bool s_gesendet_geladen;
 static DataLoggingSession *s_dls;
 // DAS AKKU-PROTOKOLL: der Stand bei jedem Rechentakt im Fenster. Am Ende zaehlt
 // der beim Einschlafen - nicht der, als die Rechnung den Schlaf zum ersten Mal
@@ -96,7 +97,12 @@ void boulder_nacht_fenster(time_t utc, time_t *beginn, time_t *ende) {
   if (minute_des_tages < FENSTER_VON_MIN) {
     beginn_lokal -= SECONDS_PER_DAY;
   }
-  *beginn = utc - (lokal - beginn_lokal);
+  // DER VERSATZ AM FENSTERBEGINN, nicht der von jetzt: in der Nacht der
+  // Zeitumstellung aendert er sich um drei Uhr, und mit ihm rutschte der
+  // Beginn der laufenden Nacht um eine Stunde - mitten in der Rechnung.
+  time_t b = utc - (lokal - beginn_lokal);
+  b = beginn_lokal - (time_utc_to_local(b) - b);
+  *beginn = b;
   *ende = *beginn + FENSTER_DAUER_MIN * SECONDS_PER_MINUTE;
 }
 
@@ -409,6 +415,18 @@ void boulder_nacht_minute(time_t utc_sec) {
   if (s_erledigt_bis >= ende || utc_sec < beginn + MINUTES_PER_HOUR * SECONDS_PER_MINUTE ||
       utc_sec > ende + NACHLAUF_MIN * SECONDS_PER_MINUTE) {
     return;
+  }
+
+  // NACH EINEM NEUSTART die zuletzt geschickte Nacht aus der Datei kennen -
+  // sonst ging dieselbe Nacht noch einmal ans Telefon.
+  if (!s_gesendet_geladen) {
+    s_gesendet_geladen = true;
+    NachtBild bild;
+    if (boulder_nacht_letzte(&bild) && bild.fertig) {
+      s_gesendet_beginn = bild.beginn_utc;
+      s_gesendet_aufwachen = bild.aufwachen;
+      s_gesendet_schlaf = bild.schlaf_minuten;
+    }
   }
 
   Rechnung *r = kernel_malloc(sizeof(Rechnung));

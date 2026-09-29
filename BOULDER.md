@@ -24,7 +24,7 @@ schickt alles per Datalogging), aber mit unseren Algorithmen und Apps.
 | F0 | Grundlage: Werkzeuge, Bau beider Slots, Host-Tests, QEMU |
 | F1 | Erkannte Gehphasen werden „Bewegung“ statt Walk/Run; Kennzeichen „selbst gestartet“ |
 | F2 | Eigener Schlafalgorithmus mit Phasen |
-| F3 | Genauere Nacht: Puls jede Minute, HRV, Minutendaten v15 |
+| F3 | Genauere Nacht: Puls jede Minute, HRV, Minutendaten v14 (SpO2 im Satz) |
 | F4 | Eigene Health- und Trainings-App, Workout- und Health-App entfernt |
 | F5 | Updates über Boulder aus den Releases dieses Forks |
 

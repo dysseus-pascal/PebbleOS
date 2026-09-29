@@ -328,9 +328,11 @@ void ks_sitzung_melden(const Trainingsstand *t) {
     .length_min = minuten,
     .ongoing = false,
     .manual = true,
-    .step_data.steps = t->schritte,
-    .step_data.distance_meters = t->meter,
-    .step_data.active_kcalories = t->kcal,
+    // Die Sitzung zaehlt in uint16: ein langer Tag ueberschritte 65535 Schritte
+    // und wuerde abgeschnitten statt begrenzt.
+    .step_data.steps = MIN(t->schritte, UINT16_MAX),
+    .step_data.distance_meters = MIN(t->meter, UINT16_MAX),
+    .step_data.active_kcalories = MIN(t->kcal, UINT16_MAX),
     .step_data.resting_kcalories =
         ROUND(activity_private_compute_resting_calories(minuten), ACTIVITY_CALORIES_PER_KCAL),
   };

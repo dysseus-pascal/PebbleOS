@@ -27,7 +27,9 @@
 
 // Laenger wird keine Nacht gerechnet: sechzehn Stunden.
 #define SCHLAF_MINUTEN_MAX 960
-#define SCHLAF_HRV_MAX 48
+// 96: bei Messstufe 5 (alle 10 Minuten) reicht das fuer das ganze
+// 15-Stunden-Fenster; 48 deckten nur acht Stunden.
+#define SCHLAF_HRV_MAX 96
 #define SCHLAF_ABSCHNITTE_MAX 160
 
 typedef enum {

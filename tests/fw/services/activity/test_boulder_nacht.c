@@ -50,8 +50,10 @@ BatteryChargeState battery_get_charge_state(void) {
 }
 uint8_t boulder_messstufe(void) { return 3; }
 
+// Ab s_umstellung gilt Winterzeit (eine Stunde weniger).
+static time_t s_umstellung = 0x7FFFFFFF;
 time_t time_utc_to_local(time_t utc) {
-  return utc + OFFSET_LOKAL;
+  return utc + (utc < s_umstellung ? OFFSET_LOKAL : OFFSET_LOKAL - 3600);
 }
 
 bool activity_algorithm_get_minute_history(HealthMinuteData *minute_data, uint32_t *num_records,
@@ -173,6 +175,7 @@ static void prv_lade_nacht(void) {
 void test_boulder_nacht__initialize(void) {
   // 26.9.2026, 20:00 Ortszeit = 18:00 UTC
   s_beginn = 1790445600;
+  s_umstellung = 0x7FFFFFFF;
   s_sitzungen_anzahl = 0;
   s_saetze_anzahl = 0;
   s_gesendet_um = 0;
@@ -343,4 +346,17 @@ void test_boulder_nacht__verdichten_laesst_die_langen_phasen_stehen(void) {
   cl_assert_equal_i(a[0].bis, 92);
   cl_assert_equal_i(a[1].phase, SchlafPhaseRem);
   cl_assert_equal_i(a[1].bis, 153);
+}
+
+void test_boulder_nacht__fenster_bleibt_in_der_umstellungsnacht(void) {
+  // Ende der Sommerzeit: um 03:00 Ortszeit geht die Uhr eine Stunde zurueck.
+  // Das Fenster, das um 20:00 begann, beginnt danach immer noch dort - sonst
+  // rutschte der Beginn der laufenden Nacht mitten in der Rechnung.
+  s_umstellung = s_beginn + 7 * 3600;
+  time_t b1, e1, b2, e2;
+  boulder_nacht_fenster(s_beginn + 2 * 3600, &b1, &e1);
+  boulder_nacht_fenster(s_beginn + 8 * 3600, &b2, &e2);
+  cl_assert_equal_i(b1, s_beginn);
+  cl_assert_equal_i(b2, s_beginn);
+  cl_assert_equal_i(e2, e1);
 }

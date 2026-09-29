@@ -15,9 +15,32 @@ static uint32_t s_beginn = 0;
 static uint32_t s_sekunden = 0;
 
 // Die Staende der Uhr beim Start - die Summen sind die Differenz dazu.
-static uint32_t s_schritte_anfang = 0;
-static uint32_t s_meter_anfang = 0;
-static uint32_t s_kcal_anfang = 0;
+// DIE TAGESZAEHLER DER UHR, AUFSUMMIERT. Nicht "jetzt minus Anfang": um
+// Mitternacht springen Schritte, Meter und Kalorien der Uhr auf null, und die
+// Differenz waere negativ - ein Training ueber Mitternacht verlor alles davor.
+// Jede Sekunde kommt dazu, was der Zaehler seit der letzten gewachsen ist;
+// faellt er, zaehlt er ab null weiter.
+typedef struct {
+  uint32_t letzt;
+  uint32_t summe;
+} Zaehler;
+static Zaehler s_zaehler[3];
+
+static uint32_t prv_metrik(KsZaehler z);
+
+static void prv_zaehler_start(void) {
+  for (int z = 0; z < 3; z++) {
+    s_zaehler[z] = (Zaehler){ .letzt = prv_metrik((KsZaehler)z), .summe = 0 };
+  }
+}
+
+static void prv_zaehler_tick(void) {
+  for (int z = 0; z < 3; z++) {
+    const uint32_t jetzt = prv_metrik((KsZaehler)z);
+    s_zaehler[z].summe += (jetzt >= s_zaehler[z].letzt) ? jetzt - s_zaehler[z].letzt : jetzt;
+    s_zaehler[z].letzt = jetzt;
+  }
+}
 
 static uint32_t s_puls_summe = 0;
 static uint32_t s_puls_messungen = 0;
@@ -59,9 +82,7 @@ void training_starte_ab(Sportart art, uint32_t beginn) {
   // in derselben Sekunde koennten auseinanderliegen.
   s_beginn = beginn ? beginn : (uint32_t)ks_jetzt();
   s_sekunden = 0;
-  s_schritte_anfang = prv_metrik(KsZaehlerSchritte);
-  s_meter_anfang = prv_metrik(KsZaehlerMeter);
-  s_kcal_anfang = prv_metrik(KsZaehlerKcal);
+  prv_zaehler_start();
   s_puls_summe = 0;
   s_puls_messungen = 0;
   s_puls_max = 0;
@@ -102,6 +123,8 @@ void training_tick(void) {
   // Puls still auf den Ruhetakt - und niemand saehe es der Zahl an.
   if (s_sekunden % 60 == 0) puls_dicht_messen();
 
+  prv_zaehler_tick();
+
   const ArtInfo *info = art_info(s_art);
   if (info->reps) reps_tick((uint16_t)s_sekunden);
   if (info->bahnen) bahnen_tick((uint16_t)s_sekunden);
@@ -137,19 +160,12 @@ Trainingsstand training_stand(void) {
     t.meter = bahnen_meter();
   }
   if (s_art == ArtYoga) t.hrv_ms = puls_hrv_rmssd();
-  if (info->schritte) {
-    const uint32_t jetzt = prv_metrik(KsZaehlerSchritte);
-    t.schritte = jetzt > s_schritte_anfang ? jetzt - s_schritte_anfang : 0;
-  }
-  if (info->distanz) {
-    const uint32_t jetzt = prv_metrik(KsZaehlerMeter);
-    t.meter = jetzt > s_meter_anfang ? jetzt - s_meter_anfang : 0;
-  }
+  if (info->schritte) t.schritte = s_zaehler[KsZaehlerSchritte].summe;
+  if (info->distanz) t.meter = s_zaehler[KsZaehlerMeter].summe;
   // KALORIEN GELTEN FUER JEDE ART. Sie haengen am Puls und an der Bewegung,
   // nicht an Schritten - beim Krafttraining sind sie die einzige Zahl neben
   // Zeit und Puls, die etwas sagt.
-  const uint32_t kcal = prv_metrik(KsZaehlerKcal);
-  t.kcal = kcal > s_kcal_anfang ? kcal - s_kcal_anfang : 0;
+  t.kcal = s_zaehler[KsZaehlerKcal].summe;
   return t;
 }
 

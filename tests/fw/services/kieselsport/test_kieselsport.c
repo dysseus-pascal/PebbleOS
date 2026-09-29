@@ -564,3 +564,22 @@ void test_kieselsport__nachsenden_hoert_auf_wenn_angekommen(void) {
   cl_assert(!s_minutentakt);
   cl_assert_equal_i(s_geholt, 0);
 }
+
+void test_kieselsport__training_ueber_mitternacht_verliert_nichts(void) {
+  s_zaehler[KsZaehlerSchritte] = 5000;
+  s_zaehler[KsZaehlerKcal] = 300;
+  kieselsport_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  // Mitternacht: die Tageszaehler der Uhr beginnen bei null. Die Differenz
+  // zum Anfang waere negativ gewesen, und das Training haette alles verloren.
+  s_zaehler[KsZaehlerSchritte] = 0;
+  s_zaehler[KsZaehlerKcal] = 0;
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.t.schritte, 240);
+  cl_assert_equal_i(s.t.kcal, 0);
+}

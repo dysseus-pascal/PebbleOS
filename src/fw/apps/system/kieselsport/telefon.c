@@ -123,9 +123,25 @@ static void prv_nachfassen(void *data) {
   if (s_hat_wartende) prv_sende_jetzt();
 }
 
-/** Clay schickt Zahlen mal als Zahl, mal als Zeichenkette - beides nehmen. */
+/**
+ * Clay schickt Zahlen mal als Zahl, mal als Zeichenkette - beides nehmen.
+ * Alles andere (Bytes, zu kurze Zahlen) ist 0: sonst laese das vier Bytes,
+ * wo nur eines liegt.
+ */
 static int32_t prv_zahl(Tuple *t) {
-  return t->type == TUPLE_CSTRING ? atoi(t->value->cstring) : t->value->int32;
+  switch (t->type) {
+    case TUPLE_CSTRING:
+      return t->length > 0 && strnlen(t->value->cstring, t->length) < t->length
+                 ? atoi(t->value->cstring) : 0;
+    case TUPLE_INT:
+      return t->length == 1 ? t->value->int8 : t->length == 2 ? t->value->int16 :
+             t->length == 4 ? t->value->int32 : 0;
+    case TUPLE_UINT:
+      return t->length == 1 ? t->value->uint8 : t->length == 2 ? t->value->uint16 :
+             t->length == 4 ? (int32_t)t->value->uint32 : 0;
+    default:
+      return 0;
+  }
 }
 
 static void prv_inbox(DictionaryIterator *iter, void *context) {
