@@ -12,7 +12,7 @@
 typedef enum {
   T_HEUTE, T_SCHLAF, T_HERZ, T_SCHRITTE, T_KM, T_KCAL, T_AKTIV_MIN,
   T_KEINE_NACHT, T_LAEUFT, T_WACH, T_REM, T_LEICHT, T_TIEF, T_BPM, T_JETZT, T_VOR_MIN,
-  T_RUHE, T_HRV, T_SPO2, T_NACHT_TIEF, T_24H, T_ANZAHL,
+  T_RUHE, T_HRV, T_SPO2, T_NACHT_TIEF, T_24H, T_AUS, T_ANZAHL,
 } Text;
 
 static const char *const s_texte[T_ANZAHL][2] = {
@@ -37,6 +37,7 @@ static const char *const s_texte[T_ANZAHL][2] = {
   [T_SPO2] = { "SpO2 %", "SpO2 %" },
   [T_NACHT_TIEF] = { "SpO2 night %d %%", "SpO2 Nacht %d %%" },
   [T_24H] = { "last 24 h", "letzte 24 h" },
+  [T_AUS] = { "off", "aus" },
 };
 
 static int s_de;
@@ -273,6 +274,8 @@ static void prv_herz(GContext *ctx, GRect b, const HealthDaten *d, int herz) {
   if (d->nacht_da && d->nacht.ruhepuls) snprintf(ruhe, sizeof(ruhe), "%d", d->nacht.ruhepuls);
   if (d->nacht_da && d->nacht.hrv) snprintf(hrv, sizeof(hrv), "%d", d->nacht.hrv);
   if (d->spo2) snprintf(spo2, sizeof(spo2), "%d", d->spo2);
+  // "--" hiesse "noch keine Messung"; bei abgeschaltetem SpO2 kaeme nie eine.
+  else if (d->spo2_aus) snprintf(spo2, sizeof(spo2), "%s", T(T_AUS));
   const char *namen[3] = { T(T_RUHE), T(T_HRV), T(T_SPO2) };
   const char *zahlen[3] = { ruhe, hrv, spo2 };
   prv_drei(ctx, b, BALKEN_H + 72, namen, zahlen);

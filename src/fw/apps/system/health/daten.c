@@ -5,6 +5,7 @@
 
 #include "applib/health_service.h"
 #include "pbl/services/activity/activity.h"
+#include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/spo2.h"
 
 // Die Minutenhistorie wird in Stuecken gelesen: ein Tag sind 1440 Saetze zu
@@ -70,6 +71,7 @@ bool daten_minuten_schritt(MinutenLesen *m, HealthDaten *d) {
 }
 
 static void prv_spo2(HealthDaten *d, time_t jetzt) {
+  d->spo2_aus = !activity_prefs_blood_oxygen_is_enabled() || boulder_spo2_takt_s() == 0;
   Spo2Wert *werte = app_malloc_check(SPO2_WERTE_MAX * sizeof(Spo2Wert));
   const int n = boulder_spo2_werte(jetzt - 24 * SECONDS_PER_HOUR, jetzt + 1, werte, SPO2_WERTE_MAX);
   if (n > 0) {
