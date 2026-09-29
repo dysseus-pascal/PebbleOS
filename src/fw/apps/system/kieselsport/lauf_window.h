@@ -19,3 +19,6 @@
 void lauf_window_zeige(Sportart art);
 // Ein Training laeuft schon (die App wurde neu geoeffnet): gleich hinein.
 void lauf_window_zeige_laufend(void);
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void lauf_window_zuruecksetzen(void);

@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "lauf_window.h"
 #include "telefon.h"
 #include "thema.h"
@@ -1140,4 +1141,26 @@ void lauf_window_zeige_laufend(void) {
   // Sofort fragen: der Schirm stuende sonst leer, waehrend man schon
   // hinschaut.
   s_abfrage = app_timer_register(50, prv_abfrage, NULL);
+}
+
+void lauf_window_zuruecksetzen(void) {
+  memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_flaeche, 0, sizeof(s_flaeche));
+  memset(&s_abfrage, 0, sizeof(s_abfrage));
+  memset(&s_zu, 0, sizeof(s_zu));
+  memset(&s_minute, 0, sizeof(s_minute));
+  memset(&s_art, 0, sizeof(s_art));
+  memset(&s_bereit, 0, sizeof(s_bereit));
+  memset(&s_speichert, 0, sizeof(s_speichert));
+  memset(&s_gespeichert, 0, sizeof(s_gespeichert));
+  memset(&s_gespeichert_seit, 0, sizeof(s_gespeichert_seit));
+  memset(&s_verwerfen_bis, 0, sizeof(s_verwerfen_bis));
+  memset(&s_bestaetigt, 0, sizeof(s_bestaetigt));
+  memset(&s_gestartet, 0, sizeof(s_gestartet));
+  memset(&s_ende_nr, 0, sizeof(s_ende_nr));
+  memset(&s_seite, 0, sizeof(s_seite));
+  memset(&s_countdown, 0, sizeof(s_countdown));
+  memset(&s_zonen_da, 0, sizeof(s_zonen_da));
+  memset(&s_zonen, 0, sizeof(s_zonen));
+  memset(&s_countdown_timer, 0, sizeof(s_countdown_timer));
 }

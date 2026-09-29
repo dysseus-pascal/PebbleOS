@@ -72,3 +72,6 @@ typedef enum {
 // (Oben, Select, Unten) auf der Hoehe der Tasten. SymbolKeins
 // laesst eine Taste stumm: was nichts tut, wird nicht angeschrieben.
 void thema_leiste(GContext *ctx, GRect b, Symbol oben, Symbol mitte, Symbol unten);
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void thema_zuruecksetzen(void);

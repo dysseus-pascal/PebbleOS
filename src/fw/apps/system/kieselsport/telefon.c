@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "telefon.h"
 #include "einstellungen.h"
 #include "schluessel.h"
@@ -429,4 +430,33 @@ void telefon_init(void) {
   // Die Einstellungen der Uhr, damit Konfigseite und Kiesel-Helper sie
   // kennen - nach allem, was dringender ist.
   prv_einst_vormerken(2500);
+}
+
+void telefon_zuruecksetzen(void) {
+  memset(&s_nachfassen, 0, sizeof(s_nachfassen));
+  memset(&s_wartet, 0, sizeof(s_wartet));
+  memset(&s_liste, 0, sizeof(s_liste));
+  memset(&s_hat_wartende, 0, sizeof(s_hat_wartende));
+  memset(&s_letzte, 0, sizeof(s_letzte));
+  memset(&s_fertig, 0, sizeof(s_fertig));
+  memset(&s_zustand_offen, 0, sizeof(s_zustand_offen));
+  memset(&s_zustand_was, 0, sizeof(s_zustand_was));
+  memset(&s_zustand_art, 0, sizeof(s_zustand_art));
+  memset(&s_zustand_beginn, 0, sizeof(s_zustand_beginn));
+  memset(&s_zustand_versuche, 0, sizeof(s_zustand_versuche));
+  memset(&s_zustand_timer, 0, sizeof(s_zustand_timer));
+  memset(&s_kurve_unterwegs, 0, sizeof(s_kurve_unterwegs));
+  memset(&s_kurve_timer, 0, sizeof(s_kurve_timer));
+  memset(&s_einst_offen, 0, sizeof(s_einst_offen));
+  memset(&s_einst_timer, 0, sizeof(s_einst_timer));
+  memset(&s_einst_versuche, 0, sizeof(s_einst_versuche));
+  memset(&s_spo2_antwort, 0, sizeof(s_spo2_antwort));
+  memset(&s_frage_offen, 0, sizeof(s_frage_offen));
+  memset(&s_frage_versuche, 0, sizeof(s_frage_versuche));
+  memset(&s_frage_timer, 0, sizeof(s_frage_timer));
+  memset(&s_hrv_timer, 0, sizeof(s_hrv_timer));
+  memset(&s_hrv_offen, 0, sizeof(s_hrv_offen));
+  memset(&s_hrv_wert, 0, sizeof(s_hrv_wert));
+  memset(&s_hrv_zeit, 0, sizeof(s_hrv_zeit));
+  memset(&s_hrv_versuche, 0, sizeof(s_hrv_versuche));
 }

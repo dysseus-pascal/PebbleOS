@@ -65,3 +65,6 @@ typedef struct {
 // Fragen - `antwort` kommt, sobald das Telefon antwortet. NULL: die Frage
 // vergessen (das Fenster ging zu).
 void telefon_spo2_frage(void (*antwort)(const Spo2Antwort *a));
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void telefon_zuruecksetzen(void);

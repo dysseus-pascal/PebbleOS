@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "messen_window.h"
 #include "hrv_window.h"
 #include "spo2_window.h"
@@ -70,4 +71,9 @@ void messen_window_zeige(void) {
   window_set_background_color(s_fenster, KS_FARBE_GRUND);
   window_set_window_handlers(s_fenster, (WindowHandlers) { .load = prv_laden, .unload = prv_entladen });
   window_stack_push(s_fenster, true);
+}
+
+void messen_window_zuruecksetzen(void) {
+  memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_liste, 0, sizeof(s_liste));
 }

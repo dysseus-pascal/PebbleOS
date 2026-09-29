@@ -11,3 +11,6 @@
 // Pebble-App traegt es in Health Connect ein, Kiesel-Helper liest es dort und
 // schickt es auf Anfrage hierher.
 void spo2_window_zeige(void);
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void spo2_window_zuruecksetzen(void);

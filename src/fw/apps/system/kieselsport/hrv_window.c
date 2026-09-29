@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "hrv_window.h"
 #include "telefon.h"
 #include "thema.h"
@@ -147,4 +148,13 @@ void hrv_window_zeige(void) {
   window_set_click_config_provider(s_fenster, prv_tasten);
   window_set_window_handlers(s_fenster, (WindowHandlers) { .load = prv_laden, .unload = prv_entladen });
   window_stack_push(s_fenster, true);
+}
+
+void hrv_window_zuruecksetzen(void) {
+  memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_flaeche, 0, sizeof(s_flaeche));
+  memset(&s_takt, 0, sizeof(s_takt));
+  memset(&s_phase, 0, sizeof(s_phase));
+  memset(&s_rest, 0, sizeof(s_rest));
+  memset(&s_ergebnis, 0, sizeof(s_ergebnis));
 }

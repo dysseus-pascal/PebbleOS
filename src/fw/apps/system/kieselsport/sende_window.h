@@ -8,3 +8,6 @@
 // kam nie beim Telefon an. Er sagt, was geschieht, und geht von selbst
 // wieder zu, sobald das Telefon alles hat - oder nach einer Minute.
 void sende_window_zeige(void);
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void sende_window_zuruecksetzen(void);

@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "spo2_window.h"
 #include "telefon.h"
 #include "thema.h"
@@ -153,4 +154,13 @@ void spo2_window_zeige(void) {
   window_stack_push(s_fenster, true);
   s_takt = app_timer_register(60000, prv_takt, NULL);
   prv_fragen();
+}
+
+void spo2_window_zuruecksetzen(void) {
+  memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_flaeche, 0, sizeof(s_flaeche));
+  memset(&s_warten, 0, sizeof(s_warten));
+  memset(&s_takt, 0, sizeof(s_takt));
+  memset(&s_phase, 0, sizeof(s_phase));
+  memset(&s_antwort, 0, sizeof(s_antwort));
 }

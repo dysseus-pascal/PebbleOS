@@ -4,6 +4,8 @@
 #include "pebble_compat.h"
 #include "art_text.h"
 #include "lauf_window.h"
+#include "spo2_window.h"
+#include "hrv_window.h"
 #include "messen_window.h"
 #include "sende_window.h"
 #include "symbole.h"
@@ -113,6 +115,18 @@ static void prv_entladen(Window *fenster) {
 }
 
 static void prv_init(void) {
+  // ALLES AUF ANFANG. Eine Systemapp behaelt ihre statischen Variablen ueber
+  // ihr Ende hinaus, der App-Speicher nicht: das Dreieck des letzten Laufs
+  // (thema.c) zeigte ins Leere, und die Pause-Ansicht verlangte beim
+  // naechsten Oeffnen 1,9 MB - die App stuerzte ab, das Training lief weiter.
+  thema_zuruecksetzen();
+  telefon_zuruecksetzen();
+  lauf_window_zuruecksetzen();
+  sende_window_zuruecksetzen();
+  hrv_window_zuruecksetzen();
+  spo2_window_zuruecksetzen();
+  messen_window_zuruecksetzen();
+
   // Die Sprache der Uhr einmal lesen, bevor irgendein Text gezeichnet wird.
   // Auch der Glance beim Beenden nimmt sie von hier.
   strings_refresh();

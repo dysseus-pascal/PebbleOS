@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "thema.h"
 
 GColor thema_zonenfarbe(int zone) {
@@ -138,4 +139,8 @@ void thema_leiste(GContext *ctx, GRect b, Symbol oben, Symbol mitte, Symbol unte
     if (zeichen[i] == SymbolKeins) continue;
     prv_symbol(ctx, zeichen[i], GPoint(cx, b.size.h * (i + 1) / 4));
   }
+}
+
+void thema_zuruecksetzen(void) {
+  memset(&s_dreieck, 0, sizeof(s_dreieck));
 }

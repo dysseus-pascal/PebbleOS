@@ -8,3 +8,6 @@
 // der RMSSD da und geht ans Telefon. Das war Herzintervall; es ist hier
 // aufgegangen, zusammen mit der Nachtmessung (nacht.h).
 void hrv_window_zeige(void);
+
+// Der Zustand dieser Datei auf Anfang - beim Start der App (siehe kieselsport.c).
+void hrv_window_zuruecksetzen(void);

@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 dysseus-pascal */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
 #include "sende_window.h"
 #include "telefon.h"
 #include "thema.h"
@@ -64,4 +65,11 @@ void sende_window_zeige(void) {
   // Ist das Telefon nicht da, bleibt das Training im Persist und geht beim
   // naechsten Versuch - die Uhr soll dafuer nicht offen stehen bleiben.
   s_zu = app_timer_register(SENDEN_HOECHSTENS_MS, prv_zu, NULL);
+}
+
+void sende_window_zuruecksetzen(void) {
+  memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_flaeche, 0, sizeof(s_flaeche));
+  memset(&s_zu, 0, sizeof(s_zu));
+  memset(&s_fertig, 0, sizeof(s_fertig));
 }
