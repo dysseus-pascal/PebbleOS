@@ -1,6 +1,7 @@
 # Boulder-Firmware
 
-Fork von PebbleOS (Core Devices, Apache 2.0) ab **v4.38.1**, für die Begleit-App
+Fork von PebbleOS (Core Devices, Apache 2.0) ab **v4.38.1**, nachgezogen auf
+**v4.38.3**, für die Begleit-App
 [Boulder](https://github.com/dysseus-pascal/Boulder). Ziel: Pebbles Aufbau
 behalten (die Uhr misst dauernd, legt Minutenwerte ab, erkennt Abschnitte und
 schickt alles per Datalogging), aber mit unseren Algorithmen und Apps.
@@ -87,15 +88,19 @@ nicht mehr Teil der App; das macht die Firmware (F2).
 ## Releases (F5)
 
 ```
-tools/boulder/release.sh <N>       # Tag v4.38.1-bN, beide Slots, Release in boulder-firmware
+tools/boulder/release.sh <N>       # Tag v4.38.3-bN, beide Slots, Release in boulder-firmware
 ```
 
 Die Pakete liegen im öffentlichen Repo
 [dysseus-pascal/boulder-firmware](https://github.com/dysseus-pascal/boulder-firmware),
 weil dieser Fork privat ist und Boulder ohne Anmeldung nach Updates fragt.
-Vorher `.github/release/v4.38.1-bN.md` anlegen (erste Zeile Titel ohne
-Version). Boulder vergleicht die Nummer nach dem `b` und bietet eine neue
-Fassung sofort an. Die geerbten GitHub-Actions dieses Forks sind abgeschaltet;
+Vorher `.github/release/v4.38.3-bN.md` anlegen (erste Zeile Titel ohne
+Version). Boulder vergleicht erst die PebbleOS-Fassung, dann die Nummer nach
+dem `b`, und bietet eine neue Fassung sofort an. Die Nummer zählt über die
+Basis hinweg weiter (v4.38.1-b6, dann v4.38.3-b7).
+
+Upstream-Fassungen kommen per Merge des Tags. Nicht übernommen: `b97d3837e`
+(SpO2 aus dem Minutensatz, Version 14 → 13); Boulder liest Version 14. Die geerbten GitHub-Actions dieses Forks sind abgeschaltet;
 gebaut wird lokal.
 
 ## Health-App (F4)

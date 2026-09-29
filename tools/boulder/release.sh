@@ -5,18 +5,18 @@
 # Anmeldung. Die fertigen Pakete liegen deshalb im oeffentlichen Repo
 # dysseus-pascal/boulder-firmware; der Quellcode bleibt hier.
 #
-# DIE VERSION IST v4.38.1-bN: die PebbleOS-Fassung, auf der der Fork beruht,
+# DIE VERSION IST v4.38.3-bN: die PebbleOS-Fassung, auf der der Fork beruht,
 # und die laufende Nummer. Kurz, weil die Uhr ihre Version in 32 Zeichen
-# speichert - auch ein Entwicklungsbau wie v4.38.1-b12-3-gabcdef12-dirty muss
+# speichert - auch ein Entwicklungsbau wie v4.38.3-b12-3-gabcdef12-dirty muss
 # hineinpassen. Boulder vergleicht die Nummer nach dem b.
 #
 # Aufruf: tools/boulder/release.sh <nummer>
-# Voraussetzung: .github/release/v4.38.1-b<nummer>.md, erste Zeile der Titel
+# Voraussetzung: .github/release/v4.38.3-b<nummer>.md, erste Zeile der Titel
 # ohne Version, darunter die Notizen (Deutsch).
 set -eu
 cd "$(dirname "$0")/../.."
 NUMMER="${1:?Nummer fehlt, z. B. tools/boulder/release.sh 1}"
-BASIS=v4.38.1
+BASIS=v4.38.3
 TAG="$BASIS-b$NUMMER"
 REPO=dysseus-pascal/boulder-firmware
 NOTIZEN=".github/release/$TAG.md"
