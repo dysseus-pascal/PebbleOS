@@ -13,6 +13,7 @@
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
+#include "pbl/services/health_sync_endpoint.h"
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/kernel/mutex.h"
 #include "util/time/time.h"
@@ -466,6 +467,13 @@ void boulder_nacht_minute(time_t utc_sec) {
        e->schlaf_minuten != s_gesendet_schlaf)) {
     PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);
     prv_schicke(r, ab);
+    // Gleich los, nicht erst mit dem Datalogging-Takt: die Nacht soll kurz
+    // nach dem Aufstehen auf dem Telefon sein. Die Minuten der Nacht gehen
+    // mit, damit Boulder sie zusammen hat. Einmal je geschriebenem Satz, nicht
+    // je Teil. Wird die Nacht spaeter endgueltig, ohne sich zu aendern, gibt
+    // es absichtlich keinen Schub: der Satz traegt kein Endgueltig-Merkmal,
+    // es gibt nichts Neues; die Minuten danach kommen mit dem Takt.
+    health_sync_schicken();
     s_gesendet_beginn = ab;
     s_gesendet_aufwachen = e->aufwachen;
     s_gesendet_schlaf = e->schlaf_minuten;

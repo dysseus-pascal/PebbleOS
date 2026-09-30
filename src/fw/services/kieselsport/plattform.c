@@ -24,6 +24,7 @@
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/battery/battery_state.h"
+#include "pbl/services/health_sync_endpoint.h"
 #include "pbl/services/new_timer/new_timer.h"
 #include "pbl/services/system_task.h"
 #include "pbl/services/persist.h"
@@ -297,6 +298,17 @@ void ks_bewegung_erkennen(bool an) {
 }
 
 #define MELDUNG_NACH_MS (30 * MS_PER_SECOND)
+// DAS TRAINING GLEICH ANS TELEFON, nicht erst mit dem Datalogging-Takt. Aber
+// nicht sofort: die Sitzung geht erst mit der naechsten Minute der Uhr in
+// Datalogging (activity_sessions, prv_log_activities). Anderthalb Minuten
+// liegen sicher danach - der Minutenlauf steht dann schon vor uns auf KernelBG.
+#define SCHICKEN_NACH_MS (90 * MS_PER_SECOND)
+static TimerID s_schicken_takt = TIMER_INVALID_ID;
+
+static void prv_schicken_faellig(void *daten) {
+  health_sync_schicken();
+}
+
 static ActivitySession s_meldung;
 static uint16_t s_meldung_puls;
 static TimerID s_meldung_takt = TIMER_INVALID_ID;
@@ -349,6 +361,11 @@ void ks_sitzung_melden(const Trainingsstand *t) {
     s_meldung_takt = new_timer_create();
   }
   new_timer_start(s_meldung_takt, MELDUNG_NACH_MS, prv_meldung_faellig, NULL, 0);
+
+  if (s_schicken_takt == TIMER_INVALID_ID) {
+    s_schicken_takt = new_timer_create();
+  }
+  new_timer_start(s_schicken_takt, SCHICKEN_NACH_MS, prv_schicken_faellig, NULL, 0);
 }
 
 void ks_app_holen(void) {

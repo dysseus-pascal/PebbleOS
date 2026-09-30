@@ -110,6 +110,9 @@ void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
 static NachtDlsRecord s_saetze[SAETZE];
 static int s_saetze_anzahl;
 static time_t s_gesendet_um;
+// Zu wie vielen Zeitpunkten Saetze geschrieben wurden - eine Nacht aus
+// mehreren Teilen zaehlt einmal.
+static int s_schreibzeiten;
 
 DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint16_t item_size,
                                bool buffered, bool resume, const Uuid *uuid) {
@@ -121,8 +124,20 @@ DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint
 DataLoggingResult dls_log(DataLoggingSession *session, const void *data, uint32_t num_items) {
   cl_assert(s_saetze_anzahl < SAETZE);
   memcpy(&s_saetze[s_saetze_anzahl++], data, sizeof(NachtDlsRecord));
+  if (s_schreibzeiten == 0 || s_gesendet_um != s_jetzt) {
+    s_schreibzeiten++;
+  }
   s_gesendet_um = s_jetzt;
   return DATA_LOGGING_SUCCESS;
+}
+
+// Die fertige Nacht geht gleich ans Telefon, nicht erst mit dem
+// Datalogging-Takt: jedes Mal, wenn Saetze geschrieben wurden, einmal schicken.
+static int s_geschickt;
+static time_t s_geschickt_um;
+void health_sync_schicken(void) {
+  s_geschickt++;
+  s_geschickt_um = s_jetzt;
 }
 
 // --- Die Nacht ------------------------------------------------------------------
@@ -179,6 +194,9 @@ void test_boulder_nacht__initialize(void) {
   s_sitzungen_anzahl = 0;
   s_saetze_anzahl = 0;
   s_gesendet_um = 0;
+  s_schreibzeiten = 0;
+  s_geschickt = 0;
+  s_geschickt_um = 0;
   prv_lade_nacht();
 }
 
@@ -199,6 +217,11 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   cl_assert_equal_i(s->beginn_utc, s_beginn);
   cl_assert_equal_i(s->utc_to_local, OFFSET_LOKAL);
   cl_assert_equal_i(s_gesendet_um, s_beginn + (11 * 60 + 45) * SECONDS_PER_MINUTE);
+  // Gleich hinterher geschickt, genau einmal je Mal, dass die Nacht ging -
+  // nicht je Teil.
+  cl_assert(s_geschickt >= 1);
+  cl_assert_equal_i(s_geschickt, s_schreibzeiten);
+  cl_assert_equal_i(s_geschickt_um, s_gesendet_um);
   // Das Akku-Protokoll: Schlaf zuerst gesehen um 22:45 (78 %), fertig 07:45 (69 %).
   cl_assert_equal_i(s->version, NACHT_DLS_VERSION);
   cl_assert_equal_i(s->akku_beginn, 78);
@@ -286,6 +309,7 @@ void test_boulder_nacht__ausserhalb_des_fensters_ruhe(void) {
   }
   cl_assert_equal_i(s_sitzungen_anzahl, 0);
   cl_assert_equal_i(s_saetze_anzahl, 0);
+  cl_assert_equal_i(s_geschickt, 0);
 }
 
 void test_boulder_nacht__langes_wachliegen_bleibt_eine_nacht(void) {
@@ -374,11 +398,16 @@ void test_boulder_nacht__neustart_schickt_die_nacht_nicht_noch_einmal(void) {
     boulder_nacht_minute(s_jetzt);
   }
   const int vorher = s_saetze_anzahl;
+  const int geschickt_vorher = s_geschickt;
   cl_assert(vorher >= 1);
+  cl_assert(geschickt_vorher >= 1);
   boulder_nacht_test_reset();
   for (s_jetzt = s_beginn; s_jetzt <= s_beginn + MINUTEN * SECONDS_PER_MINUTE;
        s_jetzt += SECONDS_PER_MINUTE) {
     boulder_nacht_minute(s_jetzt);
   }
   cl_assert_equal_i(s_saetze_anzahl, vorher);
+  // Nichts Neues, also auch nichts zu schicken.
+  cl_assert_equal_i(s_geschickt, geschickt_vorher);
+  cl_assert_equal_i(s_geschickt, s_schreibzeiten);
 }

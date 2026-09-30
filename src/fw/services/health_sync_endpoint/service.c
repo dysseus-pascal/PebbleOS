@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "pbl/services/health_sync_endpoint.h"
+
 #include "pbl/services/comm_session/session.h"
 #include "pbl/services/system_task.h"
 #include "pbl/services/data_logging/data_logging_service.h"
@@ -41,7 +43,7 @@ static void prv_send_ack_nack(bool ok) {
 
 #include "pbl/services/activity/activity_algorithm.h"
 
-static void prv_sync_health_system_task_cb(void *unused) {
+static void prv_send_health_data(void) {
   if (activity_tracking_on()) {
     // tell the activity service to pool the minutes it's got so far
     activity_algorithm_send_minutes();
@@ -49,8 +51,29 @@ static void prv_sync_health_system_task_cb(void *unused) {
 
   // send all data logging data
   dls_send_all_sessions();
+}
+
+static void prv_sync_health_system_task_cb(void *unused) {
+  prv_send_health_data();
   // ACK
   prv_send_ack_nack(true /*ok*/);
+}
+
+// Boulder: dasselbe wie die Anfrage des Telefons, nur ohne ACK - es hat ja
+// niemand gefragt.
+static void prv_schicken_system_task_cb(void *unused) {
+  prv_send_health_data();
+}
+
+void health_sync_schicken(void) {
+  // Ohne Warten: die Nacht ruft das aus dem Minutenlauf auf KernelBG selbst.
+  // Bei voller Warteschlange wuerde system_task_add_callback() dort auf sich
+  // selbst warten und nach 3 s die Uhr neu starten. Kein neuer Versuch: der
+  // 15-min-Takt von Datalogging holt es nach; die Zeile sagt nur, warum die
+  // Daten dann spaeter kamen.
+  if (!system_task_add_callback_droppable(prv_schicken_system_task_cb, NULL)) {
+    PBL_LOG_WRN("Health-Sync: KernelBG voll, Schub entfaellt");
+  }
 }
 
 static void prv_handle_sync(const uint8_t *msg, size_t len) {
