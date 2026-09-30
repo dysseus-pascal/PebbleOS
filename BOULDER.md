@@ -85,6 +85,30 @@ nicht mehr Teil der App; das macht die Firmware (F2).
   Startmenü, und ihr Entfernen löscht weder Persist noch Pins
   (`app_install_manager.c`). Die Store-App Kieselsport muss von der Uhr.
 
+## Kieselstrasse in der Firmware (Navigation)
+
+Die System-App `src/fw/apps/system/kieselstrasse/` zeigt den nächsten Schritt
+einer OsmAnd-Navigation. Sie trägt **dieselbe UUID wie die Store-App**
+(a83bf269-e798-45bc-9bf0-a0f68362a79a) und empfängt dieselben Nachrichten von
+Boulder mit festen Schlüsseln (`schluessel.h`): ABBIEGEART=10000,
+ENTFERNUNG=10001, STRASSE=10002, ANKUNFT=10003, REST=10004.
+
+- Auf Abruf: Boulder verbindet sich nur mit OsmAnd, solange die App auf der
+  Uhr offen ist, und holt sie nicht mehr nach vorn. Keine eigene Kachel, kein
+  Glance (der Launcher nimmt von System-Apps ohnehin keine Scheiben).
+- Persist-Schlüssel 1, Struktur `Weg` unverändert (68 Byte): der letzte Stand
+  der Store-App bleibt lesbar. Geschrieben wird nur bei einem neuen Schritt
+  und beim Beenden, wenn seither etwas kam.
+- Aller statische Zustand wird bei jedem Start zurückgesetzt (System-Apps
+  behalten ihre statischen Variablen über ihr Ende hinaus).
+- Texte in fünf Sprachen (`texte_tabelle.h`), eigene Namen (`ST()`,
+  `KST_`), damit nichts mit Kieselsport kollidiert.
+- Kein eigener Kconfig-Schalter: die App braucht keinen Dienst und keine
+  Hardware und ist klein; Kieselsport ist in `prj_normal.conf` ohnehin für
+  alle Uhren an.
+- Test: `test_kieselstrasse_weg` (Schritt-Erkennung, sparsames Schreiben,
+  alter oder kaputter Persist). Prüfbau fürs Emulator-Bild: `-DKST_DEMO`.
+
 ## Releases (F5)
 
 ```
