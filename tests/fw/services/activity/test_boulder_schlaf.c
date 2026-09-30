@@ -96,7 +96,10 @@ static SchlafPhase prv_phase_aus_text(const char *t) {
   return (SchlafPhase)-1;  // leer: ausserhalb der Nacht
 }
 
-void test_boulder_schlaf__echte_nacht_wie_kotlin(void) {
+// Die Nacht vom 26./27.9.2026, festgehalten: die Spalte `phase` ist, was diese
+// Rechnung ergibt. Aendern sich die Regeln, wird sie neu geschrieben - der
+// Test faengt Aenderungen, die niemand wollte.
+void test_boulder_schlaf__echte_nacht_26_wie_festgehalten(void) {
   char pfad[512];
   snprintf(pfad, sizeof(pfad), "%s/activity/boulder/nacht-2026-09-26.csv", CLAR_FIXTURE_PATH);
   FILE *f = fopen(pfad, "r");
@@ -151,6 +154,19 @@ void test_boulder_schlaf__echte_nacht_wie_kotlin(void) {
 
   const SchlafEingabe e = prv_eingabe(n, hrv_n);
   cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+
+  // Zum Nachlesen (und zum Neuschreiben der Spalte): je Minute ein Zeichen.
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  for (int i = 0; i < n; i++) {
+    const int p = (i >= s_ergebnis.einschlafen && i < s_ergebnis.aufwachen)
+        ? (int)prv_phase_bei(&s_ergebnis, i) : -1;
+    lauf[i] = p < 0 ? '.' : "wltrs"[p];
+  }
+  lauf[n] = 0;
+  printf("\nNACHT26 ein=%d auf=%d leicht=%d tief=%d rem=%d wach=%d\nLAUF26 %s\n",
+         s_ergebnis.einschlafen, s_ergebnis.aufwachen,
+         prv_minuten(&s_ergebnis, SchlafPhaseLeicht), prv_minuten(&s_ergebnis, SchlafPhaseTief),
+         prv_minuten(&s_ergebnis, SchlafPhaseRem), prv_minuten(&s_ergebnis, SchlafPhaseWach), lauf);
 
   int abweichungen = 0;
   for (int i = 0; i < n; i++) {
@@ -237,4 +253,61 @@ void test_boulder_schlaf__abschnitte_lueckenlos(void) {
       cl_assert_equal_i(s_ergebnis.abschnitte[k].von, s_ergebnis.abschnitte[k - 1].bis);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Die Nacht vom 29./30.9.2026 (Pebble Time 2, Firmware b10, Messstufe 4) -
+// dieselbe Nacht hat eine Fitbit Air mitgemessen: ins Bett 21:32, auf 05:55,
+// 22 min wach, REM 2:00 h, leicht 4:51 h, tief 1:10 h. Fitbit ist selbst eine
+// Schaetzung, aber eine gut geprueefte - naeher als 15 % an sie heran ist gut.
+// Die Minuten zaehlen ab 20:00; Spalte 3 ist das VMC der Uhr selbst.
+static int prv_lade_nacht_29(void) {
+  char pfad[512];
+  snprintf(pfad, sizeof(pfad), "%s/activity/boulder/nacht-2026-09-29.csv", CLAR_FIXTURE_PATH);
+  FILE *f = fopen(pfad, "r");
+  cl_assert(f);
+  char zeile[256];
+  int n = 0;
+  while (fgets(zeile, sizeof(zeile), f)) {
+    if (!strncmp(zeile, "minute,", 7)) continue;
+    int minute, vmc, puls;
+    char uhr[8];
+    if (sscanf(zeile, "%d,%7[^,],%*d,%d,%d", &minute, uhr, &vmc, &puls) != 4) continue;
+    cl_assert(minute < SCHLAF_MINUTEN_MAX);
+    s_gueltig[minute] = true;
+    s_bewegung[minute] = (uint16_t)vmc;
+    s_puls[minute] = (uint8_t)puls;
+    if (minute + 1 > n) n = minute + 1;
+  }
+  fclose(f);
+  return n;
+}
+
+void test_boulder_schlaf__echte_nacht_neben_fitbit(void) {
+  const int n = prv_lade_nacht_29();
+  // 20:00 bis 06:23, mit Luecken (Minuten ohne Satz gelten als nicht getragen).
+  cl_assert(n >= 600 && n <= 660);
+  const SchlafEingabe e = (SchlafEingabe){
+    .bewegung = s_bewegung, .puls = s_puls, .gueltig = s_gueltig, .anzahl = n,
+    .schwelle = SCHLAF_SCHWELLE_VMC, .hrv = s_hrv, .hrv_anzahl = 0,
+  };
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  // Zum Nachlesen: je Minute ein Zeichen (w/l/t/r), ab 20:00.
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  for (int i = 0; i < n; i++) {
+    const int p = (i >= s_ergebnis.einschlafen && i < s_ergebnis.aufwachen) ? (int)prv_phase_bei(&s_ergebnis, i) : -1;
+    lauf[i] = p < 0 ? '.' : "wltrs"[p];
+  }
+  lauf[n] = 0;
+  printf("\nNACHT29 ein=%d auf=%d schlaf=%d leicht=%d tief=%d rem=%d wach=%d\nLAUF29 %s\n",
+         s_ergebnis.einschlafen, s_ergebnis.aufwachen, s_ergebnis.schlaf_minuten,
+         prv_minuten(&s_ergebnis, SchlafPhaseLeicht), prv_minuten(&s_ergebnis, SchlafPhaseTief),
+         prv_minuten(&s_ergebnis, SchlafPhaseRem), prv_minuten(&s_ergebnis, SchlafPhaseWach), lauf);
+  // Fitbit: ins Bett 21:32 (Minute 92), auf 05:55 (Minute 595).
+  cl_assert(s_ergebnis.einschlafen >= 82 && s_ergebnis.einschlafen <= 102);
+  cl_assert(s_ergebnis.aufwachen >= 585 && s_ergebnis.aufwachen <= 605);
+  // Geschlafen rund 8:01 h, tief 1:10 h, REM 2:00 h - je mit Spiel.
+  cl_assert(s_ergebnis.schlaf_minuten >= 450 && s_ergebnis.schlaf_minuten <= 520);
+  cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseTief) >= 50 && prv_minuten(&s_ergebnis, SchlafPhaseTief) <= 100);
+  cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseRem) >= 90 && prv_minuten(&s_ergebnis, SchlafPhaseRem) <= 150);
 }

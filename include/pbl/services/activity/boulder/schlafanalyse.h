@@ -10,20 +10,19 @@
 // Die Nacht aus den Minutenwerten: wann eingeschlafen, wann aufgewacht, und
 // welche Phase in jeder Minute dazwischen.
 //
-// EINE UEBERTRAGUNG, KEINE NEUERFINDUNG. Das Verfahren ist das von
-// Kiesel-Helper (Schlafanalyse.kt), das dort gegen ein Fitbit eingestellt
-// wurde: Cole-Kripke auf der Bewegung, die Regeln von Webster, Phasen aus dem
-// Puls relativ zu seiner Umgebung, HRV als Gegenprobe fuer den Tiefschlaf.
-// Der Host-Test prueft es an einer echten Nacht Minute fuer Minute gegen die
-// Kotlin-Fassung.
+// WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
+// auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
+// Bewegung. DIE PHASEN sind an einer Nacht neben einem Fitbit eingestellt
+// (29./30.9.2026): Tiefschlaf ist eine Viertelstunde ohne jede Regung bei
+// ruhigem Herz, REM sind die Minuten, in denen der Koerper zuckt, ohne
+// aufzuwachen. Der Host-Test rechnet beide Naechte nach.
 //
 // KEIN BETRIEBSSYSTEM HIER. Eingabe sind Felder, Ausgabe ein Ergebnis; der
 // Aufrufer holt die Minuten aus der Datei und legt die Sitzungen an. So laesst
 // sich die Rechnung auf dem Rechner pruefen.
 //
-// GANZZAHLIG. Kotlin rechnet mit Kommazahlen; Mediane von Pulsen sind dort
-// halbe Schlaege, Perzentile werden linear interpoliert. Hier stehen Pulse mal
-// zwei und Perzentile mal zehn - dieselben Entscheidungen, ohne Gleitkomma.
+// GANZZAHLIG. Mediane von Pulsen sind halbe Schlaege; hier stehen sie mal
+// zwei, ohne Gleitkomma.
 
 // Laenger wird keine Nacht gerechnet: sechzehn Stunden.
 #define SCHLAF_MINUTEN_MAX 960

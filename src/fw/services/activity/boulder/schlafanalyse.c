@@ -5,14 +5,32 @@
 
 #include <string.h>
 
-// Die Zahlen stammen aus Kiesel-Helper (Schlafanalyse.kt); dort steht auch,
-// warum jede so ist, wie sie ist.
+// Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
+// an der Nacht 29./30.9.2026 neben einem Fitbit eingestellt (der Host-Test
+// rechnet sie nach). Der Puls allein trug die Phasen nicht: relativ zu seiner
+// Umgebung traf er Fitbits Tief- und REM-Minuten nur zufaellig. Was traf, war
+// der Koerper: im Tiefschlaf liegt er lange ganz still, im REM zuckt er.
 
 // Um so viel ueber dem Puls der ruhigen Minuten gilt man als wach, auch ohne
 // Bewegung: wer nachts gruebelt, liegt still, aber sein Herz nicht.
 #define PULS_WACH_UEBER 20
 // Kuerzer ist kein Einschlafen: ein Nickerchen vor dem Fernseher zaehlt nicht.
 #define MIN_SCHLAFLAUF 10
+// Ein Schlaflauf unter zwanzig Minuten, dem eine Viertelstunde Wachsein folgt,
+// ist Doesen vor dem Einschlafen - die Nacht beginnt danach.
+#define DOESEN_MAX 20
+#define DOESEN_WACH 15
+// So weit um die Minute herum zaehlt die Unruhe, in Minuten nach jeder Seite.
+#define UNRUHE_FENSTER 7
+// Ab so vielen unruhigen Minuten im Fenster ist es REM: der Koerper zuckt,
+// ohne aufzuwachen. Fruehestens eine Stunde nach dem Einschlafen.
+#define REM_UNRUHE 4
+#define REM_LATENZ 60
+// Tiefschlaf: keine Regung im Fenster, der Puls hoechstens zwei Schlaege ueber
+// seiner Umgebung (mal zwei) und ueber fuenf Minuten um hoechstens drei
+// gespreizt - ein ruhiges, gleichmaessiges Herz.
+#define TIEF_PULS_UEBER2 4
+#define TIEF_SPANNE 3
 // Weniger Schlaf als das ist keine Nacht - eher eine Uhr auf dem Tisch.
 #define MIN_NACHT 60
 // Kuerzere Phasen gehen im Nachbarn auf: fuenf Minuten REM sind Rauschen.
@@ -51,16 +69,6 @@ static int32_t prv_median2(int16_t *a, int n) {
   prv_sortiere(a, n);
   const int m = n / 2;
   return (n % 2 == 1) ? 2 * (int32_t)a[m] : (int32_t)a[m - 1] + a[m];
-}
-
-// Das Perzentil `q_zehntel`/10 eines aufsteigend sortierten Feldes, linear
-// zwischen den Raengen, mal zehn: pos = q * (n - 1) steht als Bruch da.
-static int32_t prv_perzentil10(const int16_t *s, int n, int q_zehntel) {
-  const int32_t zaehler = q_zehntel * (n - 1);
-  const int u = zaehler / 10;
-  const int rest = zaehler % 10;
-  const int o = (u + 1 < n) ? u + 1 : n - 1;
-  return (int32_t)s[u] * 10 + ((int32_t)s[o] - s[u]) * rest;
 }
 
 // Laeufe gleicher Wach/Schlaf-Werte, in `liste` (phase = wach ja/nein).
@@ -136,8 +144,10 @@ static int prv_mitte(const SchlafHrv *f) {
   return f->minute + 2;
 }
 
-// Liegt die Minute im Tiefschlaf, muss eine nahe HRV-Messung mindestens
-// mittel sein: im Tiefschlaf ueberwiegt der Parasympathikus.
+// Eine nahe HRV-Messung klar unter dem Median spricht gegen Tiefschlaf: dort
+// ueberwiegt der Parasympathikus. Nur klar darunter (drei Viertel): ein
+// Fenster alle 30 Minuten sagt ueber eine einzelne Minute wenig, und die
+// Haelfte liegt immer unter dem Median.
 static bool prv_hrv_passt(const SchlafEingabe *e, int ein, int auf, int32_t median2, int i) {
   if (median2 == KEIN) {
     return true;
@@ -159,7 +169,7 @@ static bool prv_hrv_passt(const SchlafEingabe *e, int ein, int auf, int32_t medi
   if (!naechstes || abstand > HRV_REICHWEITE) {
     return true;
   }
-  return 2 * (int32_t)naechstes->rmssd >= median2;
+  return 8 * (int32_t)naechstes->rmssd >= 3 * median2;
 }
 
 // Der Median der HRV-Fenster im Schlaf, mal zwei; KEIN ohne Messung.
@@ -174,8 +184,35 @@ static int32_t prv_hrv_median2(const SchlafEingabe *e, int ein, int auf, int16_t
   return n ? prv_median2(puffer, n) : KEIN;
 }
 
-// Die Phasen Minute fuer Minute, aus dem Puls relativ zu seiner Umgebung
-// (eine Stunde davor und danach): der Puls faellt ueber die Nacht, und gegen
+// Wie viele Minuten um `i` herum sich der Koerper geregt hat, auch ohne
+// aufzuwachen. Bewegung unter der Wachschwelle ist nicht nichts: sie fehlt im
+// Tiefschlaf und haeuft sich im REM.
+static int prv_unruhe(const SchlafEingabe *e, int ein, int auf, int i) {
+  int n = 0;
+  for (int j = i - UNRUHE_FENSTER; j <= i + UNRUHE_FENSTER; j++) {
+    if (j >= ein && j < auf && e->gueltig[j] && e->bewegung[j] > 0) {
+      n++;
+    }
+  }
+  return n;
+}
+
+// Die Spreizung des Pulses ueber die fuenf Minuten um `i`; -1 ohne Puls.
+static int prv_spanne(const SchlafEingabe *e, int i) {
+  int hoch = -1;
+  int tief = -1;
+  for (int j = (i - 2 > 0 ? i - 2 : 0); j <= i + 2 && j < e->anzahl; j++) {
+    const int p = e->puls[j];
+    if (p > 0) {
+      hoch = (hoch < 0 || p > hoch) ? p : hoch;
+      tief = (tief < 0 || p < tief) ? p : tief;
+    }
+  }
+  return hoch < 0 ? -1 : hoch - tief;
+}
+
+// Die Phasen Minute fuer Minute. Der Puls wird relativ zu seiner Umgebung
+// (eine Stunde davor und danach) gesehen: er faellt ueber die Nacht, und gegen
 // die ganze Nacht gemessen laege der Tiefschlaf nur am Morgen.
 static void prv_phasen_mit_puls(const SchlafEingabe *e, SchlafArbeit *w, int ein, int auf) {
   const int n = e->anzahl;
@@ -210,17 +247,6 @@ static void prv_phasen_mit_puls(const SchlafEingabe *e, SchlafArbeit *w, int ein
     }
   }
 
-  int m = 0;
-  for (int i = ein; i < auf; i++) {
-    if (!w->wach[i] && w->relativ2[i] != KEIN) {
-      w->sortiert2[m++] = w->relativ2[i];
-    }
-  }
-  prv_sortiere(w->sortiert2, m);
-  const bool grenzen = m > 0;
-  const int32_t p30 = grenzen ? prv_perzentil10(w->sortiert2, m, 3) : 0;
-  const int32_t p70 = grenzen ? prv_perzentil10(w->sortiert2, m, 7) : 0;
-
   const int32_t hrv_median2 = prv_hrv_median2(e, ein, auf, fenster);
 
   for (int i = ein; i < auf; i++) {
@@ -228,20 +254,19 @@ static void prv_phasen_mit_puls(const SchlafEingabe *e, SchlafArbeit *w, int ein
     SchlafPhase p;
     if (w->wach[i]) {
       p = SchlafPhaseWach;
-    } else if (r == KEIN || !grenzen) {
-      p = SchlafPhaseLeicht;
     } else {
+      const int unruhe = prv_unruhe(e, ein, auf, i);
       bool ringsum_ruhig = true;
       for (int j = i - 3; j <= i + 3; j++) {
         ringsum_ruhig = ringsum_ruhig && prv_ruhig(w->wach, ein, auf, j);
       }
-      if ((int32_t)r * 10 <= p30 && ringsum_ruhig &&
-          prv_hrv_passt(e, ein, auf, hrv_median2, i)) {
-        // TIEF: der Puls im unteren Drittel seiner Umgebung, ringsum Ruhe.
+      if (unruhe == 0 && ringsum_ruhig && r != KEIN && r <= TIEF_PULS_UEBER2 &&
+          prv_spanne(e, i) <= TIEF_SPANNE && prv_hrv_passt(e, ein, auf, hrv_median2, i)) {
+        // TIEF: eine Viertelstunde ohne jede Regung, das Herz ruhig und
+        // gleichmaessig. Ohne Puls kein Tiefschlaf - nur Stillliegen reicht nicht.
         p = SchlafPhaseTief;
-      } else if (prv_ruhig(w->wach, ein, auf, i) && i >= ein + 60 && (int32_t)r * 10 >= p70) {
-        // REM: fruehestens eine Stunde nach dem Einschlafen, das Herz oben,
-        // der Koerper still.
+      } else if (i >= ein + REM_LATENZ && unruhe >= REM_UNRUHE) {
+        // REM: der Koerper zuckt, ohne dass die Minute wach wuerde.
         p = SchlafPhaseRem;
       } else {
         p = SchlafPhaseLeicht;
@@ -357,18 +382,25 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   prv_webster(w->wach, n, w->liste);
 
   // Einschlafen und Aufwachen: der erste und der letzte Schlaf, der lang
-  // genug ist, um einer zu sein.
+  // genug ist, um einer zu sein. DOESEN ZAEHLT NICHT: ein kurzer Schlaf, auf
+  // den langes Wachsein folgt, ist das Wegnicken vor dem Einschlafen.
   const int laeufe = prv_laeufe(w->wach, n, w->liste);
   int ein = -1;
   int auf = -1;
   for (int k = 0; k < laeufe; k++) {
     const SchlafAbschnitt *l = &w->liste[k];
-    if (!l->phase && (l->bis - l->von) >= MIN_SCHLAFLAUF) {
-      if (ein < 0) {
-        ein = l->von;
-      }
-      auf = l->bis;
+    if (l->phase || (l->bis - l->von) < MIN_SCHLAFLAUF) {
+      continue;
     }
+    if (ein < 0) {
+      const bool doesen = (l->bis - l->von) < DOESEN_MAX && k + 1 < laeufe &&
+          (w->liste[k + 1].bis - w->liste[k + 1].von) >= DOESEN_WACH;
+      if (doesen) {
+        continue;
+      }
+      ein = l->von;
+    }
+    auf = l->bis;
   }
   if (ein < 0) {
     return false;
