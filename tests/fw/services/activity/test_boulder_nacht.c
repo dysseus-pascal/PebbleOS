@@ -360,3 +360,25 @@ void test_boulder_nacht__fenster_bleibt_in_der_umstellungsnacht(void) {
   cl_assert_equal_i(b2, s_beginn);
   cl_assert_equal_i(e2, e1);
 }
+
+void test_boulder_nacht__neustart_schickt_die_nacht_nicht_noch_einmal(void) {
+  // Die Nacht am Morgen einmal durchlaufen, dann "Neustart": alle Zustaende
+  // weg, nur die Datei mit der fertigen Nacht bleibt. Dieselben Minuten noch
+  // einmal - die Nacht geht nicht ein zweites Mal ans Telefon.
+  // Zwei Tage spaeter als die anderen Tests, und mit leerem Zustand: die
+  // Tests teilen sich den Prozess, und die Datei kennt die Nacht von vorhin.
+  s_beginn += 2 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  for (s_jetzt = s_beginn; s_jetzt <= s_beginn + MINUTEN * SECONDS_PER_MINUTE;
+       s_jetzt += SECONDS_PER_MINUTE) {
+    boulder_nacht_minute(s_jetzt);
+  }
+  const int vorher = s_saetze_anzahl;
+  cl_assert(vorher >= 1);
+  boulder_nacht_test_reset();
+  for (s_jetzt = s_beginn; s_jetzt <= s_beginn + MINUTEN * SECONDS_PER_MINUTE;
+       s_jetzt += SECONDS_PER_MINUTE) {
+    boulder_nacht_minute(s_jetzt);
+  }
+  cl_assert_equal_i(s_saetze_anzahl, vorher);
+}

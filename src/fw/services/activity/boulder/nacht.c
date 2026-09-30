@@ -478,3 +478,20 @@ void boulder_nacht_minute(time_t utc_sec) {
   }
   kernel_free(r);
 }
+
+#ifdef UNITTEST
+void boulder_nacht_test_reset(void) {
+  s_gemeldet_anzahl = 0;
+  s_erledigt_bis = 0;
+  s_gesendet_beginn = 0;
+  s_gesendet_aufwachen = 0;
+  s_gesendet_schlaf = 0;
+  s_gesendet_geladen = false;
+  memset(s_akku, 0xFF, sizeof(s_akku));
+  s_akku_fenster = 0;
+  s_geladen = false;
+  s_bild_da = false;
+  s_bild_gelesen = false;
+  memset(&s_bild, 0, sizeof(s_bild));
+}
+#endif

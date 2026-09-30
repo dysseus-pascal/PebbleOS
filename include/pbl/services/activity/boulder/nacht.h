@@ -99,6 +99,11 @@ int boulder_nacht_verdichten(SchlafAbschnitt *a, int n, int max);
 
 void boulder_nacht_minute(time_t utc_sec);
 
+#ifdef UNITTEST
+// Wie ein Neustart der Uhr: alle Zustaende weg, die Datei bleibt.
+void boulder_nacht_test_reset(void);
+#endif
+
 // Das Nachtfenster, in dem `utc` liegt - oder das zuletzt vergangene.
 void boulder_nacht_fenster(time_t utc, time_t *beginn, time_t *ende);
 // Liegt `utc` im Nachtfenster?
