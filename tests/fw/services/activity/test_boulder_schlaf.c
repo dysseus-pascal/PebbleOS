@@ -259,8 +259,12 @@ void test_boulder_schlaf__abschnitte_lueckenlos(void) {
 // Die Nacht vom 29./30.9.2026 (Pebble Time 2, Firmware b10, Messstufe 4) -
 // dieselbe Nacht hat eine Fitbit Air mitgemessen: ins Bett 21:32, auf 05:55,
 // 22 min wach, REM 2:00 h, leicht 4:51 h, tief 1:10 h. Fitbit ist selbst eine
-// Schaetzung, aber eine gut geprueefte - naeher als 15 % an sie heran ist gut.
+// Schaetzung, aber eine gut gepruefte - naeher als 15 % an sie heran ist gut.
 // Die Minuten zaehlen ab 20:00; Spalte 3 ist das VMC der Uhr selbst.
+// Fitbits Phasen, aus dem Bild abgelesen (Minute von-bis): tief 127-148,
+// 167-169, 246-269, 371-388, 491-509; REM 182-217, 300-303, 308-334, 419-435,
+// 443-460, 516-543; der Rest leicht. Je Minute stimmen rund 55 % (kappa 0,2) -
+// mehr gibt ein Minutenpuls ohne Schlag-zu-Schlag-HRV nicht her.
 static int prv_lade_nacht_29(void) {
   char pfad[512];
   snprintf(pfad, sizeof(pfad), "%s/activity/boulder/nacht-2026-09-29.csv", CLAR_FIXTURE_PATH);
