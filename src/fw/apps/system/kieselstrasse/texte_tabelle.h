@@ -53,5 +53,9 @@ STR(STR_ALTER_GESTERN,    28, "yesterday or earlier", "gestern oder früher",
 STR(STR_ANKUNFT,          40, "ETA %s", "an %s",
     "arr. %s", "arr. %s", "lleg. %s")
 
+// ---- Entfernung ----------------------------------------------------------
+// Dezimalzeichen in "1,2 km". LECO hat beide.
+STR(STR_DEZIMAL,           0, ".", ",", ",", ",", ",")
+
 // Die Zeile im Starter (App Glance) der Store-App ist weg: die System-App
 // zeigt im Startmenue nur ihren Namen.

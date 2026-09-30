@@ -26,35 +26,35 @@
  *
  * 0 heisst "nichts bekannt" und zeichnet nichts. Eine geratene Richtung waere
  * schlimmer als keine.
+ *
+ * SO, WIE OSMAND SIE ZEICHNET: ein Schaft, der unten ins Bild kommt, eine
+ * Kurve in die Richtung und eine grosse Spitze - auf Farbschirmen gruen mit
+ * dunklem Rand. Wer den Pfeil auf dem Telefon gesehen hat, erkennt ihn am
+ * Handgelenk wieder, ohne ihn neu lesen zu lernen.
  */
-
-/** Den Pfad einmal bauen. Muss vor dem ersten Zeichnen laufen. */
-void pfeil_init(void);
-void pfeil_deinit(void);
 
 /**
  * Den Zustand dieser Datei auf Anfang - beim Start der App.
  *
- * DER PFAD LAG IM APP-SPEICHER DES VORIGEN LAUFS. Die Variable ueberlebt das
- * Ende einer System-App, der Speicher nicht; ohne das hier zeichnete
- * pfeil_zeichne mit einem Zeiger ins Leere (wie in Kieselsport, 580ba98f8).
+ * Eine System-App behaelt ihre statischen Variablen ueber ihr Ende hinaus
+ * (Kieselsport, 580ba98f8). Der Bauplatz des Pfeils liegt nur waehrend des
+ * Zeichnens auf dem App-Heap; sein Zeiger darf nie aus einem vorigen Lauf
+ * stammen.
  */
 void pfeil_zuruecksetzen(void);
 
-/** Wie breit der Pfeil auf dieser Uhr ist - fuer die Aufteilung der Zeile. */
-int16_t pfeil_breite(void);
-
-/** Wie hoch er ist - fuer die Anzeige ohne Zahl, wo er ueber dem Text steht. */
-int16_t pfeil_hoehe(void);
-
 /**
- * Zeichnet das Zeichen fuer `art` mittig um `mitte`.
+ * Zeichnet das Zeichen fuer `art` mittig in das Quadrat `kasten`.
  *
- * Kreisverkehr und "abseits der Route" sind KEINE gedrehten Pfeile, sondern
- * eigene Zeichen - ein Kreisverkehr als schraeger Pfeil waere eine Luege ueber
- * die Kreuzung, die gleich kommt.
+ * `ausfahrt` (1, 2, 3 ... oder 0) steht im Kreisverkehr als Zahl im Ring.
+ * `winkel` ist OsmAnds turn_angle in Grad (0 geradeaus, + rechts) oder
+ * WEG_KEIN_WINKEL - ohne ihn zeigt der Kreisverkehr keine Ausfahrt statt
+ * einer geratenen.
  */
-void pfeil_zeichne(GContext *ctx, GPoint mitte, int art);
+void pfeil_zeichne(GContext *ctx, GRect kasten, int art, int ausfahrt, int winkel);
 
 /** Gibt es fuer diese Kennzahl ueberhaupt ein Zeichen? */
 bool pfeil_kennt(int art);
+
+/** Steht bei dieser Art die Nummer der Ausfahrt im Ring? */
+bool pfeil_zeigt_nummer(int art, int ausfahrt);

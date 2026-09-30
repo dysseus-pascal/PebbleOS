@@ -203,3 +203,45 @@ void test_kieselstrasse_weg__alter_text(void) {
   weg_alter_text(buf, sizeof(buf));
   cl_assert_equal_s(buf, "12 min ago");
 }
+
+// Ein Kreisverkehr wie von Boulder: Art, Entfernung, Ausfahrt und Winkel.
+static DictionaryIterator *prv_kreisel(int art, int ausfahrt, int winkel) {
+  DictionaryIterator schreiben;
+  cl_assert_equal_i(dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer)), DICT_OK);
+  dict_write_int32(&schreiben, MESSAGE_KEY_ABBIEGEART, art);
+  dict_write_int32(&schreiben, MESSAGE_KEY_ENTFERNUNG, 120);
+  dict_write_int32(&schreiben, MESSAGE_KEY_AUSFAHRT, ausfahrt);
+  dict_write_int32(&schreiben, MESSAGE_KEY_WINKEL, winkel);
+  const uint32_t benutzt = dict_write_end(&schreiben);
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)benutzt);
+  return &s_iter;
+}
+
+void test_kieselstrasse_weg__ausfahrt_und_winkel(void) {
+  weg_init();
+  cl_assert_equal_i(weg_ausfahrt(), 0);
+  cl_assert_equal_i(weg_winkel(), WEG_KEIN_WINKEL);
+  weg_uebernimm(prv_kreisel(13, 3, -90));
+  cl_assert_equal_i(weg_ausfahrt(), 3);
+  cl_assert_equal_i(weg_winkel(), -90);
+  // Nur die Entfernung: die Ausfahrt bleibt.
+  weg_uebernimm(prv_nachricht(-1, 60, NULL));
+  cl_assert_equal_i(weg_ausfahrt(), 3);
+  // Die naechste Abbiegeart ohne Ausfahrt loescht sie.
+  weg_uebernimm(prv_nachricht(5, 300, NULL));
+  cl_assert_equal_i(weg_ausfahrt(), 0);
+  cl_assert_equal_i(weg_winkel(), WEG_KEIN_WINKEL);
+  // Ein Winkel ausserhalb von -180..180 ist keiner.
+  weg_uebernimm(prv_kreisel(13, 2, 400));
+  cl_assert_equal_i(weg_winkel(), WEG_KEIN_WINKEL);
+}
+
+void test_kieselstrasse_weg__ausfahrt_nicht_im_persist(void) {
+  weg_init();
+  weg_uebernimm(prv_kreisel(13, 3, 0));
+  weg_sichern();
+  cl_assert_equal_i(s_persist_laenge, (int)sizeof(Weg));
+  weg_init();
+  cl_assert_equal_i(weg_stand()->abbiegeart, 13);
+  cl_assert_equal_i(weg_ausfahrt(), 0);
+}

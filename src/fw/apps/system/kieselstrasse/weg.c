@@ -16,6 +16,10 @@
 
 static Weg s_weg;
 
+// Ausfahrt und Winkel stehen neben s_weg, nicht darin (siehe weg.h).
+static int s_ausfahrt;
+static int s_winkel;
+
 // Weicht der Stand vom Persist ab? Nur dann lohnt ein Schreibvorgang - ein
 // Blick auf die Uhr ohne eine einzige Nachricht soll den Flash nicht beruehren.
 static bool s_geaendert;
@@ -24,6 +28,8 @@ static void prv_anfang(void) {
   memset(&s_weg, 0, sizeof(s_weg));
   s_weg.entfernung_m = -1;
   s_weg.rest_m = -1;
+  s_ausfahrt = 0;
+  s_winkel = WEG_KEIN_WINKEL;
 }
 
 void weg_init(void) {
@@ -68,7 +74,21 @@ bool weg_uebernimm(DictionaryIterator *iter) {
   const int vorher = s_weg.abbiegeart;
 
   Tuple *a = dict_find(iter, MESSAGE_KEY_ABBIEGEART);
-  if (a && a->type == TUPLE_INT) s_weg.abbiegeart = a->value->int32;
+  if (a && a->type == TUPLE_INT) {
+    s_weg.abbiegeart = a->value->int32;
+    // Jede Abbiegeart kommt mit ihrer eigenen Ausfahrt - oder ohne. Die Nummer
+    // des vorigen Kreisels an einer gewoehnlichen Kreuzung waere eine Luege.
+    s_ausfahrt = 0;
+    s_winkel = WEG_KEIN_WINKEL;
+  }
+
+  Tuple *nr = dict_find(iter, MESSAGE_KEY_AUSFAHRT);
+  if (nr && nr->type == TUPLE_INT) s_ausfahrt = nr->value->int32;
+
+  Tuple *wi = dict_find(iter, MESSAGE_KEY_WINKEL);
+  if (wi && wi->type == TUPLE_INT && wi->value->int32 >= -180 && wi->value->int32 <= 180) {
+    s_winkel = wi->value->int32;
+  }
 
   Tuple *e = dict_find(iter, MESSAGE_KEY_ENTFERNUNG);
   if (e && e->type == TUPLE_INT) s_weg.entfernung_m = e->value->int32;
@@ -136,3 +156,7 @@ int weg_balken_prozent(void) {
   const int32_t p = s_weg.entfernung_m * 100 / KST_BALKEN_AB_M;
   return (int)(p < 0 ? 0 : (p > 100 ? 100 : p));
 }
+
+int weg_ausfahrt(void) { return s_ausfahrt; }
+
+int weg_winkel(void) { return s_winkel; }

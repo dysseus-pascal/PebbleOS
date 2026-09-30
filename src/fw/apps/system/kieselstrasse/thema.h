@@ -17,6 +17,15 @@
 #define KST_FARBE_BALKEN     PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack)
 #define KST_FARBE_BALKEN_BG  PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
 
+// Der Pfeil in OsmAnds Gruen, aber EINE STUFE DUNKLER: das helle Gruen des
+// Telefons (00FF00) steht dort auf dunklem Grund; auf Weiss verliert es fast
+// allen Kontrast. Islamgruen (00AA00) mit dunkelgruenem Rand bleibt als Gruen
+// erkennbar und hebt sich trotzdem ab. Auf Schwarzweiss: schwarz.
+#define KST_FARBE_PFEIL      PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack)
+#define KST_FARBE_PFEIL_RAND PBL_IF_COLOR_ELSE(GColorDarkGreen, GColorBlack)
+// Der Teil des Kreisverkehrs, auf dem man nicht faehrt: da, aber leise.
+#define KST_FARBE_RING       PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
+
 // Breit heisst: emery (200) und gabbro (260). Flint ist mit 144 schmal, und
 // dort muss jede Schrift eine Stufe kleiner sein.
 #define KST_BREIT (PBL_DISPLAY_WIDTH >= 180)

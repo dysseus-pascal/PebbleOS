@@ -82,3 +82,18 @@ void weg_alter_text(char *buf, size_t len);
 
 /** Wie voll der Balken steht, 0..100, oder -1 fuer keinen. */
 int weg_balken_prozent(void);
+
+// Kein Winkel bekannt - jeder echte liegt zwischen -180 und 180.
+#define WEG_KEIN_WINKEL (-1000)
+
+/**
+ * Die Ausfahrt im Kreisverkehr (1, 2, 3 ...), 0 = keine bekannt.
+ *
+ * NICHT IM PERSIST: der Aufbau von Weg bleibt, wie die Store-App ihn schrieb.
+ * Nach dem Oeffnen fehlt die Nummer darum, bis die erste Nachricht kommt -
+ * und die schickt Boulder beim Oeffnen sofort.
+ */
+int weg_ausfahrt(void);
+
+/** Wohin die Ausfahrt zeigt (Grad, + rechts), oder WEG_KEIN_WINKEL. */
+int weg_winkel(void);
