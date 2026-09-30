@@ -63,6 +63,9 @@ traegt die neue Signatur; den alten Schluessel spaeter aus der Liste nehmen.
 - Konto oder Rechner kompromittiert: GitHub-Passwort und Token wechseln,
   alle Releases seit dem Verdacht pruefen, Schluessel wechseln.
 - Asset fehlt im Release: `gh release upload <tag> <datei> -R dysseus-pascal/boulder-firmware`.
+- Release fehlt ganz (GitHub antwortete mit 500, das Tag ist schon gepusht):
+  `gh release create <tag> build-boulder/<paket>.pbz build-boulder/<paket>.pbz.sig -R dysseus-pascal/boulder-firmware --draft --title "<tag> - <titel>" --notes-file build-boulder/notizen.md`,
+  Assets pruefen, dann `gh release edit <tag> -R dysseus-pascal/boulder-firmware --draft=false`.
 
 ## Bekannte Grenzen
 

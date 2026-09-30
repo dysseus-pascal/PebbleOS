@@ -66,7 +66,12 @@ trap - EXIT
 tail -n +2 "$NOTIZEN" > build-boulder/notizen.md
 # Erst als Entwurf mit beiden Dateien, dann freischalten: Boulder ueberspringt
 # Entwuerfe, so erscheint das Release nie ohne seine Signatur.
-gh release create "$TAG" "$PAKET" "$PAKET.sig" -R "$REPO" --draft --title "$TAG - $TITEL" --notes-file build-boulder/notizen.md >/dev/null
+# GitHub antwortet gelegentlich mit 500 - drei Anlaeufe, bevor es einen Fehler gibt.
+for versuch in 1 2 3; do
+  gh release create "$TAG" "$PAKET" "$PAKET.sig" -R "$REPO" --draft --title "$TAG - $TITEL" --notes-file build-boulder/notizen.md >/dev/null && break
+  test "$versuch" -lt 3 || { echo "Release nicht angelegt - Tag ist gepusht; nachholen mit: gh release create $TAG $PAKET $PAKET.sig -R $REPO --draft ... (siehe SIGNATUR.md)" >&2; exit 1; }
+  sleep 10
+done
 for name in "$(basename "$PAKET")" "$(basename "$PAKET").sig"; do
   gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' | grep -qx "$name" \
     || { echo "Im Release fehlt $name - Entwurf bleibt stehen, nachreichen mit: gh release upload $TAG <datei> -R $REPO" >&2; exit 1; }
