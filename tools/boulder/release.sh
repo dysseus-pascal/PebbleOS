@@ -23,7 +23,7 @@
 set -eu
 cd "$(dirname "$0")/../.."
 NUMMER="${1:?Nummer fehlt, z. B. tools/boulder/release.sh 1}"
-BASIS=v4.38.3
+BASIS=v4.38.4
 TAG="$BASIS-b$NUMMER"
 REPO=dysseus-pascal/boulder-firmware
 NOTIZEN=".github/release/$TAG.md"
