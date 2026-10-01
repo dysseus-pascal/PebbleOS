@@ -128,6 +128,9 @@ static uint32_t prv_minute_file_get_settings_key(time_t utc) {
   return utc / seconds_per_key;
 }
 
+// Weniger Schritte je Minute sind kein Gehen - langsames Schlendern hat um 60.
+#define KALG_GEHEN_MIN_SCHRITTE 40
+
 // ----------------------------------------------------------------------------------------------
 // Callback provided to kalg_activities_update to create activity sessions.
 static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_activity,
@@ -163,6 +166,20 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
   // Nullen der Schritte im Schlaf braucht der Rest der Firmware -, aber ihre
   // Sitzungen fallen hier weg. Sonst stuende jede Nacht doppelt da.
   if (activity == ActivitySessionType_Sleep || activity == ActivitySessionType_RestfulSleep) {
+    return;
+  }
+
+  // BOULDER: EIN SPAZIERGANG BRAUCHT SCHRITTE. Beim Velofahren bewegt sich
+  // das Handgelenk genug, dass Kraepelin einen "Walk" erkennt - mit einer Handvoll
+  // Schritten und einer Pace von ueber zwei Stunden je Kilometer (01.10.2026).
+  // Unter KALG_GEHEN_MIN_SCHRITTE je Minute ist es kein Gehen und kein Laufen:
+  // die Sitzung faellt weg, samt Meldung und Eintrag in der Akte. Eine schon
+  // gemeldete laufende Sitzung wird dabei geloescht.
+  const uint32_t minuten = len_sec / SECONDS_PER_MINUTE;
+  if ((activity == ActivitySessionType_Walk || activity == ActivitySessionType_Run) &&
+      minuten > 0 && steps < KALG_GEHEN_MIN_SCHRITTE * minuten) {
+    ActivitySession weg = { .type = activity, .start_utc = start_utc };
+    activity_sessions_prv_delete_activity_session(&weg);
     return;
   }
 
