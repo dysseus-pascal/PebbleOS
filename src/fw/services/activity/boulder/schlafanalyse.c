@@ -16,10 +16,11 @@
 #define PULS_WACH_UEBER 20
 // Kuerzer ist kein Einschlafen: ein Nickerchen vor dem Fernseher zaehlt nicht.
 #define MIN_SCHLAFLAUF 10
-// Ein Schlaflauf unter zwanzig Minuten, dem eine Viertelstunde Wachsein folgt,
-// ist Doesen vor dem Einschlafen - die Nacht beginnt danach.
-#define DOESEN_MAX 20
-#define DOESEN_WACH 15
+// Eingeschlafen ist, wessen Schlaf haelt: von der Stunde ab dem ersten Schlaf
+// muessen drei Viertel Schlaf sein. Sonst war es Doesen vor dem Fernseher, und
+// die Nacht beginnt spaeter (Nacht 30.9.: zwei Stunden Wegnicken und Aufstehen).
+#define HALTEN_FENSTER 60
+#define HALTEN_SCHLAF 45
 // So weit um die Minute herum zaehlt die Unruhe, in Minuten nach jeder Seite.
 #define UNRUHE_FENSTER 7
 // Ab so vielen unruhigen Minuten im Fenster ist es REM: der Koerper zuckt,
@@ -134,6 +135,17 @@ static void prv_webster(bool *wach, int n, SchlafAbschnitt *liste) {
       }
     }
   }
+}
+
+// Ob der Schlaf ab `von` haelt. Am Ende der Daten zaehlt, was da ist: wer
+// kurz vor dem Ende einschlaeft, hat trotzdem geschlafen.
+static bool prv_haelt(const bool *wach, int n, int von) {
+  const int bis = (von + HALTEN_FENSTER < n) ? von + HALTEN_FENSTER : n;
+  int schlaf = 0;
+  for (int i = von; i < bis; i++) {
+    schlaf += wach[i] ? 0 : 1;
+  }
+  return HALTEN_FENSTER * schlaf >= HALTEN_SCHLAF * (bis - von);
 }
 
 static bool prv_ruhig(const bool *wach, int ein, int auf, int j) {
@@ -382,8 +394,8 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   prv_webster(w->wach, n, w->liste);
 
   // Einschlafen und Aufwachen: der erste und der letzte Schlaf, der lang
-  // genug ist, um einer zu sein. DOESEN ZAEHLT NICHT: ein kurzer Schlaf, auf
-  // den langes Wachsein folgt, ist das Wegnicken vor dem Einschlafen.
+  // genug ist, um einer zu sein. DOESEN ZAEHLT NICHT: ein Schlaf, der nicht
+  // haelt, ist das Wegnicken vor dem Einschlafen.
   const int laeufe = prv_laeufe(w->wach, n, w->liste);
   int ein = -1;
   int auf = -1;
@@ -393,9 +405,7 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
       continue;
     }
     if (ein < 0) {
-      const bool doesen = (l->bis - l->von) < DOESEN_MAX && k + 1 < laeufe &&
-          (w->liste[k + 1].bis - w->liste[k + 1].von) >= DOESEN_WACH;
-      if (doesen) {
+      if (!prv_haelt(w->wach, n, l->von)) {
         continue;
       }
       ein = l->von;

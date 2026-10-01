@@ -315,3 +315,49 @@ void test_boulder_schlaf__echte_nacht_neben_fitbit(void) {
   cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseTief) >= 50 && prv_minuten(&s_ergebnis, SchlafPhaseTief) <= 100);
   cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseRem) >= 90 && prv_minuten(&s_ergebnis, SchlafPhaseRem) <= 150);
 }
+
+// Die Nacht vom 30.9./1.10.2026, aus Boulders Nachtexport, neben einem Fitbit:
+// eingeschlafen 21:58, aufgewacht 05:58. Davor zwei Stunden Wegnicken und
+// Aufstehen - die alte Doesen-Regel liess die Nacht schon um 20:08 beginnen.
+static int prv_lade_nacht_30(void) {
+  char pfad[512];
+  snprintf(pfad, sizeof(pfad), "%s/activity/boulder/nacht-2026-09-30.csv", CLAR_FIXTURE_PATH);
+  FILE *f = fopen(pfad, "r");
+  cl_assert(f);
+  char zeile[256];
+  int n = 0;
+  while (fgets(zeile, sizeof(zeile), f)) {
+    // Kopfzeilen (die Nacht, wie Boulder sie sah, und die Spalten) ueberspringen.
+    if (zeile[0] == '#' || !strncmp(zeile, "minute,", 7)) continue;
+    int minute, vmc, puls;
+    char uhr[8];
+    if (sscanf(zeile, "%d,%7[^,],%*d,%d,%d", &minute, uhr, &vmc, &puls) != 4) continue;
+    cl_assert(minute < SCHLAF_MINUTEN_MAX);
+    s_gueltig[minute] = true;
+    s_bewegung[minute] = (uint16_t)vmc;
+    s_puls[minute] = (uint8_t)puls;
+    if (minute + 1 > n) n = minute + 1;
+  }
+  fclose(f);
+  return n;
+}
+
+void test_boulder_schlaf__echte_nacht_30_neben_fitbit(void) {
+  const int n = prv_lade_nacht_30();
+  cl_assert_equal_i(n, 668);
+  const SchlafEingabe e = (SchlafEingabe){
+    .bewegung = s_bewegung, .puls = s_puls, .gueltig = s_gueltig, .anzahl = n,
+    .schwelle = SCHLAF_SCHWELLE_VMC, .hrv = s_hrv, .hrv_anzahl = 0,
+  };
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  printf("\nNACHT30 ein=%d auf=%d schlaf=%d leicht=%d tief=%d rem=%d wach=%d\n",
+         s_ergebnis.einschlafen, s_ergebnis.aufwachen, s_ergebnis.schlaf_minuten,
+         prv_minuten(&s_ergebnis, SchlafPhaseLeicht), prv_minuten(&s_ergebnis, SchlafPhaseTief),
+         prv_minuten(&s_ergebnis, SchlafPhaseRem), prv_minuten(&s_ergebnis, SchlafPhaseWach));
+  // Fitbit: eingeschlafen 21:58 (Minute 118), aufgewacht 05:58 (598).
+  cl_assert(s_ergebnis.einschlafen >= 108 && s_ergebnis.einschlafen <= 128);
+  cl_assert(s_ergebnis.aufwachen >= 588 && s_ergebnis.aufwachen <= 615);
+  // Das Aufstehen um 01:45 ist wach.
+  cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 350), SchlafPhaseWach);
+  cl_assert(s_ergebnis.schlaf_minuten >= 400 && s_ergebnis.schlaf_minuten <= 480);
+}
