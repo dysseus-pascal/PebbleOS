@@ -134,6 +134,7 @@ pbl_clar_test(test_boulder_nacht
     src/fw/services/activity/boulder/schlafanalyse.c
     src/fw/util/crc8.c
     tests/fakes/fake_settings_file.c
+  DEFINES CONFIG_SERVICE_KIESELSPORT
 )
 
 # Boulder: HRV-Fenster in der Nacht.

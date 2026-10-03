@@ -21,6 +21,7 @@
 typedef struct {
   time_t start;
   uint16_t rmssd;
+  uint8_t puls;   //< bpm aus den Abstaenden, 0 = unbekannt
 } Fenster;
 
 static Fenster s_fenster[HRV_FENSTER_MAX];
@@ -31,6 +32,7 @@ static time_t s_start;
 static uint16_t s_vorher;
 static uint32_t s_summe;          //< Summe der quadrierten Differenzen
 static uint16_t s_anzahl;
+static uint32_t s_ppi_summe;      //< Summe der gezaehlten Abstaende, fuer den Puls
 #ifdef CONFIG_HRM
 static HRMSessionRef s_sitzung = HRM_INVALID_SESSION_REF;
 #endif
@@ -45,11 +47,10 @@ void boulder_hrv_intervall(uint16_t ppi) {
   if (s_vorher != 0) {
     const int d = (int)ppi - (int)s_vorher;
     const int grenze = (int)s_vorher / 3;
-    if (d > -grenze && d < grenze && s_summe < 0xF0000000u) {
+    if (d > -grenze && d < grenze && s_summe < 0xF0000000u && s_anzahl < 0xFFFF) {
       s_summe += (uint32_t)(d * d);
-      if (s_anzahl < 0xFFFF) {
-        s_anzahl++;
-      }
+      s_ppi_summe += ppi;
+      s_anzahl++;
     }
   }
   s_vorher = ppi;
@@ -77,6 +78,16 @@ uint16_t boulder_hrv_rmssd(void) {
   return (s_anzahl < MIN_INTERVALLE) ? 0 : (uint16_t)prv_wurzel(s_summe / s_anzahl);
 }
 
+// DER PULS DES FENSTERS aus denselben Abstaenden wie der RMSSD, gerundet. Er
+// geht mit dem Fenster ans Telefon: eine HRV sagt erst neben ihrem Puls etwas.
+uint8_t boulder_hrv_puls(void) {
+  if (s_anzahl < MIN_INTERVALLE || s_ppi_summe == 0) {
+    return 0;
+  }
+  const uint32_t bpm = (60000u * s_anzahl + s_ppi_summe / 2) / s_ppi_summe;
+  return (bpm > 0xFF) ? 0xFF : (uint8_t)bpm;
+}
+
 #ifdef CONFIG_HRM
 static void prv_hrm_ereignis(PebbleHRMEvent *e, void *context) {
   if (s_misst && e->event_type == HRMEvent_HRV && e->hrv.ppi_ms) {
@@ -91,6 +102,7 @@ static void prv_beginne(time_t utc) {
   s_vorher = 0;
   s_summe = 0;
   s_anzahl = 0;
+  s_ppi_summe = 0;
 #ifdef CONFIG_HRM
   // Jede Sekunde, mit HRV. Ablauf nach etwas mehr als dem Fenster: geht das
   // Ende verloren (Neustart), gibt der Sensor von selbst auf.
@@ -112,7 +124,8 @@ static void prv_beende(void) {
   if (rmssd == 0) {
     return;
   }
-  s_fenster[s_fenster_naechstes] = (Fenster){ .start = s_start, .rmssd = rmssd };
+  s_fenster[s_fenster_naechstes] =
+      (Fenster){ .start = s_start, .rmssd = rmssd, .puls = boulder_hrv_puls() };
   s_fenster_naechstes = (s_fenster_naechstes + 1) % HRV_FENSTER_MAX;
   PBL_LOG_INFO("HRV-Fenster: RMSSD %u ms aus %u Intervallen", rmssd, s_anzahl);
 }
@@ -150,6 +163,7 @@ int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
     aus[n++] = (SchlafHrv){
       .minute = (uint16_t)((f->start - von) / SECONDS_PER_MINUTE),
       .rmssd = f->rmssd,
+      .puls = f->puls,
     };
   }
   return n;

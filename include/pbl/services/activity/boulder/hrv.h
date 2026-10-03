@@ -31,3 +31,5 @@ int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max);
 void boulder_hrv_intervall(uint16_t ppi_ms);
 // Fuer die Tests: den laufenden RMSSD, 0 unter 30 Intervallen.
 uint16_t boulder_hrv_rmssd(void);
+// Der Puls aus denselben Intervallen, in bpm; 0 unter 30 Intervallen.
+uint8_t boulder_hrv_puls(void);

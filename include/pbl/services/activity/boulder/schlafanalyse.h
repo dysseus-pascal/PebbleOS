@@ -12,10 +12,13 @@
 //
 // WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
 // auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
-// Bewegung. DIE PHASEN sind an einer Nacht neben einem Fitbit eingestellt
-// (29./30.9.2026): Tiefschlaf ist eine Viertelstunde ohne jede Regung bei
-// ruhigem Herz, REM sind die Minuten, in denen der Koerper zuckt, ohne
-// aufzuwachen. Der Host-Test rechnet beide Naechte nach.
+// Bewegung. Dazu, eingestellt an drei Naechten neben einem Fitbit (29.9.,
+// 30.9., 2.10.2026): Aufwach-Schuebe - Regungen dicht hintereinander mit einem
+// Pulsstoss - sind ganz wach, auch zwischen den Regungen; eingeschlafen ist
+// man erst, wenn das Herumwaelzen aufhoert. DIE PHASEN: Tiefschlaf ist eine
+// Viertelstunde ohne jede Regung bei ruhigem Herz, REM ein unregelmaessiges
+// Herz bei ruhendem Koerper (ohne dichten Puls: der zuckende Koerper). Der
+// Host-Test rechnet alle Naechte nach.
 //
 // KEIN BETRIEBSSYSTEM HIER. Eingabe sind Felder, Ausgabe ein Ergebnis; der
 // Aufrufer holt die Minuten aus der Datei und legt die Sitzungen an. So laesst
@@ -46,6 +49,7 @@ typedef enum {
 typedef struct {
   uint16_t minute;
   uint16_t rmssd;   //< ms, 0 = nicht brauchbar
+  uint8_t puls;     //< bpm aus den Schlagabstaenden, 0 = unbekannt
 } SchlafHrv;
 
 typedef struct {
@@ -66,6 +70,10 @@ typedef struct {
   uint32_t schwelle;
   const SchlafHrv *hrv;
   uint8_t hrv_anzahl;
+  // So viel Schlaf braucht eine Nacht mindestens, in Minuten; 0 = die
+  // Vorgabe (eine Stunde). Der Morgenschlaf nach einer fertigen Nacht braucht
+  // mehr (nacht.c).
+  uint16_t min_schlaf;
 } SchlafEingabe;
 
 // Die Schwelle fuer das VMC der Uhr - eingestellt an der Nacht 25./26.9.2026

@@ -6,10 +6,11 @@
 #include <string.h>
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
-// an der Nacht 29./30.9.2026 neben einem Fitbit eingestellt (der Host-Test
-// rechnet sie nach). Der Puls allein trug die Phasen nicht: relativ zu seiner
-// Umgebung traf er Fitbits Tief- und REM-Minuten nur zufaellig. Was traf, war
-// der Koerper: im Tiefschlaf liegt er lange ganz still, im REM zuckt er.
+// an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
+// eingestellt (der Host-Test rechnet sie nach). Der Puls relativ zu seiner
+// Umgebung traf Fitbits Tiefschlaf nur zufaellig. Was traf, war der Koerper:
+// im Tiefschlaf liegt er lange ganz still. Beim REM traf das Herz: es schlaegt
+// unregelmaessig, waehrend der Koerper ruht.
 
 // Um so viel ueber dem Puls der ruhigen Minuten gilt man als wach, auch ohne
 // Bewegung: wer nachts gruebelt, liegt still, aber sein Herz nicht.
@@ -21,12 +22,50 @@
 // die Nacht beginnt spaeter (Nacht 30.9.: zwei Stunden Wegnicken und Aufstehen).
 #define HALTEN_FENSTER 60
 #define HALTEN_SCHLAF 45
+// Eine Regung: fuenf Sechzehntel der Wachschwelle in einer Minute (250 beim
+// VMC der Uhr). Darunter zuckt nur ein Finger. MITTEN IM BEREICH, nicht an
+// seinem Rand: von 150 bis 300 aendert sich keine der vier Naechte um mehr als
+// zwei Minuten, ab 350 zerfallen die Wachphasen der 3.10.
+#define REGUNG_SECHZEHNTEL 5
+// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Regungen in den zwanzig Minuten
+// ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.: 22:11,
+// 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
+#define EINSCHLAF_RUHE 20
+#define EINSCHLAF_REGUNGEN 2
+// Hoechstens so weit schiebt das Herumwaelzen das Einschlafen. Zwei Regungen
+// in zwanzig Minuten kommen auch in festem Schlaf vor (in einem Drittel bis
+// mehr als der Haelfte der Fenster); ohne Grenze wanderte der Beginn dort um
+// mehr als eine Stunde. Die 3.10. brauchte 25 Minuten.
+#define EINSCHLAF_SCHIEBEN_MAX 30
+// AUFWACHEN MITTEN IN DER NACHT: mindestens drei Regungen, keine mehr als zehn
+// Minuten nach der vorigen, und das Herz schiesst dabei um dreizehn Schlaege
+// ueber den Schlafpuls ringsum. Dann ist der ganze Schub wach, auch die
+// ruhigen Minuten zwischen den Regungen - wer wach liegt, bewegt sich nicht
+// jede Minute (Nacht 3.10.: 01:50-02:29, 02:46-03:47, 05:02-05:30). Ohne den
+// Pulsstoss sind es die Zuckungen im REM (Nacht 29.9.: 03:00-03:41).
+// DIE ZEHN MINUTEN SIND KEIN ZUFALL: wer am 3.10. wach lag, regte sich alle
+// sieben bis neun Minuten; unter neun zerfallen diese Schuebe. Von neun bis
+// zwoelf Minuten und von zwoelf bis vierzehn Schlaegen rechnen alle vier
+// Naechte gleich - beide Werte liegen mitten darin, nicht an einem Rand.
+#define AUFWACH_LUECKE 10
+#define AUFWACH_REGUNGEN 3
+#define AUFWACH_PULS 13
 // So weit um die Minute herum zaehlt die Unruhe, in Minuten nach jeder Seite.
 #define UNRUHE_FENSTER 7
-// Ab so vielen unruhigen Minuten im Fenster ist es REM: der Koerper zuckt,
-// ohne aufzuwachen. Fruehestens eine Stunde nach dem Einschlafen.
-#define REM_UNRUHE 4
+// REM fruehestens eine Stunde nach dem Einschlafen.
 #define REM_LATENZ 60
+// REM MIT DICHTEM PULS: die bis zu fuenf naechsten Pulswerte (hoechstens drei
+// Minuten weg) liegen fuenf Schlaege oder mehr auseinander. Fuenf Werte, nicht
+// alle: sonst saehe eine Messstufe mit Minutenpuls mehr REM als eine mit
+// Zwei-Minuten-Puls, nur weil mehr Werte mehr Spreizung haben.
+#define REM_NAH 3
+#define REM_WERTE 5
+#define REM_WERTE_MIN 3
+#define REM_SPANNE 5
+// OHNE DICHTEN PULS (Messstufe 1 bis 3, alte Naechte) zeigt nur der Koerper
+// das REM: ab so vielen unruhigen Minuten im Fenster zuckt er, ohne
+// aufzuwachen.
+#define REM_UNRUHE 4
 // Tiefschlaf: keine Regung im Fenster, der Puls hoechstens zwei Schlaege ueber
 // seiner Umgebung (mal zwei) und ueber fuenf Minuten um hoechstens drei
 // gespreizt - ein ruhiges, gleichmaessiges Herz.
@@ -40,6 +79,8 @@
 #define UMGEBUNG 60
 // Ein HRV-Fenster, das weiter weg liegt, sagt ueber die Minute nichts.
 #define HRV_REICHWEITE 15
+// Unter so vielen ruhigen HRV-Fenstern gibt es keinen Vergleich.
+#define HRV_RUHIG_MIN 3
 
 // Cole-Kripke: die Gewichte fuer die Minuten i-4 .. i+2.
 #define VOR 4
@@ -83,6 +124,12 @@ static int prv_laeufe(const bool *wach, int n, SchlafAbschnitt *liste) {
     }
   }
   return anzahl;
+}
+
+// Eine Minute, in der sich der Koerper wirklich bewegt hat. Die Schwelle steht
+// in den Einheiten der Eingabe, deshalb der Anteil an ihr.
+static bool prv_regung(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] && 16 * (uint32_t)e->bewegung[i] >= REGUNG_SECHZEHNTEL * e->schwelle;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +195,104 @@ static bool prv_haelt(const bool *wach, int n, int von) {
   return HALTEN_FENSTER * schlaf >= HALTEN_SCHLAF * (bis - von);
 }
 
+// Das Einschlafen hinter das Herumwaelzen schieben: solange in den zwanzig
+// Minuten ab `ein` zwei Regungen liegen, beginnt der Schlaf erst nach der
+// ersten - hoechstens EINSCHLAF_SCHIEBEN_MAX nach `ein`. Dann bis zur naechsten
+// Schlafminute.
+static int prv_zur_ruhe(const SchlafEingabe *e, const bool *wach, int ein, int auf) {
+  int s = ein;
+  while (s < auf) {
+    int erste = -1;
+    int zahl = 0;
+    for (int j = s; j < s + EINSCHLAF_RUHE && j < e->anzahl; j++) {
+      if (prv_regung(e, j)) {
+        erste = (erste < 0) ? j : erste;
+        zahl++;
+      }
+    }
+    // Weiter weg ist es kein Herumwaelzen mehr, sondern Schlaf mit Zuckungen.
+    if (zahl < EINSCHLAF_REGUNGEN || erste + 1 - ein > EINSCHLAF_SCHIEBEN_MAX) {
+      break;
+    }
+    s = erste + 1;
+  }
+  while (s < auf && wach[s]) {
+    s++;
+  }
+  return s;
+}
+
+// Schiesst das Herz waehrend des Schubs [von, bis) ueber den Schlafpuls
+// ringsum (eine Stunde davor und danach)? Ohne Puls ringsum: kein Beleg.
+// EIN WERT REICHT, auch wenn er ein Messfehler sein koennte: am 3.10. trug um
+// 02:21 ein einzelner (82 Schlaege) ein Aufwachen, das Fitbit bestaetigt. Mit
+// einem zweiten hohen Wert in der Naehe als Bedingung fiel es weg, und die
+// Minuten stimmten seltener (54 statt 58 %).
+static bool prv_puls_schiesst(const SchlafEingabe *e, const bool *wach, int ein, int auf,
+                              int von, int bis, int16_t *puffer) {
+  int k = 0;
+  for (int j = (von - UMGEBUNG > ein) ? von - UMGEBUNG : ein; j < von; j++) {
+    if (!wach[j] && e->puls[j] > 0) {
+      puffer[k++] = e->puls[j];
+    }
+  }
+  for (int j = bis; j < bis + UMGEBUNG && j < auf; j++) {
+    if (!wach[j] && e->puls[j] > 0) {
+      puffer[k++] = e->puls[j];
+    }
+  }
+  if (k == 0) {
+    return false;
+  }
+  const int32_t grund2 = prv_median2(puffer, k);
+  int hoch = 0;
+  for (int j = (von - 2 > 0) ? von - 2 : 0; j < bis + 2 && j < e->anzahl; j++) {
+    hoch = (e->puls[j] > hoch) ? e->puls[j] : hoch;
+  }
+  return hoch > 0 && 2 * hoch - grund2 >= 2 * AUFWACH_PULS;
+}
+
+// Die Aufwach-Schuebe zwischen Einschlafen und Aufwachen als wach markieren.
+// NUR MITTEN IN DER NACHT: ein Schub, der bis ans Aufwachen reicht, ist das
+// Aufstehen - dort setzt Cole-Kripke das Ende schon richtig. Erst sammeln,
+// dann markieren: der Grundpuls eines Schubs haengt nicht davon ab, ob der
+// vorige schon wach ist.
+// BEKANNTE GRENZE: der Pulsstoss gilt fuer den ganzen Schub. Ein spaeter
+// Stoss macht so auch vereinzelte Zuckungen davor wach (3.10. 04:39-05:03,
+// bei Fitbit leicht und REM). Ruhig wach liegen (03:19-03:47) sieht in den
+// Minuten aber genauso aus: Regungen alle sieben bis neun Minuten, das Herz
+// beim Schlafpuls. Wer den Schub dort trennt, verliert beides.
+static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein, int auf) {
+  int anzahl = 0;
+  int von = -1;
+  int letzte = -1;
+  int zahl = 0;
+  for (int i = ein; i <= auf; i++) {
+    const bool regung = (i < auf) && prv_regung(e, i);
+    if (regung && von >= 0 && i - letzte <= AUFWACH_LUECKE) {
+      letzte = i;
+      zahl++;
+      continue;
+    }
+    if (!regung && i < auf) {
+      continue;
+    }
+    // Ein Schub ist zu Ende: eine Regung zu weit weg, oder das Aufwachen.
+    if (von > ein && zahl >= AUFWACH_REGUNGEN && letzte + 1 + MIN_SCHLAFLAUF <= auf &&
+        prv_puls_schiesst(e, w->wach, ein, auf, von, letzte + 1, w->sortiert2)) {
+      w->liste[anzahl++] = (SchlafAbschnitt){ .von = von, .bis = letzte + 1 };
+    }
+    von = i;
+    letzte = i;
+    zahl = 1;
+  }
+  for (int k = 0; k < anzahl; k++) {
+    for (int j = w->liste[k].von; j < w->liste[k].bis; j++) {
+      w->wach[j] = true;
+    }
+  }
+}
+
 static bool prv_ruhig(const bool *wach, int ein, int auf, int j) {
   return j >= ein && j < auf && !wach[j];
 }
@@ -156,11 +301,43 @@ static int prv_mitte(const SchlafHrv *f) {
   return f->minute + 2;
 }
 
-// Eine nahe HRV-Messung klar unter dem Median spricht gegen Tiefschlaf: dort
-// ueberwiegt der Parasympathikus. Nur klar darunter (drei Viertel): ein
-// Fenster alle 30 Minuten sagt ueber eine einzelne Minute wenig, und die
-// Haelfte liegt immer unter dem Median.
-static bool prv_hrv_passt(const SchlafEingabe *e, int ein, int auf, int32_t median2, int i) {
+// Ein HRV-Fenster, das ganz im Schlaf lag. Fenster im Wachen tragen die
+// Stoerungen der Bewegung und machen die HRV scheinbar hoch.
+static bool prv_hrv_ruhig(const SchlafEingabe *e, const bool *wach, int ein, int auf,
+                          const SchlafHrv *f) {
+  const int m = prv_mitte(f);
+  if (f->rmssd == 0 || m < ein || m >= auf) {
+    return false;
+  }
+  for (int j = f->minute; j < f->minute + 5; j++) {
+    if (j >= e->anzahl || wach[j]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Der Median der ruhigen HRV-Fenster, mal zwei; KEIN bei zu wenigen.
+static int32_t prv_hrv_ruhig_median2(const SchlafEingabe *e, const bool *wach, int ein, int auf,
+                                     int16_t *puffer) {
+  int n = 0;
+  for (int k = 0; k < e->hrv_anzahl; k++) {
+    if (prv_hrv_ruhig(e, wach, ein, auf, &e->hrv[k])) {
+      puffer[n++] = (int16_t)e->hrv[k].rmssd;
+    }
+  }
+  return (n >= HRV_RUHIG_MIN) ? prv_median2(puffer, n) : KEIN;
+}
+
+// NUR EINE HRV WEIT UNTER DEN ANDEREN SPRICHT GEGEN TIEFSCHLAF - unter der
+// Haelfte des Medians der ruhigen Fenster. Frueher reichten drei Viertel des
+// Medians aller Fenster: die Fenster im Wachliegen trieben den Median hoch, und
+// in der Nacht 2./3.10. fiel aller Tiefschlaf weg, obwohl er zu drei Vierteln
+// auf Fitbits Tiefschlaf lag. Ohne ruhiges Fenster in Reichweite passt es.
+// DAMIT FAENGT DIE HRV NUR NOCH AUSREISSER: in der Nacht 26./27.9. (18 echte
+// Fenster, 36 bis 82 ms) aendert sie keine Minute.
+static bool prv_hrv_passt(const SchlafEingabe *e, const bool *wach, int ein, int auf,
+                          int32_t median2, int i) {
   if (median2 == KEIN) {
     return true;
   }
@@ -168,10 +345,10 @@ static bool prv_hrv_passt(const SchlafEingabe *e, int ein, int auf, int32_t medi
   int abstand = 0;
   for (int k = 0; k < e->hrv_anzahl; k++) {
     const SchlafHrv *f = &e->hrv[k];
-    const int m = prv_mitte(f);
-    if (f->rmssd == 0 || m < ein || m >= auf) {
+    if (!prv_hrv_ruhig(e, wach, ein, auf, f)) {
       continue;
     }
+    const int m = prv_mitte(f);
     const int a = (m > i) ? m - i : i - m;
     if (!naechstes || a < abstand) {
       naechstes = f;
@@ -181,7 +358,7 @@ static bool prv_hrv_passt(const SchlafEingabe *e, int ein, int auf, int32_t medi
   if (!naechstes || abstand > HRV_REICHWEITE) {
     return true;
   }
-  return 8 * (int32_t)naechstes->rmssd >= 3 * median2;
+  return 4 * (int32_t)naechstes->rmssd >= median2;
 }
 
 // Der Median der HRV-Fenster im Schlaf, mal zwei; KEIN ohne Messung.
@@ -198,7 +375,7 @@ static int32_t prv_hrv_median2(const SchlafEingabe *e, int ein, int auf, int16_t
 
 // Wie viele Minuten um `i` herum sich der Koerper geregt hat, auch ohne
 // aufzuwachen. Bewegung unter der Wachschwelle ist nicht nichts: sie fehlt im
-// Tiefschlaf und haeuft sich im REM.
+// Tiefschlaf.
 static int prv_unruhe(const SchlafEingabe *e, int ein, int auf, int i) {
   int n = 0;
   for (int j = i - UNRUHE_FENSTER; j <= i + UNRUHE_FENSTER; j++) {
@@ -221,6 +398,41 @@ static int prv_spanne(const SchlafEingabe *e, int i) {
     }
   }
   return hoch < 0 ? -1 : hoch - tief;
+}
+
+// Wie unregelmaessig das Herz um `i` schlaegt: die Spreizung der bis zu fuenf
+// naechsten Pulswerte, von innen nach aussen gesammelt. -1 bei zu wenigen.
+static int prv_herz_unruhe(const SchlafEingabe *e, int i) {
+  int zahl = 0;
+  int hoch = 0;
+  int tief = 0;
+  for (int d = 0; d <= REM_NAH && zahl < REM_WERTE; d++) {
+    for (int s = 0; s < (d ? 2 : 1) && zahl < REM_WERTE; s++) {
+      const int j = s ? i + d : i - d;
+      if (j < 0 || j >= e->anzahl || e->puls[j] == 0) {
+        continue;
+      }
+      const int p = e->puls[j];
+      hoch = (zahl == 0 || p > hoch) ? p : hoch;
+      tief = (zahl == 0 || p < tief) ? p : tief;
+      zahl++;
+    }
+  }
+  return (zahl >= REM_WERTE_MIN) ? hoch - tief : -1;
+}
+
+// Dicht ist der Puls, wenn um mindestens die Haelfte der Minuten drei Werte in
+// sieben Minuten liegen (ab Messstufe 4). Nur dann traegt er das REM.
+static bool prv_puls_dicht(const SchlafEingabe *e, int ein, int auf) {
+  int dicht = 0;
+  for (int i = ein; i < auf; i++) {
+    int zahl = 0;
+    for (int j = (i - REM_NAH > 0) ? i - REM_NAH : 0; j <= i + REM_NAH && j < e->anzahl; j++) {
+      zahl += (e->puls[j] > 0) ? 1 : 0;
+    }
+    dicht += (zahl >= REM_WERTE_MIN) ? 1 : 0;
+  }
+  return 2 * dicht >= auf - ein;
 }
 
 // Die Phasen Minute fuer Minute. Der Puls wird relativ zu seiner Umgebung
@@ -259,7 +471,8 @@ static void prv_phasen_mit_puls(const SchlafEingabe *e, SchlafArbeit *w, int ein
     }
   }
 
-  const int32_t hrv_median2 = prv_hrv_median2(e, ein, auf, fenster);
+  const int32_t hrv_median2 = prv_hrv_ruhig_median2(e, w->wach, ein, auf, fenster);
+  const bool dicht = prv_puls_dicht(e, ein, auf);
 
   for (int i = ein; i < auf; i++) {
     const int16_t r = w->relativ2[i];
@@ -272,13 +485,17 @@ static void prv_phasen_mit_puls(const SchlafEingabe *e, SchlafArbeit *w, int ein
       for (int j = i - 3; j <= i + 3; j++) {
         ringsum_ruhig = ringsum_ruhig && prv_ruhig(w->wach, ein, auf, j);
       }
+      const bool rem = (i >= ein + REM_LATENZ) &&
+          (dicht ? prv_herz_unruhe(e, i) >= REM_SPANNE : unruhe >= REM_UNRUHE);
       if (unruhe == 0 && ringsum_ruhig && r != KEIN && r <= TIEF_PULS_UEBER2 &&
-          prv_spanne(e, i) <= TIEF_SPANNE && prv_hrv_passt(e, ein, auf, hrv_median2, i)) {
+          prv_spanne(e, i) <= TIEF_SPANNE &&
+          prv_hrv_passt(e, w->wach, ein, auf, hrv_median2, i)) {
         // TIEF: eine Viertelstunde ohne jede Regung, das Herz ruhig und
         // gleichmaessig. Ohne Puls kein Tiefschlaf - nur Stillliegen reicht nicht.
         p = SchlafPhaseTief;
-      } else if (i >= ein + REM_LATENZ && unruhe >= REM_UNRUHE) {
-        // REM: der Koerper zuckt, ohne dass die Minute wach wuerde.
+      } else if (rem) {
+        // REM: das Herz springt, der Koerper bleibt liegen. Die Aufwach-Schuebe
+        // sind schon wach und kommen hier nicht mehr an.
         p = SchlafPhaseRem;
       } else {
         p = SchlafPhaseLeicht;
@@ -415,6 +632,12 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   if (ein < 0) {
     return false;
   }
+  ein = prv_zur_ruhe(e, w->wach, ein, auf);
+  if (ein >= auf) {
+    return false;
+  }
+  prv_aufwach_schuebe(e, w, ein, auf);
+
   int schlaf = 0;
   bool hat_puls = false;
   for (int i = ein; i < auf; i++) {
@@ -423,7 +646,7 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
       hat_puls = hat_puls || e->puls[i] > 0;
     }
   }
-  if (schlaf < MIN_NACHT) {
+  if (schlaf < (e->min_schlaf ? e->min_schlaf : MIN_NACHT)) {
     return false;
   }
 

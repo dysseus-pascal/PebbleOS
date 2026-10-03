@@ -19,6 +19,10 @@
 #include "util/time/time.h"
 #include <pbl/logging/logging.h>
 
+#ifdef CONFIG_SERVICE_KIESELSPORT
+#include "pbl/services/kieselsport/kieselsport.h"
+#endif
+
 #include <string.h>
 
 // Das Nachtfenster in Minuten des Tages (Ortszeit): 20 bis 11 Uhr.
@@ -37,6 +41,12 @@
 // So lange wach, und die Nacht ist endgueltig: Schlaf danach ist eine eigene
 // Nacht (siehe s_erledigt_bis) - der Morgenschlaf nach zwei Stunden auf.
 #define WACH_ENDGUELTIG_MIN 120
+// DER MORGENSCHLAF NACH EINER ENDGUELTIGEN NACHT ist erst ab anderthalb
+// Stunden eine eigene Nacht. Kuerzer ist es ein Nickerchen: als Nacht stuende
+// es neben der echten in der App und in Health Connect. An die Nacht gehaengt
+// verschoebe es deren Aufwachen um Stunden und zaehlte das Wachsein dazwischen
+// als naechtliches Wachliegen. Lang (Nachtdienst, krank) bleibt es eine Nacht.
+#define FOLGENACHT_MIN 90
 // Nach dem Fenster noch so lange, um eine offene Nacht abzuschliessen.
 #define NACHLAUF_MIN 60
 // Mehr Schlafbloecke und Tiefschlaf-Abschnitte traegt keine Nacht ein; die Uhr
@@ -44,6 +54,16 @@
 #define SITZUNGEN_MAX 24
 // So viele Minuten je Griff in die Minutendatei.
 #define LESE_BLOCK 60
+// So viele Trainings merkt sich die Nacht - mehr macht niemand zwischen 20 und
+// 11 Uhr, und die aeltesten liegen dann ohnehin vor dem Fenster. Eine lange
+// Pause teilt ein Training in zwei.
+#define TRAININGS_MAX 6
+// EIN VERGESSENES TRAINING LOESCHT NICHT DIE NACHT. Kieselsport beendet von
+// selbst nichts, auch keine Pause. Eine Pause zaehlt deshalb nur eine halbe
+// Stunde lang zum Training, ein Training hoechstens drei Stunden; danach ist
+// es vergessen, und der Schlaf darin zaehlt.
+#define PAUSE_MAX_MIN 30
+#define TRAINING_MAX_MIN (3 * MINUTES_PER_HOUR)
 
 typedef struct {
   uint16_t bewegung[SCHLAF_MINUTEN_MAX];
@@ -54,7 +74,24 @@ typedef struct {
   SchlafArbeit arbeit;
   SchlafErgebnis ergebnis;
   NachtDlsRecord satz;
+  NachtHrvDlsRecord hrv_satz;
 } Rechnung;
+
+// DIE KIESELSPORT-TRAININGS, Minute fuer Minute mitgeschrieben: [von, bis).
+// Gespeicherte Trainings stehen zwar als Sitzung in der Uhr, aber dort nur die
+// des laufenden Tages (nach Mitternacht fehlt das Yoga von 21 Uhr) und ohne
+// die Pausen - und ein verworfenes gar nicht.
+typedef struct {
+  time_t von;
+  time_t bis;
+} Spanne;
+static Spanne s_trainings[TRAININGS_MAX];
+static int s_trainings_naechstes;   //< Ringpuffer: hierhin kommt das naechste
+static bool s_training_offen;       //< das juengste laeuft noch
+static time_t s_zuletzt_gelaufen;   //< die letzte Minute, in der es nicht pausierte
+// Ist das Aufwachen schon zu sehen, wird um diese Zeit noch einmal gerechnet,
+// ausserhalb des Takts; 0 = nicht.
+static time_t s_nachsehen_um;
 
 // Die laufenden Sitzungen dieser Nacht - sie werden bei jeder Rechnung ersetzt.
 static ActivitySession s_gemeldet[SITZUNGEN_MAX];
@@ -68,6 +105,7 @@ static uint16_t s_gesendet_aufwachen;
 static uint16_t s_gesendet_schlaf;
 static bool s_gesendet_geladen;
 static DataLoggingSession *s_dls;
+static DataLoggingSession *s_dls_hrv;
 // DAS AKKU-PROTOKOLL: der Stand bei jedem Rechentakt im Fenster. Am Ende zaehlt
 // der beim Einschlafen - nicht der, als die Rechnung den Schlaf zum ersten Mal
 // sah; das ist erst nach einer Stunde Schlaf, und nach einem Wachliegen spaeter.
@@ -153,6 +191,58 @@ static int prv_lies(Rechnung *r, time_t beginn, time_t bis) {
     t = weiter;
   }
   return letzte + 1;
+}
+
+// Jede Minute: laeuft ein Kieselsport-Training (pausiert hoechstens
+// PAUSE_MAX_MIN lang), gehoert ihm die eben vergangene Minute. Die Minute, in
+// der es endet, zaehlt noch dazu.
+static void prv_training_merken(time_t utc) {
+#ifdef CONFIG_SERVICE_KIESELSPORT
+  KsStand stand;
+  kieselsport_stand(&stand);
+  if (stand.zustand == LaufLaeuft) {
+    s_zuletzt_gelaufen = utc;
+  }
+  const bool laeuft = stand.zustand == LaufLaeuft ||
+      (stand.zustand == LaufPause &&
+       utc - s_zuletzt_gelaufen <= PAUSE_MAX_MIN * SECONDS_PER_MINUTE);
+#else
+  const bool laeuft = false;
+#endif
+  Spanne *juengstes = &s_trainings[(s_trainings_naechstes + TRAININGS_MAX - 1) % TRAININGS_MAX];
+  if (!laeuft) {
+    if (s_training_offen) {
+      juengstes->bis = utc;
+      s_training_offen = false;
+    }
+    return;
+  }
+  if (!s_training_offen) {
+    juengstes = &s_trainings[s_trainings_naechstes];
+    s_trainings_naechstes = (s_trainings_naechstes + 1) % TRAININGS_MAX;
+    *juengstes = (Spanne){ .von = utc - SECONDS_PER_MINUTE };
+    s_training_offen = true;
+  }
+  juengstes->bis = utc;
+}
+
+// Die Minuten der Trainings zaehlen wie abgelegt: wach, nie Schlaf. Sie
+// bleiben vorhanden - ein Training am Morgen ist das Aufstehen. Hoechstens
+// TRAINING_MAX_MIN je Training.
+static void prv_trainings_raus(Rechnung *r, time_t beginn, int n) {
+  for (int k = 0; k < TRAININGS_MAX; k++) {
+    const Spanne *s = &s_trainings[k];
+    const time_t ende = (s->bis - s->von > TRAINING_MAX_MIN * SECONDS_PER_MINUTE)
+        ? s->von + TRAINING_MAX_MIN * SECONDS_PER_MINUTE : s->bis;
+    if (ende <= s->von || ende <= beginn) {
+      continue;
+    }
+    const int von = (s->von <= beginn) ? 0 : (s->von - beginn) / SECONDS_PER_MINUTE;
+    const int bis = (ende - beginn + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE;
+    for (int i = von; i < bis && i < n; i++) {
+      r->gueltig[i] = false;
+    }
+  }
 }
 
 static void prv_neu(ActivitySessionType art, time_t start, int minuten, bool laufend) {
@@ -383,6 +473,45 @@ static void prv_schicke(Rechnung *r, time_t beginn) {
   }
 }
 
+// Die HRV-Fenster der Nacht an Boulder (Tag 89), gleich hinter dem Satz der
+// Nacht. Ohne Fenster kein Satz: die Nacht wurde ohne HRV gerechnet.
+static void prv_schicke_hrv(Rechnung *r, time_t beginn, int hrv_anzahl) {
+  if (hrv_anzahl <= 0) {
+    return;
+  }
+  if (!s_dls_hrv) {
+    Uuid system_uuid = UUID_SYSTEM;
+    s_dls_hrv = dls_create(DlsSystemTagBoulderNachtHrv, DATA_LOGGING_BYTE_ARRAY,
+                           sizeof(NachtHrvDlsRecord), false /*buffered*/, false /*resume*/,
+                           &system_uuid);
+    if (!s_dls_hrv) {
+      PBL_LOG_WRN("Nacht: keine Datalogging-Sitzung fuer die HRV");
+      return;
+    }
+  }
+  const int teile = (hrv_anzahl + NACHT_HRV_DLS_FENSTER - 1) / NACHT_HRV_DLS_FENSTER;
+  for (int teil = 0; teil < teile; teil++) {
+    NachtHrvDlsRecord *s = &r->hrv_satz;
+    memset(s, 0, sizeof(*s));
+    *s = (NachtHrvDlsRecord){
+      .version = NACHT_HRV_DLS_VERSION,
+      .size = sizeof(NachtHrvDlsRecord),
+      .beginn_utc = (uint32_t)beginn,
+      .teil = teil,
+      .teile = teile,
+    };
+    for (int k = teil * NACHT_HRV_DLS_FENSTER;
+         k < hrv_anzahl && s->anzahl < NACHT_HRV_DLS_FENSTER; k++) {
+      s->fenster[s->anzahl++] = (NachtHrvDlsFenster){
+        .minute = r->hrv[k].minute,
+        .rmssd = r->hrv[k].rmssd,
+        .puls = r->hrv[k].puls,
+      };
+    }
+    dls_log(s_dls_hrv, s, 1);
+  }
+}
+
 bool boulder_nacht_im_fenster(time_t utc) {
   time_t beginn;
   time_t ende;
@@ -393,9 +522,12 @@ bool boulder_nacht_im_fenster(time_t utc) {
 // ---------------------------------------------------------------------------
 
 void boulder_nacht_minute(time_t utc_sec) {
-  if ((utc_sec / SECONDS_PER_MINUTE) % TAKT_MIN != 0) {
+  prv_training_merken(utc_sec);
+  const bool nachsehen = s_nachsehen_um != 0 && utc_sec >= s_nachsehen_um;
+  if ((utc_sec / SECONDS_PER_MINUTE) % TAKT_MIN != 0 && !nachsehen) {
     return;
   }
+  s_nachsehen_um = 0;
   time_t beginn;
   time_t ende;
   boulder_nacht_fenster(utc_sec, &beginn, &ende);
@@ -438,7 +570,11 @@ void boulder_nacht_minute(time_t utc_sec) {
   const time_t ab = (s_erledigt_bis > beginn) ? s_erledigt_bis : beginn;
   const time_t bis = (utc_sec < ende) ? utc_sec : ende;
   const int anzahl = prv_lies(r, ab, bis);
+  prv_trainings_raus(r, ab, anzahl);
   const int hrv_anzahl = boulder_hrv_fenster(ab, bis, r->hrv, SCHLAF_HRV_MAX);
+  // Liegt in diesem Fenster schon eine endgueltige Nacht, ist alles danach
+  // Morgenschlaf - erst ab FOLGENACHT_MIN eine eigene Nacht.
+  const bool folgenacht = s_erledigt_bis > beginn && s_erledigt_bis < ende;
   const SchlafEingabe eingabe = {
     .bewegung = r->bewegung,
     .puls = r->puls,
@@ -447,6 +583,7 @@ void boulder_nacht_minute(time_t utc_sec) {
     .schwelle = SCHLAF_SCHWELLE_VMC,
     .hrv = r->hrv,
     .hrv_anzahl = hrv_anzahl,
+    .min_schlaf = folgenacht ? FOLGENACHT_MIN : 0,
   };
   schlafanalyse_werte(&eingabe, &r->arbeit, &r->ergebnis);
 
@@ -467,6 +604,7 @@ void boulder_nacht_minute(time_t utc_sec) {
        e->schlaf_minuten != s_gesendet_schlaf)) {
     PBL_LOG_INFO("Nacht fertig: %d min Schlaf, Ruhepuls %d", e->schlaf_minuten, e->ruhepuls);
     prv_schicke(r, ab);
+    prv_schicke_hrv(r, ab, hrv_anzahl);
     // Gleich los, nicht erst mit dem Datalogging-Takt: die Nacht soll kurz
     // nach dem Aufstehen auf dem Telefon sein. Die Minuten der Nacht gehen
     // mit, damit Boulder sie zusammen hat. Einmal je geschriebenem Satz, nicht
@@ -483,6 +621,12 @@ void boulder_nacht_minute(time_t utc_sec) {
         ? ab + e->aufwachen * SECONDS_PER_MINUTE : ende;
     s_gemeldet_anzahl = 0;
     s_geladen = false;
+  } else if (!fertig && wach > 0) {
+    // DAS AUFWACHEN IST SCHON ZU SEHEN: noch einmal rechnen, sobald die
+    // Viertelstunde wach voll sein kann, nicht erst im naechsten Takt. So ist
+    // die Nacht bis zu einem Takt frueher fertig und auf dem Telefon; der
+    // Datalogging-Takt selbst bleibt, wie er ist.
+    s_nachsehen_um = utc_sec + (WACH_FERTIG_MIN - wach) * SECONDS_PER_MINUTE;
   }
   kernel_free(r);
 }
@@ -501,5 +645,10 @@ void boulder_nacht_test_reset(void) {
   s_bild_da = false;
   s_bild_gelesen = false;
   memset(&s_bild, 0, sizeof(s_bild));
+  memset(s_trainings, 0, sizeof(s_trainings));
+  s_trainings_naechstes = 0;
+  s_training_offen = false;
+  s_zuletzt_gelaufen = 0;
+  s_nachsehen_um = 0;
 }
 #endif

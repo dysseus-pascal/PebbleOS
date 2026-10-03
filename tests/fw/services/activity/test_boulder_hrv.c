@@ -55,6 +55,8 @@ void test_boulder_hrv__rmssd_wie_kieselsport(void) {
   cl_assert_equal_i(boulder_hrv_fenster(BEGINN - 3600, BEGINN + 3600, f, 4), 1);
   cl_assert_equal_i(f[0].minute, 60);
   cl_assert_equal_i(f[0].rmssd, 40);
+  // Der Puls aus denselben Abstaenden: im Mittel 1020 ms, also 59 Schlaege.
+  cl_assert_equal_i(f[0].puls, 59);
 }
 
 void test_boulder_hrv__zu_wenige_intervalle_zaehlen_nicht(void) {

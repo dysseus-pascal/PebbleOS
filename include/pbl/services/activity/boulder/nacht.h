@@ -25,7 +25,11 @@
 // NUR IM NACHTFENSTER (20 bis 11 Uhr): eine abgelegte Uhr auf dem Tisch saehe
 // tagsueber aus wie Schlaf. Alle fuenfzehn Minuten wird die laufende Nacht neu
 // gerechnet; fertig ist sie nach einer Viertelstunde wach oder am Ende des
-// Fensters.
+// Fensters. Ist das Aufwachen schon zu sehen, wird gerechnet, sobald die
+// Viertelstunde voll sein kann - nicht erst im naechsten Takt.
+//
+// EIN KIESELSPORT-TRAINING IST KEIN SCHLAF: seine Minuten zaehlen wie
+// abgelegt (Yoga liegt still, aber niemand schlaeft dabei).
 
 // Bitfeld wie bei den Sitzungen: Bit 0 muss gesetzt sein, Bit 1 heisst "mit
 // Akku und Messstufe am Ende" (ab Fassung 3).
@@ -67,6 +71,34 @@ typedef struct PBL_PACKED {
 _Static_assert(sizeof(NachtDlsRecord) == 328, "NachtDlsRecord: Boulder erwartet 328 Byte");
 
 #define NACHT_DLS_FLAG_GELADEN 0x01
+
+// DIE HRV-FENSTER DER NACHT, auf Tag 89 (DlsSystemTagBoulderNachtHrv). Ein
+// eigener Satz statt eines laengeren auf Tag 88: Tag 88 bleibt Byte fuer Byte,
+// wie ihn jeder Boulder kennt, und ein Boulder ohne Tag 89 quittiert diesen
+// und wirft ihn weg. Er geht mit jeder Nacht, im selben Augenblick und mit
+// demselben beginn_utc; mehr als NACHT_HRV_DLS_FENSTER Fenster gehen in
+// mehreren Teilen. Bit 0 der Version gesetzt, wie bei den Sitzungen.
+#define NACHT_HRV_DLS_VERSION 1
+#define NACHT_HRV_DLS_FENSTER 48
+
+typedef struct PBL_PACKED {
+  uint16_t minute;   //< Beginn des Fensters (fuenf Minuten), Minuten ab beginn_utc
+  uint16_t rmssd;    //< ms
+  uint8_t puls;      //< bpm aus den Schlagabstaenden, 0 = unbekannt
+} NachtHrvDlsFenster;
+
+typedef struct PBL_PACKED {
+  uint16_t version;        //< NACHT_HRV_DLS_VERSION
+  uint16_t size;           //< sizeof(NachtHrvDlsRecord)
+  uint32_t beginn_utc;     //< derselbe wie im Satz der Nacht auf Tag 88
+  uint8_t teil;            //< 0 ..
+  uint8_t teile;
+  uint8_t anzahl;          //< Fenster in diesem Teil
+  NachtHrvDlsFenster fenster[NACHT_HRV_DLS_FENSTER];
+} NachtHrvDlsRecord;
+
+// Boulder liest auch diesen Satz Byte fuer Byte (NachtHrvParser.kt).
+_Static_assert(sizeof(NachtHrvDlsRecord) == 251, "NachtHrvDlsRecord: Boulder erwartet 251 Byte");
 
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG), ausserhalb seiner Sperre.
 // DIE LETZTE NACHT FUER DIE UHR SELBST - die Health-App zeigt sie. Dieselben

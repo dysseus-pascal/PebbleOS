@@ -10,6 +10,7 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "pbl/services/battery/battery_state.h"
+#include "pbl/services/kieselsport/kieselsport.h"
 
 #include "stubs_logging.h"
 #include "stubs_pbl_malloc.h"
@@ -38,11 +39,33 @@ static HealthMinuteData s_minuten[MINUTEN];
 
 // --- Was die Uhr sonst liefert -------------------------------------------------
 
-// HRV-Fenster kommen hier keine: die Nacht wird wie in der Firmware ohne sie
-// gerechnet, wenn der Sensor keine liefert.
+// HRV-Fenster kommen nur, wo ein Test sie anlegt: sonst wird die Nacht wie in
+// der Firmware ohne sie gerechnet, wenn der Sensor keine liefert. Wie die
+// echte: Fenster, die ab `von` beginnen und deren Mitte vor `bis` liegt, als
+// Minuten ab `von`.
+#define HRV_FENSTER 80
+static time_t s_hrv_start[HRV_FENSTER];
+static int s_hrv_anzahl;
 int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
-  return 0;
+  int n = 0;
+  for (int k = 0; k < s_hrv_anzahl && n < max; k++) {
+    if (s_hrv_start[k] < von || s_hrv_start[k] + 2 * 60 >= bis) {
+      continue;
+    }
+    aus[n++] = (SchlafHrv){
+      .minute = (s_hrv_start[k] - von) / SECONDS_PER_MINUTE,
+      .rmssd = 40 + k % 20,
+      .puls = 50 + k % 10,
+    };
+  }
+  return n;
 }
+
+// Ein Kieselsport-Training laeuft in [s_training_von, s_training_bis), ab
+// s_pause_ab pausiert.
+static time_t s_training_von;
+static time_t s_training_bis;
+static time_t s_pause_ab;
 
 // Der Akku faellt im Test um ein Prozent je Stunde, ab 80 um 20 Uhr.
 BatteryChargeState battery_get_charge_state(void) {
@@ -114,14 +137,33 @@ static time_t s_gesendet_um;
 // mehreren Teilen zaehlt einmal.
 static int s_schreibzeiten;
 
+// Die HRV-Fenster der Nacht, auf Tag 89.
+static NachtHrvDlsRecord s_hrv_saetze[SAETZE];
+static int s_hrv_saetze_anzahl;
+static time_t s_hrv_gesendet_um;
+
+#define SITZUNG_NACHT ((DataLoggingSession *)1)
+#define SITZUNG_HRV ((DataLoggingSession *)2)
+
 DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint16_t item_size,
                                bool buffered, bool resume, const Uuid *uuid) {
+  if (tag == DlsSystemTagBoulderNachtHrv) {
+    cl_assert_equal_i(item_size, sizeof(NachtHrvDlsRecord));
+    return SITZUNG_HRV;
+  }
   cl_assert_equal_i(tag, DlsSystemTagBoulderNacht);
   cl_assert_equal_i(item_size, sizeof(NachtDlsRecord));
-  return (DataLoggingSession *)1;
+  return SITZUNG_NACHT;
 }
 
 DataLoggingResult dls_log(DataLoggingSession *session, const void *data, uint32_t num_items) {
+  if (session == SITZUNG_HRV) {
+    cl_assert(s_hrv_saetze_anzahl < SAETZE);
+    memcpy(&s_hrv_saetze[s_hrv_saetze_anzahl++], data, sizeof(NachtHrvDlsRecord));
+    s_hrv_gesendet_um = s_jetzt;
+    return DATA_LOGGING_SUCCESS;
+  }
+  cl_assert(session == SITZUNG_NACHT);
   cl_assert(s_saetze_anzahl < SAETZE);
   memcpy(&s_saetze[s_saetze_anzahl++], data, sizeof(NachtDlsRecord));
   if (s_schreibzeiten == 0 || s_gesendet_um != s_jetzt) {
@@ -138,6 +180,13 @@ static time_t s_geschickt_um;
 void health_sync_schicken(void) {
   s_geschickt++;
   s_geschickt_um = s_jetzt;
+}
+
+void kieselsport_stand(KsStand *aus) {
+  memset(aus, 0, sizeof(*aus));
+  if (s_jetzt >= s_training_von && s_jetzt < s_training_bis) {
+    aus->zustand = (s_pause_ab && s_jetzt >= s_pause_ab) ? LaufPause : LaufLaeuft;
+  }
 }
 
 // --- Die Nacht ------------------------------------------------------------------
@@ -197,6 +246,16 @@ void test_boulder_nacht__initialize(void) {
   s_schreibzeiten = 0;
   s_geschickt = 0;
   s_geschickt_um = 0;
+  s_hrv_anzahl = 0;
+  s_hrv_saetze_anzahl = 0;
+  s_hrv_gesendet_um = 0;
+  s_training_von = 0;
+  s_training_bis = 0;
+  s_pause_ab = 0;
+  // Jeder Test beginnt wie nach einem Neustart: clar ruft die Tests nach dem
+  // Alphabet auf, nicht nach ihren Tagen - ein spaeterer Tag liesse sonst
+  // einen frueheren als laengst erledigt liegen.
+  boulder_nacht_test_reset();
   prv_lade_nacht();
 }
 
@@ -208,26 +267,30 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   }
 
   // Genau eine Nacht - das Wachliegen um 23 Uhr zerlegt sie nicht, der Schlaf
-  // davor ist kuerzer als eine Stunde. Fertig nach einer Viertelstunde wach
-  // (07:00 + 15 min, dazu die zurueckgehaltenen Minuten und der Takt): 07:45.
+  // davor ist kuerzer als eine Stunde. Fertig nach einer Viertelstunde wach:
+  // 07:00 + 15 min + die 19 zurueckgehaltenen Minuten = 07:34. Der Takt um
+  // 07:30 sah schon elf Minuten wach und rechnet vier Minuten spaeter noch
+  // einmal - frueher wartete die Nacht bis zum naechsten Takt um 07:45.
   cl_assert(s_saetze_anzahl >= 1);
   const NachtDlsRecord *s = &s_saetze[0];
   cl_assert_equal_i(s->teil, 0);
   cl_assert_equal_i(s_saetze_anzahl, s->teile);
   cl_assert_equal_i(s->beginn_utc, s_beginn);
   cl_assert_equal_i(s->utc_to_local, OFFSET_LOKAL);
-  cl_assert_equal_i(s_gesendet_um, s_beginn + (11 * 60 + 45) * SECONDS_PER_MINUTE);
+  cl_assert_equal_i(s_gesendet_um, s_beginn + (11 * 60 + 34) * SECONDS_PER_MINUTE);
   // Gleich hinterher geschickt, genau einmal je Mal, dass die Nacht ging -
   // nicht je Teil.
   cl_assert(s_geschickt >= 1);
   cl_assert_equal_i(s_geschickt, s_schreibzeiten);
   cl_assert_equal_i(s_geschickt_um, s_gesendet_um);
-  // Das Akku-Protokoll: Schlaf zuerst gesehen um 22:45 (78 %), fertig 07:45 (69 %).
+  // Das Akku-Protokoll: Schlaf zuerst gesehen um 22:45 (78 %), fertig 07:34 (69 %).
   cl_assert_equal_i(s->version, NACHT_DLS_VERSION);
   cl_assert_equal_i(s->akku_beginn, 78);
   cl_assert_equal_i(s->akku_ende, 69);
   cl_assert_equal_i(s->flags, 0);
   cl_assert_equal_i(s->messstufe, 3);
+  // Ohne HRV-Fenster geht kein Satz auf Tag 89.
+  cl_assert_equal_i(s_hrv_saetze_anzahl, 0);
   // Eingeschlafen 22:17, aufgewacht 07:00.
   cl_assert_equal_i(s->einschlafen, 120 + 17);
   cl_assert_equal_i(s->aufwachen, 660);
@@ -410,4 +473,170 @@ void test_boulder_nacht__neustart_schickt_die_nacht_nicht_noch_einmal(void) {
   // Nichts Neues, also auch nichts zu schicken.
   cl_assert_equal_i(s_geschickt, geschickt_vorher);
   cl_assert_equal_i(s_geschickt, s_schreibzeiten);
+}
+
+// ---------------------------------------------------------------------------
+// Firmware-Etappe 3.10.2026
+
+// Jede Minute einen Tag lang, von 20 Uhr bis zum naechsten Mittag.
+static void prv_durch_die_nacht(void) {
+  for (s_jetzt = s_beginn; s_jetzt <= s_beginn + MINUTEN * SECONDS_PER_MINUTE;
+       s_jetzt += SECONDS_PER_MINUTE) {
+    boulder_nacht_minute(s_jetzt);
+  }
+}
+
+// Minuten [von, bis) ab 20:00: schlafen (ruhig, Puls 55 jede vierte Minute)
+// oder wach (unterwegs, Puls 85).
+static void prv_setze(int von, int bis, bool wach) {
+  for (int i = von; i < bis; i++) {
+    s_minuten[i] = (HealthMinuteData){
+      .vmc = wach ? 3000 : 2,
+      .steps = wach ? 60 : 0,
+      .heart_rate_bpm = wach ? 85 : (i % 4 == 0 ? 55 : 0),
+    };
+  }
+}
+
+void test_boulder_nacht__hrv_fenster_gehen_mit_der_nacht(void) {
+  // Die echte Nacht, dazu ein HRV-Fenster alle zehn Minuten von 22:00 bis
+  // 07:00 - mehr, als in einen Satz passen. Sie gehen im selben Augenblick wie die Nacht,
+  // mit demselben Beginn, in zwei Teilen.
+  s_beginn += 3 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  for (int k = 0; k < 55; k++) {
+    s_hrv_start[k] = s_beginn + (120 + 10 * k) * SECONDS_PER_MINUTE;
+  }
+  s_hrv_anzahl = 55;
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  cl_assert_equal_i(s_hrv_saetze_anzahl, 2);
+  cl_assert_equal_i(s_hrv_gesendet_um, s_gesendet_um);
+  const NachtHrvDlsRecord *a = &s_hrv_saetze[0];
+  const NachtHrvDlsRecord *b = &s_hrv_saetze[1];
+  cl_assert_equal_i(a->version, NACHT_HRV_DLS_VERSION);
+  cl_assert_equal_i(a->size, sizeof(NachtHrvDlsRecord));
+  cl_assert_equal_i(a->beginn_utc, s_saetze[0].beginn_utc);
+  cl_assert_equal_i(a->teil, 0);
+  cl_assert_equal_i(a->teile, 2);
+  cl_assert_equal_i(a->anzahl, NACHT_HRV_DLS_FENSTER);
+  cl_assert_equal_i(b->teil, 1);
+  cl_assert_equal_i(b->anzahl, 55 - NACHT_HRV_DLS_FENSTER);
+  // Minute ab dem Beginn der Nacht, RMSSD und Puls wie gemessen.
+  cl_assert_equal_i(a->fenster[0].minute, 120);
+  cl_assert_equal_i(a->fenster[0].rmssd, 40);
+  cl_assert_equal_i(a->fenster[0].puls, 50);
+  cl_assert_equal_i(b->fenster[0].minute, 120 + 10 * NACHT_HRV_DLS_FENSTER);
+  cl_assert_equal_i(b->fenster[0].rmssd, 40 + NACHT_HRV_DLS_FENSTER % 20);
+}
+
+void test_boulder_nacht__training_ist_kein_schlaf(void) {
+  // Yoga von 21:00 bis 22:00, ganz still - danach gleich Schlaf bis 06:30.
+  // Ohne das Training begaenne die Nacht schon um 21:00.
+  s_beginn += 4 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(60, 630, false);
+  prv_setze(630, MINUTEN, true);
+  s_training_von = s_beginn + 60 * SECONDS_PER_MINUTE;
+  s_training_bis = s_beginn + 120 * SECONDS_PER_MINUTE;
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  const NachtDlsRecord *s = &s_saetze[s_saetze_anzahl - 1];
+  cl_assert(s->einschlafen >= 120);
+  cl_assert_equal_i(s->aufwachen, 630);
+}
+
+void test_boulder_nacht__kurze_pause_gehoert_zum_training(void) {
+  // Wie eben, aber die letzten zwanzig Minuten des Yoga pausiert, still auf
+  // der Matte: auch die Pause ist kein Schlaf.
+  s_beginn += 7 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(60, 630, false);
+  prv_setze(630, MINUTEN, true);
+  s_training_von = s_beginn + 60 * SECONDS_PER_MINUTE;
+  s_training_bis = s_beginn + 120 * SECONDS_PER_MINUTE;
+  s_pause_ab = s_beginn + 100 * SECONDS_PER_MINUTE;
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  cl_assert(s_saetze[s_saetze_anzahl - 1].einschlafen >= 120);
+}
+
+void test_boulder_nacht__vergessene_pause_loescht_die_nacht_nicht(void) {
+  // Ein Abendspaziergang ab 20:00, um 20:15 pausiert und nie beendet; Schlaf
+  // 22:00-06:30. Die Pause zaehlt nur eine halbe Stunde - die Nacht kommt,
+  // eingeschlafen kurz nach 22:00 (Cole-Kripke und Webster haengen an das
+  // Umhergehen ein paar Minuten an).
+  s_beginn += 8 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(0, 120, true);
+  prv_setze(120, 630, false);
+  prv_setze(630, MINUTEN, true);
+  s_training_von = s_beginn;
+  s_training_bis = s_beginn + 2 * SECONDS_PER_DAY;
+  s_pause_ab = s_beginn + 15 * SECONDS_PER_MINUTE;
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  const NachtDlsRecord *s = &s_saetze[s_saetze_anzahl - 1];
+  cl_assert(s->einschlafen >= 120 && s->einschlafen <= 130);
+  cl_assert_equal_i(s->aufwachen, 630);
+}
+
+void test_boulder_nacht__vergessenes_training_zaehlt_hoechstens_drei_stunden(void) {
+  // Ein Training ab 20:00, das laeuft und laeuft; Schlaf ab 22:00. Nach drei
+  // Stunden ist es vergessen: die Nacht beginnt um 23:00, statt ganz zu fehlen.
+  s_beginn += 9 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(0, 120, true);
+  prv_setze(120, 630, false);
+  prv_setze(630, MINUTEN, true);
+  s_training_von = s_beginn;
+  s_training_bis = s_beginn + 2 * SECONDS_PER_DAY;
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  const NachtDlsRecord *s = &s_saetze[s_saetze_anzahl - 1];
+  cl_assert(s->einschlafen >= 180 && s->einschlafen <= 185);
+  cl_assert_equal_i(s->aufwachen, 630);
+}
+
+void test_boulder_nacht__morgenschlaf_ist_keine_eigene_nacht(void) {
+  // Schlaf 22:00-06:00, zweieinhalb Stunden auf, dann 75 Minuten Schlaf ab
+  // 08:30. Die Nacht ist nach zwei Stunden wach endgueltig; der Morgenschlaf
+  // wird keine zweite Nacht - er ist kuerzer als anderthalb Stunden.
+  s_beginn += 5 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(120, 600, false);
+  prv_setze(600, 750, true);
+  prv_setze(750, 825, false);
+  prv_setze(825, MINUTEN, true);
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 1);
+  for (int k = 0; k < s_saetze_anzahl; k++) {
+    cl_assert_equal_i(s_saetze[k].beginn_utc, s_beginn);
+    cl_assert_equal_i(s_saetze[k].aufwachen, 600);
+  }
+}
+
+void test_boulder_nacht__langer_morgenschlaf_bleibt_eine_nacht(void) {
+  // Wie eben, aber zwei Stunden Schlaf ab 08:30: das ist kein Nickerchen
+  // mehr, sondern eine eigene Nacht (nach dem Aufwachen der ersten).
+  s_beginn += 6 * SECONDS_PER_DAY;
+  boulder_nacht_test_reset();
+  memset(s_minuten, 0xFF, sizeof(s_minuten));
+  prv_setze(120, 600, false);
+  prv_setze(600, 750, true);
+  prv_setze(750, 870, false);
+  prv_setze(870, MINUTEN, true);
+  prv_durch_die_nacht();
+  cl_assert(s_saetze_anzahl >= 2);
+  const NachtDlsRecord *erste = &s_saetze[0];
+  const NachtDlsRecord *zweite = &s_saetze[s_saetze_anzahl - 1];
+  cl_assert_equal_i(erste->beginn_utc, s_beginn);
+  cl_assert_equal_i(erste->aufwachen, 600);
+  cl_assert_equal_i(zweite->beginn_utc, s_beginn + 600 * SECONDS_PER_MINUTE);
+  cl_assert(zweite->schlaf_minuten >= 90);
 }
