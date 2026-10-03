@@ -133,10 +133,11 @@ static void prv_init(void) {
   // und nicht das Menue.
   if (kieselsport_laeuft()) {
     lauf_window_zeige_laufend();
-  } else if (launch_reason() == APP_LAUNCH_WORKER && telefon_wartet()) {
-    // DER DIENST HAT DIE APP GEHOLT, weil ein gespeichertes Training nie
-    // beim Telefon ankam (services/kieselsport, Nachsenden).
-    sende_window_zeige();
+  } else if (launch_reason() == APP_LAUNCH_WORKER && (telefon_wartet() || telefon_stopp_wartet())) {
+    // DER DIENST HAT DIE APP GEHOLT, weil ein gespeichertes Training oder
+    // der Stopp eines verworfenen nie beim Telefon ankam (services/kieselsport,
+    // Nachsenden).
+    sende_window_zeige(!telefon_wartet());
   } else if (launch_reason() == APP_LAUNCH_TIMELINE_ACTION) {
     // AUS DEM PIN "TRAINING": die Aktion "Jetzt starten" traegt die Art als
     // Launch-Code (Art + 1, damit 0 "nichts" bleibt). Der Schirm steht dann

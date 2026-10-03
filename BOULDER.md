@@ -85,6 +85,33 @@ nicht mehr Teil der App; das macht die Firmware (F2).
   Startmenü, und ihr Entfernen löscht weder Persist noch Pins
   (`app_install_manager.c`). Die Store-App Kieselsport muss von der Uhr.
 
+Firmware-Etappe nach dem App-Audit (neue Schlüssel hinter denen der Store-App,
+die bis 10036 gingen; ein Telefon, das sie nicht kennt, überliest sie):
+
+- `ZEIT` 10037: jede Zustandsmeldung (Start, Pause, Weiter, Stopp) trägt ihre
+  Uhrzeit. Die Meldungen stehen in einer Schlange (`meldungen.c`, acht
+  Plätze, je sechs Anläufe), statt einander zu ersetzen; die Zusammenfassung
+  wartet, bis die ihres Trainings durch sind.
+- `PAUSEN` 10038 (Byte: Fassung 1, Zahl aller Pausen, je Pause aktive Sekunde
+  und Dauer als uint16 LE, höchstens 32) und `ENDE` 10039 (Beginn der letzten
+  Pause, UTC) in der Zusammenfassung. Persist 33/34 neben der wartenden; 34
+  trägt mit dem Ende den Beginn des Trainings, sonst gelten beide nicht
+  (ältere Firmware löscht sie nicht mit).
+- Der Stopp eines verworfenen Trainings liegt im Persist (35), bis das Telefon
+  ihn bestätigt; das Nachsenden holt die App auch dafür, und die App fasst
+  nach, bis er drüben ist. Ein besetzter Postausgang zählt nicht als Anlauf.
+- Maximalpuls „nicht gesetzt“: ohne Einstellung Tanaka aus dem Alter der Uhr
+  (ohne Abgleich 30, also 187). `MAXPULS_GESETZT` 10040 in beide Richtungen;
+  Persist 12 vermerkt, ob gesetzt. Eine alte Zahl ohne Vermerk heißt „nicht
+  gesetzt“, wenn sie 190 (alte Vorgabe) oder Tanaka nach dem Alter der Uhr
+  ist (Boulder 0.43–0.45 schickte bei „From age“ die Schätzung); sonst
+  eingestellt. Entschieden wird beim ersten Gebrauch, nicht beim Start (dann
+  ist das Alter noch nicht geladen), und das Ergebnis kommt in den Persist.
+  Vom Telefon gilt eine Zahl ohne Vermerk als eingestellt, außer sie ist das
+  Echo des Werts nach Alter.
+- `KCAL`, `PULS_MITTEL`, `PULS_MAX` gehen weiter mit; Boulder braucht sie nicht
+  mehr (KCAL nur, bis die Kalorien aus dem Puls da sind).
+
 ## Kieselstrasse in der Firmware (Navigation)
 
 Die System-App `src/fw/apps/system/kieselstrasse/` zeigt den nächsten Schritt

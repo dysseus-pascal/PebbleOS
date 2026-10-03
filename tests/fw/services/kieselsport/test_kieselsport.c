@@ -7,6 +7,7 @@
 #include "services/kieselsport/bahnen.h"
 #include "services/kieselsport/puls.h"
 #include "services/kieselsport/reps.h"
+#include "services/kieselsport/schluessel.h"
 #include "services/kieselsport/wartend.h"
 
 #include "pbl/services/regular_timer.h"
@@ -117,6 +118,12 @@ void ks_persist_offen_halten(bool an) { s_offen += an ? 1 : -1; }
 static uint32_t s_zaehler[3];
 uint32_t ks_heute(KsZaehler zaehler) { return s_zaehler[zaehler]; }
 
+// Das Alter aus den Gesundheitseinstellungen. 0 gibt es auf der Uhr nicht
+// (ohne Abgleich steht dort 30); hier steht es fuer ein unsinniges Alter,
+// mit dem die Uhr bei 190 bleibt.
+static uint8_t s_alter;
+uint8_t ks_alter(void) { return s_alter; }
+
 static uint16_t s_sensor_takt;
 static bool s_sensor_hrv;
 void ks_puls_sensor(uint16_t takt_s, bool hrv) {
@@ -203,6 +210,7 @@ void test_kieselsport__initialize(void) {
   s_akku = 80;
   s_erkennen = true;
   s_gemeldet_zahl = 0;
+  s_alter = 0;
   kieselsport_init();
 }
 
@@ -523,7 +531,7 @@ void test_kieselsport__lange_liste_in_zwei_haelften(void) {
   }
   lang[250] = 0;
   const Trainingsstand t = { .art = ArtKraft, .beginn = BEGINN, .dauer_s = 600 };
-  wartend_merken(&t, lang);
+  wartend_merken(&t, lang, NULL, 0, 0);
   Trainingsstand gelesen;
   char liste[KS_LISTE_MAX];
   cl_assert(wartend_laden(&gelesen, liste, sizeof(liste)));
@@ -598,4 +606,290 @@ void test_kieselsport__pause_zaehlt_keine_schritte(void) {
     prv_sekunde_mit_puls(130);
   }
   cl_assert_equal_i(prv_stand().t.schritte, 120);
+}
+
+// --- Maximalpuls: gesetzt oder nach Alter ---
+
+void test_kieselsport__ohne_einstellung_rechnet_die_uhr_nach_alter(void) {
+  // Ohne Alter die alte Vorgabe; mit Alter Tanaka, gerundet wie Boulder.
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  s_alter = 41;
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);   // 208 - 28,7 = 179,3
+  cl_assert_equal_i(kieselsport_zonengrenze(1), 89);
+  s_alter = 35;
+  cl_assert_equal_i(kieselsport_maxpuls(), 184);   // 183,5 rundet auf
+  // Das Alter aendert sich: die Zonen folgen, ohne dass jemand etwas schickt.
+  s_alter = 50;
+  cl_assert_equal_i(kieselsport_maxpuls(), 173);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+}
+
+void test_kieselsport__gemessene_190_ist_einstellbar(void) {
+  s_alter = 41;
+  kieselsport_maxpuls_setze(190);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  kieselsport_init();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  // Zurueck auf "nach Alter": der Wert fliegt aus dem Persist, damit aeltere
+  // Firmware ihre Vorgabe liest.
+  kieselsport_maxpuls_nicht_setzen();
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS));
+  kieselsport_init();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+}
+
+void test_kieselsport__alte_190_ohne_vermerk_heisst_nicht_gesetzt(void) {
+  s_alter = 41;
+  // So hinterliessen Store-App, Konfigseite und Boulder bis 0.42 den Persist.
+  ks_persist_write_int(PERSIST_MAXPULS, 190);
+  kieselsport_init();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  // Jeder andere alte Wert war eingestellt.
+  ks_persist_write_int(PERSIST_MAXPULS, 185);
+  kieselsport_init();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  // Schrieb eine aeltere Firmware nach "nicht gesetzt" einen Wert, gilt er.
+  kieselsport_maxpuls_nicht_setzen();
+  ks_persist_write_int(PERSIST_MAXPULS, 175);
+  kieselsport_init();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 175);
+}
+
+void test_kieselsport__schaetzung_nach_alter_ohne_vermerk_bleibt_nach_alter(void) {
+  // So hinterliess Boulder 0.43 bis 0.45 den Persist bei "From age": seine
+  // Schaetzung nach Tanaka als Zahl.
+  ks_persist_write_int(PERSIST_MAXPULS, 179);
+  // Beim Start der Uhr sind die Gesundheitseinstellungen noch nicht geladen.
+  s_alter = 30;
+  kieselsport_init();
+  // Bis zur Entscheidung gilt die alte Zahl - und noch nichts im Persist.
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS_GESETZT));
+  // Geladen; die App fragt beim Melden ans Telefon.
+  s_alter = 41;
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS));
+  // Festgehalten: mit dem Alter folgt die Uhr, auch nach einem Neustart.
+  s_alter = 45;
+  kieselsport_init();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 177);   // 176,5
+}
+
+void test_kieselsport__eingestellte_zahl_ohne_vermerk_bleibt_eingestellt(void) {
+  ks_persist_write_int(PERSIST_MAXPULS, 185);
+  s_alter = 30;
+  kieselsport_init();
+  s_alter = 41;
+  // Ein Training braucht die Zonen: sein Start entscheidet.
+  kieselsport_starte(ArtLaufen, BEGINN);
+  cl_assert(ks_persist_exists(PERSIST_MAXPULS_GESETZT));
+  cl_assert_equal_i(ks_persist_read_int(PERSIST_MAXPULS_GESETZT), 1);
+  kieselsport_verwerfen();
+  // Trifft Tanaka die Zahl spaeter zufaellig, bleibt sie eingestellt.
+  s_alter = 33;   // 184,9
+  kieselsport_init();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+}
+
+void test_kieselsport__zahl_ohne_vermerk_wie_bisher(void) {
+  s_alter = 41;
+  // Das Echo der eigenen Meldung aendert nichts: die Uhr bleibt beim Alter.
+  kieselsport_maxpuls_alt(179);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  s_alter = 42;
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);   // 178,6
+  // Jede andere Zahl ist eingestellt - auch 190 von einem alten Boulder.
+  kieselsport_maxpuls_alt(190);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  // Ist ein Wert gesetzt, bleibt auch eine gleiche Zahl gesetzt.
+  kieselsport_maxpuls_alt(179);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  // Unsinn bleibt draussen.
+  kieselsport_maxpuls_alt(90);
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+}
+
+// --- Pausen und Ende fuer das Telefon ---
+
+static void prv_sekunden(int n) {
+  for (int i = 0; i < n; i++) {
+    prv_sekunde_mit_puls(120);
+  }
+}
+
+static void prv_pause_fuer(int sekunden) {
+  kieselsport_pause_umschalten();
+  for (int i = 0; i < sekunden; i++) {
+    prv_sekunde();
+  }
+  kieselsport_pause_umschalten();
+}
+
+static uint16_t prv_u16(const uint8_t *b) { return (uint16_t)(b[0] | (b[1] << 8)); }
+
+void test_kieselsport__pausen_gehen_mit_der_zusammenfassung(void) {
+  kieselsport_starte(ArtBike, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(120);       // Kaffee
+  prv_sekunden(40);
+  prv_pause_fuer(5);         // Ampel
+  prv_sekunden(20);
+  // Gespeichert wird aus der Pause: dort endet die aktive Zeit.
+  kieselsport_pause_umschalten();
+  const time_t letzte_pause = s_jetzt;
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde();
+  }
+  kieselsport_speichern();
+
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 90);
+  uint8_t b[KS_PAUSEN_BYTES];
+  const size_t n = kieselsport_wartend_pausen(b, sizeof(b));
+  cl_assert_equal_i(n, 2 + 2 * 4);
+  cl_assert_equal_i(b[0], KS_PAUSEN_FASSUNG);
+  cl_assert_equal_i(b[1], 2);
+  cl_assert_equal_i(prv_u16(b + 2), 30);
+  cl_assert_equal_i(prv_u16(b + 4), 120);
+  cl_assert_equal_i(prv_u16(b + 6), 70);
+  cl_assert_equal_i(prv_u16(b + 8), 5);
+  // Beginn + aktive Zeit + Pausen ist genau das Ende.
+  cl_assert_equal_i(kieselsport_wartend_ende(), (uint32_t)letzte_pause);
+  cl_assert_equal_i(kieselsport_wartend_ende(), BEGINN + 90 + 125);
+
+  // Bestaetigt: alles weg, auch Pausen und Ende.
+  kieselsport_wartend_vergessen();
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 0);
+  cl_assert_equal_i(kieselsport_wartend_ende(), 0);
+}
+
+void test_kieselsport__ohne_pausen_nur_kopf(void) {
+  kieselsport_starte(ArtLaufen, BEGINN);
+  prv_sekunden(60);
+  kieselsport_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  // Der Kopf allein heisst: die Uhr kennt Pausen, es gab keine.
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+  cl_assert_equal_i(b[1], 0);
+  // Ohne Pause gespeichert endet die aktive Zeit beim Speichern.
+  cl_assert_equal_i(kieselsport_wartend_ende(), BEGINN + 60);
+}
+
+void test_kieselsport__mehr_pausen_als_platz(void) {
+  kieselsport_starte(ArtKraft, BEGINN);
+  for (int i = 0; i < KS_PAUSEN_MAX + 1; i++) {
+    prv_sekunden(2);
+    prv_pause_fuer(3);
+  }
+  prv_sekunden(10);
+  kieselsport_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  // Die Liste ist voll, die Zahl zaehlt weiter - das Telefon sieht die Luecke.
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), KS_PAUSEN_BYTES);
+  cl_assert_equal_i(b[1], KS_PAUSEN_MAX + 1);
+}
+
+void test_kieselsport__ein_neues_training_hat_keine_alten_pausen(void) {
+  kieselsport_starte(ArtLaufen, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(10);
+  prv_sekunden(30);
+  kieselsport_speichern();
+  kieselsport_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(60);
+  kieselsport_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+}
+
+void test_kieselsport__alte_pausen_gehen_nicht_mit_fremdem_stand(void) {
+  kieselsport_starte(ArtBike, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(60);
+  prv_sekunden(30);
+  kieselsport_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2 + 4);
+  // Zurueckgespielte Firmware: sie schickt das Training, loescht nach der
+  // Bestaetigung nur 30-32 und legt ihr naechstes ohne Pausen ab.
+  ks_persist_delete(PERSIST_WARTET);
+  ks_persist_delete(PERSIST_WARTET_LISTE_A);
+  ks_persist_delete(PERSIST_WARTET_LISTE_B);
+  const Trainingsstand fremd = { .art = ArtLaufen, .beginn = BEGINN + 5000, .dauer_s = 600 };
+  ks_persist_write_data(PERSIST_WARTET, &fremd, sizeof(fremd));
+  // Wieder die neue Firmware: der fremde Stand geht ohne die alten Pausen.
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 5000);
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 0);
+  cl_assert_equal_i(kieselsport_wartend_ende(), 0);
+}
+
+// --- Der Stopp eines verworfenen Trainings ---
+
+void test_kieselsport__verworfen_merkt_den_stopp(void) {
+  kieselsport_starte(ArtWandern, BEGINN);
+  prv_sekunden(100);
+  kieselsport_pause_umschalten();
+  kieselsport_verwerfen();
+  uint32_t beginn = 0, zeit = 0;
+  uint8_t art = 0;
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  cl_assert_equal_i(beginn, BEGINN);
+  cl_assert_equal_i(zeit, (uint32_t)s_jetzt);
+  cl_assert_equal_i(art, ArtWandern);
+  // Ein spaet bestaetigter fremder Stopp loescht ihn nicht, der eigene schon.
+  kieselsport_stopp_vergessen(BEGINN - 1);
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  kieselsport_stopp_vergessen(BEGINN);
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+
+  // Unter einer Minute gespeichert ist auch verworfen.
+  kieselsport_starte(ArtLaufen, BEGINN + 500);
+  prv_sekunden(20);
+  kieselsport_speichern();
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  cl_assert_equal_i(beginn, BEGINN + 500);
+  // Ein neues Training ersetzt ihn - sein Start sagt dem Telefon alles.
+  kieselsport_starte(ArtLaufen, BEGINN + 900);
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+  // Ein gespeichertes Training traegt den Stopp in der Zusammenfassung.
+  prv_sekunden(60);
+  kieselsport_speichern();
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+}
+
+void test_kieselsport__nachsenden_auch_fuer_den_stopp(void) {
+  kieselsport_starte(ArtLaufen, BEGINN);
+  prv_sekunden(30);
+  kieselsport_verwerfen();
+  cl_assert(s_minutentakt);
+  s_minutentakt->cb(s_minutentakt->cb_data);
+  s_minutentakt->cb(s_minutentakt->cb_data);
+  cl_assert_equal_i(s_geholt, 1);
+  // Angekommen: der Takt hoert auf.
+  kieselsport_stopp_vergessen(BEGINN);
+  s_minutentakt->cb(s_minutentakt->cb_data);
+  cl_assert(!s_minutentakt);
+  // Auch nach einem Neustart der Uhr.
+  kieselsport_starte(ArtLaufen, BEGINN + 100);
+  prv_sekunden(10);
+  kieselsport_verwerfen();
+  s_minutentakt = NULL;
+  kieselsport_init();
+  cl_assert(s_minutentakt);
 }

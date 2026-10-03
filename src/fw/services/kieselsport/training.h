@@ -33,6 +33,9 @@ Trainingsstand training_stoppe(void);
 // Beendet das Training, ohne es zu behalten - ein Fehlgriff, ein Abbruch.
 void training_verwerfen(void);
 uint32_t training_beginn(void);
+// Wann die aktive Zeit endete (Unix-Sekunden): der Beginn der offenen Pause,
+// sonst jetzt. Gilt auch nach dem Stoppen, bis das naechste Training beginnt.
+uint32_t training_ende(void);
 
 // Der laufende Stand, jederzeit abfragbar (auch in der Pause).
 Trainingsstand training_stand(void);

@@ -7,6 +7,7 @@ set(sources
   bahnen.c
   dienst.c
   kurve.c
+  pausen.c
   plattform.c
   puls.c
   reps.c

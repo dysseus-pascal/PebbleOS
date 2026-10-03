@@ -50,6 +50,10 @@ typedef enum {
 } KsZaehler;
 uint32_t ks_heute(KsZaehler zaehler);
 
+// Das Alter aus den Gesundheitseinstellungen der Uhr - fuer den Maximalpuls
+// nach Tanaka, wenn keiner eingestellt ist.
+uint8_t ks_alter(void);
+
 // --- Sensoren. Ihre Werte kommen ueber puls_*, reps_daten und
 // bahnen_kompass zurueck, immer unter der Sperre des Dienstes.
 

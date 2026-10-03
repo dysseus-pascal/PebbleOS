@@ -8,6 +8,7 @@
 #include "bahnen.h"
 #include "dienst.h"
 #include "kurve.h"
+#include "pausen.h"
 #include "puls.h"
 #include "reps.h"
 #include "training.h"
@@ -188,7 +189,8 @@ static void prv_nachsenden_aus(void) {
 
 static void prv_nachsenden(void *daten) {
   ks_sperren();
-  if (!wartend_da() || s_nachsenden_versuch >= ARRAY_LENGTH(NACHSENDEN_MIN)) {
+  // AUCH FUER EINEN STOPP: ohne ihn zeichnete das Telefon weiter auf.
+  if (!(wartend_da() || stopp_da()) || s_nachsenden_versuch >= ARRAY_LENGTH(NACHSENDEN_MIN)) {
     prv_nachsenden_aus();
     ks_entsperren();
     return;
@@ -230,6 +232,9 @@ static void prv_starte(void *daten) {
   // Die Uhr erkennt keine Bewegung, solange ein Training laeuft - sonst
   // stuende dieselbe Stunde zweimal im Verlauf, einmal als Bewegung.
   ks_bewegung_erkennen(false);
+  // Ein Stopp, der noch wartet, gehoert zu einem frueheren Training: der
+  // Start dieses ersetzt ihn auf dem Telefon.
+  stopp_vergessen(0);
   s_letzte_zone = -1;
   s_sekunde_der_minute = 0;
   memset(s_minute, 0, sizeof(s_minute));
@@ -260,9 +265,15 @@ static void prv_beendet(KsEnde ende) {
   ks_persist_offen_halten(false);
 }
 
+// Ein verworfenes Training: der Stopp in den Persist, bis das Telefon ihn hat.
+static void prv_stopp_merken(void) {
+  stopp_merken(training_beginn(), (uint32_t)ks_jetzt(), (uint8_t)training_art());
+}
+
 static void prv_speichern(void *daten) {
   // Nicht auf dem Stapel: KernelBG hat keinen grossen.
   static char s_liste[KS_LISTE_MAX];
+  static uint8_t s_pausen[KS_PAUSEN_BYTES];
   ks_sperren();
   if (training_zustand() == LaufAus) {
     ks_entsperren();
@@ -277,10 +288,13 @@ static void prv_speichern(void *daten) {
     if (abschnitt_anzahl() > 0) {
       abschnitt_als_text(s_liste, sizeof(s_liste));
     }
-    wartend_merken(&t, s_liste);
+    const size_t pausen = pausen_als_bytes(s_pausen, sizeof(s_pausen));
+    wartend_merken(&t, s_liste, s_pausen, pausen, training_ende());
     kurve_merken(t.beginn);
-    prv_nachsenden_an();
+  } else {
+    prv_stopp_merken();
   }
+  prv_nachsenden_an();
   abschnitt_leeren();
   prv_beendet(behalten ? KsEndeGespeichert : KsEndeVerworfen);
   ks_entsperren();
@@ -292,12 +306,18 @@ static void prv_speichern(void *daten) {
 }
 
 static void prv_verwerfen(void *daten) {
+  bool verworfen = false;
   ks_sperren();
   if (training_zustand() != LaufAus) {
+    prv_stopp_merken();
+    verworfen = true;
     training_verwerfen();
     prv_beendet(KsEndeVerworfen);
   }
   ks_entsperren();
+  if (verworfen) {
+    prv_nachsenden_an();
+  }
 }
 
 // --- Oeffentlich ---
@@ -309,7 +329,7 @@ void kieselsport_init(void) {
   bahnen_laden();
   prv_schnappschuss();
   // Nach einem Neustart: was vorher nicht ankam, wird wieder nachgereicht.
-  const bool wartet = wartend_da();
+  const bool wartet = wartend_da() || stopp_da();
   ks_entsperren();
   if (wartet) {
     prv_nachsenden_an();
@@ -374,9 +394,30 @@ uint16_t kieselsport_maxpuls(void) {
   return wert;
 }
 
+bool kieselsport_maxpuls_gesetzt(void) {
+  ks_sperren();
+  const bool gesetzt = puls_maximum_gesetzt();
+  ks_entsperren();
+  return gesetzt;
+}
+
 void kieselsport_maxpuls_setze(uint16_t schlaege) {
   ks_sperren();
   puls_setze_maximum(schlaege);
+  prv_schnappschuss();
+  ks_entsperren();
+}
+
+void kieselsport_maxpuls_nicht_setzen(void) {
+  ks_sperren();
+  puls_maximum_nicht_setzen();
+  prv_schnappschuss();
+  ks_entsperren();
+}
+
+void kieselsport_maxpuls_alt(uint16_t schlaege) {
+  ks_sperren();
+  puls_maximum_alt(schlaege);
   prv_schnappschuss();
   ks_entsperren();
 }
@@ -437,6 +478,22 @@ bool kieselsport_wartend_laden(Trainingsstand *t, char *liste, size_t platz) {
 
 void kieselsport_wartend_vergessen(void) {
   wartend_vergessen();
+}
+
+size_t kieselsport_wartend_pausen(uint8_t *aus, size_t platz) {
+  return wartend_pausen(aus, platz);
+}
+
+uint32_t kieselsport_wartend_ende(void) {
+  return wartend_ende();
+}
+
+bool kieselsport_stopp_laden(uint32_t *beginn, uint32_t *zeit, uint8_t *art) {
+  return stopp_laden(beginn, zeit, art);
+}
+
+void kieselsport_stopp_vergessen(uint32_t beginn) {
+  stopp_vergessen(beginn);
 }
 
 bool kieselsport_kurve_wartet(void) {
