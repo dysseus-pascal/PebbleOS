@@ -12,6 +12,9 @@
 
 #include "apps/system/timeline/timeline.h"
 #include "apps/system/toggle/quiet_time.h"
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+#include "apps/watch/timestyle/timestyle.h" // Boulder: Standard-Zifferblatt
+#endif
 #include "board/board.h"
 #include "applib/graphics/gtypes.h"
 #include <pbl/drivers/ambient_light.h>
@@ -279,6 +282,13 @@ static uint8_t s_alarms_app_opened = 0;
 #define PREF_KEY_BOULDER_MESSSTUFE "boulderMessstufe"
 static uint8_t s_boulder_messstufe = MESSSTUFE_VORGABE;
 
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+// Boulder: ob das System-TimeStyle schon einmal Standard-Zifferblatt wurde
+// (siehe watchface_get_default_install_id). Danach gilt die Wahl des Nutzers.
+#define PREF_KEY_BOULDER_TIMESTYLE "boulderTimeStyle"
+static uint8_t s_boulder_timestyle_gesetzt = 0;
+#endif
+
 #define PREF_KEY_ACTIVITY_HRM_PREFERENCES "hrmPreferences"
 static ActivityHRMSettings s_activity_hrm_preferences = ACTIVITY_HRM_DEFAULT_PREFERENCES;
 #if !UNITTEST
@@ -423,6 +433,13 @@ static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
   s_boulder_messstufe = *neu;
   return true;
 }
+
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+static bool prv_set_s_boulder_timestyle_gesetzt(uint8_t *neu) {
+  s_boulder_timestyle_gesetzt = (*neu != 0) ? 1 : 0;
+  return true;
+}
+#endif
 
 static bool prv_set_s_units_wind(uint8_t *new_unit) {
   if (*new_unit >= UnitsWindCount) {
@@ -1874,7 +1891,37 @@ static bool prv_set_default_any_watchface_enumerate_callback(AppInstallEntry *en
   return false;
 }
 
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+// Boulder: EINMAL wird das System-TimeStyle Standard-Zifferblatt - wenn das
+// gespeicherte fehlt, nicht mehr installiert ist, TicToc ist (die Vorgabe der
+// Firmware) oder TimeStyle aus dem Store (das mit PebbleKit JS das Telefon
+// wach haelt). Jede andere eigene Wahl bleibt, und jede spaetere auch: der
+// Merker steht im Persist der Einstellungen.
+static void prv_boulder_timestyle_einmal(void) {
+  if (s_boulder_timestyle_gesetzt) {
+    return;
+  }
+  // TicToc: 8f3c8686-31a1-4f5f-91f5-01600c9bdc59 (apps/watch/tictoc/tictoc.c)
+  static const Uuid s_tictoc = {0x8f, 0x3c, 0x86, 0x86, 0x31, 0xa1, 0x4f, 0x5f,
+                                0x91, 0xf5, 0x01, 0x60, 0x0c, 0x9b, 0xdc, 0x59};
+  static const Uuid s_store = TIMESTYLE_STORE_UUID_INIT;
+  static const Uuid s_timestyle = TIMESTYLE_UUID_INIT;
+
+  const bool fehlt = app_install_get_id_for_uuid(&s_default_watchface) == INSTALL_ID_INVALID;
+  if (fehlt || uuid_equal(&s_default_watchface, &s_tictoc) ||
+      uuid_equal(&s_default_watchface, &s_store)) {
+    PBL_LOG_INFO("Boulder: TimeStyle wird Standard-Zifferblatt");
+    prv_pref_set(PREF_KEY_DEFAULT_WATCHFACE, &s_timestyle, sizeof(s_timestyle));
+  }
+  const uint8_t gesetzt = 1;
+  prv_pref_set(PREF_KEY_BOULDER_TIMESTYLE, &gesetzt, sizeof(gesetzt));
+}
+#endif
+
 AppInstallId watchface_get_default_install_id(void) {
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+  prv_boulder_timestyle_einmal();
+#endif
   AppInstallId app_id = app_install_get_id_for_uuid(&s_default_watchface);
   AppInstallEntry entry;
   if (app_id == INSTALL_ID_INVALID || !app_install_get_entry_for_install_id(app_id, &entry) ||

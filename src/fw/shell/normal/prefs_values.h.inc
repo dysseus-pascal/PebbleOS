@@ -79,3 +79,6 @@
   PREFS_MACRO(PREF_KEY_MUSIC_SHOW_PROGRESS_BAR, s_music_show_progress_bar)
   PREFS_MACRO(PREF_KEY_MUSIC_SHOW_ALBUM_ART, s_music_show_album_art)
   PREFS_MACRO(PREF_KEY_BOULDER_MESSSTUFE, s_boulder_messstufe)
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+  PREFS_MACRO(PREF_KEY_BOULDER_TIMESTYLE, s_boulder_timestyle_gesetzt)
+#endif

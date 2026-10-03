@@ -2681,6 +2681,135 @@
       "type": "pdc",
       "name": "WEATHER_REPORT_PAPER",
       "file": "normal/base/images/Pebble_80x80_Weather_report.svg"
+    },
+    {
+      "type": "pbi8",
+      "name": "MENU_ICON_TIMESTYLE",
+      "file": "normal/base/timestyle/menuicon.png",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE",
+      "_comment": ["Boulder: TimeStyle als System-Zifferblatt (apps/watch/timestyle,",
+                   "MIT, freakified/TimeStylePebble; Lizenz und Herkunft in",
+                   "normal/base/timestyle/LICENSE). Nur mit dem Zifferblatt gebaut."]
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_LECO_REGULAR_FFONT",
+      "file": "normal/base/timestyle/LECO1976-Regular.ffont",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_GENERIC",
+      "file": "normal/base/timestyle/WEATHER_GENERIC.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_THUNDERSTORM",
+      "file": "normal/base/timestyle/THUNDERSTORM.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_RAINING_AND_SNOWING",
+      "file": "normal/base/timestyle/RAINING_AND_SNOWING.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_PARTLY_CLOUDY_NIGHT",
+      "file": "normal/base/timestyle/PARTLY_CLOUDY_NIGHT.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_PARTLY_CLOUDY",
+      "file": "normal/base/timestyle/PARTLY_CLOUDY.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_LIGHT_SNOW",
+      "file": "normal/base/timestyle/LIGHT_SNOW.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_LIGHT_RAIN",
+      "file": "normal/base/timestyle/LIGHT_RAIN.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_HEAVY_SNOW",
+      "file": "normal/base/timestyle/HEAVY_SNOW.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_HEAVY_RAIN",
+      "file": "normal/base/timestyle/HEAVY_RAIN.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_CLOUDY",
+      "file": "normal/base/timestyle/CLOUDY_DAY.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_CLEAR_NIGHT",
+      "file": "normal/base/timestyle/CLEAR_NIGHT.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_WEATHER_CLEAR_DAY",
+      "file": "normal/base/timestyle/CLEAR_DAY.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_DISCONNECTED",
+      "file": "normal/base/timestyle/DISCONNECTED.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_DATE_BG_LG",
+      "file": "normal/base/timestyle/DATE_BG_LG.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_BATTERY_CHARGE",
+      "file": "normal/base/timestyle/BATTERY_CHARGE.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_BATTERY_BG",
+      "file": "normal/base/timestyle/BATTERY_BG.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_HEALTH_SLEEP",
+      "file": "normal/base/timestyle/HEALTH_SLEEP.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_HEALTH_STEPS",
+      "file": "normal/base/timestyle/HEALTH_STEPS.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_HEALTH_HEART",
+      "file": "normal/base/timestyle/HEALTH_HEART.pdc",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
     }
   ],
   "timeline": [

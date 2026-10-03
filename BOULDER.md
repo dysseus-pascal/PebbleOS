@@ -136,6 +136,47 @@ ENTFERNUNG=10001, STRASSE=10002, ANKUNFT=10003, REST=10004.
 - Test: `test_kieselstrasse_weg` (Schritt-Erkennung, sparsames Schreiben,
   alter oder kaputter Persist). Prüfbau fürs Emulator-Bild: `-DKST_DEMO`.
 
+## TimeStyle als System-Zifferblatt
+
+`src/fw/apps/watch/timestyle/` ist [TimeStyle](https://github.com/freakified/TimeStylePebble)
+(MIT, Stand e2be725) mit pebble-fctx 1.6.5 und pebble-utf8 1.0.4 (beide MIT,
+JR Mobley); die Lizenzen liegen neben dem Code, jede Änderung am übernommenen
+Code ist mit `Boulder:` markiert. Grund: die Store-Fassung hält über PebbleKit
+JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
+
+- **Kein PebbleKit JS, keine Konfigseite.** Das Wetter kommt aus dem
+  Wetterspeicher der Firmware, den Boulder ohnehin füllt
+  (`wetter_quelle.c`: `weather_service_create_default_forecast`, dazu aus
+  dem v4-Satz Ort, Tageswetter und UV). Neu gelesen beim Start, bei
+  `PEBBLE_WEATHER_EVENT` und alle 15 Minuten. Älter als 3 Stunden oder
+  fehlend: „…“ ohne Symbol, wie TimeStyle ohne Wetter. Temperaturen in der
+  Einheit des Telefons. Sonne und „teils bewölkt“ nachts mit Mond (Sonnenstand
+  aus dem Ort des Satzes); ein Gewitter kennt die Firmware nicht.
+- **Feste Einstellungen** (`settings.c`) = Foto des Nutzers vom 03.10.2026:
+  schwarz, weiße LECO-Ziffern, weiße Leiste rechts mit schwarzer Schrift,
+  Wetter / Schritte / Datum, Englisch. 24 h folgt der Uhr.
+- Eigene Kennung e5c8eb9b-fd6a-4b3e-b795-d38ae5083063, Registry -104, als
+  erstes Zifferblatt der Liste (der Rückfall auf „das erste Zifferblatt“
+  trifft TimeStyle). TimeStyle aus dem Store bleibt daneben installierbar.
+- **Standard:** `prefs.c` stellt beim ersten Abfragen des Zifferblatts
+  EINMAL auf TimeStyle um, wenn das gespeicherte fehlt, TicToc oder die
+  Store-TimeStyle (4368ffa4-…) ist; Merker `boulderTimeStyle` in den
+  Einstellungen (nicht synchronisiert). Eine spätere eigene Wahl bleibt.
+- Nur emery (`CONFIG_APPS_WATCH_TIMESTYLE`, hängt an `PLATFORM_EMERY`,
+  `SERVICE_WEATHER`, `SERVICE_ACTIVITY`); die Ressourcen (`TIMESTYLE_*`,
+  `resources/normal/base/timestyle/`) tragen `"config"` und fallen sonst weg.
+  Herkunft und MIT-Lizenz der Ressourcen: `resources/normal/base/timestyle/LICENSE`.
+- Nicht übernommen: die Avenir-Next-Schriften (kommerzielle Schrift, die feste
+  Einstellung nutzt LECO), `messaging.c`, die Aplite-Teile, `fpath`.
+- `pebble.h` im Ordner steht für das SDK-`<pebble.h>`; Bilder werden als
+  beschreibbare Kopie geladen (`ts_pdc_laden`), weil System-Ressourcen im
+  Flash liegen können und TimeStyle sie umfärbt.
+- Tests: `test_timestyle` (Wetterart → Symbol, Tag/Nacht, Alter, „5.5k“),
+  `test_timestyle_standard` (die einmalige Umstellung in `prefs.c`; eigener
+  Test, weil `test_prefs_db` ohne `CONFIG_APPS_WATCH_TIMESTYLE` baut).
+  Prüfbau fürs Emulator-Bild mit den Werten des Fotos: `-DTS_DEMO`; das echte
+  Wetter im Emulator: `pbl feed weather`.
+
 ## Releases (F5)
 
 ```

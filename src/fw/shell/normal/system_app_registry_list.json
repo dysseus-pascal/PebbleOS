@@ -24,6 +24,18 @@
   ],
   "system_apps": [
     {
+      "id": -104,
+      "enum": "TIMESTYLE",
+      "md_fn": "timestyle_get_app_info",
+      "_comment": [
+        "Boulder: first in the list, so that when the default watch face is",
+        "gone, the firmware falls back to TimeStyle (app_install_enumerate_entries)"
+      ],
+      "ifdefs": [
+        "CONFIG_APPS_WATCH_TIMESTYLE"
+      ]
+    },
+    {
       "id": -69,
       "enum": "TICTOC",
       "md_fn": "tictoc_get_app_info"

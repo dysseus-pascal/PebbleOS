@@ -22,4 +22,15 @@ config APPS_WATCH_TICTOC_ROUND
 
 endchoice
 
+# Boulder: TimeStyle (freakified/TimeStylePebble, MIT) as a system watch face,
+# with the weather from the weather service instead of PebbleKit JS. Laid out
+# for the rectangular color screen of emery only.
+config APPS_WATCH_TIMESTYLE
+    bool "TimeStyle watch face"
+    default y
+    depends on PLATFORM_EMERY && SERVICE_WEATHER && SERVICE_ACTIVITY
+    help
+      TimeStyle as a built-in watch face and the default one, with a fixed
+      configuration (weather, steps, date in the sidebar).
+
 endmenu
