@@ -330,3 +330,18 @@ void test_timestyle_standard__rueckfall_nach_dem_merker_trifft_timestyle(void) {
   const Uuid gespeichert = prv_gespeichertes_zifferblatt();
   cl_assert_uuid(&gespeichert, &s_uuid_timestyle);
 }
+
+// --- Umbenennung nach b21 ---
+
+// In b21 hiess das eingebaute Zifferblatt "TimeStyle" und hatte eine andere
+// Kennung. Wer es dort als Standard hatte (Merker schon gesetzt), bekommt
+// TimeStyle Bedrock - ohne Rueckfall auf das erste der Liste.
+void test_timestyle_standard__b21_kennung_wird_bedrock(void) {
+  static const Uuid s_b21 = TIMESTYLE_B21_UUID_INIT;
+  s_timestyle_vorn = false;
+  prv_gespeichert(&s_b21, 1);
+
+  cl_assert_equal_i(watchface_get_default_install_id(), ID_TIMESTYLE);
+  const Uuid gespeichert = prv_gespeichertes_zifferblatt();
+  cl_assert_uuid(&gespeichert, &s_uuid_timestyle);
+}

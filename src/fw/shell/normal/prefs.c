@@ -1898,6 +1898,15 @@ static bool prv_set_default_any_watchface_enumerate_callback(AppInstallEntry *en
 // wach haelt). Jede andere eigene Wahl bleibt, und jede spaetere auch: der
 // Merker steht im Persist der Einstellungen.
 static void prv_boulder_timestyle_einmal(void) {
+  // Das eingebaute Zifferblatt hiess in b21 noch "TimeStyle" und hatte eine
+  // andere Kennung. Wer es dort als Standard hatte, behaelt es - auch wenn der
+  // Merker schon steht, denn die alte Kennung gibt es nicht mehr.
+  static const Uuid s_b21 = TIMESTYLE_B21_UUID_INIT;
+  static const Uuid s_neu = TIMESTYLE_UUID_INIT;
+  if (uuid_equal(&s_default_watchface, &s_b21)) {
+    PBL_LOG_INFO("Boulder: TimeStyle Bedrock ersetzt das TimeStyle aus b21");
+    prv_pref_set(PREF_KEY_DEFAULT_WATCHFACE, &s_neu, sizeof(s_neu));
+  }
   if (s_boulder_timestyle_gesetzt) {
     return;
   }

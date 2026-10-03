@@ -279,7 +279,7 @@ const PebbleProcessMd *timestyle_get_app_info(void) {
       .process_type = ProcessTypeWatchface,
     },
     .icon_resource_id = RESOURCE_ID_MENU_ICON_TIMESTYLE,
-    .name = "TimeStyle",
+    .name = "TimeStyle Bedrock",
   };
   return (const PebbleProcessMd *)&s_app_md;
 }

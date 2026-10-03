@@ -136,7 +136,7 @@ ENTFERNUNG=10001, STRASSE=10002, ANKUNFT=10003, REST=10004.
 - Test: `test_kieselstrasse_weg` (Schritt-Erkennung, sparsames Schreiben,
   alter oder kaputter Persist). Prüfbau fürs Emulator-Bild: `-DKST_DEMO`.
 
-## TimeStyle als System-Zifferblatt
+## TimeStyle Bedrock (System-Zifferblatt)
 
 `src/fw/apps/watch/timestyle/` ist [TimeStyle](https://github.com/freakified/TimeStylePebble)
 (MIT, Stand e2be725) mit pebble-fctx 1.6.5 und pebble-utf8 1.0.4 (beide MIT,
@@ -155,7 +155,7 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
 - **Feste Einstellungen** (`settings.c`) = Foto des Nutzers vom 03.10.2026:
   schwarz, weiße LECO-Ziffern, weiße Leiste rechts mit schwarzer Schrift,
   Wetter / Schritte / Datum, Englisch. 24 h folgt der Uhr.
-- Eigene Kennung e5c8eb9b-fd6a-4b3e-b795-d38ae5083063, Registry -104, als
+- Name „TimeStyle Bedrock“, eigene Kennung d8af11d3-1e92-4f6d-b494-c5572f7bb7df (in b21 noch „TimeStyle“ mit e5c8eb9b-…, wird einmal umgestellt), Registry -104, als
   erstes Zifferblatt der Liste (der Rückfall auf „das erste Zifferblatt“
   trifft TimeStyle). TimeStyle aus dem Store bleibt daneben installierbar.
 - **Standard:** `prefs.c` stellt beim ersten Abfragen des Zifferblatts
