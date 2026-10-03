@@ -13,13 +13,17 @@ static Window *s_fenster;
 static Layer *s_flaeche;
 static AppTimer *s_zu;
 static bool s_fertig;
+// Nur der Stopp eines verworfenen Trainings - kein Training, das ankommt.
+static bool s_nur_stopp;
 
 static void prv_zeichne(Layer *layer, GContext *ctx) {
   const GRect b = layer_get_unobstructed_bounds(layer);
   const int16_t w = b.size.w - KS_LEISTE_B;
   const int16_t rand = PBL_IF_ROUND_ELSE(44, KS_RAND);
   graphics_context_set_text_color(ctx, KS_FARBE_TEXT);
-  graphics_draw_text(ctx, s_fertig ? S(STR_TRAINING_FERTIG) : S(STR_TRAINING_SENDEN),
+  const char *text = s_nur_stopp ? (s_fertig ? S(STR_TEL_ANGEKOMMEN) : S(STR_TEL_WARTET))
+                                 : (s_fertig ? S(STR_TRAINING_FERTIG) : S(STR_TRAINING_SENDEN));
+  graphics_draw_text(ctx, text,
                      fonts_get_system_font(KS_BREIT ? FONT_KEY_GOTHIC_24_BOLD : FONT_KEY_GOTHIC_18_BOLD),
                      GRect(rand, b.size.h / 2 - 30, w - rand - 4, 60),
                      GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
@@ -55,8 +59,9 @@ static void prv_entladen(Window *fenster) {
   s_fenster = NULL;
 }
 
-void sende_window_zeige(void) {
+void sende_window_zeige(bool nur_stopp) {
   s_fertig = false;
+  s_nur_stopp = nur_stopp;
   s_fenster = window_create();
   window_set_background_color(s_fenster, KS_FARBE_GRUND);
   window_set_window_handlers(s_fenster, (WindowHandlers) { .load = prv_laden, .unload = prv_entladen });
@@ -72,4 +77,5 @@ void sende_window_zuruecksetzen(void) {
   memset(&s_flaeche, 0, sizeof(s_flaeche));
   memset(&s_zu, 0, sizeof(s_zu));
   memset(&s_fertig, 0, sizeof(s_fertig));
+  memset(&s_nur_stopp, 0, sizeof(s_nur_stopp));
 }

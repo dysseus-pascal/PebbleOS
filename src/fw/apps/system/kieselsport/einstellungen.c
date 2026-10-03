@@ -6,6 +6,15 @@
 
 void einstellungen_maxpuls(int32_t schlaege) {
   if (schlaege <= 100 || schlaege >= 240) return;
+  kieselsport_maxpuls_alt((uint16_t)schlaege);
+}
+
+void einstellungen_maxpuls_vermerkt(bool gesetzt, int32_t schlaege) {
+  if (!gesetzt) {
+    kieselsport_maxpuls_nicht_setzen();
+    return;
+  }
+  if (schlaege <= 100 || schlaege >= 240) return;
   kieselsport_maxpuls_setze((uint16_t)schlaege);
 }
 
@@ -38,7 +47,10 @@ void einstellungen_pin_zeit(const char *hhmm) {
 }
 
 void einstellungen_melden(DictionaryIterator *out) {
+  // Der Wert, mit dem die Uhr rechnet - auch nach Alter, damit ein Telefon
+  // ohne den Vermerk dieselben Zonen sieht.
   dict_write_int32(out, MESSAGE_KEY_MAXPULS, kieselsport_maxpuls());
+  dict_write_int32(out, MESSAGE_KEY_MAXPULS_GESETZT, kieselsport_maxpuls_gesetzt() ? 1 : 0);
   dict_write_int32(out, MESSAGE_KEY_BECKEN, kieselsport_becken());
   dict_write_int32(out, MESSAGE_KEY_PAUSENZIEL, kieselsport_pausenziel());
   dict_write_int32(out, MESSAGE_KEY_EMPFIND, kieselsport_empfindlichkeit());

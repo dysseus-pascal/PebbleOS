@@ -13,6 +13,10 @@
 #define MESSAGE_KEY_DAUER 10002
 #define MESSAGE_KEY_SCHRITTE 10003
 #define MESSAGE_KEY_METER 10004
+// KCAL, PULS_MITTEL und PULS_MAX gehen weiter mit, damit aeltere Telefone
+// sie finden - Boulder braucht sie nicht mehr: den Puls rechnet es aus der
+// entstoerten Kurve, die Kalorien aus dem Puls. KCAL (aus Schritten, auf dem
+// Rad fast null) gilt dort nur, bis die Kalorien aus dem Puls da sind.
 #define MESSAGE_KEY_KCAL 10005
 #define MESSAGE_KEY_PULS_MITTEL 10006
 #define MESSAGE_KEY_PULS_MAX 10007
@@ -34,6 +38,22 @@
 #define MESSAGE_KEY_NACHT_AN 10023
 #define MESSAGE_KEY_NACHT_VON 10024
 #define MESSAGE_KEY_NACHT_BIS 10025
+// 10026-10036 vergab die Store-App fuer Nacht, HRV und SpO2. Sie bleiben
+// frei: ein altes Telefon laese dort noch etwas anderes heraus.
+
+// NEU IN DER FIRMWARE, nicht in der Store-App. Ein Telefon, das sie nicht
+// kennt, ueberliest sie; fehlen sie, rechnet Boulder wie frueher.
+//
+// Die Uhrzeit (UTC) einer Zustandsmeldung - wann Start, Pause, Weiter oder
+// Stopp geschah, nicht wann die Meldung ankam.
+#define MESSAGE_KEY_ZEIT 10037
+// Die Pausen in der Zusammenfassung, als Byte (Aufbau in kieselsport.h).
+#define MESSAGE_KEY_PAUSEN 10038
+// Wann die aktive Zeit endete (UTC): der Beginn der letzten Pause.
+#define MESSAGE_KEY_ENDE 10039
+// Ob der Maximalpuls eingestellt ist (1) oder die Uhr nach dem Alter
+// rechnet (0). In beide Richtungen; ohne ihn gilt MAXPULS wie bisher.
+#define MESSAGE_KEY_MAXPULS_GESETZT 10040
 
 // Was nur die App im Persist haelt: der Timeline-Pin, den die Konfigseite
 // und Kiesel-Helper stellen. Dieselben Nummern wie in services/kieselsport.

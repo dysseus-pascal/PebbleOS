@@ -137,6 +137,12 @@ uint32_t ks_heute(KsZaehler zaehler) {
   return (uint32_t)wert;
 }
 
+uint8_t ks_alter(void) {
+  // DAS TELEFON GLEICHT ES AB (Gesundheitseinstellungen der Pebble-App); ohne
+  // Abgleich steht hier die Vorgabe der Firmware.
+  return activity_prefs_get_age_years();
+}
+
 // --- Puls ---
 //
 // EINE EIGENE ANMELDUNG AM SENSOR, mit Ablauf. puls_auffrischen erneuert

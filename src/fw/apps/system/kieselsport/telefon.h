@@ -40,7 +40,13 @@ typedef enum {
   ZustandWeiter = 3,
 } Trainingsmeldung;
 
+// Stellt die Meldung hinten an - mit der Uhrzeit von jetzt (meldungen.h).
 void telefon_melde_zustand(Trainingsmeldung was, uint8_t art, uint32_t beginn);
+
+// Den Stopp eines verworfenen Trainings aus dem Persist schicken, falls er
+// noch wartet; erst die Bestaetigung des Telefons loescht ihn dort.
+void telefon_stopp_nachsenden(void);
+bool telefon_stopp_wartet(void);
 
 // Wird gerufen, wenn nichts mehr aufs Telefon wartet - die App, die der
 // Dienst fuer ein liegengebliebenes Training geholt hat, geht dann zu.

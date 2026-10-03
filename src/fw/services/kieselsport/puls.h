@@ -6,9 +6,9 @@
 
 // Puls und Pulszonen.
 //
-// EINE ZONE IST EIN ANTEIL DES MAXIMALPULSES, und der ist persoenlich. 220
-// minus Alter ist eine Faustformel mit einer Streuung von gut zehn
-// Schlaegen; deshalb steht der Wert in den Einstellungen.
+// EINE ZONE IST EIN ANTEIL DES MAXIMALPULSES, und der ist persoenlich. Eine
+// Formel nach dem Alter streut um gut zehn Schlaege; deshalb kann der Wert
+// in den Einstellungen stehen - ohne ihn gilt Tanaka.
 //
 // DER SENSOR GEHOERT HIER DEM DIENST. In Kieselsport bat die App das System
 // um einen schnelleren Takt, und die Bitte blieb bestehen, wenn die App
@@ -18,8 +18,14 @@
 
 void puls_init(void);
 
+// Der Wert, mit dem gerechnet wird: der eingestellte, sonst Tanaka nach dem
+// Alter der Uhr (siehe kieselsport_maxpuls in kieselsport.h).
 uint16_t puls_maximum(void);
+bool puls_maximum_gesetzt(void);
 void puls_setze_maximum(uint16_t schlaege);
+void puls_maximum_nicht_setzen(void);
+// Eine Zahl ohne Angabe, ob sie gesetzt ist (kieselsport_maxpuls_alt).
+void puls_maximum_alt(uint16_t schlaege);
 
 // In welcher Zone ein Wert liegt: 0 = unter Zone 1, 1..5 = Zone.
 int puls_zone(uint16_t bpm);

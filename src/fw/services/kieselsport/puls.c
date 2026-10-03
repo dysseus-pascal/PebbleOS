@@ -5,7 +5,12 @@
 
 #include "schluessel.h"
 
+// Die alte Vorgabe. Neben Tanaka gilt sie nur bei einem unsinnigen Alter:
+// ohne Abgleich steht in den Gesundheitseinstellungen der Uhr 30, nicht 0.
 #define MAXPULS_VORGABE 190
+// Was als Maximalpuls durchgeht; alles andere ist ein Tippfehler.
+#define MAXPULS_MIN 101
+#define MAXPULS_MAX 239
 
 // Sekunden zwischen zwei Messungen waehrend eines Trainings.
 //
@@ -31,7 +36,11 @@
 #define GLAETTEN_N 3
 #define GUETE_GUT 3
 
-static uint16_t s_maximum = MAXPULS_VORGABE;
+// 0 heisst: nicht gesetzt - dann gilt Tanaka (prv_tanaka).
+static uint16_t s_maximum;
+// Eine Zahl aelterer Firmware ohne Vermerk, noch nicht entschieden (siehe
+// prv_klaeren). 0 = nichts offen.
+static uint16_t s_offen;
 static bool s_sparsam;
 
 static const uint8_t s_prozent[KS_ZONEN] = { 50, 60, 70, 80, 90 };
@@ -67,31 +76,114 @@ void puls_setze_sparsam(bool sparsam) {
 
 bool puls_sparsam(void) { return s_sparsam; }
 
+static bool prv_plausibel(int32_t schlaege) {
+  return schlaege >= MAXPULS_MIN && schlaege <= MAXPULS_MAX;
+}
+
 void puls_init(void) {
-  s_maximum = MAXPULS_VORGABE;
-  if (ks_persist_exists(PERSIST_MAXPULS)) {
-    const int32_t gelesen = ks_persist_read_int(PERSIST_MAXPULS);
-    if (gelesen > 100 && gelesen < 240) {
-      s_maximum = (uint16_t)gelesen;
-    }
+  s_maximum = 0;
+  s_offen = 0;
+  if (!ks_persist_exists(PERSIST_MAXPULS)) {
+    return;
+  }
+  const int32_t gelesen = ks_persist_read_int(PERSIST_MAXPULS);
+  if (!prv_plausibel(gelesen)) {
+    return;
+  }
+  const bool vermerkt = ks_persist_exists(PERSIST_MAXPULS_GESETZT) &&
+                        ks_persist_read_int(PERSIST_MAXPULS_GESETZT) == 1;
+  if (vermerkt) {
+    s_maximum = (uint16_t)gelesen;
+    return;
+  }
+  // OHNE VERMERK ENTSCHEIDET ERST DER ERSTE GEBRAUCH (prv_klaeren): beim
+  // Start der Uhr laeuft dieser Dienst vor dem Laden der
+  // Gesundheitseinstellungen, das Alter waere noch die Vorgabe 30.
+  s_offen = (uint16_t)gelesen;
+}
+
+// TANAKA, 208 - 0,7 x Alter, gerundet wie Boulder (Herzgrenzen.tanaka) -
+// in Zehnteln gerechnet, damit beide dieselbe Zahl sehen.
+static uint16_t prv_tanaka(void) {
+  const uint8_t alter = ks_alter();
+  if (alter < 10 || alter > 100) {
+    return MAXPULS_VORGABE;
+  }
+  return (uint16_t)((2080 - 7 * (int)alter + 5) / 10);
+}
+
+// WAS MEINTE DIE ZAHL OHNE VERMERK? 190 war die Vorgabe (Store-App,
+// Konfigseite, Boulder bis 0.42), und bei "From age" schickte Boulder 0.43
+// bis 0.45 seine Schaetzung nach Tanaka - beides heisst "nicht gesetzt".
+// Jede andere Zahl war eingestellt. Gefragt wird erst, wenn die Zahl
+// gebraucht wird (Training, Meldung ans Telefon, neue Einstellung); dann
+// stimmt das Alter. Die Antwort kommt in den Persist, damit sie nicht
+// kippt, wenn sich das Alter spaeter aendert.
+static void prv_klaeren(void) {
+  if (!s_offen) {
+    return;
+  }
+  const uint16_t alt = s_offen;
+  s_offen = 0;
+  if (alt == MAXPULS_VORGABE || alt == prv_tanaka()) {
+    puls_maximum_nicht_setzen();
+  } else {
+    puls_setze_maximum(alt);
   }
 }
 
-uint16_t puls_maximum(void) { return s_maximum; }
+uint16_t puls_maximum(void) {
+  if (s_maximum) {
+    return s_maximum;
+  }
+  // Noch offen: bis zur Entscheidung die alte Zahl, wie bisher - nur die
+  // alte Vorgabe nicht, die heisst in jedem Fall "nach Alter".
+  if (s_offen && s_offen != MAXPULS_VORGABE) {
+    return s_offen;
+  }
+  return prv_tanaka();
+}
+
+bool puls_maximum_gesetzt(void) {
+  prv_klaeren();
+  return s_maximum != 0;
+}
 
 void puls_setze_maximum(uint16_t schlaege) {
-  if (schlaege <= 100 || schlaege >= 240) {
+  if (!prv_plausibel(schlaege)) {
     return;
   }
+  s_offen = 0;
   s_maximum = schlaege;
   ks_persist_write_int(PERSIST_MAXPULS, schlaege);
+  ks_persist_write_int(PERSIST_MAXPULS_GESETZT, 1);
+}
+
+void puls_maximum_nicht_setzen(void) {
+  s_offen = 0;
+  s_maximum = 0;
+  // LOESCHEN, NICHT 190 SCHREIBEN: eine aeltere Firmware nach einem
+  // Zurueckspielen liest dann ihre Vorgabe, und ein Wert, den sie spaeter
+  // schreibt, wird hier wieder gelesen (siehe prv_klaeren).
+  ks_persist_delete(PERSIST_MAXPULS);
+  ks_persist_write_int(PERSIST_MAXPULS_GESETZT, 0);
+}
+
+void puls_maximum_alt(uint16_t schlaege) {
+  prv_klaeren();
+  // Das Echo der eigenen Meldung: ein Telefon ohne "nicht gesetzt" schickt
+  // beim Speichern aller Einstellungen zurueck, was die Uhr gemeldet hat.
+  if (!s_maximum && schlaege == prv_tanaka()) {
+    return;
+  }
+  puls_setze_maximum(schlaege);
 }
 
 uint16_t puls_zonengrenze(int zone) {
   if (zone < 1 || zone > KS_ZONEN) {
     return 0;
   }
-  return (uint16_t)((uint32_t)s_maximum * s_prozent[zone - 1] / 100);
+  return (uint16_t)((uint32_t)puls_maximum() * s_prozent[zone - 1] / 100);
 }
 
 int puls_zone(uint16_t bpm) {
@@ -232,6 +324,8 @@ void puls_ereignis_ppi(uint16_t ppi_ms) {
 }
 
 void puls_beobachten(void) {
+  // Ein Training braucht die Zonen: spaetestens jetzt ist klar, was gilt.
+  prv_klaeren();
   s_bpm = 0;
   s_frisch_seit = 0;
   s_ring_anzahl = 0;

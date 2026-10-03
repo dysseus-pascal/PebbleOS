@@ -133,8 +133,19 @@ uint16_t kieselsport_zonengrenze(int zone);
 
 // --- Einstellungen, im Persist von Kieselsport
 
-uint16_t kieselsport_maxpuls(void);
+// DER MAXIMALPULS KENNT "NICHT GESETZT". Frueher stand dafuer die Zahl 190,
+// und wer 190 wirklich gemessen hatte, konnte sie nicht einstellen. Ohne
+// eigenen Wert rechnet die Uhr nach Tanaka (208 - 0,7 x Alter) mit dem Alter
+// aus ihren Gesundheitseinstellungen, die das Telefon ohnehin abgleicht. So
+// folgen die Zonen dem Alter, ohne dass jemand etwas schicken muss.
+uint16_t kieselsport_maxpuls(void);   //< der Wert, mit dem gerechnet wird
+bool kieselsport_maxpuls_gesetzt(void);
 void kieselsport_maxpuls_setze(uint16_t schlaege);
+void kieselsport_maxpuls_nicht_setzen(void);
+// EINE ZAHL OHNE ANGABE, OB SIE GESETZT IST - von einem Telefon, das das
+// noch nicht kennt. Gilt wie bisher als eingestellt; nur das Echo des
+// Werts, den die Uhr ohne Einstellung gemeldet hat, aendert nichts.
+void kieselsport_maxpuls_alt(uint16_t schlaege);
 uint8_t kieselsport_empfindlichkeit(void);        //< 1 traege, 2 normal, 3 fein
 void kieselsport_empfindlichkeit_setze(uint8_t stufe);
 uint16_t kieselsport_pausenziel(void);            //< Sekunden, 0 = nie brummen
@@ -154,6 +165,29 @@ bool kieselsport_archiv_lesen(int index, Trainingsstand *aus);
 #define KS_LISTE_MAX 300
 bool kieselsport_wartend_laden(Trainingsstand *t, char *liste, size_t platz);
 void kieselsport_wartend_vergessen(void);
+
+// Die Pausen der wartenden Zusammenfassung, als Byte fuer das Telefon:
+// [0] Fassung (KS_PAUSEN_FASSUNG), [1] Zahl aller Pausen (bis 255), dann je
+// Pause aktive Sekunde und Dauer in Sekunden, beide uint16 little-endian.
+// Steht die Zahl hoeher, als die Liste lang ist, fehlen Pausen. Nur
+// abgeschlossene Pausen; die letzte, aus der gespeichert wurde, beginnt bei
+// kieselsport_wartend_ende(). Rueckgabe 0: eine Zusammenfassung aelterer
+// Firmware, ohne Pausen.
+#define KS_PAUSEN_MAX 32
+#define KS_PAUSEN_FASSUNG 1
+#define KS_PAUSEN_BYTES (2 + 4 * KS_PAUSEN_MAX)
+size_t kieselsport_wartend_pausen(uint8_t *aus, size_t platz);
+// Wann die aktive Zeit endete (Unix-Sekunden): der Beginn der letzten Pause.
+// 0 bei einer Zusammenfassung aelterer Firmware.
+uint32_t kieselsport_wartend_ende(void);
+
+// DER STOPP EINES VERWORFENEN TRAININGS. Das Telefon zeichnet die Strecke
+// auf, bis es davon hoert; ging die Meldung verloren, lief das GPS weiter.
+// Also liegt er im Persist wie die Zusammenfassung, bis das Telefon ihn
+// bestaetigt (vergessen nur, wenn [beginn] noch derselbe ist). Ein neues
+// Training ersetzt ihn - dessen Start sagt dem Telefon ohnehin alles.
+bool kieselsport_stopp_laden(uint32_t *beginn, uint32_t *zeit, uint8_t *art);
+void kieselsport_stopp_vergessen(uint32_t beginn);
 
 // Die Pulskurve: ein Wert je zehn Sekunden, in Stuecken ans Telefon.
 #define KS_KURVE_TAKT_S 10

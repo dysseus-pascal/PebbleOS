@@ -10,7 +10,11 @@
 // gebraucht der Trainingsdienst (services/kieselsport); er haelt sie im
 // Persist und prueft die Grenzen. Nur der Timeline-Pin gehoert der App.
 
+// Ohne Vermerk, von einem Telefon, das "nicht gesetzt" nicht kennt
+// (kieselsport_maxpuls_alt).
 void einstellungen_maxpuls(int32_t schlaege);
+// Mit Vermerk: [gesetzt] false heisst "nach Alter", die Zahl zaehlt dann nicht.
+void einstellungen_maxpuls_vermerkt(bool gesetzt, int32_t schlaege);
 void einstellungen_becken(int32_t meter);
 void einstellungen_pausenziel(int32_t sekunden);
 void einstellungen_empfindlichkeit(int32_t stufe);

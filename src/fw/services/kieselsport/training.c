@@ -6,6 +6,7 @@
 #include "reps.h"
 #include "bahnen.h"
 #include "abschnitt.h"
+#include "pausen.h"
 
 #include "schluessel.h"
 
@@ -83,6 +84,7 @@ void training_starte(Sportart art) {
 void training_starte_ab(Sportart art, uint32_t beginn) {
   s_art = art;
   abschnitt_leeren();
+  pausen_leeren();
   s_zustand = LaufLaeuft;
   // DER BEGINN KOMMT VON DER APP, nicht von hier: sie hat ihn schon ans
   // Telefon gemeldet, und die Spurdatei dort heisst nach ihm. Zwei Uhren
@@ -110,12 +112,16 @@ void training_starte_ab(Sportart art, uint32_t beginn) {
 void training_pause_umschalten(void) {
   if (s_zustand == LaufLaeuft) {
     s_zustand = LaufPause;
+    // Wann und bei welcher aktiven Sekunde - das Telefon rechnet damit die
+    // Kurve, die Saetze und die Bahnen in Uhrzeit um (pausen.h).
+    pausen_beginn(s_sekunden, ks_jetzt());
     // In der Pause reicht der normale Takt - eine Pause ist kein Training.
     puls_normal_messen();
     reps_pause(true);
     bahnen_pause(true);
   } else if (s_zustand == LaufPause) {
     s_zustand = LaufLaeuft;
+    pausen_ende(ks_jetzt());
     // Was in der Pause lief, zaehlt nicht: sonst kaeme es mit dem ersten Takt
     // danach auf einmal dazu.
     prv_zaehler_start_ab_jetzt();
@@ -226,6 +232,12 @@ void training_verwerfen(void) {
 }
 
 uint32_t training_beginn(void) { return s_beginn; }
+
+uint32_t training_ende(void) {
+  // Gespeichert wird aus der Pause: die aktive Zeit endete, als sie begann.
+  const time_t pause = pausen_offen_seit();
+  return (uint32_t)(pause ? pause : ks_jetzt());
+}
 
 int training_archiv_anzahl(void) {
   return ks_persist_exists(PERSIST_ARCHIV_ANZAHL) ? ks_persist_read_int(PERSIST_ARCHIV_ANZAHL) : 0;

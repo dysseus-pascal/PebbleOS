@@ -20,10 +20,23 @@
 #define PERSIST_ARCHIV_ANZAHL 10
 #define PERSIST_ARCHIV_NAECHST 11
 
+// Ob PERSIST_MAXPULS ausdruecklich eingestellt ist (1) oder nicht (0). EIN
+// EIGENER SCHLUESSEL: die Store-App und aeltere Firmware lesen nur
+// PERSIST_MAXPULS und schrieben dort 190 auch dann, wenn niemand etwas
+// eingestellt hatte (siehe puls.c).
+#define PERSIST_MAXPULS_GESETZT 12
+
 // Die Zusammenfassung, die auf das Telefon wartet (siehe wartend.h).
 #define PERSIST_WARTET 30
 #define PERSIST_WARTET_LISTE_A 31
 #define PERSIST_WARTET_LISTE_B 32
+// Dazu die Pausen und das Ende der aktiven Zeit - neu, darum hinten. Unter
+// 34 steht mit dem Ende der Beginn des Trainings, zu dem beide gehoeren.
+#define PERSIST_WARTET_PAUSEN 33
+#define PERSIST_WARTET_ENDE 34
+
+// Der Stopp eines verworfenen Trainings, bis das Telefon ihn hat.
+#define PERSIST_STOPP 35
 
 // Die Pulskurve, die auf das Telefon wartet (siehe kurve.h).
 #define PERSIST_KURVE_ANZAHL 40

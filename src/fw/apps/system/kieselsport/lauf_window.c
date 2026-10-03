@@ -914,7 +914,13 @@ static void prv_gespeichert(void) {
 }
 
 static void prv_verworfen(void) {
-  telefon_melde_zustand(ZustandStop, (uint8_t)s_art, s.beginn);
+  // DER DIENST HAT DEN STOPP GEMERKT: von dort geht er, bis das Telefon ihn
+  // bestaetigt - auch wenn die App gleich zugeht. Sonst wie frueher.
+  if (telefon_stopp_wartet()) {
+    telefon_stopp_nachsenden();
+  } else {
+    telefon_melde_zustand(ZustandStop, (uint8_t)s_art, s.beginn);
+  }
   s_speichert = false;
   if (!s_zu) s_zu = app_timer_register(10, prv_zu, NULL);
 }
