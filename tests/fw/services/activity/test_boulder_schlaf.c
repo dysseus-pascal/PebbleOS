@@ -361,3 +361,47 @@ void test_boulder_schlaf__echte_nacht_30_neben_fitbit(void) {
   cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 350), SchlafPhaseWach);
   cl_assert(s_ergebnis.schlaf_minuten >= 400 && s_ergebnis.schlaf_minuten <= 480);
 }
+
+// Die Nacht vom 2./3.10.2026, aus Boulders Nachtexport, neben einem Fitbit:
+// im Bett 22:29 bis 06:27, davon 2:11 h wach (01:50-02:29, 02:46-03:47,
+// 04:30-04:37, 05:02-05:30), tief 1:12 h, REM 1:16 h.
+static int prv_lade_nacht(const char *datei) {
+  char pfad[512];
+  snprintf(pfad, sizeof(pfad), "%s/activity/boulder/%s", CLAR_FIXTURE_PATH, datei);
+  FILE *f = fopen(pfad, "r");
+  cl_assert(f);
+  char zeile[256];
+  int n = 0;
+  while (fgets(zeile, sizeof(zeile), f)) {
+    if (zeile[0] == '#' || !strncmp(zeile, "minute,", 7)) continue;
+    int minute, vmc, puls;
+    char uhr[8];
+    if (sscanf(zeile, "%d,%7[^,],%*d,%d,%d", &minute, uhr, &vmc, &puls) != 4) continue;
+    cl_assert(minute < SCHLAF_MINUTEN_MAX);
+    s_gueltig[minute] = true;
+    s_bewegung[minute] = (uint16_t)vmc;
+    s_puls[minute] = (uint8_t)puls;
+    if (minute + 1 > n) n = minute + 1;
+  }
+  fclose(f);
+  return n;
+}
+
+void test_boulder_schlaf__echte_nacht_3_10_neben_fitbit(void) {
+  const int n = prv_lade_nacht("nacht-2026-10-03.csv");
+  const SchlafEingabe e = (SchlafEingabe){
+    .bewegung = s_bewegung, .puls = s_puls, .gueltig = s_gueltig, .anzahl = n,
+    .schwelle = SCHLAF_SCHWELLE_VMC, .hrv = s_hrv, .hrv_anzahl = 0,
+  };
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  for (int i = 0; i < n; i++) {
+    const int p = (i >= s_ergebnis.einschlafen && i < s_ergebnis.aufwachen) ? (int)prv_phase_bei(&s_ergebnis, i) : -1;
+    lauf[i] = p < 0 ? '.' : "wltrs"[p];
+  }
+  lauf[n] = 0;
+  printf("\nNACHT0310 ein=%d auf=%d schlaf=%d leicht=%d tief=%d rem=%d wach=%d\nLAUF0310 %s\n",
+         s_ergebnis.einschlafen, s_ergebnis.aufwachen, s_ergebnis.schlaf_minuten,
+         prv_minuten(&s_ergebnis, SchlafPhaseLeicht), prv_minuten(&s_ergebnis, SchlafPhaseTief),
+         prv_minuten(&s_ergebnis, SchlafPhaseRem), prv_minuten(&s_ergebnis, SchlafPhaseWach), lauf);
+}
