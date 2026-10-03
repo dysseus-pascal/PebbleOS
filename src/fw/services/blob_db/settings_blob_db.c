@@ -12,6 +12,9 @@
 #include "pbl/services/settings/settings_file.h"
 #include "shell/prefs.h"
 #include "shell/prefs_private.h"
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+#include "apps/watch/timestyle/timestyle.h"
+#endif
 #include <pbl/logging/logging.h>
 #include "pbl/services/system_task.h"
 #include "pbl/util/list.h"
@@ -124,6 +127,11 @@ static const char *s_syncable_settings[] = {
   "musicShowVolumeControls",
   "musicShowProgressBar",
   "musicShowAlbumArt",
+
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+  // Boulder: die Einstellungen von TimeStyle Bedrock, nur vom Telefon zur Uhr
+  TS_BEDROCK_PREF_SCHLUESSEL,
+#endif
 };
 
 static const size_t s_num_syncable_settings = ARRAY_LENGTH(s_syncable_settings);
@@ -172,8 +180,11 @@ static const char *prv_find_in_list(const uint8_t *key, int key_len, const char 
     const char *list_key = list[i];
     size_t list_key_strlen = strlen(list_key);
     // Accept key_len matching strlen (no null) or strlen+1 (with null)
-    if ((key_len == (int)list_key_strlen || key_len == (int)(list_key_strlen + 1)) &&
-        memcmp(key, list_key, list_key_strlen) == 0) {
+    // Boulder: bei strlen+1 muss das letzte Byte die Null sein - sonst ging jeder um ein
+    // Zeichen laengere Schluessel ("tsBedrockX" ohne Null) als der erlaubte durch.
+    const bool exact = (key_len == (int)list_key_strlen);
+    const bool with_null = (key_len == (int)(list_key_strlen + 1)) && key[list_key_strlen] == 0;
+    if ((exact || with_null) && memcmp(key, list_key, list_key_strlen) == 0) {
       return list_key;
     }
   }
@@ -316,6 +327,24 @@ void settings_blob_db_init(void) {
               (unsigned int)s_num_syncable_settings);
 }
 
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+// Boulder: tsBedrock hat eine feste Laenge. Ohne diese Pruefung landete ein
+// falsch langer Wert in der Datei: zu kurz nullte prefs_private_read_backing
+// den Wert im Speicher, zu lang wurde er abgeschnitten uebernommen. Abgewiesen
+// bleibt der vorige Wert, und es gibt weder Setter noch Ereignis. Gilt fuer
+// BEIDE Einfuegewege: Boulder (libpebble3) schreibt mit Zeitstempel, nur
+// 'pbl feed' und aeltere Telefone ohne. key ist hier schon der String der
+// Whitelist (prv_canonical_shell_key), strcmp also sicher.
+static bool prv_ts_bedrock_laenge_falsch(const uint8_t *key, bool is_notif_pref, int val_len) {
+  if (is_notif_pref || strcmp((const char *)key, TS_BEDROCK_PREF_SCHLUESSEL) != 0 ||
+      val_len == TS_BEDROCK_PREF_LAENGE) {
+    return false;
+  }
+  PBL_LOG_WRN("Rejecting %s with %d bytes", TS_BEDROCK_PREF_SCHLUESSEL, val_len);
+  return true;
+}
+#endif
+
 status_t settings_blob_db_insert(const uint8_t *key, int key_len, const uint8_t *val, int val_len) {
   if (!s_initialized) {
     return E_INTERNAL;
@@ -342,6 +371,12 @@ status_t settings_blob_db_insert(const uint8_t *key, int key_len, const uint8_t 
     PBL_LOG_WRN("Rejecting non-whitelisted setting: %s", key_str);
     return E_INVALID_OPERATION;
   }
+
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+  if (prv_ts_bedrock_laenge_falsch(key, is_notif_pref, val_len)) {
+    return E_INVALID_ARGUMENT;
+  }
+#endif
 
   prv_lock_for_file(is_notif_pref);
 
@@ -599,35 +634,37 @@ status_t settings_blob_db_mark_synced(const uint8_t *key, int key_len) {
   return status;
 }
 
+// Boulder: auf Dateiebene statt als verschachtelte Funktion (nur GCC kennt sie), damit diese
+// Datei auch fuer die Host-Tests (clang) baut. Ablauf unveraendert.
+typedef struct {
+  bool found_dirty;
+} IsDirtyContext;
+
+static bool prv_is_dirty_callback(SettingsFile *file, SettingsRecordInfo *info, void *context) {
+  IsDirtyContext *ctx = (IsDirtyContext *)context;
+
+  if (!info->dirty) {
+    return true; // Continue
+  }
+
+  // Check if whitelisted
+  uint8_t key_buf[SETTINGS_KEY_MAX_LEN];
+  info->get_key(file, key_buf, info->key_len);
+
+  if (prv_is_syncable(key_buf, info->key_len)) {
+    ctx->found_dirty = true;
+    return false; // Stop iteration
+  }
+
+  return true; // Continue
+}
+
 status_t settings_blob_db_is_dirty(bool *is_dirty_out) {
   if (!s_initialized) {
     return E_INTERNAL;
   }
 
   // Quick check: iterate and return true on first dirty whitelisted setting
-  typedef struct {
-    bool found_dirty;
-  } IsDirtyContext;
-
-  bool is_dirty_callback(SettingsFile * file, SettingsRecordInfo * info, void *context) {
-    IsDirtyContext *ctx = (IsDirtyContext *)context;
-
-    if (!info->dirty) {
-      return true; // Continue
-    }
-
-    // Check if whitelisted
-    uint8_t key_buf[SETTINGS_KEY_MAX_LEN];
-    info->get_key(file, key_buf, info->key_len);
-
-    if (prv_is_syncable(key_buf, info->key_len)) {
-      ctx->found_dirty = true;
-      return false; // Stop iteration
-    }
-
-    return true; // Continue
-  }
-
   IsDirtyContext ctx = {.found_dirty = false};
 
   // Check shell prefs file
@@ -635,7 +672,7 @@ status_t settings_blob_db_is_dirty(bool *is_dirty_out) {
   SettingsFile file;
   status_t status = settings_file_open(&file, SHELL_PREFS_FILE_NAME, SHELL_PREFS_FILE_LEN);
   if (PASSED(status)) {
-    settings_file_each(&file, is_dirty_callback, &ctx);
+    settings_file_each(&file, prv_is_dirty_callback, &ctx);
     settings_file_close(&file);
   }
   prefs_private_unlock();
@@ -645,7 +682,7 @@ status_t settings_blob_db_is_dirty(bool *is_dirty_out) {
     alerts_preferences_lock();
     status = settings_file_open(&file, NOTIF_PREFS_FILE_NAME, NOTIF_PREFS_FILE_LEN);
     if (PASSED(status)) {
-      settings_file_each(&file, is_dirty_callback, &ctx);
+      settings_file_each(&file, prv_is_dirty_callback, &ctx);
       settings_file_close(&file);
     }
     alerts_preferences_unlock();
@@ -753,6 +790,13 @@ status_t settings_blob_db_insert_with_timestamp(const uint8_t *key, int key_len,
   } else {
     return E_INVALID_OPERATION;
   }
+
+#ifdef CONFIG_APPS_WATCH_TIMESTYLE
+  // Boulder: der Weg, auf dem Boulder wirklich schreibt - dieselbe Pruefung.
+  if (prv_ts_bedrock_laenge_falsch(key, is_notif_pref, val_len)) {
+    return E_INVALID_ARGUMENT;
+  }
+#endif
 
   prv_lock_for_file(is_notif_pref);
 

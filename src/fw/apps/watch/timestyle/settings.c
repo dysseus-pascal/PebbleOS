@@ -5,7 +5,8 @@
  * changes are marked "Boulder:". */
 
 #include "settings.h"
-#include "languages.h"  // Boulder: LANGUAGE_EN for the fixed settings
+#include "timestyle.h"  // Boulder: the value from Boulder
+#include "ts_format.h"  // Boulder: its layout and the defaults
 #include <pebble.h>
 
 Settings settings;
@@ -13,59 +14,29 @@ DynamicSettings dynamicSettings;
 
 void Settings_init() {
   // Boulder: no persisted settings and no emery font migration - the
-  // configuration is fixed (see Settings_loadFromStorage).
+  // configuration comes from Boulder (see Settings_loadFromStorage).
   Settings_loadFromStorage();
 }
 
 void Settings_deinit() {}
 
 void Settings_loadFromStorage() {
-  // Boulder: FESTE EINSTELLUNGEN statt Persist und Konfigseite. Sie ergeben
-  // das Zifferblatt vom Foto des Nutzers (Pebble Time 2, 03.10.2026):
-  // schwarzer Grund, weisse LECO-Ziffern, weisse Leiste rechts mit schwarzer
-  // Schrift; oben das aktuelle Wetter, in der Mitte die Schritte, unten
-  // Wochentag, Kalenderblatt und Monat, Englisch. Der Rest sind TimeStyles
-  // Vorgaben. Eine System-App behaelt ihre statischen Variablen ueber ihr
-  // Ende hinaus - darum zuerst alles auf null.
+  // Boulder: DIE EINSTELLUNGEN KOMMEN AUS BOULDER - ein Wert von 32 Byte in
+  // den Uhreinstellungen (prefs.c), statt Persist und Konfigseite. Fehlt er
+  // (alter Boulder) oder ist er ungueltig, gelten die Vorgaben vom Foto des
+  // Nutzers (ts_format_vorgaben). Eine System-App behaelt ihre statischen
+  // Variablen ueber ihr Ende hinaus - darum zuerst alles auf null.
   memset(&settings, 0, sizeof(settings));
 
-  settings.timeColor = GColorWhite;
-  settings.timeBgColor = GColorBlack;
-  settings.sidebarColor = GColorWhite;
-  settings.sidebarTextColor = GColorBlack;
-
-  settings.languageId = LANGUAGE_EN;
-  settings.showLeadingZero = false;
-  settings.clockFontId = FONT_SETTING_LECO;
-
-  settings.btVibe = false;
-  settings.hourlyVibe = NO_VIBE;
-
-  settings.widgets[0] = WEATHER_CURRENT;
-  settings.widgets[1] = STEP_COUNTER;
-  settings.widgets[2] = DATE;
-  settings.sidebarOnLeft = false;
-  settings.useLargeFonts = false;
-  settings.activateDisconnectIcon = true;
-
-  // Boulder: not read - the phone already sends temperatures in the user's unit.
-  settings.useMetric = true;
-
-  settings.showBatteryPct = true;
-  settings.disableAutobattery = false;
-
-  strncpy(settings.altclockName, "ALT", sizeof(settings.altclockName));
-  settings.altclockOffset = 0;
-
-  settings.healthUseDistance = false;
-  settings.healthUseRestfulSleep = false;
-  settings.decimalSeparator = '.';
+  uint8_t wert[TS_BEDROCK_PREF_LAENGE];
+  timestyle_bedrock_blob_lesen(wert);
+  ts_format_dekodieren(wert, sizeof(wert), &settings);
 
   Settings_updateDynamicSettings();
 }
 
 void Settings_saveToStorage() {
-  // Boulder: nothing to store, the settings are fixed.
+  // Boulder: nothing to store - only Boulder writes the settings.
   Settings_updateDynamicSettings();
 }
 

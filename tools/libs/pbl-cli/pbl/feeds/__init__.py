@@ -88,6 +88,42 @@ class Watch:
             value,
         )
 
+    def blobdb_insert_with_timestamp(self, database, key, value, timestamp):
+        """Insert with the phone's timestamp (InsertWithTimestamp, 0x0D)."""
+        # Boulder: so schreibt das Telefon (libpebble3) Uhreinstellungen
+        # wirklich, und die Firmware hat dafuer einen eigenen Weg. libpebble2
+        # kennt den Befehl nicht, deshalb das Paket hier von Hand.
+        what = f"{database.name}: insert {len(value)} bytes with timestamp {timestamp}"
+        if self.dry_run:
+            util.inf("[dry-run]", what, color="yellow")
+            return
+        from libpebble2.protocol.base import PebblePacket
+        from libpebble2.protocol.base.types import BinaryArray, Uint8, Uint16, Uint32
+        from libpebble2.protocol.blobdb import BlobResponse, BlobStatus
+
+        class InsertWithTimestamp(PebblePacket):
+            class Meta:
+                endpoint = 0xB1DB
+                register = False
+                endianness = "<"
+
+            command = Uint8(default=0x0D)
+            token = Uint16()
+            database = Uint8()
+            timestamp = Uint32()
+            key_size = Uint8()
+            key = BinaryArray(length=key_size)
+            value_size = Uint16()
+            value = BinaryArray(length=value_size)
+
+        paket = InsertWithTimestamp(
+            token=0x7542, database=int(database), timestamp=int(timestamp),
+            key=bytes(key), value=bytes(value),
+        )
+        antwort = self._pebble.send_and_read(paket, BlobResponse)
+        if antwort.response != BlobStatus.Success:
+            raise CommandError(f"{what}: firmware answered {BlobStatus(antwort.response).name}")
+
     def blobdb_clear(self, database):
         self._blobdb_call(f"{database.name}: clear", "clear", database)
 

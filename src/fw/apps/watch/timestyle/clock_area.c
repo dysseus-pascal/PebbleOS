@@ -27,7 +27,7 @@ FFont* minutes_font;
 // just allocate all the fonts at startup because i don't feel like
 // dealing with allocating and deallocating things
 // Boulder: only LECO. The Avenir Next outlines were not taken over (a
-// commercial typeface, and the fixed settings use LECO).
+// commercial typeface; the settings always use LECO).
 FFont* leco;
 
 // Boulder: static - sidebar.c has its own screen_rect (no -fcommon here).

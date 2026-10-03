@@ -7,6 +7,8 @@
 
 #include "process_management/pebble_process_md.h"
 
+#include <stdint.h>
+
 // Eigene Kennung, NICHT die der Store-App: so laesst sich TimeStyle aus dem
 // Store weiter daneben installieren, und beide stoeren sich nicht. Der Name
 // "TimeStyle Bedrock" unterscheidet es in der Liste von der Store-Fassung.
@@ -26,3 +28,14 @@
   {0x43, 0x68, 0xff, 0xa4, 0xf0, 0xfb, 0x48, 0x23, 0x90, 0xbe, 0xf7, 0x54, 0xb0, 0x76, 0xbd, 0xaa}
 
 const PebbleProcessMd *timestyle_get_app_info(void);
+
+// Die Einstellungen kommen als EIN Wert aus Boulder (Uhreinstellungen-
+// Synchronisation, Whitelist in settings_blob_db.c): 32 Byte mit Fassungsbyte,
+// Aufbau in ts_format.h. Ein Wert statt 21 Schluesseln, weil die Datei
+// shellpref nur 2048 Byte hat und eine Aenderung nur einmal neu zeichnen soll.
+#define TS_BEDROCK_PREF_SCHLUESSEL "tsBedrock"
+#define TS_BEDROCK_PREF_LAENGE 32
+
+// Kopiert den zuletzt aus Boulder empfangenen Wert (prefs.c). Nie gesetzt:
+// lauter Nullen, also Fassung 0 und damit die Vorgaben.
+void timestyle_bedrock_blob_lesen(uint8_t out[TS_BEDROCK_PREF_LAENGE]);

@@ -144,7 +144,7 @@ JR Mobley); die Lizenzen liegen neben dem Code, jede Änderung am übernommenen
 Code ist mit `Boulder:` markiert. Grund: die Store-Fassung hält über PebbleKit
 JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
 
-- **Kein PebbleKit JS, keine Konfigseite.** Das Wetter kommt aus dem
+- **Kein PebbleKit JS, keine Konfigseite auf der Uhr.** Das Wetter kommt aus dem
   Wetterspeicher der Firmware, den Boulder ohnehin füllt
   (`wetter_quelle.c`: `weather_service_create_default_forecast`, dazu aus
   dem v4-Satz Ort, Tageswetter und UV). Neu gelesen beim Start, bei
@@ -152,9 +152,21 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
   fehlend: „…“ ohne Symbol, wie TimeStyle ohne Wetter. Temperaturen in der
   Einheit des Telefons. Sonne und „teils bewölkt“ nachts mit Mond (Sonnenstand
   aus dem Ort des Satzes); ein Gewitter kennt die Firmware nicht.
-- **Feste Einstellungen** (`settings.c`) = Foto des Nutzers vom 03.10.2026:
-  schwarz, weiße LECO-Ziffern, weiße Leiste rechts mit schwarzer Schrift,
-  Wetter / Schritte / Datum, Englisch. 24 h folgt der Uhr.
+- **Einstellungen aus Boulder** (ab b23, Boulder 0.48): ein Wert `tsBedrock`
+  von 32 Byte mit Fassungsbyte in der Uhreinstellungen-Synchronisation
+  (Whitelist in `settings_blob_db.c`, Wert in `prefs.c`, Aufbau und
+  Leseregeln in `ts_format.c`). Nur Telefon → Uhr; die Uhr schreibt ihn nie.
+  Ein falsch langer Wert wird abgewiesen (der vorige bleibt). Das laufende
+  Zifferblatt hört auf `PEBBLE_PREF_CHANGE_EVENT` und zeichnet sofort neu.
+  Fehlt der Wert (alter Boulder) oder ist ein Feld ungültig, gelten die
+  Vorgaben vom Foto des Nutzers vom 03.10.2026: schwarz, weiße LECO-Ziffern,
+  weiße Leiste rechts mit schwarzer Schrift, Wetter / Schritte / Datum,
+  Englisch. 24 h und km/mi folgen der Uhr. Nicht einstellbar: die Schrift
+  (nur LECO), °C/°F (kommt aus Boulder), Sprachen ohne Glyphen in den
+  eingebauten Schriften (GK, VN, RU, CN, UK, JP, KR, IW).
+- Widget „Time zone“: die Stunde ohne doppelt abgezogene Sommerzeit und auf
+  die Minute genau (`zweitzeit.c`); km-Distanz mit dem gewählten
+  Dezimaltrenner.
 - Name „TimeStyle Bedrock“, eigene Kennung d8af11d3-1e92-4f6d-b494-c5572f7bb7df (in b21 noch „TimeStyle“ mit e5c8eb9b-…, wird einmal umgestellt), Registry -104, als
   erstes Zifferblatt der Liste (der Rückfall auf „das erste Zifferblatt“
   trifft TimeStyle). TimeStyle aus dem Store bleibt daneben installierbar.
@@ -166,16 +178,23 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
   `SERVICE_WEATHER`, `SERVICE_ACTIVITY`); die Ressourcen (`TIMESTYLE_*`,
   `resources/normal/base/timestyle/`) tragen `"config"` und fallen sonst weg.
   Herkunft und MIT-Lizenz der Ressourcen: `resources/normal/base/timestyle/LICENSE`.
-- Nicht übernommen: die Avenir-Next-Schriften (kommerzielle Schrift, die feste
-  Einstellung nutzt LECO), `messaging.c`, die Aplite-Teile, `fpath`.
+- Nicht übernommen: die Avenir-Next-Schriften (kommerzielle Schrift; es gibt
+  nur LECO), `messaging.c`, die Aplite-Teile, `fpath`.
 - `pebble.h` im Ordner steht für das SDK-`<pebble.h>`; Bilder werden als
   beschreibbare Kopie geladen (`ts_pdc_laden`), weil System-Ressourcen im
   Flash liegen können und TimeStyle sie umfärbt.
 - Tests: `test_timestyle` (Wetterart → Symbol, Tag/Nacht, Alter, „5.5k“),
   `test_timestyle_standard` (die einmalige Umstellung in `prefs.c`; eigener
-  Test, weil `test_prefs_db` ohne `CONFIG_APPS_WATCH_TIMESTYLE` baut).
-  Prüfbau fürs Emulator-Bild mit den Werten des Fotos: `-DTS_DEMO`; das echte
-  Wetter im Emulator: `pbl feed weather`.
+  Test, weil `test_prefs_db` ohne `CONFIG_APPS_WATCH_TIMESTYLE` baut),
+  `test_timestyle_einstellungen` (Leseregeln mit den gemeinsamen
+  Testvektoren V0–V6 wie in Boulders `TsBedrockFormatTest`, Sprachen,
+  Zeitzone), `test_timestyle_bedrock_pref` (Whitelist, Länge auf beiden
+  Einfügewegen, Ereignis).
+  Prüfbau fürs Emulator-Bild mit den Werten des Fotos: `-DTS_DEMO`
+  (`pbl configure … -DCMAKE_C_FLAGS=-DTS_DEMO`); das echte
+  Wetter im Emulator: `pbl feed weather`; Einstellungen wie aus Boulder
+  (mit Zeitstempel, `--plain-insert` für den alten Weg):
+  `pbl feed timestyle --left --large …` oder `--hex <64 Zeichen>`.
 
 ## Releases (F5)
 

@@ -10,6 +10,7 @@
 #include "util.h"
 #include "weather.h"
 #include "schritte_text.h"  // Boulder
+#include "zweitzeit.h"      // Boulder
 #include <pebble.h>
 
 bool SidebarWidgets_useCompactMode = false;
@@ -456,30 +457,13 @@ void SidebarWidgets_updateTime(struct tm *timeInfo) {
 
   if (dynamicSettings.enableAltTimeZone) {
     // set the alternate time zone string
-    int hour =
-        timeInfo->tm_hour - timeInfo->tm_gmtoff / 60 / 60 - timeInfo->tm_isdst;
-
-    // apply the configured offset value
-    hour += settings.altclockOffset;
-
-    char am_pm = (mod(hour, 24) < 12) ? 'a' : 'p';
-
-    // format it
-    if (clock_is_24h_style()) {
-      hour = mod(hour, 24);
-      am_pm = (char)0;
-    } else {
-      hour = mod(hour, 12);
-      if (hour == 0) {
-        hour = 12;
-      }
-    }
-
-    if (settings.showLeadingZero && hour < 10) {
-      snprintf(altClock, sizeof(altClock), "0%i%c", hour, am_pm);
-    } else {
-      snprintf(altClock, sizeof(altClock), "%i%c", hour, am_pm);
-    }
+    // Boulder: computed in zweitzeit.c (host-tested), without the extra
+    // "- timeInfo->tm_isdst": tm_gmtoff already contains summer time, so the
+    // hour was one off in summer.
+    zweitzeit_text(altClock, sizeof(altClock), timeInfo->tm_hour,
+                   timeInfo->tm_min, timeInfo->tm_gmtoff,
+                   settings.altclockOffset, clock_is_24h_style(),
+                   settings.showLeadingZero);
   }
 
   if (dynamicSettings.enableBeats) {
@@ -922,7 +906,10 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
         snprintf(steps_text, sizeof(steps_text), "%im", distance);
       } else if (distance < 1000) {
         distance /= 100; // convert to tenths of km
-        snprintf(steps_text, sizeof(steps_text), ".%ikm", distance);
+        // Boulder: the chosen decimal separator, like the miles branch below
+        // (upstream always wrote ".").
+        snprintf(steps_text, sizeof(steps_text), "%c%ikm",
+                 settings.decimalSeparator, distance);
       } else {
         distance /= 1000; // convert to km
 

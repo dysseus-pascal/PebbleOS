@@ -9,7 +9,7 @@
 #include "sidebar_widgets.h"
 
 // Boulder: no persisted settings (version, persist keys and the legacy struct
-// removed) - the configuration is fixed in settings.c.
+// removed) - the configuration comes from Boulder, see ts_format.h.
 
 #define FONT_SETTING_DEFAULT 0
 #define FONT_SETTING_LECO    1

@@ -28,6 +28,8 @@ static bool updatingEverySecond;
 // Boulder: no weatherRefreshMinute - the watch never asks the phone for
 // weather; Boulder fills the firmware's store and an event tells us.
 static EventServiceInfo s_wetter_ereignis;
+// Boulder: new settings from Boulder (watch settings sync, key tsBedrock).
+static EventServiceInfo s_einstellung_ereignis;
 
 void update_clock();
 void redrawScreen();
@@ -174,6 +176,24 @@ static void prv_wetter_neu(PebbleEvent *event, void *context) {
   Sidebar_redraw();
 }
 
+// Boulder: Boulder sent new settings. Applied at once, without restarting
+// the face - the same steps as TimeStyle after its config page.
+static void prv_einstellungen_neu(PebbleEvent *event, void *context) {
+  const char *key = event->pref_change.key;
+  if(!key || strcmp(key, TS_BEDROCK_PREF_SCHLUESSEL) != 0) {
+    return;
+  }
+  Settings_loadFromStorage();
+
+  // a weather widget may just have been chosen - its data may be old
+  if(!dynamicSettings.disableWeather) {
+    Weather_refresh();
+  }
+
+  // also switches the tick between seconds and minutes if needed
+  redrawScreen();
+}
+
 // fixes for disappearing elements after notifications
 // (from http://codecorner.galanter.net/2016/01/08/solved-issue-with-pebble-framebuffer-after-notification-is-dismissed/)
 static void app_focus_changing(bool focusing) {
@@ -210,6 +230,13 @@ static void init() {
     .handler = prv_wetter_neu,
   };
   event_service_client_subscribe(&s_wetter_ereignis);
+
+  // Boulder: and new settings as a pref change.
+  s_einstellung_ereignis = (EventServiceInfo) {
+    .type = PEBBLE_PREF_CHANGE_EVENT,
+    .handler = prv_einstellungen_neu,
+  };
+  event_service_client_subscribe(&s_einstellung_ereignis);
 
   // Create main Window element and assign to pointer
   mainWindow = window_create();
@@ -252,8 +279,9 @@ static void deinit() {
   // Destroy Window
   window_destroy(mainWindow);
 
-  // Boulder: stop listening for weather before its data goes away.
+  // Boulder: stop listening for weather and settings before their data goes away.
   event_service_client_unsubscribe(&s_wetter_ereignis);
+  event_service_client_unsubscribe(&s_einstellung_ereignis);
 
   // unload weather stuff
   Weather_deinit();

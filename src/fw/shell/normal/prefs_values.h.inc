@@ -81,4 +81,10 @@
   PREFS_MACRO(PREF_KEY_BOULDER_MESSSTUFE, s_boulder_messstufe)
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
   PREFS_MACRO(PREF_KEY_BOULDER_TIMESTYLE, s_boulder_timestyle_gesetzt)
+  // Boulder: die Einstellungen von TimeStyle Bedrock (32 Byte aus Boulder).
+  // Damit ist shellpref knapp: alle Prefs geschrieben belegen 1990 von 2048
+  // Byte (obelix b23), und ein Ueberschreiben braucht Platz fuer den neuen
+  // Satz NEBEN dem alten (hier 50 Byte). Ein weiterer Pref braucht vorher
+  // mehr Platz in SHELL_PREFS_FILE_LEN.
+  PREFS_MACRO(PREF_KEY_TS_BEDROCK, s_ts_bedrock)
 #endif

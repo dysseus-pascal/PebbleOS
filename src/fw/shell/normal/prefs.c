@@ -287,6 +287,17 @@ static uint8_t s_boulder_messstufe = MESSSTUFE_VORGABE;
 // (siehe watchface_get_default_install_id). Danach gilt die Wahl des Nutzers.
 #define PREF_KEY_BOULDER_TIMESTYLE "boulderTimeStyle"
 static uint8_t s_boulder_timestyle_gesetzt = 0;
+
+// Boulder: die Einstellungen von TimeStyle Bedrock, so wie Boulder sie schickt
+// (Aufbau: apps/watch/timestyle/ts_format.h). Hier nur aufbewahrt; geprueft
+// wird beim Lesen im Zifferblatt, damit eine neuere Fassung unveraendert
+// bleibt. Null (Fassung 0) heisst: nie gesetzt, es gelten die Vorgaben.
+#define PREF_KEY_TS_BEDROCK TS_BEDROCK_PREF_SCHLUESSEL
+typedef struct {
+  uint8_t b[TS_BEDROCK_PREF_LAENGE];
+} TsBedrockBlob;
+_Static_assert(sizeof(TsBedrockBlob) == 32, "tsBedrock ist auf beiden Seiten genau 32 Byte");
+static TsBedrockBlob s_ts_bedrock;
 #endif
 
 #define PREF_KEY_ACTIVITY_HRM_PREFERENCES "hrmPreferences"
@@ -437,6 +448,15 @@ static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
 static bool prv_set_s_boulder_timestyle_gesetzt(uint8_t *neu) {
   s_boulder_timestyle_gesetzt = (*neu != 0) ? 1 : 0;
+  return true;
+}
+
+// Boulder: immer true - bei false schriebe prefs_private_handle_blob_db_event den Wert
+// zurueck und zum Telefon - das Telefon allein bestimmt ihn.
+static bool prv_set_s_ts_bedrock(TsBedrockBlob *neu) {
+  if (neu != &s_ts_bedrock) {
+    s_ts_bedrock = *neu;
+  }
   return true;
 }
 #endif
@@ -1924,6 +1944,15 @@ static void prv_boulder_timestyle_einmal(void) {
   }
   const uint8_t gesetzt = 1;
   prv_pref_set(PREF_KEY_BOULDER_TIMESTYLE, &gesetzt, sizeof(gesetzt));
+}
+
+// Boulder: unter derselben Sperre, unter der prefs_private_read_backing einen
+// neuen Wert aus Boulder einliest - sonst koennte das Zifferblatt eine halb
+// geschriebene Fassung sehen. Die Uhr schreibt den Wert nie selbst.
+void timestyle_bedrock_blob_lesen(uint8_t out[TS_BEDROCK_PREF_LAENGE]) {
+  prefs_private_lock();
+  memcpy(out, s_ts_bedrock.b, sizeof(s_ts_bedrock.b));
+  prefs_private_unlock();
 }
 #endif
 
