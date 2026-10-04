@@ -91,6 +91,39 @@ pbl_clar_test(test_activity_algorithm_kraepelin
   OVERRIDES dummy_board
 )
 
+# Boulder: der Gehfilter (b19) und der Trainingsstart auf dem ganzen Weg - echte
+# Minutenverarbeitung, echte Sitzungserkennung von Kraepelin, echte Nachtrechnung.
+# Nur die Schrittzaehlung aus den Rohdaten ersetzt der Test (--wrap): fuer eine
+# Velofahrt gibt es keine. Und die Minutendatei, aus der die Nacht liest: sie
+# liefert die echte Nacht vom 26./27.9.2026.
+pbl_clar_test(test_boulder_gehfilter
+  SOURCES
+    src/fw/services/activity/boulder/nacht.c
+    src/fw/services/activity/boulder/schlafanalyse.c
+    src/fw/flash_region/flash_region.c
+    src/fw/flash_region/filesystem_regions.c
+    src/fw/util/base64.c
+    src/fw/util/crc8.c
+    src/fw/util/shared_circular_buffer.c
+    src/fw/util/time/time.c
+    src/fw/util/time/mktime.c
+    src/fw/services/regular_timer/service.c
+    src/fw/services/activity/kraepelin/activity_algorithm_kraepelin.c
+    src/fw/services/activity/kraepelin/kraepelin_algorithm.c
+    src/fw/services/filesystem/flash_translation.c
+    src/fw/services/filesystem/pfs.c
+    src/fw/services/settings/settings_file.c
+    src/fw/services/settings/settings_raw_iter.c
+    tests/fakes/fake_accel_service.c
+    src/fw/util/legacy_checksum.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+  DEFINES DUMA_DISABLED
+  LIBS -Wl,--wrap=kalg_analyze_samples -Wl,--wrap=activity_algorithm_get_minute_history
+  OVERRIDES dummy_board
+)
+
 pbl_clar_test(test_health_util
   SOURCES
     src/fw/services/activity/health_util.c
@@ -120,8 +153,8 @@ pbl_clar_test(test_activity_calculators
   OVERRIDES dummy_board
 )
 
-# Boulder: die Schlafanalyse (Uebertragung von Kiesel-Helper), gegen eine echte
-# Nacht und erfundene.
+# Boulder: die Schlafanalyse (Uebertragung von Kiesel-Helper), gegen drei echte
+# Naechte neben einem Fitbit, einen Snapshot (26.9.) und erfundene Naechte.
 pbl_clar_test(test_boulder_schlaf
   SOURCES
     src/fw/services/activity/boulder/schlafanalyse.c

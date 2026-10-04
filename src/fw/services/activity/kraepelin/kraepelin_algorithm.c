@@ -104,7 +104,11 @@ typedef struct {
   time_t start_time;         // potential start time of the activity
                              // default: KALG_START_TIME_NONE
   int inactive_minute_count; // how many inactive minutes in a row we have detected
-  uint16_t steps;            // summed steps
+  // BOULDER: 32 BIT STATT 16. Eine Wanderung ohne Pause ueber 65535 Schritte lief
+  // ueber (67200 wurden 1664) - und der Gehfilter verwarf dann die ganze Sitzung,
+  // weil 1664 unter 40 je Minute liegt. Begrenzt wird erst beim Speichern
+  // (activity_algorithm_kraepelin.c), die Sitzung hat nur 16 Bit.
+  uint32_t steps;            // summed steps
   uint32_t resting_calories; // summed resting calories
   uint32_t active_calories;  // summed active calories
   uint32_t distance_mm;      // summed distance
@@ -2068,7 +2072,7 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
 
     // If we've reached the minimum activity length, register/update it
     if (duration_secs >= k_min_activity_secs) {
-      PBL_LOG_DBG("Updating activity %d: steps: %" PRIu16 ", rest_cal: %" PRIu32
+      PBL_LOG_DBG("Updating activity %d: steps: %" PRIu32 ", rest_cal: %" PRIu32
                   ", "
                   "active_cal: %" PRIu32 ", distance: %" PRIu32 " ",
                   (int)activity_type, state->steps, state->resting_calories, state->active_calories,
@@ -2097,7 +2101,7 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
           utc_now - state->start_time - (state->inactive_minute_count * SECONDS_PER_MINUTE);
       duration_secs = MAX(0, duration_secs);
       if ((uint32_t)duration_secs >= k_min_activity_secs) {
-        PBL_LOG_DBG("Ending activity %d: steps: %" PRIu16 ", rest_cal: %" PRIu32
+        PBL_LOG_DBG("Ending activity %d: steps: %" PRIu32 ", rest_cal: %" PRIu32
                     ", "
                     "active_cal: "
                     "%" PRIu32 ", distance: %" PRIu32 " ",
@@ -2204,6 +2208,17 @@ void kalg_get_sleep_stats(KAlgState *alg_state, KAlgOngoingSleepStats *stats) {
 void kalg_enable_activity_tracking(KAlgState *kalg_state, bool enable) {
   kalg_state->disable_activity_session_tracking = !enable;
   prv_reset_state(kalg_state);
+  // BOULDER: WER DIE ERKENNUNG ANHAELT, BEENDET AUCH, WAS GERADE LAEUFT.
+  // prv_reset_state laesst laufende Abschnitte stehen. Die gespeicherte Bewegung
+  // schliesst activity_algorithm_enable_activity_tracking aber gleich danach ab.
+  // Liefe die Zustandsmaschine nach dem Training mit der alten Startzeit weiter,
+  // wuechse die abgeschlossene Bewegung um das ganze Training (12 min Gehen und
+  // 60 min Training ergaben 72 min), oder der Gehfilter wollte sie zuruecknehmen.
+  // Nur die Bewegung: Walk und Run legen keine Sitzungen an (prv_keine_sitzung), sie
+  // schalten nur den Puls - dort bleibt es, wie es war.
+  if (!enable) {
+    prv_reset_step_activity_state(&kalg_state->movement_state);
+  }
 }
 
 bool kalg_activity_hrm_is_active(KAlgState *kalg_state) {

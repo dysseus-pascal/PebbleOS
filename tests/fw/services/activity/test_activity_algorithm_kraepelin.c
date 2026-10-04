@@ -152,9 +152,17 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
 void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
 }
 
+bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session) {
+  return false;
+}
+
+// Wie in activity.h beschrieben: hinein geht der Platz im Feld, gefuellt wird hoechstens
+// so viel. Boulder: die alte Fassung hier gab immer alles heraus - deshalb fiel nie auf,
+// dass prv_laufende_abschnitte_beenden mit Platz 0 fragte und nichts bekam.
 bool activity_get_sessions(uint32_t *session_entries, ActivitySession *sessions) {
-  *session_entries = s_activity_sessions_count;
-  memcpy(sessions, s_activity_sessions, s_activity_sessions_count * sizeof(ActivitySession));
+  const uint32_t anzahl = MIN(*session_entries, s_activity_sessions_count);
+  memcpy(sessions, s_activity_sessions, anzahl * sizeof(ActivitySession));
+  *session_entries = anzahl;
   return true;
 }
 
@@ -976,17 +984,41 @@ void test_activity_algorithm_kraepelin__history_read_keeps_spo2(void) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Boulder: pausiert die Erkennung (Kieselsport startet), enden laufende erkannte Abschnitte.
+// Boulder: pausiert die Erkennung (Kieselsport startet), endet die laufende erkannte
+// Bewegung. Die laufende Nacht von boulder/nacht.c bleibt laufend: nacht.c loescht sie
+// beim naechsten Takt, und eine abgeschlossene hielte dabei die Uhr an (PBL_ASSERT).
+// Bis zum 4.10. stand hier ein laufender Walk - den legt Kraepelin seit b1 nie an.
+// Den ganzen Weg mit der echten Nacht prueft test_boulder_gehfilter.
 void test_activity_algorithm_kraepelin__disable_tracking_ends_ongoing_sessions(void) {
   s_activity_sessions_count = 0;
-  ActivitySession walk = {
-    .type = ActivitySessionType_Walk,
-    .start_utc = rtc_get_time() - 5 * SECONDS_PER_MINUTE,
-    .length_min = 5,
+  const time_t jetzt = rtc_get_time();
+  ActivitySession bewegung = {
+    .type = ActivitySessionType_Movement,
+    .start_utc = jetzt - 12 * SECONDS_PER_MINUTE,
+    .length_min = 12,
     .ongoing = true,
   };
-  activity_sessions_prv_add_activity_session(&walk);
+  ActivitySession schlaf = {
+    .type = ActivitySessionType_Sleep,
+    .start_utc = jetzt - 9 * SECONDS_PER_HOUR,
+    .length_min = 500,
+    .ongoing = true,
+  };
+  ActivitySession tief = {
+    .type = ActivitySessionType_RestfulSleep,
+    .start_utc = jetzt - 8 * SECONDS_PER_HOUR,
+    .length_min = 40,
+    .ongoing = true,
+  };
+  activity_sessions_prv_add_activity_session(&schlaf);
+  activity_sessions_prv_add_activity_session(&bewegung);
+  activity_sessions_prv_add_activity_session(&tief);
   activity_algorithm_enable_activity_tracking(false);
-  cl_assert_equal_i(s_activity_sessions_count, 1);
-  cl_assert(!s_activity_sessions[0].ongoing);
+  cl_assert_equal_i(s_activity_sessions_count, 3);
+  cl_assert_equal_i(s_activity_sessions[0].type, ActivitySessionType_Sleep);
+  cl_assert(s_activity_sessions[0].ongoing);
+  cl_assert_equal_i(s_activity_sessions[1].type, ActivitySessionType_Movement);
+  cl_assert(!s_activity_sessions[1].ongoing);
+  cl_assert_equal_i(s_activity_sessions[2].type, ActivitySessionType_RestfulSleep);
+  cl_assert(s_activity_sessions[2].ongoing);
 }

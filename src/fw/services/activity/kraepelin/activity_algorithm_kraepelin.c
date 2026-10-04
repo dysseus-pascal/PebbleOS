@@ -174,12 +174,21 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
   // Schritten und einer Pace von ueber zwei Stunden je Kilometer (01.10.2026).
   // Unter KALG_GEHEN_MIN_SCHRITTE je Minute ist es kein Gehen und kein Laufen:
   // die Sitzung faellt weg, samt Meldung und Eintrag in der Akte. Eine schon
-  // gemeldete laufende Sitzung wird dabei geloescht.
+  // gemeldete laufende Sitzung wird dabei zurueckgenommen - eine schon
+  // abgeschlossene nicht (activity_sessions_prv_laufende_zuruecknehmen).
+  // AUCH UND VOR ALLEM DIE BEWEGUNG: seit b1 melden Walk und Run keine
+  // Sitzungen mehr (kraepelin_algorithm.c, prv_keine_sitzung), jede erkannte
+  // Sitzung kommt als Movement. Der Filter aus b19 pruefte nur Walk und Run und
+  // griff deshalb nie - die Velofahrt blieb ein Spaziergang (test_boulder_gehfilter).
+  // Eine Sitzung unter einer Minute braucht keinen Sonderfall: 40 x 0 = 0, und
+  // weniger als 0 Schritte gibt es nicht - sie bleibt.
   const uint32_t minuten = len_sec / SECONDS_PER_MINUTE;
-  if ((activity == ActivitySessionType_Walk || activity == ActivitySessionType_Run) &&
-      minuten > 0 && steps < KALG_GEHEN_MIN_SCHRITTE * minuten) {
+  const bool gehen_oder_laufen = activity == ActivitySessionType_Walk ||
+                                 activity == ActivitySessionType_Run ||
+                                 activity == ActivitySessionType_Movement;
+  if (gehen_oder_laufen && steps < KALG_GEHEN_MIN_SCHRITTE * minuten) {
     ActivitySession weg = { .type = activity, .start_utc = start_utc };
-    activity_sessions_prv_delete_activity_session(&weg);
+    activity_sessions_prv_laufende_zuruecknehmen(&weg);
     return;
   }
 
@@ -189,7 +198,9 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
     .length_min = len_sec / SECONDS_PER_MINUTE,
     .ongoing = ongoing,
     .step_data = {
-      .steps = steps,
+      // Boulder: begrenzen statt abschneiden - die Sitzung zaehlt in 16 Bit,
+      // 67200 Schritte wuerden sonst 1664.
+      .steps = MIN(steps, UINT16_MAX),
       .active_kcalories = ROUND(active_calories, ACTIVITY_CALORIES_PER_KCAL),
       .resting_kcalories = ROUND(resting_calories, ACTIVITY_CALORIES_PER_KCAL),
       .distance_meters = ROUND(distance_mm, MM_PER_METER),
@@ -1055,20 +1066,32 @@ bool activity_algorithm_metrics_changed_notification(void) {
 
 // ------------------------------------------------------------------------------------
 // BOULDER: LAUFENDE ERKANNTE ABSCHNITTE ABSCHLIESSEN, wenn die Erkennung
-// pausiert - so macht es der Workout-Dienst der Vorlage beim Start. Ohne das
-// blieb eine Bewegung "laufend", die Zustandsmaschine wurde darunter
-// zurueckgesetzt, und die Bewegung wuchs nach dem Training weiter: fuenf
-// Minuten Gehen und eine Stunde Training ergaben eine Bewegung von 65 Minuten.
+// pausiert. Sonst blieb die Bewegung vor einem Training waehrend des Trainings
+// "laufend", und danach nahm Kraepelin sie mit der alten Startzeit wieder auf:
+// 12 min Gehen und 60 min Training ergaben eine Bewegung von 72 min, mit 15 min
+// Gehen danach eine von 87 min (Stand b9-b23, test_boulder_gehfilter).
+// DIE ANZAHL IST EIN EIN- UND AUSGANG: hinein geht der Platz im Feld, heraus die
+// Zahl der Sitzungen (activity.h). Mit 0 hinein kam keine einzige heraus - so
+// stand es von b9 bis b23 hier, und so steht es bis heute im Workout-Dienst der
+// Vorlage (workout_service.c, num_sessions = 0).
+// NUR DIE BEWEGUNG, NIE DIE NACHT. Laufend sind sonst nur die Schlafsitzungen von
+// boulder/nacht.c, bis die Nacht fertig ist. Nacht.c ersetzt sie bei jeder Rechnung
+// und loescht dazu die alten - eine hier abgeschlossene hielte dort die Uhr an
+// (PBL_ASSERT in activity_sessions_prv_delete_activity_session): aufstehen, kurz
+// danach ein Lauf, Neustart. Und die halbe Nacht ginge als fertig ans Telefon.
+// Movement ist zugleich genau das, was kalg_enable_activity_tracking zuruecksetzt.
 static void prv_laufende_abschnitte_beenden(void) {
-  uint32_t anzahl = 0;
-  ActivitySession *sessions =
-      kernel_zalloc_check(sizeof(ActivitySession) * ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT);
-  activity_get_sessions(&anzahl, sessions);
-  for (unsigned i = 0; i < anzahl; i++) {
-    if (sessions[i].ongoing) {
-      sessions[i].ongoing = false;
-      activity_sessions_prv_add_activity_session(&sessions[i]);
+  uint32_t anzahl = ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT;
+  ActivitySession *sessions = kernel_zalloc_check(sizeof(ActivitySession) * anzahl);
+  if (activity_get_sessions(&anzahl, sessions)) {
+    for (unsigned i = 0; i < MIN(anzahl, ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT); i++) {
+      if (sessions[i].ongoing && sessions[i].type == ActivitySessionType_Movement) {
+        sessions[i].ongoing = false;
+        activity_sessions_prv_add_activity_session(&sessions[i]);
+      }
     }
+  } else {
+    PBL_LOG_WRN("Sessions not readable, ongoing ones stay open");
   }
   kernel_free(sessions);
 }
@@ -1076,9 +1099,6 @@ static void prv_laufende_abschnitte_beenden(void) {
 void activity_algorithm_enable_activity_tracking(bool enable) {
   if (!activity_tracking_on()) {
     return;
-  }
-  if (!enable) {
-    prv_laufende_abschnitte_beenden();
   }
 
   if (!prv_lock()) {
@@ -1088,6 +1108,15 @@ void activity_algorithm_enable_activity_tracking(bool enable) {
   kalg_enable_activity_tracking(s_alg_state->k_state, enable);
 
   prv_unlock();
+
+  // ERST ANHALTEN, DANN ABSCHLIESSEN. Andersherum laege eine Minute dazwischen:
+  // sie meldete die eben abgeschlossene Bewegung wieder als laufend. Nicht unter
+  // der Sperre: der Minutentakt haelt die Sperre der Sitzungen, waehrend er den
+  // Algorithmus fragt (activity_sessions_prv_minute_handler) - hier andersherum
+  // koennten sich beide gegenseitig aussperren.
+  if (!enable) {
+    prv_laufende_abschnitte_beenden();
+  }
 }
 
 bool activity_algorithm_activity_hrm_is_active(void) {

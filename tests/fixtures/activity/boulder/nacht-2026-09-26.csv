@@ -1,4 +1,8 @@
-minute,uhrzeit,bewegung,vmc,puls,gewichtet,schwelle,phase
+# SNAPSHOT, KEIN RICHTIGKEITSBELEG. Nacht 26./27.9.2026 (Pebble Time 2, noch ohne Boulder-Firmware), Export aus Kiesel-Helper.
+# Echt gemessen: bewegung (Bewegungsbyte der Uhr) und puls. vmc, gewichtet und schwelle rechnete Kiesel-Helper daraus.
+# phase_snapshot ist die Ausgabe von schlafanalyse.c selbst (zuletzt neu geschrieben am 3.10.2026), nicht Fitbit:
+# test_boulder_schlaf meldet damit nur, DASS sich die Rechnung aendert - ob sie stimmt, belegen die Fitbit-Naechte.
+minute,uhrzeit,bewegung,vmc,puls,gewichtet,schwelle,phase_snapshot
 0,22:00,179,2003,71,2071.8,800,
 1,22:01,254,4032,92,2497.5,800,
 2,22:02,48,144,75,1020.9,800,
