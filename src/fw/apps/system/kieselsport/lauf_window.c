@@ -28,6 +28,10 @@
 // nichts selbst; er liest zweimal je Sekunde den Stand und schickt Befehle.
 // Zweimal, damit die Sekunden nicht stolpern: Takt des Dienstes und Takt
 // der Anzeige laufen nicht gleich.
+//
+// GEZEICHNET WIRD NUR, WAS SICH AENDERT. Das Lesen kostet eine Kopie unter
+// der Sperre, das Zeichnen bis zu sieben Textmessungen je Feld. In der Pause
+// steht die Zeit, und der Schirm blieb trotzdem zweimal je Sekunde neu.
 #define ABFRAGE_MS 500
 // So lange gilt der erste Druck auf Unten, bevor der zweite verwirft.
 #define VERWERFEN_S 3
@@ -77,6 +81,19 @@ static struct {
   int zone;
   uint32_t beginn;
 } s;
+
+// Was der Schirm zuletzt zum Zeichnen bekam (prv_stand_lesen). Dazu, was
+// sich ohne neuen Stand aendert: die Uhrzeit (Minute) und der Hinweis
+// "nochmal druecken", der nach VERWERFEN_S verschwindet.
+typedef struct {
+  uint8_t stand[sizeof(s)];
+  uint8_t minute[KS_MINUTE_S];
+  Sportart art;
+  bool verwerfen;
+  time_t uhr_minute;
+} Gezeigt;
+static Gezeigt s_gezeigt;
+static bool s_gezeigt_gilt;
 
 // --- Stand vom Dienst ---
 
@@ -335,18 +352,19 @@ static void prv_herz(GContext *ctx, GPoint links_oben, int f, GColor farbe, bool
   GPoint p[10];
   for (int i = 0; i < 10; i++) p[i] = GPoint(roh[i].x * f, roh[i].y * f);
   GPathInfo info = { 10, p };
-  GPath *pfad = gpath_create(&info);
-  if (!pfad) return;
-  gpath_move_to(pfad, links_oben);
+  // AUF DEM STAPEL, NICHT AUF DEM HEAP: der Pfad lebt nur fuer dieses eine
+  // Zeichnen, und create/destroy je Bild kostete zwei Heap-Gaenge.
+  GPath pfad;
+  gpath_init(&pfad, &info);
+  gpath_move_to(&pfad, links_oben);
   if (voll) {
     graphics_context_set_fill_color(ctx, farbe);
-    gpath_draw_filled(ctx, pfad);
+    gpath_draw_filled(ctx, &pfad);
   }
   graphics_context_set_stroke_color(ctx, farbe);
   graphics_context_set_stroke_width(ctx, f >= 2 ? 3 : 2);
-  gpath_draw_outline(ctx, pfad);
+  gpath_draw_outline(ctx, &pfad);
   graphics_context_set_stroke_width(ctx, 1);
-  gpath_destroy(pfad);
 }
 
 // Die Farbe der Pulszahl: die der Zone, auf Schwarzweiss und ohne frischen
@@ -925,6 +943,21 @@ static void prv_verworfen(void) {
   if (!s_zu) s_zu = app_timer_register(10, prv_zu, NULL);
 }
 
+// Nur neu zeichnen, wenn das Bild ein anderes waere.
+static void prv_neu_zeichnen_wenn_anders(void) {
+  Gezeigt jetzt;
+  memset(&jetzt, 0, sizeof(jetzt));
+  memcpy(jetzt.stand, &s, sizeof(s));
+  memcpy(jetzt.minute, s_minute, sizeof(s_minute));
+  jetzt.art = s_art;
+  jetzt.verwerfen = s_verwerfen_bis > time(NULL);
+  jetzt.uhr_minute = time(NULL) / 60;
+  if (s_gezeigt_gilt && memcmp(&jetzt, &s_gezeigt, sizeof(jetzt)) == 0) return;
+  memcpy(&s_gezeigt, &jetzt, sizeof(jetzt));
+  s_gezeigt_gilt = true;
+  if (s_flaeche) layer_mark_dirty(s_flaeche);
+}
+
 static void prv_stand_lesen(void) {
   if (!s_fenster) return;
   KsStand k;
@@ -973,7 +1006,7 @@ static void prv_stand_lesen(void) {
   s.zone = k.zone;
   s.beginn = k.t.beginn;
   memcpy(s_minute, k.minute, sizeof(s_minute));
-  if (s_flaeche) layer_mark_dirty(s_flaeche);
+  prv_neu_zeichnen_wenn_anders();
 }
 
 // --- Bedienung ---
@@ -1114,6 +1147,7 @@ static void prv_oeffnen(void) {
   s_zonen_da = false;
   s_seite = 0;
   s_verwerfen_bis = 0;
+  s_gezeigt_gilt = false;
   memset(&s, 0, sizeof(s));
   memset(s_minute, 0, sizeof(s_minute));
   // Was vorher zu Ende ging, zaehlt nicht fuer diesen Schirm.
@@ -1169,4 +1203,6 @@ void lauf_window_zuruecksetzen(void) {
   memset(&s_zonen_da, 0, sizeof(s_zonen_da));
   memset(&s_zonen, 0, sizeof(s_zonen));
   memset(&s_countdown_timer, 0, sizeof(s_countdown_timer));
+  memset(&s_gezeigt, 0, sizeof(s_gezeigt));
+  memset(&s_gezeigt_gilt, 0, sizeof(s_gezeigt_gilt));
 }

@@ -22,13 +22,6 @@ GColor thema_zonenfarbe(int zone) {
 #endif
 }
 
-GColor thema_zonengrund(int zone) {
-#if PBL_COLOR
-  if (zone >= 1 && zone <= 5) return thema_zonenfarbe(zone);
-#endif
-  return KS_FARBE_GRUND;
-}
-
 GColor thema_sportfarbe(Sportart art) {
 #if PBL_COLOR
   // Aus Kiesel-Helper (colors.xml, sport_*), auf die naechste Farbe der

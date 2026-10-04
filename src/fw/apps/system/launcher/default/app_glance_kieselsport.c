@@ -5,6 +5,8 @@
 
 #include "app_glance_structured.h"
 
+#include "apps/system/kieselsport/kachel.h"
+
 #include "kernel/pbl_malloc.h"
 #include "process_management/app_install_manager.h"
 #include "resource/resource_ids.auto.h"
@@ -21,11 +23,10 @@
 // die eine App selbst schreibt, nur von Store-Apps. Eine System-App bekommt
 // die Zeile so nie zu sehen. Also fragt die Kachel den Dienst direkt, jede
 // Sekunde - wie die Kachel der Workout-App es mit ihrem Dienst tut.
-
-// Aus der Kieselsport-App (apps/system/kieselsport): die Namen der Arten in
-// der Sprache der Uhr.
-const char *art_name(Sportart art);
-void strings_refresh(void);
+//
+// NUR SOLANGE EIN TRAINING LAEUFT. Beginnen kann eines nur in der App, und
+// dafuer geht das Startmenue zu; beim naechsten Oeffnen entsteht die Kachel
+// neu. Ohne Training fragte sie sonst jede Sekunde umsonst.
 
 #define UNTERTITEL_MAX (32)
 
@@ -69,7 +70,7 @@ static void prv_abbau(LauncherAppGlanceStructured *structured_glance) {
   LauncherAppGlanceKieselsport *k = launcher_app_glance_structured_get_data(structured_glance);
   if (k) {
     kino_reel_destroy(k->bild);
-    app_timer_cancel(k->takt);
+    if (k->takt) app_timer_cancel(k->takt);
   }
   app_free(k);
 }
@@ -120,6 +121,12 @@ static void prv_takt(void *data) {
     strncpy(k->untertitel, neu, sizeof(k->untertitel));
     launcher_app_glance_structured_notify_service_glance_changed(structured_glance);
   }
+  // Das Training ist zu Ende (gespeichert, verworfen oder von selbst nach
+  // langer Pause): die Zeile ist leer, der Takt hat nichts mehr zu tun.
+  if (stand.zustand == LaufAus && k->takt) {
+    app_timer_cancel(k->takt);
+    k->takt = NULL;
+  }
 }
 
 static const LauncherAppGlanceStructuredImpl s_kieselsport_impl = {
@@ -143,7 +150,9 @@ LauncherAppGlance *launcher_app_glance_kieselsport_create(const AppMenuNode *nod
       &node->uuid, &s_kieselsport_impl, false /* should_consider_slices */, k);
   PBL_ASSERTN(structured_glance);
 
+  if (kieselsport_laeuft()) {
+    k->takt = app_timer_register_repeatable(1000, prv_takt, structured_glance, true /* repeating */);
+  }
   prv_takt(structured_glance);
-  k->takt = app_timer_register_repeatable(1000, prv_takt, structured_glance, true /* repeating */);
   return &structured_glance->glance;
 }
