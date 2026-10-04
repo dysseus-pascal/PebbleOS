@@ -31,6 +31,8 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "pbl/services/filesystem/pfs.h"
+#include "kernel/kernel_heap.h"
+#include "pbl/util/heap.h"
 #include "pbl/util/math.h"
 #include "pbl/util/size.h"
 
@@ -97,7 +99,7 @@ static bool prv_gleich(const ActivitySession *a, const ActivitySession *b) {
   return a->type == b->type && a->start_utc == b->start_utc;
 }
 
-void activity_sessions_prv_add_activity_session(ActivitySession *session) {
+bool activity_sessions_prv_add_activity_session(ActivitySession *session) {
   s_hinzugefuegt++;
   for (uint16_t i = 0; i < s_anzahl; i++) {
     if (prv_gleich(session, &s_sitzungen[i])) {
@@ -107,11 +109,12 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
         s_minute_beim_abschliessen = false;
         prv_minute(100);
       }
-      return;
+      return true;
     }
   }
   cl_assert(s_anzahl < ARRAY_LENGTH(s_sitzungen));
   s_sitzungen[s_anzahl++] = *session;
+  return true;
 }
 
 // Die Firmware haelt hier bei einer abgeschlossenen Sitzung an (PBL_ASSERT) - der Test
@@ -255,13 +258,20 @@ uint8_t boulder_messstufe(void) {
 void health_sync_schicken(void) {
 }
 
+// Der Kernel-Heap, aus dem die Nacht ihre Rechnung holt: ein echter Heap, gross
+// wie der der Uhr (rund 96 KB), leer.
+static uint8_t s_heap_speicher[96 * 1024];
+static Heap s_kernel_heap;
+Heap *kernel_heap_get(void) {
+  return &s_kernel_heap;
+}
+
 // --------------------------------------------------------------------------------------------
 // DIE MINUTENDATEI FUER DIE NACHT: die echte Nacht vom 26./27.9.2026 (22:00 bis 06:59,
 // nacht-2026-09-26.csv), gelegt auf das Nachtfenster dieses Tests. Davor fehlen Daten,
-// ab 07:00 ist man wach und unterwegs. Die juengsten Minuten haelt die Datei zurueck,
-// wie die der Uhr - so laeuft die Nacht beim Aufstehen noch (test_boulder_nacht).
+// ab 07:00 ist man wach und unterwegs. Wie die der Uhr liefert sie alle Minuten bis zur
+// eben vergangenen (sie liest den RAM-Ring mit, activity_algorithm_kraepelin.c).
 #define NACHT_MINUTEN (16 * 60)
-#define ZURUECKGEHALTEN_MIN 19
 // 07:00 in Minuten ab 20:00, dem Beginn des Nachtfensters.
 #define AUFSTEHEN_MIN 660
 static time_t s_nacht_beginn;
@@ -270,8 +280,7 @@ static HealthMinuteData s_nacht[NACHT_MINUTEN];
 bool __wrap_activity_algorithm_get_minute_history(HealthMinuteData *minute_data,
                                                   uint32_t *num_records, time_t *utc_start) {
   memset(minute_data, 0xFF, *num_records * sizeof(HealthMinuteData));
-  const time_t vorhanden_bis = rtc_get_time() - ZURUECKGEHALTEN_MIN * SECONDS_PER_MINUTE;
-  int32_t anzahl = (vorhanden_bis - *utc_start) / SECONDS_PER_MINUTE;
+  int32_t anzahl = (rtc_get_time() - *utc_start) / SECONDS_PER_MINUTE;
   anzahl = MAX(0, MIN(anzahl, (int32_t)*num_records));
   for (int32_t k = 0; k < anzahl; k++) {
     const int32_t i = (*utc_start - s_nacht_beginn) / SECONDS_PER_MINUTE + k;
@@ -373,6 +382,7 @@ void test_boulder_gehfilter__initialize(void) {
   s_abgeschlossen_gefragt = 0;
   s_minute_beim_abschliessen = false;
   s_schritte_der_minute = 0;
+  heap_init(&s_kernel_heap, s_heap_speicher, s_heap_speicher + sizeof(s_heap_speicher), false);
   boulder_nacht_test_reset();
   cl_assert(activity_algorithm_init(&s_sample_rate));
   // Erst eine ruhige Viertelstunde, damit Kraepelin einen Anfang hat.
@@ -598,8 +608,9 @@ void test_boulder_gehfilter__lange_wanderung_ueber_65535_schritte_bleibt(void) {
 // TRAINING AM MORGEN, DIE NACHT LAEUFT NOCH. Aufstehen um 07:00, zwoelf Minuten gehen,
 // dann ein Lauf (Kieselsport haelt die Erkennung an: plattform.c, ks_bewegung_erkennen).
 // Die Nacht ist da noch nicht fertig - fertig ist sie erst nach einer Viertelstunde wach
-// in der Minutendatei, um 07:34. Bis dahin stehen ihre Sitzungen als laufend da, und
-// nacht.c loescht sie bei jeder Rechnung (07:15, 07:30), um sie neu zu melden.
+// in der Minutendatei, um 07:15; abgeschlossen sind ihre Sitzungen erst, wenn sie
+// endgueltig ist (zwei Stunden wach, 09:00). Bis dahin stehen sie als laufend da, und
+// nacht.c nimmt sie bei jeder Rechnung zurueck, um sie neu zu melden.
 // Schloss der Trainingsstart auch sie ab, hielt das Loeschen die Uhr an (PBL_ASSERT):
 // Neustart mitten im Lauf. So stand es nach der Berichtigung vom 3.10. kurz im Code.
 //
@@ -656,41 +667,45 @@ void test_boulder_gehfilter__training_am_morgen_laesst_die_nacht_laufen(void) {
   cl_assert_equal_i(prv_laufend(ActivitySessionType_Sleep), schlaf_vorher);
   cl_assert_equal_i(prv_laufend(ActivitySessionType_RestfulSleep), tief_vorher);
 
-  // Eine Stunde Lauf. Um 07:15 und 07:30 rechnet die Nacht und ersetzt ihre laufenden
-  // Sitzungen (loescht die alten): um 07:30 laeuft sie noch, um 07:34 ist sie fertig.
-  for (int i = 0; i < 18; i++) {
+  // Der Lauf. Um 07:15 ist die Nacht fertig (eine Viertelstunde wach) und geht ans
+  // Telefon - ihre Sitzungen laufen weiter; jede Rechnung ersetzt sie.
+  for (int i = 0; i < 2; i++) {
     prv_uhr_minute(150);
   }
   cl_assert(boulder_nacht_letzte(&bild));
   cl_assert(!bild.fertig);
-  cl_assert(prv_laufend(ActivitySessionType_Sleep) > 0);
-  for (int i = 18; i < 22; i++) {
-    prv_uhr_minute(150);
-  }
+  prv_uhr_minute(150);
   cl_assert(boulder_nacht_letzte(&bild));
   cl_assert(bild.fertig);
-  for (int i = 22; i < 60; i++) {
+  for (int i = 3; i < 60; i++) {
     prv_uhr_minute(150);
   }
   activity_algorithm_enable_activity_tracking(true);
   for (int i = 0; i < 15; i++) {
     prv_uhr_minute(0);
   }
-
-  // Die Nacht ist fertig und ganz: eingeschlafen 22:17, aufgewacht 07:00 (wie in
-  // test_boulder_nacht), nichts laeuft mehr, die Schlafbloecke ergeben ihre Minuten.
+  // 08:27: die Nacht ist fertig und ganz, eingeschlafen 22:17, aufgewacht 07:00 (wie in
+  // test_boulder_nacht) - EIN Schlafblock, noch laufend, seine Schlafminuten die der Nacht.
   cl_assert(boulder_nacht_letzte(&bild));
   cl_assert(bild.fertig);
   cl_assert_equal_i(bild.einschlafen, 120 + 17);
   cl_assert_equal_i(bild.aufwachen, AUFSTEHEN_MIN);
-  int schlaf = 0;
+  cl_assert_equal_i(prv_laufend(ActivitySessionType_Sleep), 1);
+
+  // Bis 09:01 still: die Nacht ist endgueltig, nichts laeuft mehr.
+  while (rtc_get_time() <= aufstehen + 121 * SECONDS_PER_MINUTE) {
+    prv_uhr_minute(0);
+  }
+  int bloecke = 0;
   for (uint16_t i = 0; i < s_anzahl; i++) {
     cl_assert(!s_sitzungen[i].ongoing);
     if (s_sitzungen[i].type == ActivitySessionType_Sleep) {
-      schlaf += s_sitzungen[i].length_min;
+      bloecke++;
+      cl_assert_equal_i(s_sitzungen[i].length_min - s_sitzungen[i].nicht_schlaf_min,
+                        bild.schlaf_minuten);
     }
   }
-  cl_assert_equal_i(schlaf, bild.schlaf_minuten);
+  cl_assert_equal_i(bloecke, 1);
   // Und die Bewegung vor dem Lauf: zwoelf Minuten, 1200 Schritte, eine einzige.
   cl_assert_equal_i(prv_bewegungen(), 1);
   cl_assert_equal_i(prv_bewegung()->length_min, 12);

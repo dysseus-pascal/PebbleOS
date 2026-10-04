@@ -154,8 +154,10 @@ static bool prv_activity_sessions_equal(ActivitySession *session_a, ActivitySess
 // ------------------------------------------------------------------------------------
 // Register a new activity. Called by the algorithm code when it detects a new activity.
 // If we already have this activity registered, it is updated.
-void activity_sessions_prv_add_activity_session(ActivitySession *session) {
+// Boulder: gibt zurueck, ob sie gespeichert ist - der Aufrufer soll ein Verwerfen sehen.
+bool activity_sessions_prv_add_activity_session(ActivitySession *session) {
   ActivityState *state = activity_private_state();
+  bool gespeichert = true;
   pbl_mutex_lock(&state->mutex, PBL_FOREVER);
   {
     if (!session->ongoing) {
@@ -179,6 +181,7 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
     // If no more room, fail
     if (state->activity_sessions_count >= ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT) {
       PBL_LOG_WRN("No more room for additional activities");
+      gespeichert = false;
       goto unlock;
     }
 
@@ -189,6 +192,7 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
   }
 unlock:
   pbl_mutex_unlock(&state->mutex);
+  return gespeichert;
 }
 
 // ------------------------------------------------------------------------------------
@@ -362,8 +366,11 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
         (session->type == ActivitySessionType_Nap)) {
       rv = true;
       // Accumulate sleep container stats
+      // Boulder: ohne das Wachliegen im Block (activity.h, nicht_schlaf_min). Die Schlafsumme
+      // der Uhr ist dieselbe wie die der Nacht in Boulder. Upstream-Sitzungen tragen dort 0.
       if (session_exit_utc <= max_end_utc) {
-        stats->total_minutes += session->length_min;
+        stats->total_minutes += session->length_min - MIN(session->nicht_schlaf_min,
+                                                          session->length_min);
       }
       // Only regular sleep (not naps) should affect the enter and exit times
       if (session->type == ActivitySessionType_Sleep) {
@@ -378,7 +385,9 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
                (session->type == ActivitySessionType_RestfulNap)) {
       if (session_exit_utc <= max_end_utc) {
         // Accumulate restful sleep stats
-        stats->restful_minutes += session->length_min;
+        // Boulder: zusammengelegte Tiefschlafbloecke zaehlen ihre Luecken nicht mit.
+        stats->restful_minutes += session->length_min - MIN(session->nicht_schlaf_min,
+                                                             session->length_min);
       }
       stats->last_deep_exit_utc = MAX(stats->last_deep_exit_utc, session_exit_utc);
     }

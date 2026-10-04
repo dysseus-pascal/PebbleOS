@@ -127,25 +127,26 @@ bool activity_sessions_prv_is_sleep_activity(ActivitySessionType activity_type) 
 // ------------------------------------------------------------------------------------
 uint16_t s_activity_sessions_count;
 ActivitySession s_activity_sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT];
-void activity_sessions_prv_add_activity_session(ActivitySession *session) {
+bool activity_sessions_prv_add_activity_session(ActivitySession *session) {
   // An existing activity is updated, as in activity_sessions.c
   ActivitySession *stored_session = s_activity_sessions;
   for (uint16_t i = 0; i < s_activity_sessions_count; i++, stored_session++) {
     if ((session->type == stored_session->type) &&
         (session->start_utc == stored_session->start_utc)) {
       *stored_session = *session;
-      return;
+      return true;
     }
   }
 
   // If no more room, fail
   if (s_activity_sessions_count >= ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT) {
     PBL_LOG_WRN("No more room for additional activities");
-    return;
+    return false;
   }
 
   // Add this activity in
   s_activity_sessions[s_activity_sessions_count++] = *session;
+  return true;
 }
 
 // ------------------------------------------------------------------------------------

@@ -537,7 +537,9 @@ bool activity_sessions_is_session_type_ongoing(ActivitySessionType activity_type
 
 //! Register a new activity session. This is called by the algorithm logic when it detects a new
 //! activity.
-void activity_sessions_prv_add_activity_session(ActivitySession *session);
+//! Boulder: false, wenn die Sitzung nicht gespeichert wurde (alle Plaetze des Tages belegt) -
+//! bisher verschwand sie still.
+bool activity_sessions_prv_add_activity_session(ActivitySession *session);
 
 //! Delete an activity session. This is called by the algorithm logic when it decides to not
 //! register a sleep session after all. Only sessions that are still 'ongoing' are allowed to be

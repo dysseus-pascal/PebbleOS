@@ -491,6 +491,14 @@ pbl_clar_test(test_hrm_manager
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_accel_service.c
+  DEFINES CONFIG_HRM_HRV
+  OVERRIDES dummy_board
+)
+
+# Boulder: der Empfang der Health-Sync-Anfrage (nur der Parser).
+pbl_clar_test(test_health_sync_endpoint
+  SOURCES
+    src/fw/services/health_sync_endpoint/service.c
   OVERRIDES dummy_board
 )
 

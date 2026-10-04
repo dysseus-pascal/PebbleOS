@@ -17,16 +17,21 @@
 // im Schlaf auf null - bleiben, weil andere Teile der Firmware daran haengen.
 //
 // ZWEI AUSGABEN, WEIL DIE UHR HOECHSTENS 32 SITZUNGEN JE TAG HAELT. Als
-// Sitzungen gehen nur die zusammenhaengenden Schlafbloecke (an Wachphasen
-// geteilt) und die Tiefschlaf-Abschnitte - daraus rechnen die Uhr und andere
-// Apps Schlafdauer und Tiefschlaf. Die ganze Nacht mit allen Phasen geht als
-// ein Datalogging-Satz (Tag 88) an Boulder.
+// Sitzungen gehen EIN Schlafblock je Nacht, vom Einschlafen bis zum Aufstehen,
+// und die Tiefschlafbloecke darin - daraus rechnen die Uhr und andere Apps
+// Schlafdauer und Tiefschlaf. Das Wachliegen im Block traegt die Sitzung mit
+// (nicht_schlaf_min); die Schlafsumme der Uhr zaehlt es nicht. Die ganze Nacht
+// mit allen Phasen, auch den Wachphasen, geht als ein Datalogging-Satz
+// (Tag 88) an Boulder.
 //
 // NUR IM NACHTFENSTER (20 bis 11 Uhr): eine abgelegte Uhr auf dem Tisch saehe
 // tagsueber aus wie Schlaf. Alle fuenfzehn Minuten wird die laufende Nacht neu
-// gerechnet; fertig ist sie nach einer Viertelstunde wach oder am Ende des
-// Fensters. Ist das Aufwachen schon zu sehen, wird gerechnet, sobald die
-// Viertelstunde voll sein kann - nicht erst im naechsten Takt.
+// gerechnet; dazwischen waechst ihr Schlafblock mit, solange man am Ende der
+// letzten Rechnung schlief. Fertig ist sie nach einer Viertelstunde wach oder
+// am Ende des Fensters, endgueltig nach zwei Stunden wach - erst dann sind
+// ihre Sitzungen abgeschlossen. Ist das Aufwachen schon zu sehen, wird
+// gerechnet, sobald die Viertelstunde voll sein kann - nicht erst im naechsten
+// Takt.
 //
 // EIN KIESELSPORT-TRAINING IST KEIN SCHLAF: seine Minuten zaehlen wie
 // abgelegt (Yoga liegt still, aber niemand schlaeft dabei).
@@ -107,6 +112,9 @@ _Static_assert(sizeof(NachtHrvDlsRecord) == 251, "NachtHrvDlsRecord: Boulder erw
 // die Anzeige verdichtet: der kuerzeste geht im Nachbarn auf.
 #define NACHT_BILD_ABSCHNITTE 96
 #define NACHT_PHASEN 5   //< SchlafPhase: Wach, Leicht, Tief, REM, Schlaf ohne Phase
+// Das Bild liegt roh in einer Datei. AENDERT SICH SEIN AUFBAU, MUSS DIE FASSUNG
+// HOCH: sonst laese die neue Firmware ein altes Bild gleicher Groesse falsch.
+#define NACHT_BILD_VERSION 1
 
 typedef struct {
   uint32_t beginn_utc;     //< Minute 0 der Rechnung
@@ -119,21 +127,23 @@ typedef struct {
   uint8_t ruhepuls;        //< 0 = keiner
   bool fertig;             //< false: die Nacht laeuft noch
   uint8_t anzahl;
+  uint8_t version;         //< NACHT_BILD_VERSION
   NachtDlsAbschnitt abschnitte[NACHT_BILD_ABSCHNITTE];
 } NachtBild;
+
+_Static_assert(sizeof(NachtBild) == 512, "NachtBild: Aufbau geaendert - NACHT_BILD_VERSION hoch");
 
 // false, wenn es noch keine gibt.
 bool boulder_nacht_letzte(NachtBild *aus);
 
-// Testhilfe: verdichtet `a` auf hoechstens `max` Abschnitte, Rueckgabe: wie viele.
-#include "pbl/services/activity/boulder/schlafanalyse.h"
-int boulder_nacht_verdichten(SchlafAbschnitt *a, int n, int max);
-
 void boulder_nacht_minute(time_t utc_sec);
 
 #ifdef UNITTEST
+#include <stddef.h>
 // Wie ein Neustart der Uhr: alle Zustaende weg, die Datei bleibt.
 void boulder_nacht_test_reset(void);
+// Wie viel Heap eine Rechnung braucht.
+size_t boulder_nacht_test_rechnung_groesse(void);
 #endif
 
 // Das Nachtfenster, in dem `utc` liegt - oder das zuletzt vergangene.

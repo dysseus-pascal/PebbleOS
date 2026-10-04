@@ -160,18 +160,60 @@ pbl_clar_test(test_boulder_schlaf
     src/fw/services/activity/boulder/schlafanalyse.c
 )
 
-# Boulder: die Nachtrechnung im Takt der Uhr, mit der echten Nacht.
+# Boulder: die Nachtrechnung im Takt der Uhr, mit der echten Nacht - und mit dem
+# echten Sitzungsspeicher und Schlafzustand der Uhr (activity_sessions.c). Gezaehlt
+# wird, wie oft das Bild der Nacht in die Datei kommt (--wrap).
 pbl_clar_test(test_boulder_nacht
   SOURCES
     src/fw/services/activity/boulder/nacht.c
     src/fw/services/activity/boulder/schlafanalyse.c
+    src/fw/services/activity/activity_sessions.c
     src/fw/util/crc8.c
     tests/fakes/fake_settings_file.c
   DEFINES CONFIG_SERVICE_KIESELSPORT
+  LIBS -Wl,--wrap=settings_file_set
 )
 
-# Boulder: HRV-Fenster in der Nacht.
+# Boulder: HRV-Fenster in der Nacht, mit den Abstaenden ueber den Rueckruf des
+# HRM-Dienstes (wie auf der Uhr) und den Fenstern in einer Datei.
 pbl_clar_test(test_boulder_hrv
   SOURCES
     src/fw/services/activity/boulder/hrv.c
+    src/fw/util/crc8.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_settings_file.c
+  DEFINES CONFIG_HRM
+)
+
+# Boulder: der echte Smart Alarm (alarm.c) in der echten Nacht - der Schlafzustand
+# kommt aus der echten activity_sessions.c, die Schlafbloecke aus der echten
+# Nachtrechnung.
+pbl_clar_test(test_boulder_wecker
+  SOURCES
+    src/fw/services/activity/boulder/nacht.c
+    src/fw/services/activity/boulder/schlafanalyse.c
+    src/fw/services/activity/activity_sessions.c
+    src/fw/services/alarms/alarm.c
+    src/fw/services/alarms/alarm_pin.c
+    src/fw/flash_region/flash_region.c
+    src/fw/flash_region/filesystem_regions.c
+    src/fw/util/time/time.c
+    src/fw/util/time/mktime.c
+    third_party/tinymt/TinyMT/tinymt/tinymt32.c
+    subsys/cron/cron.c
+    src/fw/services/filesystem/flash_translation.c
+    src/fw/services/filesystem/pfs.c
+    src/fw/services/blob_db/timeline_item_storage.c
+    src/fw/services/settings/settings_file.c
+    src/fw/services/settings/settings_raw_iter.c
+    src/fw/services/timeline/attribute.c
+    src/fw/services/timeline/item.c
+    src/fw/services/timeline/attributes_actions.c
+    src/fw/services/timeline/attribute_group.c
+    src/fw/util/crc8.c
+    src/fw/util/legacy_checksum.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+  DEFINES CAPABILITY_HAS_HEALTH_TRACKING=1
+  OVERRIDES dummy_board
 )

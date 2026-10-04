@@ -34,8 +34,9 @@ extern void workout_service_reset(void);
 ///////////////////////////////////////////////////////////
 
 static ActivitySession s_saved_session;
-void activity_sessions_prv_add_activity_session(ActivitySession *session) {
+bool activity_sessions_prv_add_activity_session(ActivitySession *session) {
   s_saved_session = *session;
+  return true;
 }
 void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
 }
