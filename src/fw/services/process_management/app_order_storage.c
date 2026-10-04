@@ -153,6 +153,12 @@ int prv_uuid_search(const Uuid *find_me, const Uuid *uuid_list, uint8_t count) {
 // storage->id_list
 bool prv_enumerate_apps(AppInstallEntry *entry, void *data) {
   UuidTranslateData *my_data = (UuidTranslateData *)data;
+  // Boulder: die Kennung gehoert der System-App, nicht der abgeloesten
+  // Store-App - sonst zeigte die Reihenfolge auf eine App, die das
+  // Startmenue gar nicht zeigt.
+  if (app_install_entry_ist_abgeloest(entry)) {
+    return true;  // continue iterating
+  }
 
   int idx = prv_uuid_search(&entry->uuid, my_data->uuid_list, my_data->count);
 

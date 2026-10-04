@@ -3,6 +3,8 @@
 
 #include "karten.h"
 
+#include "pbl/util/math.h"
+
 // Gebaut wie Kieselsport: weisser Grund, oben ein Balken in der Farbe der
 // Karte, eine grosse Zahl in LECO, darunter die kleinen. Pebbles Health-App
 // zeigte vieles, was die Uhr nur schaetzte; hier steht, was sie misst.
@@ -198,7 +200,10 @@ static void prv_schlaf(GContext *ctx, GRect b, const HealthDaten *d) {
   const int16_t oben = BALKEN_H + 76, bahn = 13;
   const int16_t x0 = RAND, breite = b.size.w - 2 * RAND;
   const int dauer = n->aufwachen > n->einschlafen ? n->aufwachen - n->einschlafen : 1;
-  for (int k = 0; k < n->anzahl; k++) {
+  // Nie mehr als Platz da ist: eine kaputte oder fremde Datei boulder_nacht
+  // koennte eine groessere Anzahl tragen, und gelesen wuerde hinter dem Ende.
+  const int abschnitte = MIN(n->anzahl, NACHT_BILD_ABSCHNITTE);
+  for (int k = 0; k < abschnitte; k++) {
     const NachtDlsAbschnitt *a = &n->abschnitte[k];
     int reihe;
     switch (a->phase) {

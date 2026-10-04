@@ -186,8 +186,8 @@ void symbol_sport(GContext *ctx, Sportart art, GPoint mitte, int16_t groesse, GC
 void clock_copy_time_string(char *buffer, uint8_t size) { cl_fail("gezeichnet"); }
 bool clock_is_24h_style(void) { return true; }
 struct tm *pbl_override_localtime(const time_t *timep) {
-  static struct tm t;
-  return gmtime_r(timep, &t);
+  cl_fail("gezeichnet");
+  return NULL;
 }
 bool connection_service_peek_pebble_app_connection(void) { return true; }
 const char *app_get_system_locale(void) { return "en_US"; }

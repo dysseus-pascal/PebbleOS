@@ -218,6 +218,7 @@ void prv_send_callback_to_app(AppMenuDataSource *data_source, AppInstallId insta
 static void prv_do_app_added(AppMenuDataSource *source, AppInstallId install_id) {
   AppInstallEntry entry;
   if (!app_install_get_entry_for_install_id(install_id, &entry) ||
+      app_install_entry_ist_abgeloest(&entry) ||  // Boulder: wie beim Aufzaehlen
       prv_is_app_filtered_out(&entry, source)) {
     return;
   }
@@ -298,7 +299,9 @@ static void prv_app_db_cleared_callback(const AppInstallId install_id, void *dat
 }
 
 static bool prv_app_enumerate_callback(AppInstallEntry *entry, void *data) {
-  if (prv_is_app_filtered_out(entry, (AppMenuDataSource *)data)) {
+  // Boulder: die abgeloeste Store-App steht nicht neben ihrer System-App.
+  if (app_install_entry_ist_abgeloest(entry) ||
+      prv_is_app_filtered_out(entry, (AppMenuDataSource *)data)) {
     return true; // continue
   }
   add_app_with_install_id(entry, data);

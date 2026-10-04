@@ -18,6 +18,11 @@
 //
 // DER PULS IST LIVE auf der Herz-Karte: dort bittet die App den Sensor um
 // einen Wert je Sekunde, und ein Herz schlaegt im Takt, solange er misst.
+// ZWEI MINUTEN LANG, dann misst er wieder im gewohnten Takt: die App hat
+// kein Zeitlimit, und wer sie auf der Herz-Karte offen liess, bezahlte den
+// Sekundentakt mit dem Akku, bis jemand sie schloss. Wer wieder hinblaettert,
+// bekommt zwei neue Minuten.
+#define HERZ_LIVE_MS (2 * 60 * 1000)
 
 typedef struct {
   Window *fenster;
@@ -27,8 +32,41 @@ typedef struct {
   MinutenLesen lesen;
   AppTimer *minuten_timer;
   AppTimer *herz_timer;
+  AppTimer *live_timer;     //< Ende der zwei Minuten Live-Puls
   bool herz_gross;
+  // Was zuletzt gezeichnet wurde (prv_sichtbar): neu gezeichnet wird nur,
+  // wenn sich etwas aendert - jede Sekunde den ganzen Schirm kostete Strom
+  // fuer nichts.
+  HealthDaten gezeichnet;
 } HealthApp;
+
+// Nach dem Entladen des Fensters ist die Flaeche weg; Tick und Timer koennen
+// bis zum Ende der App noch kommen.
+static void prv_neu_zeichnen(HealthApp *app) {
+  if (app->flaeche) {
+    layer_mark_dirty(app->flaeche);
+  }
+}
+
+// Die Daten so, wie die Karten sie zeigen: von den Zeitpunkten nur, was zu
+// sehen ist - "vor 3 min" statt der Sekunde der letzten Messung, die sich
+// beim Live-Puls jede Sekunde aendert, ohne dass sich das Bild aendert.
+static void prv_sichtbar(const HealthDaten *d, HealthDaten *aus) {
+  memcpy(aus, d, sizeof(*aus));
+  const time_t vor = d->puls ? (time(NULL) - d->puls_zeit) / SECONDS_PER_MINUTE : 0;
+  aus->puls_zeit = vor < 2 ? 0 : vor;
+  aus->spo2_zeit = 0;
+}
+
+static void prv_neu_zeichnen_wenn_anders(HealthApp *app) {
+  HealthDaten jetzt;
+  prv_sichtbar(&app->daten, &jetzt);
+  if (memcmp(&app->gezeichnet, &jetzt, sizeof(jetzt)) == 0) {
+    return;
+  }
+  memcpy(&app->gezeichnet, &jetzt, sizeof(jetzt));
+  prv_neu_zeichnen(app);
+}
 
 static void prv_zeichne(Layer *layer, GContext *ctx) {
   HealthApp *app = app_state_get_user_data();
@@ -40,7 +78,7 @@ static void prv_minuten_schritt(void *data) {
   HealthApp *app = app_state_get_user_data();
   app->minuten_timer = NULL;
   if (daten_minuten_schritt(&app->lesen, &app->daten)) {
-    layer_mark_dirty(app->flaeche);
+    prv_neu_zeichnen_wenn_anders(app);
     return;
   }
   // Zwischen zwei Stuecken kommen Tasten und Zeichnen zum Zug.
@@ -68,14 +106,14 @@ static void prv_schlag(void *data) {
   app->herz_timer = NULL;
   if (!prv_herz_schlaegt(app)) {
     app->herz_gross = false;
-    layer_mark_dirty(app->flaeche);
+    prv_neu_zeichnen(app);
     return;
   }
   app->herz_gross = !app->herz_gross;
   const uint32_t pause = 60000 / app->daten.puls;
   app->herz_timer = app_timer_register(app->herz_gross ? SCHLAG_MS : pause - SCHLAG_MS,
                                        prv_schlag, NULL);
-  layer_mark_dirty(app->flaeche);
+  prv_neu_zeichnen(app);
 }
 
 static void prv_herz_pruefen(HealthApp *app) {
@@ -96,7 +134,25 @@ static void prv_tick(struct tm *zeit, TimeUnits einheiten) {
   }
   daten_puls(&app->daten);
   prv_herz_pruefen(app);
-  layer_mark_dirty(app->flaeche);
+  prv_neu_zeichnen_wenn_anders(app);
+}
+
+static void prv_live_ende(void *data) {
+  HealthApp *app = app_state_get_user_data();
+  app->live_timer = NULL;
+  health_service_set_heart_rate_sample_period(0 /* zurueck zur Vorgabe */);
+}
+
+// Der Sensor im Sekundentakt - nur auf der Herz-Karte und nur zwei Minuten.
+static void prv_live(HealthApp *app, bool an) {
+  if (app->live_timer) {
+    app_timer_cancel(app->live_timer);
+    app->live_timer = NULL;
+  }
+  health_service_set_heart_rate_sample_period(an ? 1 : 0);
+  if (an) {
+    app->live_timer = app_timer_register(HERZ_LIVE_MS, prv_live_ende, NULL);
+  }
 }
 
 static void prv_blaettern(int richtung) {
@@ -108,11 +164,11 @@ static void prv_blaettern(int richtung) {
   // DER SENSOR MISST SEKUENDLICH NUR AUF DER HERZ-KARTE - sonst zeigt nichts
   // den Puls, und der Akku zahlte umsonst.
   if (app->karte == KarteHerz || neu == KarteHerz) {
-    health_service_set_heart_rate_sample_period(neu == KarteHerz ? 1 : 0);
+    prv_live(app, neu == KarteHerz);
   }
   app->karte = (Karte)neu;
   prv_herz_pruefen(app);
-  layer_mark_dirty(app->flaeche);
+  prv_neu_zeichnen(app);
 }
 
 static void prv_oben(ClickRecognizerRef anlass, void *context) { prv_blaettern(-1); }
@@ -133,7 +189,20 @@ static void prv_laden(Window *fenster) {
 
 static void prv_entladen(Window *fenster) {
   HealthApp *app = app_state_get_user_data();
+  // ERST ALLES ABMELDEN, WAS NOCH ZEICHNEN WILL. Das letzte Fenster wird
+  // sofort entladen; bis die App wirklich endet, kamen Tick und Timer noch
+  // und markierten die zerstoerte Flaeche.
+  tick_timer_service_unsubscribe();
+  if (app->herz_timer) {
+    app_timer_cancel(app->herz_timer);
+    app->herz_timer = NULL;
+  }
+  if (app->minuten_timer) {
+    app_timer_cancel(app->minuten_timer);
+    app->minuten_timer = NULL;
+  }
   layer_destroy(app->flaeche);
+  app->flaeche = NULL;
 }
 
 static void prv_main(void) {
@@ -163,6 +232,9 @@ static void prv_main(void) {
   }
   if (app->herz_timer) {
     app_timer_cancel(app->herz_timer);
+  }
+  if (app->live_timer) {
+    app_timer_cancel(app->live_timer);
   }
   health_service_set_heart_rate_sample_period(0 /* zurueck zur Vorgabe */);
   window_destroy(app->fenster);

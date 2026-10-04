@@ -12,6 +12,14 @@
 // je 16 Byte, und so viel Stapel hat die App nicht.
 #define STUECK 60
 
+// DIE STUNDE DER UHR, NICHT DIE SEIT MITTERNACHT VERGANGENE. An den Tagen der
+// Zeitumstellung sind das zwei verschiedene: im Fruehjahr fehlt eine Stunde
+// (die Saeulen ab drei Uhr stuenden eine zu frueh), im Herbst gibt es die
+// 25. (sie fiel weg, und "jetzt" markierte keine Saeule).
+static int prv_stunde(time_t t) {
+  return localtime(&t)->tm_hour;
+}
+
 static int32_t prv_metrik(ActivityMetric m) {
   int32_t wert = 0;
   activity_get_metric(m, 1, &wert);
@@ -41,7 +49,7 @@ bool daten_minuten_schritt(MinutenLesen *m, HealthDaten *d) {
         continue;
       }
       if (t >= m->mitternacht) {
-        const int stunde = (t - m->mitternacht) / SECONDS_PER_HOUR;
+        const int stunde = prv_stunde(t);
         if (stunde >= 0 && stunde < 24) {
           m->schritte_stunde[stunde] += e->steps;
         }
@@ -120,8 +128,7 @@ void daten_sammeln(HealthDaten *d) {
   memcpy(d->puls_min, puls_min, sizeof(puls_min));
   memcpy(d->puls_max, puls_max, sizeof(puls_max));
   const time_t jetzt = time(NULL);
-  const time_t mitternacht = time_start_of_today();
-  d->stunde_jetzt = (jetzt - mitternacht) / SECONDS_PER_HOUR;
+  d->stunde_jetzt = prv_stunde(jetzt);
 
   d->schritte = prv_metrik(ActivityMetricStepCount);
   d->meter = prv_metrik(ActivityMetricDistanceMeters);
