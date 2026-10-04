@@ -578,13 +578,15 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   }
   cl_assert(tief > 0);
   cl_assert_equal_i(s_state.sleep_data.restful_minutes, tief);
-  // Tag 84 bekommt genau diesen einen Block, nachdem die Nacht endgueltig war.
+  // Tag 84 bekommt genau diesen einen Block, nachdem die Nacht endgueltig war -
+  // im bisherigen Format: das Wachliegen geht nicht mit (die Bytes bleiben 0).
   int tag84_schlaf = 0;
   for (int k = 0; k < s_tag84_anzahl; k++) {
     if (s_tag84[k].activity == ActivitySessionType_Sleep) {
       tag84_schlaf++;
       cl_assert_equal_i(s_tag84[k].start_utc, block->start_utc);
       cl_assert_equal_i(s_tag84[k].elapsed_sec, block->length_min * 60);
+      cl_assert_equal_i(s_tag84[k].step_data.steps, 0);
     }
   }
   cl_assert_equal_i(tag84_schlaf, 1);
