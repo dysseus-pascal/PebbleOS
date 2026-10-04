@@ -24,7 +24,7 @@
 // Schlafdauer und Tiefschlaf. Das Wachliegen im Block traegt die Sitzung mit
 // (nicht_schlaf_min); die Schlafsumme der Uhr zaehlt es nicht. Die ganze Nacht
 // mit allen Phasen, auch den Wachphasen, geht als ein Datalogging-Satz
-// (Tag 88) an Boulder.
+// (BOULDER_DLS_TAG_NACHT) an Boulder.
 //
 // NUR IM NACHTFENSTER (20 bis 11 Uhr): eine abgelegte Uhr auf dem Tisch saehe
 // tagsueber aus wie Schlaf. Alle fuenfzehn Minuten wird die laufende Nacht neu
@@ -38,6 +38,18 @@
 // EIN KIESELSPORT-TRAINING IST KEIN SCHLAF: seine Minuten zaehlen wie
 // abgelegt (Yoga liegt still, aber niemand schlaeft dabei).
 
+// DIE EIGENEN DATALOGGING-TAGS, ab 0x4000. Pebble vergibt seine System-Tags von
+// 78 an aufwaerts (data_logging_service.h); 88 und 89, die Boulder bis b24
+// nahm, waeren die naechsten - ein Upstream-Merge haette sie still doppelt
+// belegt. Die Tags sind auf der Uhr, im Flash und im Protokoll 32 Bit breit.
+// 88 und 89 bleiben fuer immer gesperrt: Sitzungen von b24 liegen womoeglich
+// noch im Flash und gehen nach dem Update mit ihrem alten Tag hinaus. Die
+// Saetze sind dieselben. Wache: boulder/vertraege.c, tools/boulder/vertraege.py.
+#define BOULDER_DLS_TAG_NACHT 0x4001u      //< NachtDlsRecord, bis b24 Tag 88
+#define BOULDER_DLS_TAG_NACHT_HRV 0x4002u  //< NachtHrvDlsRecord, bis b24 Tag 89
+#define BOULDER_DLS_TAG_NACHT_ALT 88u
+#define BOULDER_DLS_TAG_NACHT_HRV_ALT 89u
+
 // Bitfeld wie bei den Sitzungen: Bit 0 muss gesetzt sein, Bit 1 heisst "mit
 // Akku und Messstufe am Ende" (ab Fassung 3).
 #define NACHT_DLS_VERSION 3
@@ -49,8 +61,8 @@ typedef struct PBL_PACKED {
   uint8_t phase;   //< SchlafPhase
 } NachtDlsAbschnitt;
 
-// Ein Satz auf Tag 88. Eine Nacht mit mehr als NACHT_DLS_ABSCHNITTE Abschnitten
-// geht in mehreren Teilen; die Kopfwerte stehen in jedem.
+// Ein Satz auf BOULDER_DLS_TAG_NACHT. Eine Nacht mit mehr als NACHT_DLS_ABSCHNITTE
+// Abschnitten geht in mehreren Teilen; die Kopfwerte stehen in jedem.
 typedef struct PBL_PACKED {
   uint16_t version;        //< NACHT_DLS_VERSION; Bit 0 gesetzt, wie bei den Sitzungen
   uint16_t size;           //< sizeof(NachtDlsRecord)
@@ -79,10 +91,10 @@ _Static_assert(sizeof(NachtDlsRecord) == 328, "NachtDlsRecord: Boulder erwartet 
 
 #define NACHT_DLS_FLAG_GELADEN 0x01
 
-// DIE HRV-FENSTER DER NACHT, auf Tag 89 (DlsSystemTagBoulderNachtHrv). Ein
-// eigener Satz statt eines laengeren auf Tag 88: Tag 88 bleibt Byte fuer Byte,
-// wie ihn jeder Boulder kennt, und ein Boulder ohne Tag 89 quittiert diesen
-// und wirft ihn weg. Er geht mit jeder Nacht, im selben Augenblick und mit
+// DIE HRV-FENSTER DER NACHT, auf BOULDER_DLS_TAG_NACHT_HRV. Ein eigener Satz
+// statt eines laengeren fuer die Nacht: deren Satz bleibt Byte fuer Byte, wie
+// ihn jeder Boulder kennt, und ein Boulder ohne HRV quittiert diesen und
+// wirft ihn weg. Er geht mit jeder Nacht, im selben Augenblick und mit
 // demselben beginn_utc; mehr als NACHT_HRV_DLS_FENSTER Fenster gehen in
 // mehreren Teilen. Bit 0 der Version gesetzt, wie bei den Sitzungen.
 #define NACHT_HRV_DLS_VERSION 1
@@ -97,7 +109,7 @@ typedef struct PBL_PACKED {
 typedef struct PBL_PACKED {
   uint16_t version;        //< NACHT_HRV_DLS_VERSION
   uint16_t size;           //< sizeof(NachtHrvDlsRecord)
-  uint32_t beginn_utc;     //< derselbe wie im Satz der Nacht auf Tag 88
+  uint32_t beginn_utc;     //< derselbe wie im Satz der Nacht
   uint8_t teil;            //< 0 ..
   uint8_t teile;
   uint8_t anzahl;          //< Fenster in diesem Teil

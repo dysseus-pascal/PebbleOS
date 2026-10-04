@@ -161,7 +161,7 @@ static time_t s_gesendet_um;
 // mehreren Teilen zaehlt einmal.
 static int s_schreibzeiten;
 
-// Die HRV-Fenster der Nacht, auf Tag 89.
+// Die HRV-Fenster der Nacht, auf ihrem eigenen Tag.
 static NachtHrvDlsRecord s_hrv_saetze[SAETZE];
 static int s_hrv_saetze_anzahl;
 static time_t s_hrv_gesendet_um;
@@ -183,7 +183,7 @@ static DataLoggingResult s_nacht_fehler;
 static int s_anlagen_nacht;
 
 // Was in einem Minutenlauf geschieht, in der Reihenfolge: W = Waechter
-// gefuettert, L = Minutendatei gelesen, A/H = Sitzung fuer Tag 88/89 angelegt.
+// gefuettert, L = Minutendatei gelesen, A/H = Sitzung fuer die Nacht/HRV angelegt.
 static char s_ablauf[64];
 static int s_ablauf_laenge;
 static void prv_ablauf(char c) {
@@ -205,12 +205,12 @@ DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint
     s_anlage_scheitert--;
     return NULL;
   }
-  if (tag == DlsSystemTagBoulderNachtHrv) {
+  if (tag == BOULDER_DLS_TAG_NACHT_HRV) {
     cl_assert_equal_i(item_size, sizeof(NachtHrvDlsRecord));
     prv_ablauf('H');
     return SITZUNG_HRV;
   }
-  cl_assert_equal_i(tag, DlsSystemTagBoulderNacht);
+  cl_assert_equal_i(tag, BOULDER_DLS_TAG_NACHT);
   cl_assert_equal_i(item_size, sizeof(NachtDlsRecord));
   prv_ablauf('A');
   s_anlagen_nacht++;
@@ -549,7 +549,7 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   cl_assert_equal_i(s->akku_ende, 69);
   cl_assert_equal_i(s->flags, 0);
   cl_assert_equal_i(s->messstufe, 3);
-  // Ohne HRV-Fenster geht kein Satz auf Tag 89.
+  // Ohne HRV-Fenster geht kein HRV-Satz.
   cl_assert_equal_i(s_hrv_saetze_anzahl, 0);
   // Eingeschlafen 22:17, aufgewacht 07:00.
   cl_assert_equal_i(s->einschlafen, 120 + 17);
@@ -1383,7 +1383,7 @@ static long prv_ns(void) {
 // HAENGER AM MORGEN: der Minutenlauf, der die Nacht abschliesst, darf den
 // Waechter von KernelBG (6,5 s) nicht ueberziehen. Jede Datalogging-Sitzung
 // schickt beim Anlegen ein Oeffnen ans Telefon und wartet bis zu vier Sekunden;
-// zwei davon (Tag 88 und 89) brauchen dazwischen frisches Futter. Der Schub
+// zwei davon (Nacht und HRV) brauchen dazwischen frisches Futter. Der Schub
 // ans Telefon kommt spaeter, mit eigenem Zeitgeber.
 void test_boulder_nacht__morgenlauf_fuettert_den_waechter(void) {
   for (int k = 0; k < 20; k++) {
@@ -1402,7 +1402,7 @@ void test_boulder_nacht__morgenlauf_fuettert_den_waechter(void) {
   s_ablauf[s_ablauf_laenge] = 0;
   prv_zeitgeber_gestartet();
   const long us = (ns1 - ns0) / 1000;
-  printf("\nMorgenlauf (Rechnung, Bild, Tag 88/89) auf dem Rechner: %ld us, Ablauf %s\n", us,
+  printf("\nMorgenlauf (Rechnung, Bild, Nacht/HRV) auf dem Rechner: %ld us, Ablauf %s\n", us,
          s_ablauf);
   cl_assert_equal_i(s_saetze_anzahl, 1);
   cl_assert_equal_i(s_hrv_saetze_anzahl, 1);

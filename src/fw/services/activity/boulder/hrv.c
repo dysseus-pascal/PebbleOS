@@ -27,7 +27,7 @@
 
 // DIE FENSTER UEBERSTEHEN EINEN NEUSTART: sonst rechnete die Uhr eine Nacht,
 // die am Morgen neu gerechnet wird, ohne HRV - mit anderen Phasen, und ohne
-// den Satz auf Tag 89. Je Fenster ein kleiner Satz unter seinem Platz im Ring.
+// den eigenen HRV-Satz. Je Fenster ein kleiner Satz unter seinem Platz im Ring.
 #define FENSTER_DATEI "boulder_hrv"
 #define FENSTER_DATEI_GROESSE 4096
 

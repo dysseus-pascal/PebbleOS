@@ -729,7 +729,7 @@ static bool prv_log(DataLoggingSession **sitzung, const void *satz) {
 // Rueckgabe: alle Teile im Datalogging.
 static bool prv_schicke(Rechnung *r, time_t beginn) {
   const SchlafErgebnis *e = &r->ergebnis;
-  if (!prv_sitzung(&s_dls, DlsSystemTagBoulderNacht, sizeof(NachtDlsRecord))) {
+  if (!prv_sitzung(&s_dls, BOULDER_DLS_TAG_NACHT, sizeof(NachtDlsRecord))) {
     return false;
   }
   const time_t eingeschlafen = beginn + e->einschlafen * SECONDS_PER_MINUTE;
@@ -770,13 +770,13 @@ static bool prv_schicke(Rechnung *r, time_t beginn) {
   return true;
 }
 
-// Die HRV-Fenster der Nacht an Boulder (Tag 89), gleich hinter dem Satz der
+// Die HRV-Fenster der Nacht an Boulder (eigener Tag), gleich hinter dem Satz der
 // Nacht. Ohne Fenster kein Satz: die Nacht wurde ohne HRV gerechnet.
 static bool prv_schicke_hrv(Rechnung *r, time_t beginn, int hrv_anzahl) {
   if (hrv_anzahl <= 0) {
     return true;
   }
-  if (!prv_sitzung(&s_dls_hrv, DlsSystemTagBoulderNachtHrv, sizeof(NachtHrvDlsRecord))) {
+  if (!prv_sitzung(&s_dls_hrv, BOULDER_DLS_TAG_NACHT_HRV, sizeof(NachtHrvDlsRecord))) {
     return false;
   }
   const int teile = (hrv_anzahl + NACHT_HRV_DLS_FENSTER - 1) / NACHT_HRV_DLS_FENSTER;
