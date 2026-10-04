@@ -105,3 +105,7 @@ typedef struct {
 // Die Nacht auswerten. Rueckgabe: ergebnis->gefunden.
 bool schlafanalyse_werte(const SchlafEingabe *eingabe, SchlafArbeit *arbeit,
                          SchlafErgebnis *ergebnis);
+
+// Verdichtet `a` auf hoechstens `max` Abschnitte: der kuerzeste geht im
+// Nachbarn auf. Die Liste bleibt lueckenlos. Rueckgabe: wie viele.
+int schlafanalyse_verdichten(SchlafAbschnitt *a, int n, int max);

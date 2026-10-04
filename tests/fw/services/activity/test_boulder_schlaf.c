@@ -778,3 +778,44 @@ void test_boulder_schlaf__morgenschlaf_braucht_mehr(void) {
   e.min_schlaf = 90;
   cl_assert(!schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
 }
+
+// MEHR ABSCHNITTE, ALS DAS ERGEBNIS FASST (SCHLAF_ABSCHNITTE_MAX): eine Stunde
+// fester Schlaf, dann vierzehn Stunden lang abwechselnd sechs Minuten Schlaf und
+// vier ohne Daten (wach; Webster nimmt dem Schlaf danach eine Minute), am Ende
+// eine halbe Stunde Schlaf - 172 Abschnitte zu je fuenf Minuten. Abgeschnitten
+// endete die Liste Stunden vor dem Aufwachen, und die Schlafminuten (aus der
+// Liste) passten nicht mehr dazu.
+void test_boulder_schlaf__zu_viele_abschnitte_werden_verdichtet(void) {
+  const int n = SCHLAF_MINUTEN_MAX;
+  for (int i = 0; i < n; i++) {
+    s_gueltig[i] = true;
+    s_bewegung[i] = 0;
+    s_puls[i] = 50;
+  }
+  for (int i = 70; i < n - 40; i++) {
+    if ((i - 70) % 10 >= 6) {
+      s_gueltig[i] = false;
+      s_puls[i] = 0;
+    }
+  }
+  const SchlafEingabe e = prv_eingabe(n, 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  printf("\nZerstueckelte Nacht: %d Abschnitte, %d bis %d, %d min Schlaf\n",
+         s_ergebnis.abschnitt_anzahl, s_ergebnis.einschlafen, s_ergebnis.aufwachen,
+         s_ergebnis.schlaf_minuten);
+  cl_assert(s_ergebnis.abschnitt_anzahl <= SCHLAF_ABSCHNITTE_MAX);
+  cl_assert(s_ergebnis.aufwachen > n - 60);
+  cl_assert_equal_i(s_ergebnis.abschnitte[0].von, s_ergebnis.einschlafen);
+  int schlaf = 0;
+  for (int k = 0; k < s_ergebnis.abschnitt_anzahl; k++) {
+    if (k > 0) {
+      cl_assert_equal_i(s_ergebnis.abschnitte[k].von, s_ergebnis.abschnitte[k - 1].bis);
+    }
+    if (s_ergebnis.abschnitte[k].phase != SchlafPhaseWach) {
+      schlaf += s_ergebnis.abschnitte[k].bis - s_ergebnis.abschnitte[k].von;
+    }
+  }
+  cl_assert_equal_i(s_ergebnis.abschnitte[s_ergebnis.abschnitt_anzahl - 1].bis,
+                    s_ergebnis.aufwachen);
+  cl_assert_equal_i(schlaf, s_ergebnis.schlaf_minuten);
+}

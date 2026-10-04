@@ -537,7 +537,9 @@ bool activity_sessions_is_session_type_ongoing(ActivitySessionType activity_type
 
 //! Register a new activity session. This is called by the algorithm logic when it detects a new
 //! activity.
-void activity_sessions_prv_add_activity_session(ActivitySession *session);
+//! Boulder: false, wenn die Sitzung nicht gespeichert wurde (alle Plaetze des Tages belegt) -
+//! bisher verschwand sie still.
+bool activity_sessions_prv_add_activity_session(ActivitySession *session);
 
 //! Delete an activity session. This is called by the algorithm logic when it decides to not
 //! register a sleep session after all. Only sessions that are still 'ongoing' are allowed to be
@@ -548,6 +550,12 @@ void activity_sessions_prv_delete_activity_session(ActivitySession *session);
 //! sie laeuft. Eine schon abgeschlossene bleibt stehen (ohne PBL_ASSERT). Gibt zurueck, ob
 //! zurueckgenommen wurde.
 bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session);
+
+//! Boulder: Nimmt eine eigene Schlafsitzung zurueck (gleiche Startzeit, jede Schlafart) - auch
+//! wenn ein anderer sie inzwischen abgeschlossen hat. Nur fuer die Sitzungen von
+//! boulder/nacht.c, die bis zur endgueltigen Nacht ersetzbar bleiben. Gibt zurueck, ob eine
+//! zurueckgenommen wurde.
+bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session);
 
 //! Perform our once a minute activity session maintenance logic
 void activity_sessions_prv_minute_handler(time_t utc_sec);

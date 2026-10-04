@@ -893,8 +893,11 @@ static void PBL_NOINLINE prv_process_minute_data_tail(time_t utc_sec) {
 
   // Boulder: die laufende Nacht neu rechnen (alle 15 Minuten im Nachtfenster).
   // Ausserhalb der Sperre - die Rechnung braucht etwas, und in der Zeit sollen
-  // Apps weiter Werte lesen koennen.
-  boulder_hrv_minute(utc_sec, s_activity_state.last_vmc);
+  // Apps weiter Werte lesen koennen. Ein HRV-Fenster beginnt nicht, solange
+  // SpO2 misst: beide brauchen denselben Lichtweg des Sensors.
+  const bool spo2_misst = s_activity_state.spo2.currently_sampling ||
+      s_activity_state.activity_spo2.phase == ActivitySpO2ActPhase_Sampling;
+  boulder_hrv_minute(utc_sec, s_activity_state.last_vmc, spo2_misst);
   boulder_nacht_minute(utc_sec);
 
   // Send the history update event now if history has changed

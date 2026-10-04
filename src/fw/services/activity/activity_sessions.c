@@ -154,8 +154,10 @@ static bool prv_activity_sessions_equal(ActivitySession *session_a, ActivitySess
 // ------------------------------------------------------------------------------------
 // Register a new activity. Called by the algorithm code when it detects a new activity.
 // If we already have this activity registered, it is updated.
-void activity_sessions_prv_add_activity_session(ActivitySession *session) {
+// Boulder: gibt zurueck, ob sie gespeichert ist - der Aufrufer soll ein Verwerfen sehen.
+bool activity_sessions_prv_add_activity_session(ActivitySession *session) {
   ActivityState *state = activity_private_state();
+  bool gespeichert = true;
   pbl_mutex_lock(&state->mutex, PBL_FOREVER);
   {
     if (!session->ongoing) {
@@ -179,6 +181,7 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
     // If no more room, fail
     if (state->activity_sessions_count >= ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT) {
       PBL_LOG_WRN("No more room for additional activities");
+      gespeichert = false;
       goto unlock;
     }
 
@@ -189,6 +192,7 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session) {
   }
 unlock:
   pbl_mutex_unlock(&state->mutex);
+  return gespeichert;
 }
 
 // ------------------------------------------------------------------------------------
@@ -266,6 +270,40 @@ bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session) {
     }
     // Nicht gefunden ist hier der Normalfall: nach dem ersten Zuruecknehmen meldet
     // Kraepelin dieselbe Sitzung jede weitere Minute - darum kein Log.
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return zurueckgenommen;
+}
+
+// ------------------------------------------------------------------------------------
+// BOULDER: EINE EIGENE SCHLAFSITZUNG ZURUECKNEHMEN, AUCH WENN SIE INZWISCHEN JEMAND ANDERS
+// ABGESCHLOSSEN HAT. Die Nacht (boulder/nacht.c) meldet ihre Sitzungen laufend, bis sie
+// endgueltig ist, und ersetzt sie bei jeder Rechnung. Schliesst ein anderer sie vorher ab -
+// workout_service_start_workout tut das beim Trainingsstart mit jeder laufenden Sitzung -,
+// ist die Nacht trotzdem nicht fertig. Bliebe die Sitzung stehen, laege neben dem naechsten
+// Block ein zweiter, sobald sich der Beginn der Nacht verschiebt: der Schlaf zaehlte doppelt.
+// Ohne PBL_ASSERT. Alle Schlafarten gelten gleich wie beim Eintragen (any_sleep): die
+// Nachbearbeitung macht aus einer abgeschlossenen womoeglich ein Nickerchen.
+bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
+  ActivityState *state = activity_private_state();
+  bool zurueckgenommen = false;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  {
+    for (uint16_t i = 0; i < state->activity_sessions_count; i++) {
+      ActivitySession *gespeichert = &state->activity_sessions[i];
+      if (!prv_activity_sessions_equal(session, gespeichert, true /*any_sleep*/)) {
+        continue;
+      }
+      if (!gespeichert->ongoing) {
+        // Abgeschlossen steht sie womoeglich schon im Flash - dort muss sie auch weg,
+        // sonst kaeme sie mit dem naechsten Neustart zurueck.
+        PBL_LOG_WRN("Session %d ended elsewhere, replaced", (int)gespeichert->type);
+        state->need_activities_saved = true;
+      }
+      prv_remove_activity_session_at(state, i);
+      zurueckgenommen = true;
+      break;
+    }
   }
   pbl_mutex_unlock(&state->mutex);
   return zurueckgenommen;
@@ -362,8 +400,11 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
         (session->type == ActivitySessionType_Nap)) {
       rv = true;
       // Accumulate sleep container stats
+      // Boulder: ohne das Wachliegen im Block (activity.h, nicht_schlaf_min). Die Schlafsumme
+      // der Uhr ist dieselbe wie die der Nacht in Boulder. Upstream-Sitzungen tragen dort 0.
       if (session_exit_utc <= max_end_utc) {
-        stats->total_minutes += session->length_min;
+        stats->total_minutes += session->length_min - MIN(session->nicht_schlaf_min,
+                                                          session->length_min);
       }
       // Only regular sleep (not naps) should affect the enter and exit times
       if (session->type == ActivitySessionType_Sleep) {
@@ -378,7 +419,9 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
                (session->type == ActivitySessionType_RestfulNap)) {
       if (session_exit_utc <= max_end_utc) {
         // Accumulate restful sleep stats
-        stats->restful_minutes += session->length_min;
+        // Boulder: zusammengelegte Tiefschlafbloecke zaehlen ihre Luecken nicht mit.
+        stats->restful_minutes += session->length_min - MIN(session->nicht_schlaf_min,
+                                                             session->length_min);
       }
       stats->last_deep_exit_utc = MAX(stats->last_deep_exit_utc, session_exit_utc);
     }

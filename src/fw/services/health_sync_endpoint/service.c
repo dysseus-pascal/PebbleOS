@@ -90,6 +90,8 @@ static void prv_handle_sync(const uint8_t *msg, size_t len) {
 void health_sync_protocol_msg_callback(CommSession *session, const uint8_t *msg, size_t len) {
   if (len < 1) {
     PBL_LOG_ERR("Invalid message received, length: %u", len);
+    // Boulder: ohne Byte kein Befehl - sonst lese die naechste Zeile hinter der Nachricht.
+    return;
   }
 
   HealthSyncEndpointCmd cmd = *msg;

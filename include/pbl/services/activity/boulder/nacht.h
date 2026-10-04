@@ -4,8 +4,10 @@
 #pragma once
 
 #include "pbl/kernel/compiler.h"
+#include "pbl/services/activity/boulder/schlafanalyse.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -17,16 +19,21 @@
 // im Schlaf auf null - bleiben, weil andere Teile der Firmware daran haengen.
 //
 // ZWEI AUSGABEN, WEIL DIE UHR HOECHSTENS 32 SITZUNGEN JE TAG HAELT. Als
-// Sitzungen gehen nur die zusammenhaengenden Schlafbloecke (an Wachphasen
-// geteilt) und die Tiefschlaf-Abschnitte - daraus rechnen die Uhr und andere
-// Apps Schlafdauer und Tiefschlaf. Die ganze Nacht mit allen Phasen geht als
-// ein Datalogging-Satz (Tag 88) an Boulder.
+// Sitzungen gehen EIN Schlafblock je Nacht, vom Einschlafen bis zum Aufstehen,
+// und die Tiefschlafbloecke darin - daraus rechnen die Uhr und andere Apps
+// Schlafdauer und Tiefschlaf. Das Wachliegen im Block traegt die Sitzung mit
+// (nicht_schlaf_min); die Schlafsumme der Uhr zaehlt es nicht. Die ganze Nacht
+// mit allen Phasen, auch den Wachphasen, geht als ein Datalogging-Satz
+// (Tag 88) an Boulder.
 //
 // NUR IM NACHTFENSTER (20 bis 11 Uhr): eine abgelegte Uhr auf dem Tisch saehe
 // tagsueber aus wie Schlaf. Alle fuenfzehn Minuten wird die laufende Nacht neu
-// gerechnet; fertig ist sie nach einer Viertelstunde wach oder am Ende des
-// Fensters. Ist das Aufwachen schon zu sehen, wird gerechnet, sobald die
-// Viertelstunde voll sein kann - nicht erst im naechsten Takt.
+// gerechnet; dazwischen waechst ihr Schlafblock mit, solange man am Ende der
+// letzten Rechnung schlief. Fertig ist sie nach einer Viertelstunde wach oder
+// am Ende des Fensters, endgueltig nach zwei Stunden wach - erst dann sind
+// ihre Sitzungen abgeschlossen. Ist das Aufwachen schon zu sehen, wird
+// gerechnet, sobald die Viertelstunde voll sein kann - nicht erst im naechsten
+// Takt.
 //
 // EIN KIESELSPORT-TRAINING IST KEIN SCHLAF: seine Minuten zaehlen wie
 // abgelegt (Yoga liegt still, aber niemand schlaeft dabei).
@@ -107,6 +114,14 @@ _Static_assert(sizeof(NachtHrvDlsRecord) == 251, "NachtHrvDlsRecord: Boulder erw
 // die Anzeige verdichtet: der kuerzeste geht im Nachbarn auf.
 #define NACHT_BILD_ABSCHNITTE 96
 #define NACHT_PHASEN 5   //< SchlafPhase: Wach, Leicht, Tief, REM, Schlaf ohne Phase
+// Das Bild liegt roh in einer Datei. AENDERT SICH SEIN AUFBAU, MUSS DIE FASSUNG
+// HOCH: sonst laese die neue Firmware ein altes Bild gleicher Groesse falsch.
+#define NACHT_BILD_VERSION 1
+// FASSUNG 0 IST DAS BILD BIS b24: derselbe Aufbau, nur ohne Fassung. Wo sie
+// jetzt steht, lagen dort Fuellbytes, und die waren immer 0 - b24 nullte das
+// ganze Bild vor dem Fuellen (memset im obelix-Bau von nacht.c, geprueft am
+// Maschinencode). So liest die neue Firmware das Bild der letzten Nacht weiter.
+#define NACHT_BILD_VERSION_B24 0
 
 typedef struct {
   uint32_t beginn_utc;     //< Minute 0 der Rechnung
@@ -120,20 +135,27 @@ typedef struct {
   bool fertig;             //< false: die Nacht laeuft noch
   uint8_t anzahl;
   NachtDlsAbschnitt abschnitte[NACHT_BILD_ABSCHNITTE];
+  uint8_t version;         //< NACHT_BILD_VERSION; in b24 ein Fuellbyte (0)
 } NachtBild;
+
+// Der Aufbau von b24 bleibt Byte fuer Byte; die Fassung sitzt in seinen
+// Fuellbytes. Nur mit einer neuen Fassung darf sich hier etwas verschieben.
+_Static_assert(sizeof(NachtBild) == 512, "NachtBild: Aufbau geaendert - NACHT_BILD_VERSION hoch");
+_Static_assert(offsetof(NachtBild, abschnitte) == 29,
+               "NachtBild: Abschnitte nicht mehr wie in b24");
+_Static_assert(offsetof(NachtBild, version) == 509,
+               "NachtBild: Fassung nicht mehr in den Fuellbytes von b24");
 
 // false, wenn es noch keine gibt.
 bool boulder_nacht_letzte(NachtBild *aus);
-
-// Testhilfe: verdichtet `a` auf hoechstens `max` Abschnitte, Rueckgabe: wie viele.
-#include "pbl/services/activity/boulder/schlafanalyse.h"
-int boulder_nacht_verdichten(SchlafAbschnitt *a, int n, int max);
 
 void boulder_nacht_minute(time_t utc_sec);
 
 #ifdef UNITTEST
 // Wie ein Neustart der Uhr: alle Zustaende weg, die Datei bleibt.
 void boulder_nacht_test_reset(void);
+// Wie viel Heap eine Rechnung braucht.
+size_t boulder_nacht_test_rechnung_groesse(void);
 #endif
 
 // Das Nachtfenster, in dem `utc` liegt - oder das zuletzt vergangene.

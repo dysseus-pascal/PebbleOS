@@ -629,6 +629,19 @@ PBL_T_STATIC void prv_charger_event_cb(PebbleEvent *e, void *context) {
   system_task_add_callback(prv_update_hrm_enable_system_cb, NULL);
 }
 
+#ifdef CONFIG_HRM_HRV
+// Boulder: hat eine App (nicht der Kernel) HRV bestellt? Der Aufrufer haelt die Sperre.
+static bool prv_app_will_hrv(void) {
+  for (HRMSubscriberState *state = (HRMSubscriberState *)s_manager_state.subscribers; state;
+       state = (HRMSubscriberState *)state->list_node.next) {
+    if (state->app_id != INSTALL_ID_INVALID && (state->features & HRMFeature_HRV)) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 // Accept new data from the HR device driver.
 void hrm_manager_new_data_cb(const HRMData *data) {
   pbl_mutex_lock(&s_manager_state.lock, PBL_FOREVER);
@@ -649,7 +662,10 @@ void hrm_manager_new_data_cb(const HRMData *data) {
   }
 
 #ifdef CONFIG_HRM_HRV
-  if (data->features & HRMFeature_HRV) {
+  // Boulder: nur, wenn eine App HRV bestellt hat (health_service_set_hrv_sample_period), wie
+  // health_service.h es zusagt. Boulders HRV-Fenster in der Nacht (Kernel, Rueckruf) braucht das
+  // Ereignis nicht - und es ging je Schlag an jede App mit Health-Abo, rund 300 in fuenf Minuten.
+  if ((data->features & HRMFeature_HRV) && prv_app_will_hrv()) {
     // Broadcast HRV updates as a health service event so apps subscribed through health_service
     // receive them without needing to consume raw HRM events.
     PebbleEvent health_event = {

@@ -236,6 +236,11 @@ typedef struct PBL_PACKED {
   union {
     ActivitySessionDataStepping step_data;
     ActivitySessionDataSleeping sleep_data;
+    // Boulder: die Minuten im Schlafblock, die nicht als Schlaf zaehlen. Eine
+    // Nacht ist EIN Block vom Einschlafen bis zum Aufstehen (boulder/nacht.c);
+    // das Wachliegen darin zaehlt nicht zur Schlafsumme der Uhr. Nicht in
+    // sleep_data: das geht als Tag 84 ans Telefon, und dessen Format bleibt.
+    uint16_t nicht_schlaf_min;
   };
 } ActivitySession;
 

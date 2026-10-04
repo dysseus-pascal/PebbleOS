@@ -1086,3 +1086,51 @@ void test_hrm_manager__immediate_off_wrist(void) {
 
   sys_hrm_manager_unsubscribe(session_ref);
 }
+
+// Boulder: DAS HRV-EREIGNIS DES HEALTH-DIENSTES NUR, WENN EINE APP HRV BESTELLT HAT
+// (health_service_set_hrv_sample_period, wie health_service.h es zusagt). Boulders
+// HRV-Fenster in der Nacht hat einen Kernel-Rueckruf; es brauchte das Ereignis nicht -
+// und es ging je Schlag an jede App mit Health-Abo, rund 300 in fuenf Minuten.
+static int s_hrv_ereignisse;
+static void prv_zaehle_hrv_ereignisse(PebbleEvent *e) {
+  if (e->type == PEBBLE_HEALTH_SERVICE_EVENT && e->health_event.type == HealthEventHRVUpdate) {
+    s_hrv_ereignisse++;
+  }
+}
+
+void test_hrm_manager__hrv_ereignis_nur_wenn_eine_app_hrv_will(void) {
+  fake_event_set_callback(prv_zaehle_hrv_ereignisse);
+  s_hrv_ereignisse = 0;
+  const HRMData abstand = {
+    .features = HRMFeature_HRV,
+    .hrv_ppi_ms = 1000,
+    .hrv_quality = HRMQuality_Good,
+  };
+
+  // Nur der Kernel (Boulders HRV-Fenster) misst HRV: kein Ereignis.
+  HRMSessionRef kernel = hrm_manager_subscribe_with_callback(
+      INSTALL_ID_INVALID, 1, 0, HRMFeature_BPM | HRMFeature_HRV, false, prv_fake_hrm_1_cb, NULL);
+  fake_system_task_callbacks_invoke_pending();
+  hrm_manager_new_data_cb(&abstand);
+  fake_system_task_callbacks_invoke_pending();
+  cl_assert_equal_i(s_hrv_ereignisse, 0);
+
+  // Eine App will nur den Puls: weiter keins.
+  HRMSessionRef puls = sys_hrm_manager_app_subscribe(1, 1, 0, HRMFeature_BPM);
+  fake_system_task_callbacks_invoke_pending();
+  hrm_manager_new_data_cb(&abstand);
+  cl_assert_equal_i(s_hrv_ereignisse, 0);
+
+  // Eine App will HRV: jetzt kommt es, je Abstand eines.
+  HRMSessionRef hrv = sys_hrm_manager_app_subscribe(2, 1, 0, HRMFeature_HRV);
+  fake_system_task_callbacks_invoke_pending();
+  hrm_manager_new_data_cb(&abstand);
+  hrm_manager_new_data_cb(&abstand);
+  cl_assert_equal_i(s_hrv_ereignisse, 2);
+
+  sys_hrm_manager_unsubscribe(hrv);
+  sys_hrm_manager_unsubscribe(puls);
+  sys_hrm_manager_unsubscribe(kernel);
+  fake_system_task_callbacks_invoke_pending();
+  fake_event_set_callback(NULL);
+}

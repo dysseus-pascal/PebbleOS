@@ -5,6 +5,7 @@
 
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -20,8 +21,9 @@
 #define HRV_FENSTER_MAX SCHLAF_HRV_MAX
 
 // Jede Minute aus dem Aktivitaetsdienst (KernelBG). `letzte_bewegung`: das VMC
-// der letzten Minute - gemessen wird nur in Ruhe.
-void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung);
+// der letzten Minute - gemessen wird nur in Ruhe. `spo2_misst`: der Sensor misst
+// gerade SpO2 - dann beginnt kein Fenster.
+void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung, bool spo2_misst);
 
 // Die Fenster, deren Mitte in [von, bis) liegt, als Minuten ab `von`.
 // Rueckgabe: wie viele.
@@ -33,3 +35,8 @@ void boulder_hrv_intervall(uint16_t ppi_ms);
 uint16_t boulder_hrv_rmssd(void);
 // Der Puls aus denselben Intervallen, in bpm; 0 unter 30 Intervallen.
 uint8_t boulder_hrv_puls(void);
+
+#ifdef UNITTEST
+// Wie ein Neustart der Uhr: alles im Speicher weg, die Datei bleibt.
+void boulder_hrv_test_reset(void);
+#endif

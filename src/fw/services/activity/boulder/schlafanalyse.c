@@ -578,6 +578,46 @@ static uint8_t prv_ruhepuls(const SchlafEingabe *e, const bool *wach, int ein, i
   return beste_zahl ? (uint8_t)((2 * beste_summe + beste_zahl) / (2 * beste_zahl)) : 0;
 }
 
+// Verdichten, bis die Liste passt: der kuerzeste Abschnitt geht im laengeren
+// Nachbarn auf, und gleiche Nachbarn werden eins. So bleiben die langen Phasen
+// stehen, nur das Flackern verschwindet - und die Liste deckt weiter alles vom
+// ersten bis zum letzten Abschnitt ab, ohne Luecke.
+int schlafanalyse_verdichten(SchlafAbschnitt *a, int n, int max) {
+  while (n > max && n > 1) {
+    int k = 0;
+    for (int i = 1; i < n; i++) {
+      if (a[i].bis - a[i].von < a[k].bis - a[k].von) {
+        k = i;
+      }
+    }
+    int ziel;
+    if (k == 0) {
+      ziel = 1;
+    } else if (k == n - 1) {
+      ziel = n - 2;
+    } else {
+      ziel = (a[k - 1].bis - a[k - 1].von >= a[k + 1].bis - a[k + 1].von) ? k - 1 : k + 1;
+    }
+    if (ziel < k) {
+      a[ziel].bis = a[k].bis;
+    } else {
+      a[ziel].von = a[k].von;
+    }
+    memmove(&a[k], &a[k + 1], (n - k - 1) * sizeof(*a));
+    n--;
+    // Stehen jetzt zwei gleiche nebeneinander, werden sie einer. Der
+    // gewachsene Nachbar steht nach dem Entfernen bei `ziel` (links) oder
+    // bei `k` (rechts); zu pruefen ist er mit seinem anderen Nachbarn.
+    const int links = (ziel < k) ? ziel : k - 1;
+    if (links >= 0 && links + 1 < n && a[links].phase == a[links + 1].phase) {
+      a[links].bis = a[links + 1].bis;
+      memmove(&a[links + 1], &a[links + 2], (n - links - 2) * sizeof(*a));
+      n--;
+    }
+  }
+  return n;
+}
+
 // ---------------------------------------------------------------------------
 
 bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis *ergebnis) {
@@ -668,9 +708,10 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
     }
   }
   anzahl = prv_glaette(w->liste, anzahl);
-  if (anzahl > SCHLAF_ABSCHNITTE_MAX) {
-    anzahl = SCHLAF_ABSCHNITTE_MAX;
-  }
+  // MEHR ABSCHNITTE, ALS DAS ERGEBNIS FASST, WERDEN VERDICHTET, NICHT
+  // ABGESCHNITTEN: abgeschnitten endete die Liste vor dem Aufwachen, und die
+  // Schlafminuten (aus der Liste) passten nicht mehr zu ihm.
+  anzahl = schlafanalyse_verdichten(w->liste, anzahl, SCHLAF_ABSCHNITTE_MAX);
 
   ergebnis->gefunden = true;
   ergebnis->einschlafen = ein;

@@ -5,7 +5,9 @@
 
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/settings/settings_file.h"
 #include "util/time/time.h"
+#include <pbl/drivers/rtc.h>
 #include <pbl/logging/logging.h>
 
 #ifdef CONFIG_HRM
@@ -17,6 +19,17 @@
 
 // Unter so vielen Intervallen ist es Rauschen, keine Messung.
 #define MIN_INTERVALLE 30
+// SO LANGE OHNE ABSTAND, UND DAZWISCHEN FEHLEN SCHLAEGE: der Sensor liefert
+// bis zu vier Abstaende auf einmal, sechs Sekunden Pause sind also noch
+// normal. Laenger hat ihn etwas unterbrochen (SpO2 braucht denselben Lichtweg,
+// die Uhr lag ab) - die Differenz ueber die Luecke waere kein Schlag-zu-Schlag.
+#define LUECKE_MS 6000
+
+// DIE FENSTER UEBERSTEHEN EINEN NEUSTART: sonst rechnete die Uhr eine Nacht,
+// die am Morgen neu gerechnet wird, ohne HRV - mit anderen Phasen, und ohne
+// den Satz auf Tag 89. Je Fenster ein kleiner Satz unter seinem Platz im Ring.
+#define FENSTER_DATEI "boulder_hrv"
+#define FENSTER_DATEI_GROESSE 4096
 
 typedef struct {
   time_t start;
@@ -26,10 +39,12 @@ typedef struct {
 
 static Fenster s_fenster[HRV_FENSTER_MAX];
 static int s_fenster_naechstes;   //< Ringpuffer: hierhin kommt das naechste
+static bool s_fenster_geladen;
 
 static bool s_misst;
 static time_t s_start;
 static uint16_t s_vorher;
+static RtcTicks s_vorher_um;      //< wann der vorige Abstand kam
 static uint32_t s_summe;          //< Summe der quadrierten Differenzen
 static uint16_t s_anzahl;
 static uint32_t s_ppi_summe;      //< Summe der gezaehlten Abstaende, fuer den Puls
@@ -89,8 +104,21 @@ uint8_t boulder_hrv_puls(void) {
 }
 
 #ifdef CONFIG_HRM
+// NUR SICHERE ABSTAENDE, UND KEINER UEBER EINE LUECKE. Der Treiber sagt
+// "Worst" unter 70 % Konfidenz; ein solcher Abstand zaehlt nicht, und auch der
+// danach nicht gegen den davor - zwischen beiden fehlt die Gewissheit.
 static void prv_hrm_ereignis(PebbleHRMEvent *e, void *context) {
-  if (s_misst && e->event_type == HRMEvent_HRV && e->hrv.ppi_ms) {
+  if (!s_misst || e->event_type != HRMEvent_HRV) {
+    return;
+  }
+  const RtcTicks jetzt = rtc_get_ticks();
+  const bool luecke = s_vorher != 0 &&
+      (jetzt - s_vorher_um) * MS_PER_SECOND / RTC_TICKS_HZ > LUECKE_MS;
+  if (e->hrv.quality < HRMQuality_Acceptable || e->hrv.ppi_ms == 0 || luecke) {
+    s_vorher = 0;
+  }
+  s_vorher_um = jetzt;
+  if (e->hrv.quality >= HRMQuality_Acceptable && e->hrv.ppi_ms) {
     boulder_hrv_intervall(e->hrv.ppi_ms);
   }
 }
@@ -100,6 +128,7 @@ static void prv_beginne(time_t utc) {
   s_misst = true;
   s_start = utc;
   s_vorher = 0;
+  s_vorher_um = 0;
   s_summe = 0;
   s_anzahl = 0;
   s_ppi_summe = 0;
@@ -112,7 +141,61 @@ static void prv_beginne(time_t utc) {
 #endif
 }
 
-static void prv_beende(void) {
+// Ein Satz der Datei: ein Fenster unter seinem Platz im Ring.
+static bool prv_fenster_satz(SettingsFile *datei, SettingsRecordInfo *info, void *kontext) {
+  int *neuestes = kontext;
+  uint8_t platz;
+  Fenster f;
+  if (info->key_len != sizeof(platz) || info->val_len != sizeof(f)) {
+    return true;
+  }
+  info->get_key(datei, &platz, sizeof(platz));
+  if (platz >= HRV_FENSTER_MAX) {
+    return true;
+  }
+  info->get_val(datei, &f, sizeof(f));
+  s_fenster[platz] = f;
+  if (*neuestes < 0 || f.start > s_fenster[*neuestes].start) {
+    *neuestes = platz;
+  }
+  return true;
+}
+
+// Die Fenster aus der Datei, einmal nach einem Neustart - in einem Durchgang.
+static void prv_fenster_laden(void) {
+  if (s_fenster_geladen) {
+    return;
+  }
+  s_fenster_geladen = true;
+  SettingsFile datei;
+  if (settings_file_open(&datei, FENSTER_DATEI, FENSTER_DATEI_GROESSE) != S_SUCCESS) {
+    PBL_LOG_WRN("HRV: Fenster nicht lesbar");
+    return;
+  }
+  int neuestes = -1;
+  settings_file_each(&datei, prv_fenster_satz, &neuestes);
+  settings_file_close(&datei);
+  if (neuestes >= 0) {
+    s_fenster_naechstes = (neuestes + 1) % HRV_FENSTER_MAX;
+  }
+}
+
+static void prv_fenster_speichern(uint8_t platz) {
+  SettingsFile datei;
+  if (settings_file_open(&datei, FENSTER_DATEI, FENSTER_DATEI_GROESSE) != S_SUCCESS) {
+    PBL_LOG_WRN("HRV: Fenster nicht gespeichert");
+    return;
+  }
+  if (settings_file_set(&datei, &platz, sizeof(platz), &s_fenster[platz],
+                        sizeof(s_fenster[platz])) != S_SUCCESS) {
+    PBL_LOG_WRN("HRV: Fenster nicht gespeichert");
+  }
+  settings_file_close(&datei);
+}
+
+// `behalten`: das Fenster zaehlt. Nach einem Zurueckstellen der Uhr nicht -
+// sein Beginn laege in der Zukunft der neuen Zeit.
+static void prv_beende(bool behalten) {
 #ifdef CONFIG_HRM
   if (s_sitzung != HRM_INVALID_SESSION_REF) {
     sys_hrm_manager_unsubscribe(s_sitzung);
@@ -121,19 +204,26 @@ static void prv_beende(void) {
 #endif
   s_misst = false;
   const uint16_t rmssd = boulder_hrv_rmssd();
-  if (rmssd == 0) {
+  if (rmssd == 0 || !behalten) {
     return;
   }
-  s_fenster[s_fenster_naechstes] =
-      (Fenster){ .start = s_start, .rmssd = rmssd, .puls = boulder_hrv_puls() };
+  prv_fenster_laden();
+  const uint8_t platz = s_fenster_naechstes;
+  s_fenster[platz] = (Fenster){ .start = s_start, .rmssd = rmssd, .puls = boulder_hrv_puls() };
   s_fenster_naechstes = (s_fenster_naechstes + 1) % HRV_FENSTER_MAX;
+  prv_fenster_speichern(platz);
   PBL_LOG_INFO("HRV-Fenster: RMSSD %u ms aus %u Intervallen", rmssd, s_anzahl);
 }
 
-void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung) {
+void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung, bool spo2_misst) {
   if (s_misst) {
-    if (utc - s_start >= HRV_FENSTER_MIN * SECONDS_PER_MINUTE) {
-      prv_beende();
+    // Die Uhr wurde zurueckgestellt: das Fenster endet sofort, ohne zu zaehlen.
+    // Sonst wartete es, bis die neue Zeit den alten Beginn einholt - so lange
+    // gaebe es keine Fenster.
+    if (utc < s_start) {
+      prv_beende(false);
+    } else if (utc - s_start >= HRV_FENSTER_MIN * SECONDS_PER_MINUTE) {
+      prv_beende(true);
     }
     return;
   }
@@ -143,14 +233,17 @@ void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung) {
   if (takt == 0 || (utc / SECONDS_PER_MINUTE) % takt != 0 || !activity_prefs_heart_rate_is_enabled()) {
     return;
   }
-  // Nur in Ruhe: wer sich bewegt, liefert Abstaende voller Stoerungen.
-  if (!boulder_nachtruhe(utc, letzte_bewegung)) {
+  // Nur in Ruhe: wer sich bewegt, liefert Abstaende voller Stoerungen. Und
+  // nicht, solange SpO2 misst: es braucht denselben Lichtweg, das Fenster
+  // bekaeme kaum Abstaende.
+  if (!boulder_nachtruhe(utc, letzte_bewegung) || spo2_misst) {
     return;
   }
   prv_beginne(utc);
 }
 
 int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
+  prv_fenster_laden();
   int n = 0;
   for (int k = 0; k < HRV_FENSTER_MAX && n < max; k++) {
     // Aelteste zuerst, wie die Nacht sie erlebt hat.
@@ -168,3 +261,21 @@ int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
   }
   return n;
 }
+
+#ifdef UNITTEST
+void boulder_hrv_test_reset(void) {
+  memset(s_fenster, 0, sizeof(s_fenster));
+  s_fenster_naechstes = 0;
+  s_fenster_geladen = false;
+  s_misst = false;
+  s_start = 0;
+  s_vorher = 0;
+  s_vorher_um = 0;
+  s_summe = 0;
+  s_anzahl = 0;
+  s_ppi_summe = 0;
+#ifdef CONFIG_HRM
+  s_sitzung = HRM_INVALID_SESSION_REF;
+#endif
+}
+#endif
