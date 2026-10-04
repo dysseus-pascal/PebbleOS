@@ -86,3 +86,32 @@ pbl_clar_test(test_timestyle_bedrock_pref
     CONFIG_APPS_WATCH_TIMESTYLE=1
   OVERRIDES dummy_board
 )
+
+# Die Uhrzeit selbst (clock_area.c) mit echtem fctx, echten Schriften und
+# echter Grafik: gerechnet wird nur, wenn sich das Ziffernbild aendert, der
+# Flag-Puffer bleibt, und was die Uhr im App-Heap braucht.
+pbl_clar_test(test_timestyle_ziffern
+  SOURCES
+    src/fw/apps/watch/timestyle/clock_area.c
+    src/fw/apps/watch/timestyle/schriftwahl.c
+    src/fw/apps/watch/timestyle/pebble-fctx/fctx.c
+    src/fw/apps/watch/timestyle/pebble-fctx/ffont.c
+    src/fw/apps/watch/timestyle/pebble-utf8/pebble-utf8.c
+    src/fw/applib/graphics/@BITDEPTH@_bit/framebuffer.c
+    src/fw/applib/graphics/@BITDEPTH@_bit/bitblt_private.c
+    src/fw/applib/graphics/bitblt.c
+    src/fw/applib/graphics/framebuffer.c
+    src/fw/applib/graphics/gbitmap.c
+    src/fw/applib/graphics/gcolor_definitions.c
+    src/fw/applib/graphics/graphics.c
+    src/fw/applib/graphics/graphics_bitmap.c
+    src/fw/applib/graphics/graphics_circle.c
+    src/fw/applib/graphics/graphics_line.c
+    src/fw/applib/graphics/graphics_private.c
+    src/fw/applib/graphics/graphics_private_raw.c
+    src/fw/applib/graphics/gtypes.c
+    tests/fakes/fake_gbitmap_get_data_row.c
+  INCLUDES
+    tests/fw/apps/watch/timestyle/shim_ziffern
+    src/fw/apps/watch/timestyle
+)

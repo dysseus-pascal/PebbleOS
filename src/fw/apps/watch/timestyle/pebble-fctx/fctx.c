@@ -43,6 +43,53 @@
 // the platform checks here use #if instead of #ifdef / defined(). And it
 // builds with -Werror=pointer-arith: byte arithmetic goes through uint8_t*.
 
+// Boulder: DER FLAG-PUFFER BLEIBT ZWISCHEN DEN BILDERN. Upstream legte ihn
+// fuer jedes Bild neu an und gab ihn danach frei - im kantengeglaetteten
+// Modus 200x228 = 45 600 Byte am Stueck. Der Spitzenbedarf ist derselbe (das
+// Bild braucht ihn ohnehin), aber ein Block dieser Groesse muss sich nach
+// jedem Wetter- oder Bildwechsel im App-Heap erst wieder finden; fand er sich
+// nicht, fehlte die Uhrzeit. Der App-Heap eines System-Zifferblatts auf emery
+// hat 131 072 Byte; die Uhr haelt darin die Schriften (5 614), diesen Puffer
+// (45 600) und mit dem Sekunden-Widget die Kopie der Ziffern (37 848) -
+// zusammen 89 062, gemessen in test_timestyle_ziffern. Die Bilder der Leiste
+// (zusammen unter 2 KB) kommen dazu: Platz genug, ihn einmal zu halten. Neu
+// angelegt wird er nur, wenn Groesse oder Format wechseln (Schrift mit und
+// ohne Kantenglaettung); fctx_puffer_freigeben gibt ihn am Ende zurueck.
+static GBitmap* s_flag_puffer;
+
+static GBitmap* prv_flag_puffer(GSize groesse, GBitmapFormat format) {
+    if (s_flag_puffer) {
+        const GRect da = gbitmap_get_bounds(s_flag_puffer);
+        if (gbitmap_get_format(s_flag_puffer) != format ||
+            da.size.w != groesse.w || da.size.h != groesse.h) {
+            gbitmap_destroy(s_flag_puffer);
+            s_flag_puffer = NULL;
+        }
+    }
+    if (!s_flag_puffer) {
+        s_flag_puffer = gbitmap_create_blank(groesse, format);
+    } else {
+        // Ein vollstaendiges Fuellen loescht seine Flags wieder; ein
+        // abgebrochenes nicht - also leer, wie frisch angelegt.
+        memset(gbitmap_get_data(s_flag_puffer), 0,
+               (size_t)gbitmap_get_bytes_per_row(s_flag_puffer) * (size_t)groesse.h);
+    }
+    return s_flag_puffer;
+}
+
+void fctx_puffer_freigeben(void) {
+    gbitmap_destroy(s_flag_puffer);
+    s_flag_puffer = NULL;
+}
+
+size_t fctx_puffer_bytes(void) {
+    if (!s_flag_puffer) {
+        return 0;
+    }
+    return (size_t)gbitmap_get_bytes_per_row(s_flag_puffer) *
+           (size_t)gbitmap_get_bounds(s_flag_puffer).size.h;
+}
+
 bool checkObject(void* obj, const char* objname) {
     if (!obj) {
         APP_LOG(APP_LOG_LEVEL_ERROR, "NULL %s", objname);
@@ -111,8 +158,9 @@ void fctx_begin_fill(FContext* fctx) {
 }
 
 void fctx_deinit_context(FContext* fctx) {
+    // Boulder: der Puffer gehoert nicht dem Kontext (prv_flag_puffer).
     if (fctx->gctx) {
-        gbitmap_destroy(fctx->flag_buffer);
+        fctx->flag_buffer = NULL;
         fctx->gctx = NULL;
     }
 }
@@ -182,7 +230,7 @@ void fctx_init_context_bw(FContext* fctx, GContext* gctx) {
         fctx->flag_bounds = gbitmap_get_bounds(frameBuffer);
         graphics_release_frame_buffer(gctx, frameBuffer);
 
-        fctx->flag_buffer = gbitmap_create_blank(fctx->flag_bounds.size, GBitmapFormat1Bit);
+        fctx->flag_buffer = prv_flag_puffer(fctx->flag_bounds.size, GBitmapFormat1Bit);
         CHECK(fctx->flag_buffer);
 
         fctx->gctx = gctx;
@@ -438,7 +486,7 @@ void fctx_init_context_aa(FContext* fctx, GContext* gctx) {
         fctx->flag_bounds = gbitmap_get_bounds(frameBuffer);
         graphics_release_frame_buffer(gctx, frameBuffer);
         fctx->gctx = gctx;
-        fctx->flag_buffer = gbitmap_create_blank(fctx->flag_bounds.size, format);
+        fctx->flag_buffer = prv_flag_puffer(fctx->flag_bounds.size, format);
         fctx->fill_color = GColorWhite;
         fctx->color_bias = 0;
         fctx->subpixel_adjust = -1;
