@@ -149,8 +149,10 @@ static void prv_rest_text(const Weg *w, char *rest, size_t len) {
     if (w->rest_m < 1000) snprintf(rest, len, "%d m", (int)w->rest_m);
     else snprintf(rest, len, "%d km", (int)((w->rest_m + 500) / 1000));
   }
-  if (w->ankunft > 0) {
-    struct tm *an = localtime(&w->ankunft);
+  if (w->ankunft != 0) {
+    // Die Uhr rechnet in ihrem time_t; der Zeitpunkt kommt vorzeichenlos (weg.h).
+    const time_t ankunft = (time_t)w->ankunft;
+    struct tm *an = localtime(&ankunft);
     char hhmm[10];
     // 12 h ohne fuehrende Null, wie die Kopfzeile; %l fuellt mit Leerzeichen.
     strftime(hhmm, sizeof(hhmm), clock_is_24h_style() ? "%H:%M" : "%l:%M", an);

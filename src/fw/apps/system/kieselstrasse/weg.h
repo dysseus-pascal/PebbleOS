@@ -17,12 +17,17 @@
  * Kennung und liest deren Persist; ein umgestelltes Feld machte aus dem
  * letzten Stand Unsinn. Die Store-App schrieb 68 Byte (im pbw nachgesehen:
  * persist_write_data(1, &s_weg, 68)) - time_t ist dort wie hier 32 Bit.
+ *
+ * DIE ANKUNFT IST VORZEICHENLOS: Boulder schickt die Bits der vorzeichenlosen
+ * Sekundenzahl, damit eine Ankunft nach dem 19.1.2038 nicht negativ wird und
+ * verschwindet. Gleiche Breite wie das time_t der Store-App, also gleicher
+ * Aufbau und dieselben Bits im Persist.
  */
 typedef struct {
   int abbiegeart;                    // OsmAnds TurnType, 0 = unbekannt
   int32_t entfernung_m;              // bis zur Abzweigung, -1 = keine Angabe
   char strasse[KST_STRASSE_LEN];
-  time_t ankunft;                    // 0 = unbekannt
+  uint32_t ankunft;                  // UTC-Sekunden, 0 = unbekannt
   int32_t rest_m;                    // bis zum Ziel, -1 = keine Angabe
   time_t empfangen;                  // wann zuletzt etwas kam
 } Weg;

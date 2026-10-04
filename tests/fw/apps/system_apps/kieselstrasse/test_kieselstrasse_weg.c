@@ -185,6 +185,40 @@ void test_kieselstrasse_weg__zahlen_jeder_breite(void) {
   cl_assert_equal_i(weg_winkel(), -90);
 }
 
+// DIE ANKUNFT NACH 2038: Boulder schickt TUPLE_INT mit den Bits der vorzeichenlosen
+// Sekundenzahl. Als int32 gelesen waere der 1.9.2039 negativ, und die Ankunft verschwaende
+// vom Schirm (nav_window.c zeigt nur eine gesetzte). Ein anderer Sender darf TUPLE_UINT
+// schicken; ein Zeitpunkt in zwei Byte ist keiner und laesst den vorigen stehen.
+static void prv_ankunft(TupleType typ, uint8_t breite, uint32_t bits) {
+  DictionaryIterator schreiben;
+  dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer));
+  dict_write_int32(&schreiben, MESSAGE_KEY_ABBIEGEART, 5);
+  if (typ == TUPLE_INT && breite == 4) dict_write_int32(&schreiben, MESSAGE_KEY_ANKUNFT, (int32_t)bits);
+  if (typ == TUPLE_UINT && breite == 4) dict_write_uint32(&schreiben, MESSAGE_KEY_ANKUNFT, bits);
+  if (typ == TUPLE_INT && breite == 2) dict_write_int16(&schreiben, MESSAGE_KEY_ANKUNFT, (int16_t)bits);
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)dict_write_end(&schreiben));
+  weg_uebernimm(&s_iter);
+}
+
+void test_kieselstrasse_weg__ankunft_nach_2038_bleibt_positiv(void) {
+  weg_init();
+  const uint32_t heute = 1790445600u;      // 26.9.2026
+  const uint32_t spaeter = 2198995200u;    // 1.9.2039, ueber INT32_MAX
+  prv_ankunft(TUPLE_INT, 4, heute);
+  cl_assert(weg_stand()->ankunft == heute);
+  prv_ankunft(TUPLE_INT, 4, spaeter);
+  cl_assert(weg_stand()->ankunft == spaeter);
+  cl_assert((uint64_t)weg_stand()->ankunft > (uint64_t)INT32_MAX);
+  prv_ankunft(TUPLE_UINT, 4, spaeter + 60);
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
+  prv_ankunft(TUPLE_INT, 2, 1234);
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
+  // Und der Persist traegt dieselben vier Byte.
+  weg_sichern();
+  weg_init();
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
+}
+
 void test_kieselstrasse_weg__text_ohne_abschluss_bleibt_im_tupel(void) {
   weg_init();
   DictionaryIterator schreiben;

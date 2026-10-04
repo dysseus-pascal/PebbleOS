@@ -148,6 +148,20 @@ static bool prv_zahl(DictionaryIterator *iter, uint32_t key, int32_t *aus) {
   return false;
 }
 
+/**
+ * Ein Zeitpunkt in UTC-Sekunden: die vier Byte als vorzeichenlose Zahl, gleich
+ * ob als TUPLE_INT oder TUPLE_UINT geschickt. Boulder schickt TUPLE_INT mit den
+ * Bits der vorzeichenlosen Zahl - ab 2038 waere das als int32 gelesen negativ,
+ * und die Ankunft verschwaende. Ein Zeitpunkt in weniger als vier Byte ist
+ * keiner. false: kein Schluessel oder kein Zeitpunkt.
+ */
+static bool prv_zeitpunkt(DictionaryIterator *iter, uint32_t key, uint32_t *aus) {
+  Tuple *t = dict_find(iter, key);
+  if (!t || (t->type != TUPLE_INT && t->type != TUPLE_UINT) || t->length != 4) return false;
+  *aus = t->value->uint32;
+  return true;
+}
+
 // Gleiche Art, aber die Entfernung springt deutlich nach oben: der naechste
 // Schritt derselben Art (siehe KST_NAH_M).
 static bool prv_naechster_gleicher(int32_t vorher_m, int32_t jetzt_m) {
@@ -179,7 +193,8 @@ bool weg_uebernimm(DictionaryIterator *iter) {
 
   if (prv_zahl(iter, MESSAGE_KEY_REST, &zahl)) s_weg.rest_m = prv_meter(zahl);
 
-  if (prv_zahl(iter, MESSAGE_KEY_ANKUNFT, &zahl)) s_weg.ankunft = (time_t)zahl;
+  uint32_t zeitpunkt = 0;
+  if (prv_zeitpunkt(iter, MESSAGE_KEY_ANKUNFT, &zeitpunkt)) s_weg.ankunft = zeitpunkt;
 
   prv_nimm_text(iter, MESSAGE_KEY_STRASSE, s_weg.strasse, KST_STRASSE_LEN);
 
