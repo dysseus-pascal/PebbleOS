@@ -61,8 +61,11 @@ void activity_sessions_prv_remove_out_of_range_activity_sessions(time_t utc_sec,
     }
 
     // This one needs to be removed
+    // Boulder: memmove statt memcpy - Quelle und Ziel ueberlappen, sobald hinter der
+    // entfernten Sitzung mehr als eine steht (Neustart in der Nacht: der laufende Block
+    // vor seinen Tiefschlafbloecken). memcpy darf dann in beliebiger Reihenfolge kopieren.
     uint32_t remaining = *session_entries - i - 1;
-    memcpy(&sessions[i], &sessions[i + 1], remaining * sizeof(*sessions));
+    memmove(&sessions[i], &sessions[i + 1], remaining * sizeof(*sessions));
     (*session_entries)--;
     num_sessions_to_clear++;
     i--;

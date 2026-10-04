@@ -1417,3 +1417,45 @@ void test_boulder_nacht__morgenlauf_fuettert_den_waechter(void) {
   prv_durch(fertig + 1, fertig + 3);
   cl_assert_equal_i(s_geschickt, 1);
 }
+
+// ---------------------------------------------------------------------------
+// Zweite Welle 4.10.2026
+
+// EIN NEUSTART MITTEN IN DER NACHT: der laufende Block steht vor seinen laufenden
+// Tiefschlafbloecken und vor einer abgeschlossenen Sitzung. Beim Laden verwirft die Uhr
+// die laufenden (activity_sessions_prv_remove_out_of_range_activity_sessions); dabei
+// ruecken die hinteren ueber sich selbst nach vorn. Mit memcpy brach DUMA hier ab - auf
+// der Uhr darf memcpy dann in beliebiger Reihenfolge kopieren.
+void test_boulder_nacht__neustart_in_der_nacht_rueckt_die_sitzungen_sicher_nach(void) {
+  prv_durch(0, 7 * 60);   // bis 03:00, die Nacht laeuft
+  int laufend = 0;
+  for (int a = 0; a < s_state.activity_sessions_count; a++) {
+    laufend += s_state.activity_sessions[a].ongoing ? 1 : 0;
+  }
+  // Ueberlappen koennen Quelle und Ziel erst ab zwei Sitzungen hinter der entfernten.
+  cl_assert(laufend >= 3);
+  cl_assert(s_state.activity_sessions[0].ongoing);
+  // Ein abgeschlossenes Training nach Mitternacht steht hinter allen laufenden.
+  ActivitySession training = {
+    .type = ActivitySessionType_Open,
+    .start_utc = s_beginn + (4 * 60 + 30) * SECONDS_PER_MINUTE,
+    .length_min = 20,
+    .manual = true,
+  };
+  cl_assert(activity_sessions_prv_add_activity_session(&training));
+  const int vorher = s_state.activity_sessions_count;
+
+  prv_neustart();
+
+  cl_assert_equal_i(s_state.activity_sessions_count, 1);
+  cl_assert_equal_m(&s_state.activity_sessions[0], &training, sizeof(training));
+  // Der Rest ist genullt: daran zaehlt die Uhr beim naechsten Laden ab.
+  static const ActivitySession s_leer;
+  for (int a = 1; a < vorher; a++) {
+    cl_assert_equal_m(&s_state.activity_sessions[a], &s_leer, sizeof(s_leer));
+  }
+  // Und die Nacht geht danach weiter wie ohne Neustart: ein Block, keine Ueberlappung.
+  prv_durch(7 * 60 + 1, MINUTEN);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+}
