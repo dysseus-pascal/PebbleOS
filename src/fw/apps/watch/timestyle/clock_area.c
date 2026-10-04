@@ -9,6 +9,7 @@
 
 #include "clock_area.h"
 #include "settings.h"
+#include "schriftwahl.h"
 #include "sidebar.h"
 
 #include <pebble-fctx/fctx.h>
@@ -26,18 +27,46 @@ FFont* minutes_font;
 
 // just allocate all the fonts at startup because i don't feel like
 // dealing with allocating and deallocating things
-// Boulder: only LECO. The Avenir Next outlines were not taken over (a
-// commercial typeface; the settings always use LECO).
+// Boulder: Kumbh Sans (SIL OFL) instead of Avenir Next (a commercial typeface,
+// not taken over) - the free replacement for "Default", "Bold", "Bold Hour"
+// and "Bold Minute", built to Avenir's digit height and width so the clock
+// keeps the original layout; see resources/normal/base/timestyle/LICENSE.
+FFont* avenir;
+FFont* avenir_bold;
 FFont* leco;
 
 // Boulder: static - sidebar.c has its own screen_rect (no -fcommon here).
 static GRect screen_rect;
 
 // "private" functions
+// Boulder: die Zuordnung steht in schriftwahl.c (host-getestet); hier nur,
+// welche geladene Schrift dazu gehoert.
+static FFont *prv_schrift(TsSchrift schrift) {
+  switch (schrift) {
+    case TS_SCHRIFT_SANS:
+      return avenir;
+    case TS_SCHRIFT_SANS_FETT:
+      return avenir_bold;
+    case TS_SCHRIFT_LECO:
+    default:
+      return leco;
+  }
+}
+
 void update_fonts() {
-  // Boulder: every font setting draws LECO (see above).
-  hours_font = leco;
-  minutes_font = leco;
+  TsSchrift stunden;
+  TsSchrift minuten;
+  ts_schriftwahl(settings.clockFontId, &stunden, &minuten);
+  hours_font = prv_schrift(stunden);
+  minutes_font = prv_schrift(minuten);
+  // Boulder: a font that did not load falls back to LECO (and LECO itself is
+  // checked before drawing) - a missing resource must not crash the face.
+  if (!hours_font) {
+    hours_font = leco;
+  }
+  if (!minutes_font) {
+    minutes_font = leco;
+  }
 }
 
 void update_clock_area_layer(Layer *l, GContext* ctx) {
@@ -61,8 +90,12 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   memset(&fctx, 0, sizeof(fctx));
 
   fctx_init_context(&fctx, ctx);
-  // Boulder: no frame buffer or no flag buffer - nothing to draw into.
-  if (!fctx.gctx || !fctx.flag_buffer) {
+  // Boulder: no frame buffer or no flag buffer - nothing to draw into. The
+  // antialiased renderer needs a flag buffer of 200x228 bytes in the app heap;
+  // if that ever fails, say so instead of silently showing no time.
+  if (!fctx.gctx || !fctx.flag_buffer || !hours_font || !minutes_font) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "TimeStyle: no clock buffer or font (aa %d, heap free %d)",
+            (int)fctx_is_aa_enabled(), (int)heap_bytes_free());
     fctx_deinit_context(&fctx);
     return;
   }
@@ -139,6 +172,8 @@ void ClockArea_init(Window* window) {
   layer_set_update_proc(clock_area_layer, update_clock_area_layer);
 
   // allocate fonts
+  avenir =      ffont_create_from_resource(RESOURCE_ID_SANS_REGULAR_FFONT);
+  avenir_bold = ffont_create_from_resource(RESOURCE_ID_SANS_BOLD_FFONT);
   leco =        ffont_create_from_resource(RESOURCE_ID_LECO_REGULAR_FFONT);
 
   // select fonts based on settings
@@ -148,8 +183,12 @@ void ClockArea_init(Window* window) {
 void ClockArea_deinit() {
   layer_destroy(clock_area_layer);
 
+  ffont_destroy(avenir);
+  ffont_destroy(avenir_bold);
   ffont_destroy(leco);
   // Boulder: a system app keeps its statics after it ends.
+  avenir = NULL;
+  avenir_bold = NULL;
   leco = NULL;
   hours_font = NULL;
   minutes_font = NULL;

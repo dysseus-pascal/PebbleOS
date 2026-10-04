@@ -18,6 +18,7 @@
 
 #include "applib/app.h"
 #include "applib/app_focus_service.h"
+#include "applib/app_heap_util.h"
 #include "applib/app_logging.h"
 #include "applib/applib_resource.h"
 #include "applib/battery_state_service.h"
@@ -44,6 +45,14 @@
 #include "util/time/time.h"
 
 #include "ressourcen.h"
+
+// Boulder: TS_DEMO zeigt feste Werte (Uhrzeit, Wetter, Schritte, Puls, Schlaf,
+// Akku) fuer die Bilder im Emulator - in einer ausgelieferten Firmware waere
+// das ein falsches Zifferblatt. Darum bricht ein Release-Bau mit TS_DEMO ab
+// (ein alter CMake-Cache kann das Flag sonst unbemerkt mitnehmen).
+#if defined(TS_DEMO) && defined(CONFIG_RELEASE)
+#error "TS_DEMO ist ein Pruefbau fuer den Emulator und darf nie in ein Release (CONFIG_RELEASE)"
+#endif
 
 // Plattform: das SDK setzt diese Namen nur, wenn es sie gibt (#ifdef). Die
 // Firmware setzt PBL_COLOR/PBL_ROUND immer, als 0 oder 1 - darum fragt der

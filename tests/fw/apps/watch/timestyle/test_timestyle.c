@@ -3,11 +3,13 @@
 
 #include "clar.h"
 
+#include "apps/watch/timestyle/distanz_text.h"
 #include "apps/watch/timestyle/schritte_text.h"
 #include "apps/watch/timestyle/wetter_symbol.h"
 #include "pbl/services/weather/weather_types.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 // Die reinen Teile des System-TimeStyle: welches Symbol zur Wetterart der
 // Firmware gehoert, ob Sonne oder Mond, wann Wetterdaten zu alt sind und wie
@@ -126,6 +128,60 @@ void test_timestyle__ohne_ort_immer_tag(void) {
   }
 }
 
+// Die Wechsel AUF DIE MINUTE, wie diese Rechnung sie heute ergibt. Boulders
+// Vorschau rechnet dasselbe nach (TsWetterJetztTest, dieselben Zahlen) - sonst
+// zeigte sie um die Daemmerung ein anderes Symbol als die Uhr. Aendert sich die
+// Rechnung hier, muss Boulder bewusst nachziehen.
+static void prv_genau(int16_t breite, int16_t laenge, int tag, int tag_ab, int nacht_ab,
+                      int nachtminuten) {
+  int nacht = 0;
+  for (int m = 0; m < 1440; m++) {
+    nacht += wetter_ist_nacht(breite, laenge, tag, m) ? 1 : 0;
+  }
+  cl_assert_equal_i(nacht, nachtminuten);
+  if (tag_ab >= 0) {
+    cl_assert(wetter_ist_nacht(breite, laenge, tag, (tag_ab + 1439) % 1440));
+    cl_assert(!wetter_ist_nacht(breite, laenge, tag, tag_ab));
+  }
+  if (nacht_ab >= 0) {
+    cl_assert(!wetter_ist_nacht(breite, laenge, tag, (nacht_ab + 1439) % 1440));
+    cl_assert(wetter_ist_nacht(breite, laenge, tag, nacht_ab));
+  }
+}
+
+void test_timestyle__wechsel_auf_die_minute(void) {
+  prv_genau(4737, 854, 276, 331, 1018, 753);   // Zuerich, 3. Oktober
+  prv_genau(4737, 854, 172, 209, 1166, 483);   // Zuerich, 21. Juni
+  prv_genau(4737, 854, 355, 431, 939, 932);    // Zuerich, 21. Dezember
+  prv_genau(4071, -7401, 69, 680, 1375, 745);  // New York, 10. Maerz
+  prv_genau(-3387, 15121, 1, 1129, 550, 579);  // Sydney, 1. Januar
+  prv_genau(-22, -7851, 100, 673, 1399, 714);  // Quito
+  prv_genau(3568, 13976, 200, 1179, 595, 584); // Tokio
+  prv_genau(6965, 1896, 355, -1, -1, 1440);    // Tromsoe, Polarnacht
+  prv_genau(6965, 1896, 172, -1, -1, 0);       // Tromsoe, Mitternachtssonne
+}
+
+// Dazu ein Fingerabdruck ueber ein Gitter (Breite -80..80, Laenge -170..170,
+// jeder 25. Tag, jede Minute): schon eine um eins andere Konstante verschiebt
+// irgendwo eine Minute. Dieselben Zahlen in Boulders TsWetterJetztTest.
+void test_timestyle__nacht_fingerabdruck(void) {
+  uint32_t h = 0;
+  int nacht = 0;
+  for (int b = -8000; b <= 8000; b += 1000) {
+    for (int l = -17000; l <= 17000; l += 8500) {
+      for (int tag = 1; tag <= 366; tag += 25) {
+        for (int m = 0; m < 1440; m++) {
+          const bool n = wetter_ist_nacht(b, l, tag, m);
+          nacht += n ? 1 : 0;
+          h = h * 31u + (n ? 1u : 0u) + (uint32_t)m;
+        }
+      }
+    }
+  }
+  cl_assert_equal_i(nacht, 903070);
+  cl_assert(h == 3572735266u);
+}
+
 // --- Alter der Wetterdaten ---
 
 void test_timestyle__wetter_hoechstens_drei_stunden_alt(void) {
@@ -181,4 +237,111 @@ void test_timestyle__schritte_kuerzen_im_kleinen_puffer(void) {
   char puffer[4];
   schritte_text(puffer, sizeof(puffer), 5523, '.');
   cl_assert_equal_s(puffer, "5.5");
+}
+
+// --- Distanz (Widget "Steps" mit "Distance") ---
+// Dieselben Vektoren prueft Boulders TsTexteTest gegen die Vorschau.
+
+static const char *prv_distanz(int32_t meter, bool metrisch, char trenner, bool *klein) {
+  static char puffer[16];
+  memset(puffer, 'x', sizeof(puffer));
+  *klein = distanz_text(puffer, sizeof(puffer), meter, metrisch, trenner);
+  return puffer;
+}
+
+void test_timestyle__distanz_metrisch_an_den_grenzen(void) {
+  bool klein;
+  cl_assert_equal_s(prv_distanz(0, true, '.', &klein), "0m");
+  cl_assert_equal_s(prv_distanz(99, true, '.', &klein), "99m");
+  cl_assert_equal_s(prv_distanz(100, true, '.', &klein), ".1km");
+  cl_assert_equal_s(prv_distanz(999, true, '.', &klein), ".9km");
+  cl_assert_equal_s(prv_distanz(999, true, ',', &klein), ",9km");
+  cl_assert_equal_s(prv_distanz(1000, true, '.', &klein), "1km");
+  // Ganze km, abgeschnitten: 4,23 km ist "4km", nie "4.2km".
+  cl_assert_equal_s(prv_distanz(4230, true, '.', &klein), "4km");
+  cl_assert(!klein);
+  cl_assert_equal_s(prv_distanz(9999, true, '.', &klein), "9km");
+  cl_assert(!klein);
+  // Ab 10 km die kleine Schrift, wie im Original.
+  cl_assert_equal_s(prv_distanz(10000, true, '.', &klein), "10km");
+  cl_assert(klein);
+}
+
+void test_timestyle__distanz_meilen_an_den_grenzen(void) {
+  bool klein;
+  // Unter einer halben Meile (804 m) die Zehntel, sonst gerundete Meilen.
+  cl_assert_equal_s(prv_distanz(0, false, '.', &klein), ".0mi");
+  cl_assert_equal_s(prv_distanz(804, false, '.', &klein), ".4mi");
+  cl_assert_equal_s(prv_distanz(804, false, ',', &klein), ",4mi");
+  cl_assert_equal_s(prv_distanz(805, false, '.', &klein), "1mi");
+  cl_assert_equal_s(prv_distanz(4230, false, '.', &klein), "3mi");
+  cl_assert_equal_s(prv_distanz(2413, false, '.', &klein), "1mi");
+  cl_assert_equal_s(prv_distanz(2414, false, '.', &klein), "2mi");
+  cl_assert_equal_s(prv_distanz(20000, false, '.', &klein), "12mi");
+  // Meilen nie in der kleinen Schrift (das Original kennt das nur fuer km).
+  cl_assert(!klein);
+}
+
+// --- UV der Stunde ---
+
+// Eine Ortszeit in UTC-Sekunden: 3.10.2026 00:00 UTC ist 1790985600.
+#define TAG_0310_UTC ((time_t)1790985600)
+
+static uint8_t s_uv_stunden[24];
+
+static void prv_uv_stunden(void) {
+  for (int h = 0; h < 24; h++) {
+    s_uv_stunden[h] = (uint8_t)(h * 10);  // Stunde h hat UV h,0
+  }
+}
+
+void test_timestyle__uv_die_naechste_stunde(void) {
+  prv_uv_stunden();
+  const time_t stand = TAG_0310_UTC + 6 * 3600;
+  // Ort in UTC (Versatz 0): 12:29 ist noch 12 Uhr, ab 12:30 die 13.
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 12 * 3600 + 29 * 60 + 59), 12);
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 12 * 3600 + 30 * 60), 13);
+  // Nach 23:30 bleibt es die 23 (es gibt keine Stunde 24).
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 23 * 3600 + 45 * 60), 23);
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC), 0);
+}
+
+void test_timestyle__uv_in_der_zeit_des_wetterorts(void) {
+  prv_uv_stunden();
+  const time_t stand = TAG_0310_UTC + 6 * 3600;
+  const time_t jetzt = TAG_0310_UTC + 10 * 3600;  // 10:00 UTC
+  // Zuerich (UTC+2 im Oktober): 12 Uhr am Ort.
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 120, 0, stand, jetzt), 12);
+  // Ohne Zeitzone des Ortes gilt die der Uhr (hier UTC+5:30 -> 15:30 -> 16).
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, INT16_MIN, 19800, stand, jetzt), 16);
+  // Der Ort zaehlt vor der Uhr.
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 120, 19800, stand, jetzt), 12);
+}
+
+void test_timestyle__uv_gerundet(void) {
+  prv_uv_stunden();
+  const time_t stand = TAG_0310_UTC;
+  s_uv_stunden[12] = 24;  // 2,4 -> 2
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 12 * 3600), 2);
+  s_uv_stunden[12] = 25;  // 2,5 -> 3
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 12 * 3600), 3);
+}
+
+void test_timestyle__uv_am_naechsten_tag_unbekannt(void) {
+  prv_uv_stunden();
+  // Daten von gestern Abend: die Stundenwerte gehoeren zum Vortag.
+  const time_t stand = TAG_0310_UTC - 2 * 3600;
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 9 * 3600), -1);
+  // Am Ort ist es noch derselbe Tag (UTC-5: 2.10. 21:00 und 3.10. 04:00 UTC = 23:00).
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, -300, 0, TAG_0310_UTC - 3 * 3600, TAG_0310_UTC + 4 * 3600), 23);
+}
+
+void test_timestyle__uv_ohne_stundenwert_der_tageswert(void) {
+  prv_uv_stunden();
+  const time_t stand = TAG_0310_UTC;
+  s_uv_stunden[12] = 255;  // unbekannt
+  cl_assert_equal_i(wetter_uv_jetzt(s_uv_stunden, 70, 0, 0, stand, TAG_0310_UTC + 12 * 3600), 7);
+  // Alter Boulder ohne Stundenwerte: der Tageswert (abgeschnitten wie bisher).
+  cl_assert_equal_i(wetter_uv_jetzt(NULL, 79, 0, 0, stand, TAG_0310_UTC + 12 * 3600), 7);
+  cl_assert_equal_i(wetter_uv_jetzt(NULL, -1, 0, 0, stand, TAG_0310_UTC + 12 * 3600), -1);
 }

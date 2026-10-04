@@ -3,19 +3,32 @@
 
 # TimeStyle (System-Zifferblatt): die reinen Teile - Wetterart der Firmware
 # auf TimeStyles Symbole, Tag oder Nacht aus dem Sonnenstand, Alter der
-# Wetterdaten und die Schrittzahl der Leiste ("5.5k").
+# Wetterdaten, der UV-Wert der Stunde und die Texte der Leiste ("5.5k", "4km").
 pbl_clar_test(test_timestyle
   SOURCES
     src/fw/apps/watch/timestyle/wetter_symbol.c
     src/fw/apps/watch/timestyle/schritte_text.c
+    src/fw/apps/watch/timestyle/distanz_text.c
+)
+
+# Der Lesepfad des Wetters (wetter_quelle.c): Ort 0 der Reihenfolge, was ein
+# Satz je nach Fassung und Laenge hergibt (Zeitzone ab v4.1, UV je Stunde ab
+# v4.4), und welche Werte an wetter_uv_jetzt gehen. Datenbank und
+# Standardvorhersage stellt der Test selbst.
+pbl_clar_test(test_timestyle_wetter_quelle
+  SOURCES
+    src/fw/apps/watch/timestyle/wetter_quelle.c
+    src/fw/apps/watch/timestyle/wetter_symbol.c
 )
 
 # Die Einstellungen aus Boulder: Leseregeln mit den gemeinsamen Testvektoren,
-# die erlaubten Sprachen und die Stunde des Widgets "Time zone". shim/ steht
+# die erlaubten Sprachen, die Schrift je Zeile (schriftwahl.c) und die Stunde
+# des Widgets "Time zone". shim/ steht
 # fuer das <pebble.h> des Zifferblatts (dort nur die Typen).
 pbl_clar_test(test_timestyle_einstellungen
   SOURCES
     src/fw/apps/watch/timestyle/ts_format.c
+    src/fw/apps/watch/timestyle/schriftwahl.c
     src/fw/apps/watch/timestyle/zweitzeit.c
   INCLUDES
     tests/fw/apps/watch/timestyle/shim

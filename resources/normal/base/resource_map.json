@@ -2810,6 +2810,22 @@
       "name": "TIMESTYLE_HEALTH_HEART",
       "file": "normal/base/timestyle/HEALTH_HEART.pdc",
       "config": "CONFIG_APPS_WATCH_TIMESTYLE"
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_SANS_REGULAR_FFONT",
+      "file": "normal/base/timestyle/KumbhSans-Regular.ffont",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE",
+      "_comment": ["Boulder: die freie Ersatzschrift fuer Avenir Next von TimeStyle",
+                   "(Kumbh Sans, SIL OFL 1.1, normal/base/timestyle/KumbhSans-OFL.txt),",
+                   "nur Ziffern, Doppelpunkt und Leerzeichen; gebaut mit",
+                   "tools/boulder/timestyle_schriften.sh. Am Ende, damit sich keine Kennung verschiebt."]
+    },
+    {
+      "type": "raw",
+      "name": "TIMESTYLE_SANS_BOLD_FFONT",
+      "file": "normal/base/timestyle/KumbhSans-Bold.ffont",
+      "config": "CONFIG_APPS_WATCH_TIMESTYLE"
     }
   ],
   "timeline": [

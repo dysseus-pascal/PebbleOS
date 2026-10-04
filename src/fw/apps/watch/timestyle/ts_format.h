@@ -9,7 +9,7 @@
 //
 //  0     Fassung (1; 0 = nicht gesetzt, dann alle Vorgaben)
 //  1-4   Farben GColor8: Zeit, Hintergrund, Leiste, Leistenschrift
-//  5     Sprache          6  Schrift (immer LECO)   7  Stundenvibration 0-2
+//  5     Sprache (0-36)   6  Schrift (0-4, ab b24)  7  Stundenvibration 0-2
 //  8-10  Widgets oben, Mitte, unten                 11 Zeitzone-Versatz int8
 //  12    Dezimaltrenner '.' oder ','
 //  13    Flags A: 0 fuehrende Null, 1 Vibration bei Trennung, 2 Leiste links,
@@ -36,5 +36,5 @@ void ts_format_vorgaben(Settings *s);
 // Vorgabe nur dieses Feldes. Hoehere Fassungen werden wie Fassung 1 gelesen.
 void ts_format_dekodieren(const uint8_t *b, size_t len, Settings *s);
 
-// Die 29 Sprachen, deren Zeichen die eingebauten Schriften kennen.
+// Die Sprach-IDs des Originals (0-36); acht davon brauchen ein Sprachpaket.
 bool ts_format_sprache_erlaubt(uint8_t id);

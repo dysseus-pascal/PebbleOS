@@ -147,10 +147,14 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
 - **Kein PebbleKit JS, keine Konfigseite auf der Uhr.** Das Wetter kommt aus dem
   Wetterspeicher der Firmware, den Boulder ohnehin füllt
   (`wetter_quelle.c`: `weather_service_create_default_forecast`, dazu aus
-  dem v4-Satz Ort, Tageswetter und UV). Neu gelesen beim Start, bei
+  dem v4-Satz Ort, Tageswetter und UV; ab b24 der UV-Wert der Stunde jetzt aus
+  `today_hourly_uv_x10` in der Zeit des Wetterorts, wie das Original - nach
+  Mitternacht am Ort „…“, bis Boulder neue Daten schickt; ohne Stundenwerte der
+  Tageswert, `wetter_uv_jetzt`). Neu gelesen beim Start, bei
   `PEBBLE_WEATHER_EVENT` und alle 15 Minuten. Älter als 3 Stunden oder
   fehlend: „…“ ohne Symbol, wie TimeStyle ohne Wetter. Temperaturen in der
-  Einheit des Telefons. Sonne und „teils bewölkt“ nachts mit Mond (Sonnenstand
+  Einheit, die in Boulder für das Wetter gewählt ist (die Uhr rechnet nicht
+  um; eine eigene °C/°F-Wahl des Zifferblatts gibt es bewusst nicht). Sonne und „teils bewölkt“ nachts mit Mond (Sonnenstand
   aus dem Ort des Satzes); ein Gewitter kennt die Firmware nicht.
 - **Einstellungen aus Boulder** (ab b23, Boulder 0.48): ein Wert `tsBedrock`
   von 32 Byte mit Fassungsbyte in der Uhreinstellungen-Synchronisation
@@ -161,9 +165,13 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
   Fehlt der Wert (alter Boulder) oder ist ein Feld ungültig, gelten die
   Vorgaben vom Foto des Nutzers vom 03.10.2026: schwarz, weiße LECO-Ziffern,
   weiße Leiste rechts mit schwarzer Schrift, Wetter / Schritte / Datum,
-  Englisch. 24 h und km/mi folgen der Uhr. Nicht einstellbar: die Schrift
-  (nur LECO), °C/°F (kommt aus Boulder), Sprachen ohne Glyphen in den
-  eingebauten Schriften (GK, VN, RU, CN, UK, JP, KR, IW).
+  Englisch. 24 h und km/mi folgen der Uhr. Ab b24 liest die Uhr auch Byte 6
+  (Schrift 0–4 wie im Original: Regular, LECO, Bold, Bold Hour, Bold Minute;
+  Vorgabe bleibt LECO) und alle 37 Sprachen; GK, VN, RU, CN, UK, JP, KR und
+  IW brauchen wie im Original ein passendes Sprachpaket (die Systemschriften
+  holen die Zeichen aus dessen Erweiterung), ohne Paket zeigt die Uhr
+  Ersatzkästchen. Nicht einstellbar: °C/°F (folgt Boulder), der Wetterort
+  (immer Ort 0 aus Boulders Liste, „automatisch“).
 - Widget „Time zone“: die Stunde ohne doppelt abgezogene Sommerzeit und auf
   die Minute genau (`zweitzeit.c`); km-Distanz mit dem gewählten
   Dezimaltrenner.
@@ -178,23 +186,53 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
   `SERVICE_WEATHER`, `SERVICE_ACTIVITY`); die Ressourcen (`TIMESTYLE_*`,
   `resources/normal/base/timestyle/`) tragen `"config"` und fallen sonst weg.
   Herkunft und MIT-Lizenz der Ressourcen: `resources/normal/base/timestyle/LICENSE`.
-- Nicht übernommen: die Avenir-Next-Schriften (kommerzielle Schrift; es gibt
-  nur LECO), `messaging.c`, die Aplite-Teile, `fpath`.
+- **Schriften:** statt Avenir Next (kommerziell, nicht übernommen) Kumbh Sans
+  (SIL OFL 1.1) bei Stärke 350 („Regular“) und 600 („Bold“), auf die
+  Ziffernhöhe, Oberlänge und tabellarische Ziffernbreite der Avenir-Fassung
+  gebracht, damit die Uhrzeit wie im Original sitzt. Bau:
+  `tools/boulder/timestyle_schriften.sh` (SVG-Schrift aus
+  `tools/boulder/ttf_zu_svgfont.py`, dann pebble-fctx-compiler 1.2.2 wie im
+  Original). Gewählt aus 19 freien Schriften (alle aus github.com/google/fonts)
+  nach der Flächenüberdeckung mit den Avenir-Ziffern des Originals, je bei der
+  besten Stärke (`tools/boulder/timestyle_schriftvergleich.py`, Liste dort):
+  Regular Kumbh Sans 0.760, Open Sans 0.736, Hanken Grotesk 0.711, Lato 0.689,
+  Plus Jakarta Sans 0.672 … Figtree 0.601, Nunito Sans 0.596, Mulish 0.584.
+  Für „Bold“ allein lägen Hanken Grotesk (0.833) und Open Sans (0.821) vor
+  Kumbh Sans (0.794); genommen ist trotzdem EINE Familie, weil „Bold Hour“ und
+  „Bold Minute“ beide Stärken nebeneinander zeigen, und Kumbh Sans hat bei
+  Regular (der Vorgabe) die beste Deckung und wie Avenir 6 und 9 mit geradem
+  Strich (Deckung der 6: 0.72, Open Sans 0.48). Mit Glättung
+  (alle außer LECO) belegt der Merkerpuffer 200 × 228 Byte im App-Heap; im
+  Emulator blieben dabei mindestens 77 400 Byte frei (mit LECO 116 500;
+  gemessen 4.10.2026 je Schrift und mit großer Leiste, Messbau nicht im Repo).
+- Nicht übernommen: `messaging.c`, die Aplite-Teile, `fpath`.
 - `pebble.h` im Ordner steht für das SDK-`<pebble.h>`; Bilder werden als
   beschreibbare Kopie geladen (`ts_pdc_laden`), weil System-Ressourcen im
   Flash liegen können und TimeStyle sie umfärbt.
-- Tests: `test_timestyle` (Wetterart → Symbol, Tag/Nacht, Alter, „5.5k“),
+- Tests: `test_timestyle` (Wetterart → Symbol, Tag/Nacht auf die Minute und
+  als Fingerabdruck – dieselben Zahlen prüft Boulders Vorschau –, Alter,
+  „5.5k“, Distanztexte an den Grenzen, UV der Stunde),
+  `test_timestyle_wetter_quelle` (der Lesepfad `wetter_quelle.c` mit
+  nachgebauter Datenbank: Ort 0, Zeitzone ab v4.1, UV je Stunde ab v4.4 samt
+  Längenprüfung, was an `wetter_uv_jetzt` geht),
   `test_timestyle_standard` (die einmalige Umstellung in `prefs.c`; eigener
   Test, weil `test_prefs_db` ohne `CONFIG_APPS_WATCH_TIMESTYLE` baut),
   `test_timestyle_einstellungen` (Leseregeln mit den gemeinsamen
-  Testvektoren V0–V6 wie in Boulders `TsBedrockFormatTest`, Sprachen,
-  Zeitzone), `test_timestyle_bedrock_pref` (Whitelist, Länge auf beiden
-  Einfügewegen, Ereignis).
-  Prüfbau fürs Emulator-Bild mit den Werten des Fotos: `-DTS_DEMO`
-  (`pbl configure … -DCMAKE_C_FLAGS=-DTS_DEMO`); das echte
+  Testvektoren V0–V8 wie in Boulders `TsBedrockFormatTest`, je Schalter-Bit
+  ein eigener Fall, Schriften samt Zuordnung je Zeile aus `schriftwahl.c`,
+  Sprachen, Zeitzone),
+  `test_timestyle_bedrock_pref` (Whitelist, Länge auf beiden Einfügewegen,
+  Ereignis). Boulders Vorschau ist ein Nachbau dieses Zifferblatts und wird
+  gegen Emulatorbilder des Prüfbaus auf das Pixel geprüft
+  (`TsZifferblattReferenzTest`, Bilder und `erzeugen.sh` in Boulder unter
+  `pebble/src/androidHostTest/resources/timestyle/referenzen/`).
+  Prüfbau fürs Emulator-Bild mit festen Werten (Sa 3.10.2026 15:45, Wetter
+  22/24/12, UV 3, 5523 Schritte, 4230 m, Puls 62, Schlaf 7h 23m bzw. 2h 5m,
+  Akku 80 %): `-DTS_DEMO` (`pbl configure … -DCMAKE_C_FLAGS=-DTS_DEMO`); ein
+  Bau mit `CONFIG_RELEASE` und `TS_DEMO` bricht ab (`pebble.h`); das echte
   Wetter im Emulator: `pbl feed weather`; Einstellungen wie aus Boulder
   (mit Zeitstempel, `--plain-insert` für den alten Weg):
-  `pbl feed timestyle --left --large …` oder `--hex <64 Zeichen>`.
+  `pbl feed timestyle --left --large --font 2 …` oder `--hex <64 Zeichen>`.
 
 ## Releases (F5)
 

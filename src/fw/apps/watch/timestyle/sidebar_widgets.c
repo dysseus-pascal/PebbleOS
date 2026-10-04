@@ -10,6 +10,7 @@
 #include "util.h"
 #include "weather.h"
 #include "schritte_text.h"  // Boulder
+#include "distanz_text.h"   // Boulder
 #include "zweitzeit.h"      // Boulder
 #include <pebble.h>
 
@@ -527,8 +528,20 @@ void EmptyWidget_draw(GContext *ctx, int yPosition) { return; }
 
 /********** functions for the battery meter widget **********/
 
-int BatteryMeter_getHeight() {
+// Boulder: TS_DEMO shows a fixed battery (80 %, not charging) for the emulator
+// pictures - the emulator always reports 100 %.
+static BatteryChargeState prv_battery_state(void) {
   BatteryChargeState chargeState = battery_state_service_peek();
+#ifdef TS_DEMO
+  chargeState.charge_percent = 80;
+  chargeState.is_charging = false;
+  chargeState.is_plugged = false;
+#endif
+  return chargeState;
+}
+
+int BatteryMeter_getHeight() {
+  BatteryChargeState chargeState = prv_battery_state();
 
   if (chargeState.is_charging || !settings.showBatteryPct) {
     return layout.batteryGraphicOnlyHeight;
@@ -539,7 +552,7 @@ int BatteryMeter_getHeight() {
 
 void BatteryMeter_draw(GContext *ctx, int yPosition) {
 
-  BatteryChargeState chargeState = battery_state_service_peek();
+  BatteryChargeState chargeState = prv_battery_state();
   uint8_t battery_percent =
       (chargeState.charge_percent > 0) ? chargeState.charge_percent : 5;
 
@@ -895,42 +908,18 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
       distance =
           (int)health_service_sum_today(HealthMetricWalkedDistanceMeters);
     }
+#ifdef TS_DEMO
+    distance = 4230;  // Boulder: a fixed distance for the emulator pictures
+#endif
 
     MeasurementSystem unit_system =
         health_service_get_measurement_system_for_display(
             HealthMetricWalkedDistanceMeters);
 
-    // format distance string
-    if (unit_system == MeasurementSystemMetric) {
-      if (distance < 100) {
-        snprintf(steps_text, sizeof(steps_text), "%im", distance);
-      } else if (distance < 1000) {
-        distance /= 100; // convert to tenths of km
-        // Boulder: the chosen decimal separator, like the miles branch below
-        // (upstream always wrote ".").
-        snprintf(steps_text, sizeof(steps_text), "%c%ikm",
-                 settings.decimalSeparator, distance);
-      } else {
-        distance /= 1000; // convert to km
-
-        if (distance > 9) {
-          use_small_font = true;
-        }
-
-        snprintf(steps_text, sizeof(steps_text), "%ikm", distance);
-      }
-    } else {
-      int miles_tenths = distance * 10 / 1609 % 10;
-      // Boulder: integer rounding instead of roundf.
-      int miles_whole = (distance + 1609 / 2) / 1609;
-
-      if (miles_whole > 0) {
-        snprintf(steps_text, sizeof(steps_text), "%imi", miles_whole);
-      } else {
-        snprintf(steps_text, sizeof(steps_text), "%c%imi",
-                 settings.decimalSeparator, miles_tenths);
-      }
-    }
+    // Boulder: the text from distanz_text.c - the same rules, host-tested.
+    use_small_font = distanz_text(steps_text, sizeof(steps_text), distance,
+                                  unit_system == MeasurementSystemMetric,
+                                  settings.decimalSeparator);
   } else {
     // Boulder: one read of today's steps (upstream read them twice), the
     // text from schritte_text.c - the same rules, host-tested.
@@ -978,6 +967,11 @@ void SleepTimer_draw(GContext *ctx, int yPosition) {
     sleep_seconds = 0;
   }
 
+#ifdef TS_DEMO
+  // Boulder: a fixed night for the emulator pictures (7h 23m, restful 2h 5m)
+  sleep_seconds = settings.healthUseRestfulSleep ? 7500 : 26580;
+#endif
+
   // convert to hours/minutes
   int sleep_minutes = sleep_seconds / 60;
   int sleep_hours = sleep_minutes / 60;
@@ -1020,6 +1014,9 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 
   // TODO: accessibility check?
   int heart_rate = health_service_peek_current_value(HealthMetricHeartRateBPM);
+#ifdef TS_DEMO
+  heart_rate = 62;  // Boulder: a fixed heart rate for the emulator pictures
+#endif
   char heart_rate_text[8];
 
   snprintf(heart_rate_text, sizeof(heart_rate_text), "%i", heart_rate);

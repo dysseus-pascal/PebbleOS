@@ -19,6 +19,21 @@ LECO 1976. Eine eigene Lizenzangabe für die Schrift gibt es im TimeStyle-Repo
 nicht. Dieselbe Schrift liefert PebbleOS selbst als Systemschriften aus
 (resources/normal/base/pbf/LECO_*_NUMBERS*.pbf).
 
+Ausnahme, NICHT aus TimeStyle: KumbhSans-Regular.ffont und
+KumbhSans-Bold.ffont (Boulder, b24). Sie ersetzen die Avenir-Next-Schriften
+des Originals (kommerziell, darum nicht übernommen) für die Schriftwahl
+"Regular", "Bold", "Bold Hour" und "Bold Minute". Sie enthalten nur
+Leerzeichen, Ziffern und Doppelpunkt der Schrift Kumbh Sans 1.005,
+Copyright 2020 The KumbhSans Project Authors
+(https://github.com/xconsau/KumbhSans), unter der SIL Open Font License 1.1
+(KumbhSans-OFL.txt in diesem Ordner; die Schrift hat keinen reservierten
+Namen). Abgeleitet aus KumbhSans[YOPQ,wght].ttf (google/fonts, ofl/kumbhsans)
+bei der Stärke 350 bzw. 600, mit tools/boulder/timestyle_schriften.sh:
+tools/boulder/ttf_zu_svgfont.py schreibt eine SVG-Schrift (Ziffernhöhe,
+Oberlänge und Ziffernbreite wie bei Avenir Next im Original, tabellarische
+Ziffern, Leerzeichen mit Ziffernbreite), pebble-fctx-compiler 1.2.2 macht
+daraus die .ffont - dasselbe Werkzeug wie im Original.
+
 --------------------------------------------------------------------------
 
 The MIT License (MIT)

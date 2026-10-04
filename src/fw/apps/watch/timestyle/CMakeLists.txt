@@ -16,7 +16,9 @@ if(CONFIG_APPS_WATCH_TIMESTYLE)
     util.c
     weather.c
     schritte_text.c
+    distanz_text.c
     ts_format.c
+    schriftwahl.c
     zweitzeit.c
     wetter_quelle.c
     wetter_symbol.c

@@ -64,6 +64,8 @@ def kodieren(args):
             b[stelle] = _farbe(wert)
     if args.language is not None:
         b[5] = args.language
+    if getattr(args, "font", None) is not None:
+        b[6] = args.font
     if args.hourly_vibe is not None:
         b[7] = args.hourly_vibe
     if args.widgets:
@@ -113,6 +115,10 @@ class TimeStyle(Feed):
         parser.add_argument("--sidebar", metavar="COLOR", help="sidebar color")
         parser.add_argument("--sidebar-text", metavar="COLOR", help="sidebar text color")
         parser.add_argument("--language", type=int, help="language id")
+        parser.add_argument(
+            "--font", type=int,
+            help="clock font (b24): 0 regular, 1 LECO, 2 bold, 3 bold hour, 4 bold minute",
+        )
         parser.add_argument("--hourly-vibe", type=int, help="0 off, 1 hourly, 2 half-hourly")
         parser.add_argument(
             "--widgets", help="top,middle,bottom: " + ", ".join(WIDGETS) + " or ids"

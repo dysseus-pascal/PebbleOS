@@ -118,3 +118,29 @@ bool wetter_frisch(time_t stand_utc, time_t jetzt_utc) {
   const int64_t alter = (int64_t)jetzt_utc - (int64_t)stand_utc;
   return alter <= WETTER_HOECHSTALTER_S && alter >= -(60 * 60);
 }
+
+// Tage seit 1970 in Ortszeit, abgerundet (auch vor 1970 richtig).
+static int64_t prv_tag(int64_t lokal_s) {
+  return (lokal_s >= 0) ? lokal_s / 86400 : -((-lokal_s + 86399) / 86400);
+}
+
+int wetter_uv_jetzt(const uint8_t *stunden_x10, int tag_x10, int ort_versatz_min,
+                    int32_t uhr_versatz_s, time_t stand_utc, time_t jetzt_utc) {
+  const int64_t versatz_s =
+      (ort_versatz_min != INT16_MIN) ? (int64_t)ort_versatz_min * 60 : (int64_t)uhr_versatz_s;
+  if (stunden_x10) {
+    const int64_t jetzt = (int64_t)jetzt_utc + versatz_s;
+    if (prv_tag(jetzt) != prv_tag((int64_t)stand_utc + versatz_s)) {
+      return -1;
+    }
+    const int64_t sekunde_des_tages = jetzt - prv_tag(jetzt) * 86400;
+    int stunde = (int)((sekunde_des_tages + 1800) / 3600);
+    if (stunde > 23) {
+      stunde = 23;
+    }
+    if (stunden_x10[stunde] != 255) {
+      return (stunden_x10[stunde] + 5) / 10;
+    }
+  }
+  return (tag_x10 >= 0) ? tag_x10 / 10 : -1;
+}

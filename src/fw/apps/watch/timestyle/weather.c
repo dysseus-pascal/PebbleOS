@@ -116,7 +116,8 @@ void Weather_refresh() {
   // Boulder: test build for the emulator picture - the weather of the
   // user's photo (22 degrees, cloudy), as if Boulder had just sent it.
   stand = (WetterStand) {
-    .temperatur = 22, .hoch = 24, .tief = 12, .uv = 3,
+    .temperatur = 22, .hoch = 24, .tief = 12, .uv_tag_x10 = 30,
+    .uv_stunden_da = false, .ort_versatz_min = INT16_MIN,
     .art = 1 /* WeatherType_CloudyDay */, .art_heute = 1,
     .breite_e2 = 4737, .laenge_e2 = 854, .stand_utc = jetzt,
   };
@@ -136,7 +137,11 @@ void Weather_refresh() {
 
   Weather_weatherInfo.currentTemp = stand.temperatur;
   Weather_setCurrentCondition(wetter_symbol(stand.art, nacht));
-  Weather_weatherInfo.currentUVIndex = (stand.uv >= 0) ? stand.uv : INT32_MIN;
+  // Boulder: der UV-Index der Stunde jetzt (wetter_stand_uv), mit der
+  // Zeitzone der Uhr, falls der Satz die des Ortes nicht kennt.
+  const struct tm *lokal = localtime(&jetzt);
+  const int uv = wetter_stand_uv(&stand, (int32_t)lokal->tm_gmtoff, jetzt);
+  Weather_weatherInfo.currentUVIndex = (uv >= 0) ? uv : INT32_MIN;
 
   if (stand.hoch != WETTER_UNBEKANNT && stand.tief != WETTER_UNBEKANNT) {
     Weather_weatherInfo.todaysHighTemp = stand.hoch;

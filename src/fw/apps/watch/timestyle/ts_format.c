@@ -51,21 +51,11 @@ void ts_format_vorgaben(Settings *s) {
 }
 
 bool ts_format_sprache_erlaubt(uint8_t id) {
-  // Ohne GK, VN, RU, CN, UK, JP, KR, IW: dafuer fehlen den eingebauten
-  // Gothic-Schriften die Zeichen, es kaemen nur Ersatzkaestchen.
-  switch (id) {
-    case LANGUAGE_GK:
-    case LANGUAGE_VN:
-    case LANGUAGE_RU:
-    case LANGUAGE_CN:
-    case LANGUAGE_UK:
-    case LANGUAGE_JP:
-    case LANGUAGE_KR:
-    case LANGUAGE_IW:
-      return false;
-    default:
-      return id <= LANGUAGE_IW;
-  }
+  // Alle 37 Sprachen des Originals (ab b24). GK, VN, RU, CN, UK, JP, KR und IW
+  // brauchen wie im Original ein Sprachpaket: die Systemschriften holen die
+  // Zeichen dann aus dessen Erweiterung (GOTHIC_*_BOLD_EXTENDED), ohne Paket
+  // zeigt die Uhr Ersatzkaestchen - Boulder sagt das neben der Auswahl.
+  return id <= LANGUAGE_IW;
 }
 
 static GColor prv_farbe(uint8_t wert) {
@@ -93,7 +83,12 @@ void ts_format_dekodieren(const uint8_t *b, size_t len, Settings *s) {
   if (ts_format_sprache_erlaubt(b[5])) {
     s->languageId = b[5];
   }
-  // Byte 6 (Schrift) bleibt ungelesen: eingebaut ist nur LECO.
+  // Byte 6: die Schrift wie im Original (0 Standard, 1 LECO, 2 fett,
+  // 3 fette Stunde, 4 fette Minute). Bis b23 ungelesen - Boulder 0.48 schrieb
+  // dort immer 1, so bleibt ein alter Satz bei LECO.
+  if (b[6] <= FONT_SETTING_BOLD_M) {
+    s->clockFontId = b[6];
+  }
   if (b[7] <= VIBE_EVERY_HALF_HOUR) {
     s->hourlyVibe = (VibeIntervalType)b[7];
   }
