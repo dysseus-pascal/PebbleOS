@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pbl/kernel/compiler.h"
+#include "pbl/services/activity/boulder/schlafanalyse.h"
 
 #include <stdbool.h>
 #include <stdint.h>

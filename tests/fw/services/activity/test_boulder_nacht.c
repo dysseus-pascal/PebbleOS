@@ -981,10 +981,11 @@ void test_boulder_nacht__zufaellige_morgen_ergeben_keinen_doppelten_block(void) 
 
 // F-S3: EINE VON ANDERER SEITE ABGESCHLOSSENE SITZUNG HAELT DIE UHR NICHT AN.
 // So schloesse workout_service.c beim Trainingsstart die laufenden Sitzungen
-// ab, sobald dort num_sessions berichtigt ist. Die naechste Rechnung loeschte
-// sie - activity_sessions.c haelt dann an (PBL_ASSERT): Neustart.
+// ab, sobald dort num_sessions berichtigt ist - etwa um 07:30, die Nacht ist
+// fertig, aber noch nicht endgueltig. Die naechste Rechnung loeschte sie -
+// activity_sessions.c haelt dann an (PBL_ASSERT): Neustart.
 void test_boulder_nacht__fremd_abgeschlossene_sitzung_haelt_die_uhr_nicht_an(void) {
-  prv_durch(0, 7 * 60);
+  prv_durch(0, 11 * 60 + 30);
   ActivitySession *laufend = NULL;
   for (int k = 0; k < s_state.activity_sessions_count; k++) {
     if (s_state.activity_sessions[k].type == ActivitySessionType_Sleep &&
@@ -996,9 +997,12 @@ void test_boulder_nacht__fremd_abgeschlossene_sitzung_haelt_die_uhr_nicht_an(voi
   ActivitySession fertig = *laufend;
   fertig.ongoing = false;
   activity_sessions_prv_add_activity_session(&fertig);
-  // Die naechsten Rechnungen bis zum Mittag: kein Halt.
-  prv_durch(7 * 60 + 1, MINUTEN);
+  // Die naechsten Rechnungen bis zum Mittag: kein Halt. Der neue Block hat
+  // denselben Beginn und ersetzt den abgeschlossenen - kein doppelter.
+  prv_durch(11 * 60 + 31, MINUTEN);
   cl_assert(s_saetze_anzahl >= 1);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
 }
 
 // M2: FEHLT DER SPEICHER FUER DIE RECHNUNG, kommt die Nacht eine Minute
