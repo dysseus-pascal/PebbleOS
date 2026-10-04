@@ -1,8 +1,13 @@
 # SPDX-FileCopyrightText: 2026 Core Devices LLC
 # SPDX-License-Identifier: Apache-2.0
 
-pbl_clar_test(test_activity
-  SOURCES
+# Boulder: die Schalter wie auf obelix (services/activity/boulder/Kconfig). Was Pebbles
+# Code mit Boulders Haken aendert, laeuft zweimal: mit allen Schaltern und als *_upstream
+# ohne einen - dann muss Pebbles Verhalten gelten.
+set(BOULDER_AN CONFIG_BOULDER_SCHLAF CONFIG_BOULDER_HRV CONFIG_BOULDER_MESSSTUFE
+    CONFIG_BOULDER_HEALTH_APP)
+
+set(test_activity_quellen
     src/fw/applib/health_service.c
     src/fw/flash_region/flash_region.c
     src/fw/flash_region/filesystem_regions.c
@@ -15,8 +20,6 @@ pbl_clar_test(test_activity
     src/fw/services/activity/activity_metrics.c
     src/fw/services/activity/activity_sessions.c
     src/fw/services/activity/activity_calculators.c
-    src/fw/services/activity/boulder/messstufe.c
-    src/fw/services/activity/boulder/spo2.c
     src/fw/services/activity/hr_util.c
     src/fw/services/filesystem/flash_translation.c
     src/fw/services/filesystem/pfs.c
@@ -29,7 +32,20 @@ pbl_clar_test(test_activity
     src/fw/util/legacy_checksum.c
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
+    tests/fakes/fake_spi_flash.c)
+
+pbl_clar_test(test_activity
+  SOURCES ${test_activity_quellen}
+    src/fw/services/activity/boulder/messstufe.c
+    src/fw/services/activity/boulder/spo2.c
+  DEFINES DUMA_DISABLED CAPABILITY_HAS_HEALTH_TRACKING=1 CONFIG_HRM CONFIG_SERVICE_ACTIVITY_BATCH_SAMPLES=25
+          ${BOULDER_AN}
+  OVERRIDES dummy_board
+)
+
+pbl_clar_test(test_activity_upstream
+  SOURCE test_activity.c
+  SOURCES ${test_activity_quellen}
   DEFINES DUMA_DISABLED CAPABILITY_HAS_HEALTH_TRACKING=1 CONFIG_HRM CONFIG_SERVICE_ACTIVITY_BATCH_SAMPLES=25
   OVERRIDES dummy_board
 )
@@ -67,8 +83,7 @@ pbl_clar_test(test_kraepelin_algorithm
   OVERRIDES dummy_board
 )
 
-pbl_clar_test(test_activity_algorithm_kraepelin
-  SOURCES
+set(test_activity_algorithm_kraepelin_quellen
     src/fw/flash_region/flash_region.c
     src/fw/flash_region/filesystem_regions.c
     src/fw/util/base64.c
@@ -86,8 +101,18 @@ pbl_clar_test(test_activity_algorithm_kraepelin
     src/fw/util/legacy_checksum.c
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
+    tests/fakes/fake_spi_flash.c)
+
+pbl_clar_test(test_activity_algorithm_kraepelin_upstream
+  SOURCE test_activity_algorithm_kraepelin.c
+  SOURCES ${test_activity_algorithm_kraepelin_quellen}
   DEFINES DUMA_DISABLED
+  OVERRIDES dummy_board
+)
+
+pbl_clar_test(test_activity_algorithm_kraepelin
+  SOURCES ${test_activity_algorithm_kraepelin_quellen}
+  DEFINES DUMA_DISABLED ${BOULDER_AN}
   OVERRIDES dummy_board
 )
 
@@ -119,7 +144,7 @@ pbl_clar_test(test_boulder_gehfilter
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
-  DEFINES DUMA_DISABLED
+  DEFINES DUMA_DISABLED ${BOULDER_AN}
   LIBS -Wl,--wrap=kalg_analyze_samples -Wl,--wrap=activity_algorithm_get_minute_history
   OVERRIDES dummy_board
 )
@@ -163,14 +188,30 @@ pbl_clar_test(test_boulder_schlaf
 # Boulder: die Nachtrechnung im Takt der Uhr, mit der echten Nacht - und mit dem
 # echten Sitzungsspeicher und Schlafzustand der Uhr (activity_sessions.c). Gezaehlt
 # wird, wie oft das Bild der Nacht in die Datei kommt (--wrap).
-pbl_clar_test(test_boulder_nacht
-  SOURCES
+set(test_boulder_nacht_quellen
     src/fw/services/activity/boulder/nacht.c
     src/fw/services/activity/boulder/schlafanalyse.c
     src/fw/services/activity/activity_sessions.c
     src/fw/util/crc8.c
-    tests/fakes/fake_settings_file.c
-  DEFINES CONFIG_SERVICE_KIESELSPORT
+    tests/fakes/fake_settings_file.c)
+pbl_clar_test(test_boulder_nacht
+  SOURCES ${test_boulder_nacht_quellen}
+  DEFINES CONFIG_SERVICE_KIESELSPORT ${BOULDER_AN}
+  LIBS -Wl,--wrap=settings_file_set
+)
+
+# Dieselbe Nacht mit einzelnen Schaltern aus: ohne HRV keine HRV-Saetze, ohne Messstufe
+# Stufe 0 im Satz - die Antworten aus boulder/haken.h.
+pbl_clar_test(test_boulder_nacht_ohne_hrv
+  SOURCE test_boulder_nacht.c
+  SOURCES ${test_boulder_nacht_quellen}
+  DEFINES CONFIG_SERVICE_KIESELSPORT CONFIG_BOULDER_SCHLAF CONFIG_BOULDER_MESSSTUFE
+  LIBS -Wl,--wrap=settings_file_set
+)
+pbl_clar_test(test_boulder_nacht_ohne_messstufe
+  SOURCE test_boulder_nacht.c
+  SOURCES ${test_boulder_nacht_quellen}
+  DEFINES CONFIG_SERVICE_KIESELSPORT CONFIG_BOULDER_SCHLAF CONFIG_BOULDER_HRV
   LIBS -Wl,--wrap=settings_file_set
 )
 
@@ -182,7 +223,7 @@ pbl_clar_test(test_boulder_hrv
     src/fw/util/crc8.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_settings_file.c
-  DEFINES CONFIG_HRM
+  DEFINES CONFIG_HRM ${BOULDER_AN}
 )
 
 # Boulder: der echte Smart Alarm (alarm.c) in der echten Nacht - der Schlafzustand
@@ -214,6 +255,6 @@ pbl_clar_test(test_boulder_wecker
     src/fw/util/legacy_checksum.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
-  DEFINES CAPABILITY_HAS_HEALTH_TRACKING=1
+  DEFINES CAPABILITY_HAS_HEALTH_TRACKING=1 ${BOULDER_AN}
   OVERRIDES dummy_board
 )

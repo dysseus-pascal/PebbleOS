@@ -57,6 +57,8 @@ pbl_clar_test(test_timestyle_standard
     tests/fakes/fake_rtc.c
   DEFINES
     CONFIG_APPS_WATCH_TIMESTYLE=1
+    # Boulder: wie auf emery, wo TimeStyle gebaut wird
+    CONFIG_BOULDER_MESSSTUFE=1
   OVERRIDES dummy_board
 )
 
@@ -84,6 +86,8 @@ pbl_clar_test(test_timestyle_bedrock_pref
     tests/fakes/fake_rtc.c
   DEFINES
     CONFIG_APPS_WATCH_TIMESTYLE=1
+    # Boulder: wie auf emery, wo TimeStyle gebaut wird
+    CONFIG_BOULDER_MESSSTUFE=1
   OVERRIDES dummy_board
 )
 

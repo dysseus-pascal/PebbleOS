@@ -16,6 +16,7 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/haken.h"
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
@@ -403,11 +404,10 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
         (session->type == ActivitySessionType_Nap)) {
       rv = true;
       // Accumulate sleep container stats
-      // Boulder: ohne das Wachliegen im Block (activity.h, nicht_schlaf_min). Die Schlafsumme
-      // der Uhr ist dieselbe wie die der Nacht in Boulder. Upstream-Sitzungen tragen dort 0.
+      // Boulder: ohne das Wachliegen im Block (boulder/haken.h, Schalter BOULDER_SCHLAF). Die
+      // Schlafsumme der Uhr ist dieselbe wie die der Nacht in Boulder.
       if (session_exit_utc <= max_end_utc) {
-        stats->total_minutes += session->length_min - MIN(session->nicht_schlaf_min,
-                                                          session->length_min);
+        stats->total_minutes += boulder_schlaf_minuten(session);
       }
       // Only regular sleep (not naps) should affect the enter and exit times
       if (session->type == ActivitySessionType_Sleep) {
@@ -423,8 +423,7 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
       if (session_exit_utc <= max_end_utc) {
         // Accumulate restful sleep stats
         // Boulder: zusammengelegte Tiefschlafbloecke zaehlen ihre Luecken nicht mit.
-        stats->restful_minutes += session->length_min - MIN(session->nicht_schlaf_min,
-                                                             session->length_min);
+        stats->restful_minutes += boulder_schlaf_minuten(session);
       }
       stats->last_deep_exit_utc = MAX(stats->last_deep_exit_utc, session_exit_utc);
     }

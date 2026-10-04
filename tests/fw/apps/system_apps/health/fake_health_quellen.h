@@ -11,7 +11,7 @@
 #include "apps/system/health/daten.h"
 #include "applib/health_service.h"
 #include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/activity/boulder/spo2.h"
 #undef malloc
 #undef calloc
@@ -72,6 +72,9 @@ bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *h
 }
 
 bool activity_prefs_blood_oxygen_is_enabled(void) { return true; }
+HRMonitoringInterval activity_prefs_get_spo2_measurement_interval(void) {
+  return HRMonitoringInterval_10Min;
+}
 uint32_t boulder_spo2_takt_s(void) { return 600; }
 int boulder_spo2_werte(time_t von, time_t bis, Spo2Wert *aus, int max) { return 0; }
 bool boulder_nacht_letzte(NachtBild *aus) { return false; }

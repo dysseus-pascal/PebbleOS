@@ -3,9 +3,6 @@
 
 config SERVICE_ACTIVITY
     bool "Activity"
-    # Boulder: die fertige Nacht (und Kieselsport, das auf Activity baut)
-    # schickt gleich ueber health_sync_schicken() aus dem Endpunkt.
-    select SERVICE_HEALTH_SYNC_ENDPOINT
     help
       Activity (step/sleep/workout) tracking service.
 

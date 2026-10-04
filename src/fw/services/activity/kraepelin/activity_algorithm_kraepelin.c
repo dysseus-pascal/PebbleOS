@@ -10,6 +10,7 @@
 #include "pbl/services/system_task.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "pbl/services/filesystem/pfs.h"
 #include "pbl/services/settings/settings_file.h"
@@ -161,11 +162,11 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
   }
   PBL_ASSERTN(activity != ActivitySessionTypeCount);
 
-  // BOULDER: DEN SCHLAF TRAEGT boulder/nacht.c EIN, mit Kiesels Verfahren.
-  // Kraepelins Schlaferkennung laeuft weiter - ihr "schlaeft gerade" und das
-  // Nullen der Schritte im Schlaf braucht der Rest der Firmware -, aber ihre
-  // Sitzungen fallen hier weg. Sonst stuende jede Nacht doppelt da.
-  if (activity == ActivitySessionType_Sleep || activity == ActivitySessionType_RestfulSleep) {
+  // BOULDER: DEN SCHLAF TRAEGT boulder/nacht.c EIN, mit Kiesels Verfahren (Schalter
+  // BOULDER_SCHLAF, boulder/haken.h). Kraepelins Schlaferkennung laeuft weiter - ihr
+  // "schlaeft gerade" und das Nullen der Schritte im Schlaf braucht der Rest der Firmware -,
+  // aber ihre Sitzungen fallen hier weg. Sonst stuende jede Nacht doppelt da.
+  if (boulder_schlaf_ersetzt_kraepelin(activity)) {
     return;
   }
 

@@ -18,6 +18,9 @@
 #include "pbl/services/filesystem/pfs.h"
 #include "pbl/services/protobuf_log/protobuf_log.h"
 #include "shell/prefs.h"
+#ifdef CONFIG_BOULDER_MESSSTUFE
+#include "pbl/services/activity/boulder/messstufe.h"
+#endif
 #include <pbl/logging/logging.h>
 #include "system/passert.h"
 #include "pbl/util/math.h"
@@ -223,11 +226,16 @@ typedef enum {
 
 // Boulder: die Nachtrechnung (boulder/nacht.c) hat ihren eigenen Test. Hier
 // wuerde sie aus den erfundenen Minuten des Test-Algorithmus einen zweiten
-// Schlaf neben dessen Sitzungen legen.
+// Schlaf neben dessen Sitzungen legen. Gebaut wird dieser Test einmal mit allen
+// Boulder-Schaltern und einmal ohne (test_activity_upstream, CMakeLists.txt).
+#ifdef CONFIG_BOULDER_SCHLAF
 void boulder_nacht_minute(time_t utc_sec) {}
+// Die Tests hier laufen tagsueber; die Nachtruhe gehoert zur Nachtrechnung.
+bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung) { return false; }
+#endif
+#ifdef CONFIG_BOULDER_HRV
 void boulder_hrv_minute(time_t utc, uint16_t letzte_bewegung, bool spo2_misst) {}
-// Die Tests hier laufen tagsueber; das Nachtfenster gehoert zur Nachtrechnung.
-bool boulder_nacht_im_fenster(time_t utc) { return false; }
+#endif
 
 // Logged items
 static bool s_dls_accel_samples_created;
@@ -3158,4 +3166,74 @@ void test_activity__eigene_schlafsitzung_geht_auch_abgeschlossen(void) {
   // Nicht (mehr) da: nichts geschieht.
   cl_assert(!activity_sessions_prv_eigene_zuruecknehmen(&frage));
   cl_assert_equal_i(activity_private_state()->activity_sessions_count, 1);
+}
+
+// ---------------------------------------------------------------------------------------
+// Boulder: DIE SCHALTER IM AKTIVITAETSDIENST (boulder/haken.h). Gebaut einmal mit allen
+// (test_activity) und einmal ohne (test_activity_upstream) - ohne gilt Pebbles Verhalten.
+
+// Die Schlafsumme der Uhr: mit BOULDER_SCHLAF ohne das Wachliegen im Block, ohne den
+// Schalter die ganze Sitzung wie Upstream.
+void test_activity__schlafsumme_nach_schalter(void) {
+  activity_start_tracking(false /*test_mode*/);
+  fake_system_task_callbacks_invoke_pending();
+  struct tm start_tm = {
+    // 1.1.2015, 9 Uhr
+    .tm_hour = 9,
+    .tm_mday = 1,
+    .tm_mon = 0,
+    .tm_year = 115
+  };
+  const time_t jetzt = mktime(&start_tm);
+  rtc_set_time(jetzt);
+  ActivitySession nacht = {
+    .start_utc = jetzt - 11 * SECONDS_PER_HOUR,   // 22 bis 6 Uhr
+    .length_min = 8 * MINUTES_PER_HOUR,
+    .type = ActivitySessionType_Sleep,
+    .nicht_schlaf_min = 45,
+  };
+  activity_sessions_prv_add_activity_session(&nacht);
+  activity_sessions_prv_minute_handler(jetzt);
+
+  int32_t summe_s;
+  activity_get_metric(ActivityMetricSleepTotalSeconds, 1, &summe_s);
+#ifdef CONFIG_BOULDER_SCHLAF
+  cl_assert_equal_i(summe_s, (8 * MINUTES_PER_HOUR - 45) * SECONDS_PER_MINUTE);
+#else
+  cl_assert_equal_i(summe_s, 8 * SECONDS_PER_HOUR);
+#endif
+}
+
+// Der Pulstakt am Tag: mit BOULDER_MESSSTUFE stellt ihn die Stufe (5: alle 5 Minuten),
+// ohne den Schalter Pebbles Auswahl (hier 30 Minuten).
+void test_activity__puls_takt_nach_schalter(void) {
+#ifdef CONFIG_BOULDER_MESSSTUFE
+  boulder_messstufe_setzen(5);
+  const int takt_min = 5;
+#else
+  activity_prefs_set_hrm_measurement_interval(HRMonitoringInterval_30Min);
+  const int takt_min = 30;
+#endif
+  activity_start_tracking(false /*test_mode*/);
+  fake_system_task_callbacks_invoke_pending();
+  s_test_alg_state.orientation = 0x11;  // nicht flach
+  // Bis die erste Messung beginnt und wieder endet ...
+  int s = 0;
+  while (s_hrm_manager_update_interval != 1) {
+    prv_advance_time_hr(1, 100 /*bpm*/, HRMQuality_Good, false /*force_continuous*/);
+    cl_assert(++s < 2 * SECONDS_PER_HOUR);
+  }
+  while (s_hrm_manager_update_interval == 1) {
+    prv_advance_time_hr(1, 100 /*bpm*/, HRMQuality_Good, false /*force_continuous*/);
+    cl_assert(++s < 2 * SECONDS_PER_HOUR);
+  }
+  // ... und bis die naechste beginnt.
+  int pause_s = 0;
+  while (s_hrm_manager_update_interval != 1) {
+    prv_advance_time_hr(1, 100 /*bpm*/, HRMQuality_Good, false /*force_continuous*/);
+    cl_assert(++pause_s < 2 * SECONDS_PER_HOUR);
+  }
+  // Geprueft wird im Minutentakt: hoechstens eine Minute spaeter.
+  cl_assert(pause_s >= takt_min * SECONDS_PER_MINUTE);
+  cl_assert(pause_s <= (takt_min + 1) * SECONDS_PER_MINUTE);
 }

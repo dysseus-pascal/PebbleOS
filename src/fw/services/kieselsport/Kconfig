@@ -4,6 +4,8 @@
 config SERVICE_KIESELSPORT
     bool "Kieselsport"
     depends on SERVICE_ACTIVITY
+    # Ein fertiges Training geht gleich ueber health_sync_schicken() hinaus.
+    select SERVICE_HEALTH_SYNC_ENDPOINT
     help
       Training service of Kieselsport: time, heart rate zones, reps and
       laps on KernelBG, for the Kieselsport system app.

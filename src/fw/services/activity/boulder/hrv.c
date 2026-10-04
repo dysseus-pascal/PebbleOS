@@ -4,7 +4,8 @@
 #include "pbl/services/activity/boulder/hrv.h"
 
 #include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/boulder/messstufe.h"
+// Der Takt kommt von der Messstufe, ohne sie fest (boulder/haken.h).
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/settings/settings_file.h"
 #include "util/time/time.h"
 #include <pbl/drivers/rtc.h>

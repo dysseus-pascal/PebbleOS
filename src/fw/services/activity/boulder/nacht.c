@@ -9,8 +9,9 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
-#include "pbl/services/activity/boulder/hrv.h"
-#include "pbl/services/activity/boulder/messstufe.h"
+// Die HRV-Fenster und die Messstufe ueber die Haken: ist ihr Schalter aus, kommt die Antwort
+// ohne sie (keine Fenster, Stufe 0).
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
@@ -828,6 +829,11 @@ bool boulder_nacht_im_fenster(time_t utc) {
   time_t ende;
   boulder_nacht_fenster(utc, &beginn, &ende);
   return utc >= beginn && utc < ende;
+}
+
+bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung) {
+  // Dieselbe Schwelle wie im Schlaf: was darueber liegt, ist wach.
+  return boulder_nacht_im_fenster(utc) && letzte_bewegung <= SCHLAF_SCHWELLE_VMC;
 }
 
 // Reicht der Kernel-Heap fuer die Rechnung - und bleibt danach genug fuer den

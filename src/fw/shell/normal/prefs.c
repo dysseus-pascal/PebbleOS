@@ -1,7 +1,9 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 #include "pbl/services/activity/boulder/messstufe.h"
+#endif
 #include "quick_launch.h"
 #include "shell/normal/quick_launch.h"
 #include "shell/normal/watchface.h"
@@ -278,9 +280,11 @@ static uint8_t s_activity_prefs_workout_app_opened = 0;
 #define PREF_KEY_ALARMS_APP_OPENED "alarmsAppOpened"
 static uint8_t s_alarms_app_opened = 0;
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 // Boulder: der Regler zwischen Genauigkeit und Akkulaufzeit (boulder/messstufe.h)
 #define PREF_KEY_BOULDER_MESSSTUFE "boulderMessstufe"
 static uint8_t s_boulder_messstufe = MESSSTUFE_VORGABE;
+#endif
 
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
 // Boulder: ob das System-TimeStyle schon einmal Standard-Zifferblatt wurde
@@ -436,6 +440,7 @@ static bool prv_set_s_units_distance(uint8_t *new_unit) {
   return true;
 };
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
   if (*neu < MESSSTUFE_MIN || *neu > MESSSTUFE_MAX) {
     s_boulder_messstufe = MESSSTUFE_VORGABE;
@@ -444,6 +449,7 @@ static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
   s_boulder_messstufe = *neu;
   return true;
 }
+#endif
 
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
 static bool prv_set_s_boulder_timestyle_gesetzt(uint8_t *neu) {
@@ -2203,6 +2209,7 @@ HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
   return (HRMonitoringInterval)interval;
 }
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 uint8_t boulder_messstufe(void) {
   return s_boulder_messstufe;
 }
@@ -2214,6 +2221,7 @@ void boulder_messstufe_setzen(uint8_t stufe) {
   s_boulder_messstufe = stufe;
   prv_pref_set(PREF_KEY_BOULDER_MESSSTUFE, &s_boulder_messstufe, sizeof(s_boulder_messstufe));
 }
+#endif
 
 void activity_prefs_set_hrm_measurement_interval(HRMonitoringInterval interval) {
   if (s_activity_hrm_preferences.measurement_interval != (uint8_t)interval) {

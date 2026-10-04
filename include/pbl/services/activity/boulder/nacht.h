@@ -174,3 +174,6 @@ size_t boulder_nacht_test_rechnung_groesse(void);
 void boulder_nacht_fenster(time_t utc, time_t *beginn, time_t *ende);
 // Liegt `utc` im Nachtfenster?
 bool boulder_nacht_im_fenster(time_t utc);
+// Ruht man im Nachtfenster? `letzte_bewegung`: das VMC der letzten Minute. Hier und nicht
+// bei der Messstufe: die HRV-Fenster fragen es auch ohne sie.
+bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung);

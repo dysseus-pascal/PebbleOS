@@ -59,9 +59,14 @@ static HealthMinuteData s_minuten[MINUTEN];
 // der Firmware ohne sie gerechnet, wenn der Sensor keine liefert. Wie die
 // echte: Fenster, die ab `von` beginnen und deren Mitte vor `bis` liegt, als
 // Minuten ab `von`.
+//
+// DIESER TEST WIRD DREIMAL GEBAUT (CMakeLists.txt): mit allen Schaltern, ohne
+// BOULDER_HRV und ohne BOULDER_MESSSTUFE. Ohne den Schalter kommt die Antwort aus
+// boulder/haken.h (keine Fenster, Stufe 0) statt aus dem Nachbau hier.
 #define HRV_FENSTER 80
 static time_t s_hrv_start[HRV_FENSTER];
 static int s_hrv_anzahl;
+#ifdef CONFIG_BOULDER_HRV
 int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
   int n = 0;
   for (int k = 0; k < s_hrv_anzahl && n < max; k++) {
@@ -76,6 +81,7 @@ int boulder_hrv_fenster(time_t von, time_t bis, SchlafHrv *aus, int max) {
   }
   return n;
 }
+#endif
 
 // Ein Kieselsport-Training laeuft in [s_training_von, s_training_bis), ab
 // s_pause_ab pausiert.
@@ -89,9 +95,15 @@ BatteryChargeState battery_get_charge_state(void) {
 }
 // Die Messstufe: 3, ab s_messstufe_5_ab 5.
 static time_t s_messstufe_5_ab;
+#ifdef CONFIG_BOULDER_MESSSTUFE
 uint8_t boulder_messstufe(void) {
   return (s_jetzt >= s_messstufe_5_ab) ? 5 : 3;
 }
+// Die Stufe der Nacht im Satz; ohne Messstufe 0 ("unbekannt").
+#define STUFE(s) (s)
+#else
+#define STUFE(s) 0
+#endif
 
 // Ab s_umstellung gilt Winterzeit (eine Stunde weniger).
 static time_t s_umstellung = 0x7FFFFFFF;
@@ -548,7 +560,7 @@ void test_boulder_nacht__eine_fertige_nacht_am_morgen(void) {
   cl_assert_equal_i(s->akku_beginn, 78);
   cl_assert_equal_i(s->akku_ende, 69);
   cl_assert_equal_i(s->flags, 0);
-  cl_assert_equal_i(s->messstufe, 3);
+  cl_assert_equal_i(s->messstufe, STUFE(3));
   // Ohne HRV-Fenster geht kein HRV-Satz.
   cl_assert_equal_i(s_hrv_saetze_anzahl, 0);
   // Eingeschlafen 22:17, aufgewacht 07:00.
@@ -752,6 +764,11 @@ void test_boulder_nacht__hrv_fenster_gehen_mit_der_nacht(void) {
   s_hrv_anzahl = 55;
   prv_durch_die_nacht();
   cl_assert(s_saetze_anzahl >= 1);
+#ifndef CONFIG_BOULDER_HRV
+  // Ohne den Schalter misst niemand HRV: kein Satz, die Nacht geht ohne.
+  cl_assert_equal_i(s_hrv_saetze_anzahl, 0);
+  return;
+#endif
   cl_assert_equal_i(s_hrv_saetze_anzahl, 2);
   cl_assert_equal_i(s_hrv_gesendet_um, s_gesendet_um);
   const NachtHrvDlsRecord *a = &s_hrv_saetze[0];
@@ -1365,7 +1382,7 @@ void test_boulder_nacht__messstufe_der_nacht_geht_mit(void) {
   s_messstufe_5_ab = s_beginn + 3 * SECONDS_PER_HOUR;
   prv_durch_die_nacht();
   cl_assert(s_saetze_anzahl >= 1);
-  cl_assert_equal_i(s_saetze[0].messstufe, 3);
+  cl_assert_equal_i(s_saetze[0].messstufe, STUFE(3));
 }
 
 // Die Monotonuhr des Rechners (Linux: CLOCK_MONOTONIC = 1, timespec = zwei long).
@@ -1405,13 +1422,18 @@ void test_boulder_nacht__morgenlauf_fuettert_den_waechter(void) {
   printf("\nMorgenlauf (Rechnung, Bild, Nacht/HRV) auf dem Rechner: %ld us, Ablauf %s\n", us,
          s_ablauf);
   cl_assert_equal_i(s_saetze_anzahl, 1);
-  cl_assert_equal_i(s_hrv_saetze_anzahl, 1);
   // Gelesen, gefuettert; vor und nach jedem Anlegen gefuettert.
   const char *a = strchr(s_ablauf, 'A');
   const char *h = strchr(s_ablauf, 'H');
-  cl_assert(a && h && a < h);
-  cl_assert(a > s_ablauf && a[-1] == 'W' && a[1] == 'W');
+  cl_assert(a && a > s_ablauf && a[-1] == 'W' && a[1] == 'W');
+#ifdef CONFIG_BOULDER_HRV
+  cl_assert_equal_i(s_hrv_saetze_anzahl, 1);
+  cl_assert(h && a < h);
   cl_assert(h[-1] == 'W' && h[1] == 'W');
+#else
+  cl_assert_equal_i(s_hrv_saetze_anzahl, 0);
+  cl_assert(h == NULL);
+#endif
   // Kein Schub in diesem Lauf - erst mit dem Zeitgeber.
   cl_assert_equal_i(s_geschickt, 0);
   prv_durch(fertig + 1, fertig + 3);
