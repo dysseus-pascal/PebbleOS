@@ -40,6 +40,23 @@
 
 static time_t s_zuletzt_gesummt;
 
+// DER EINGANG FASST AUCH LANGE NAMEN. Sechs Zahlen brauchen 67 Byte, der
+// Rest bleibt dem Strassennamen. Boulder kuerzt ihn nicht, und eine
+// Ausfahrt mit Wegweisern ("Exit 23 · A1 Bern, Zuerich, Luzern") wird auf
+// Kyrillisch schnell laenger als die 245 Byte, die 320 erlaubten - dann
+// verwarf die Uhr die ganze Nachricht, und das alte Manoever blieb stehen.
+// 640 Byte fassen gut 560 Byte Namen; die Uhr behaelt ohnehin nur 47.
+#define KST_EINGANG_BYTE 640
+// Keinen Ausgang: die App schickt nie etwas (nur das System quittiert).
+#define KST_AUSGANG_BYTE 0
+
+// Eine Nachricht, die nicht ankam - zu gross, oder der Eingang war besetzt.
+// Die Uhr zeigt dann weiter den alten Schritt; wenigstens im Log soll stehen,
+// warum.
+static void prv_verworfen(AppMessageResult grund, void *context) {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "Nachricht verworfen: %d", (int)grund);
+}
+
 static void prv_empfangen(DictionaryIterator *iter, void *context) {
   const bool neuer_schritt = weg_uebernimm(iter);
   nav_window_refresh();
@@ -165,10 +182,8 @@ static void prv_init(void) {
 #endif
 
   app_message_register_inbox_received(prv_empfangen);
-  // Sieben Felder: sechs Zahlen brauchen 67 Byte, fuer den Strassennamen
-  // bleiben gut 250 - Boulder kuerzt ihn nicht, und ein zu knapper Eingang
-  // verwirft die ganze Nachricht still.
-  const AppMessageResult offen = app_message_open(320, 64);
+  app_message_register_inbox_dropped(prv_verworfen);
+  const AppMessageResult offen = app_message_open(KST_EINGANG_BYTE, KST_AUSGANG_BYTE);
   // Scheitert das, kommt still nie etwas an - wenigstens im Log soll es stehen.
   if (offen != APP_MSG_OK) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "app_message_open: %d", (int)offen);

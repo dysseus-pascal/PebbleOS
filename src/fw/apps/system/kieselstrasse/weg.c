@@ -6,6 +6,8 @@
 #include "texte.h"
 #include "weg.h"
 
+#include "applib/graphics/utf8.h"
+
 // Ab wann ein Stand keine Navigation mehr ist. Zehn Minuten sind lang genug
 // fuer einen Stau und kurz genug, dass niemand einem Pfeil von gestern folgt.
 #define KST_VERALTET_S 600
@@ -13,6 +15,21 @@
 // Unter dieser Entfernung laeuft der Balken - die Spanne, in der ein Blick
 // aufs Handgelenk noch etwas aendert.
 #define KST_BALKEN_AB_M 300
+
+// Weiter als zehntausend Kilometer ist keine Entfernung, sondern Muell - und
+// mit Muell nahe INT32_MAX liefe die Rundung im Schirm ueber (nav_window.c).
+#define KST_WEITESTE_M 10000000
+
+// DERSELBE ABBIEGETYP NOCH EINMAL - "rechts, dann wieder rechts". Die Art
+// sagt dann nichts, wohl aber die Entfernung: war man an der Abzweigung
+// (hoechstens KST_NAH_M davor) und springt sie danach um mindestens
+// KST_SPRUNG_M nach oben, ist das die naechste. Ein Sprung um KST_WEIT_M
+// gilt immer - so weit springt kein GPS (auch nach einer neuen Route ist es
+// eine neue Anweisung). Ein flatternder Name zaehlt nie, eine Entfernung, die
+// um ein paar Meter zappelt, auch nicht.
+#define KST_NAH_M 50
+#define KST_SPRUNG_M 50
+#define KST_WEIT_M 500
 
 static Weg s_weg;
 
@@ -32,6 +49,18 @@ static void prv_anfang(void) {
   s_winkel = WEG_KEIN_WINKEL;
 }
 
+// Ungueltiges UTF-8 vom Ende her abschneiden, bis der Rest gueltig ist.
+static void prv_utf8_reparieren(char *text) {
+  for (size_t n = strlen(text); n > 0 && !utf8_is_valid_string(text); n--) {
+    text[n - 1] = '\0';
+  }
+}
+
+// Eine Entfernung, die keine sein kann, ist "keine Angabe".
+static int32_t prv_meter(int32_t meter) {
+  return (meter >= 0 && meter <= KST_WEITESTE_M) ? meter : -1;
+}
+
 void weg_init(void) {
   prv_anfang();
   s_geaendert = false;
@@ -46,6 +75,13 @@ void weg_init(void) {
   // Der Schirm zeichnet die Strasse als C-Zeichenkette; auf den Abschluss
   // aus dem Flash verlassen wir uns nicht.
   s_weg.strasse[KST_STRASSE_LEN - 1] = '\0';
+  // EIN NAME AUS EINER AELTEREN FASSUNG kann mitten in einem Zeichen enden
+  // (strncpy kuerzte nach Bytes). Ungueltiges UTF-8 zeichnet die Uhr gar
+  // nicht - die Zeile bliebe leer, bis die naechste Nachricht kommt. Also
+  // bis zum letzten ganzen Zeichen kuerzen.
+  prv_utf8_reparieren(s_weg.strasse);
+  s_weg.entfernung_m = prv_meter(s_weg.entfernung_m);
+  s_weg.rest_m = prv_meter(s_weg.rest_m);
   // Eine Abbiegeart von gestern darf das Summen des ersten echten Schritts
   // nicht verschlucken, nur weil er zufaellig dieselbe Art hat ("neu" setzt
   // eine Aenderung voraus). Angezeigt wird sie bei veraltetem Stand ohnehin
@@ -65,48 +101,97 @@ void weg_init(void) {
 static void prv_nimm_text(DictionaryIterator *iter, uint32_t key, char *ziel, size_t len) {
   Tuple *t = dict_find(iter, key);
   if (!t || t->type != TUPLE_CSTRING) return;
-  const char *neu = (t->length <= 1) ? "" : t->value->cstring;
-  strncpy(ziel, neu, len - 1);
-  ziel[len - 1] = '\0';
+  if (t->length <= 1) {
+    ziel[0] = '\0';
+    return;
+  }
+  // AN EINER ZEICHENGRENZE KUERZEN, NICHT NACH BYTES. Boulder schickt den
+  // Namen ungekuerzt; schnitte die Uhr ein "â" oder ein kyrillisches Zeichen
+  // in der Mitte durch, zeichnete sie die ganze Zeile nicht. Gelesen wird
+  // hoechstens die Laenge des Tupels - fehlt die abschliessende Null, liefe
+  // es sonst ueber dessen Ende hinaus.
+  const size_t grenze = MIN(len, (size_t)t->length);
+  const size_t n = utf8_get_size_truncate(t->value->cstring, grenze);
+  memcpy(ziel, t->value->cstring, n);
+  ziel[n] = '\0';
+  prv_utf8_reparieren(ziel);
+}
+
+/**
+ * Eine Zahl, gleich wie breit und ob mit Vorzeichen - nach dem Muster von
+ * Kieselsport (telefon.c, prv_zahl). Boulder schickt int32; ein anderer
+ * Sender darf auch kuerzer oder ohne Vorzeichen schicken, ohne dass die Uhr
+ * vier Byte liest, wo eines liegt. false: kein Schluessel oder keine Zahl.
+ */
+static bool prv_zahl(DictionaryIterator *iter, uint32_t key, int32_t *aus) {
+  Tuple *t = dict_find(iter, key);
+  if (!t) return false;
+  if (t->type == TUPLE_INT) {
+    switch (t->length) {
+      case 1: *aus = t->value->int8; return true;
+      case 2: *aus = t->value->int16; return true;
+      case 4: *aus = t->value->int32; return true;
+      default: return false;
+    }
+  }
+  if (t->type == TUPLE_UINT) {
+    switch (t->length) {
+      case 1: *aus = t->value->uint8; return true;
+      case 2: *aus = t->value->uint16; return true;
+      case 4:
+        if (t->value->uint32 > INT32_MAX) return false;
+        *aus = (int32_t)t->value->uint32;
+        return true;
+      default: return false;
+    }
+  }
+  return false;
+}
+
+// Gleiche Art, aber die Entfernung springt deutlich nach oben: der naechste
+// Schritt derselben Art (siehe KST_NAH_M).
+static bool prv_naechster_gleicher(int32_t vorher_m, int32_t jetzt_m) {
+  if (vorher_m < 0 || jetzt_m < 0) return false;
+  if (jetzt_m - vorher_m >= KST_WEIT_M) return true;
+  return vorher_m <= KST_NAH_M && jetzt_m - vorher_m >= KST_SPRUNG_M;
 }
 
 bool weg_uebernimm(DictionaryIterator *iter) {
   const int vorher = s_weg.abbiegeart;
+  const int32_t vorher_m = s_weg.entfernung_m;
+  int32_t zahl = 0;
 
-  Tuple *a = dict_find(iter, MESSAGE_KEY_ABBIEGEART);
-  if (a && a->type == TUPLE_INT) {
-    s_weg.abbiegeart = a->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_ABBIEGEART, &zahl)) {
+    s_weg.abbiegeart = zahl;
     // Jede Abbiegeart kommt mit ihrer eigenen Ausfahrt - oder ohne. Die Nummer
     // des vorigen Kreisels an einer gewoehnlichen Kreuzung waere eine Luege.
     s_ausfahrt = 0;
     s_winkel = WEG_KEIN_WINKEL;
   }
 
-  Tuple *nr = dict_find(iter, MESSAGE_KEY_AUSFAHRT);
-  if (nr && nr->type == TUPLE_INT) s_ausfahrt = nr->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_AUSFAHRT, &zahl)) s_ausfahrt = zahl;
 
-  Tuple *wi = dict_find(iter, MESSAGE_KEY_WINKEL);
-  if (wi && wi->type == TUPLE_INT && wi->value->int32 >= -180 && wi->value->int32 <= 180) {
-    s_winkel = wi->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_WINKEL, &zahl) && zahl >= -180 && zahl <= 180) {
+    s_winkel = zahl;
   }
 
-  Tuple *e = dict_find(iter, MESSAGE_KEY_ENTFERNUNG);
-  if (e && e->type == TUPLE_INT) s_weg.entfernung_m = e->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_ENTFERNUNG, &zahl)) s_weg.entfernung_m = prv_meter(zahl);
 
-  Tuple *r = dict_find(iter, MESSAGE_KEY_REST);
-  if (r && r->type == TUPLE_INT) s_weg.rest_m = r->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_REST, &zahl)) s_weg.rest_m = prv_meter(zahl);
 
-  Tuple *k = dict_find(iter, MESSAGE_KEY_ANKUNFT);
-  if (k && k->type == TUPLE_INT) s_weg.ankunft = (time_t)k->value->int32;
+  if (prv_zahl(iter, MESSAGE_KEY_ANKUNFT, &zahl)) s_weg.ankunft = (time_t)zahl;
 
   prv_nimm_text(iter, MESSAGE_KEY_STRASSE, s_weg.strasse, KST_STRASSE_LEN);
 
   s_weg.empfangen = time(NULL);
   s_geaendert = true;
 
-  // NEU heisst: eine andere Abbiegeart. Eine schrumpfende Entfernung ist
-  // derselbe Schritt und kein Anlass zu summen.
-  const bool neu = (s_weg.abbiegeart != vorher) && s_weg.abbiegeart > 0;
+  // NEU heisst: eine andere Abbiegeart - oder dieselbe noch einmal, wenn die
+  // Entfernung nach der Abzweigung deutlich nach oben springt. Eine
+  // schrumpfende Entfernung ist derselbe Schritt und kein Anlass zu summen.
+  const bool neu = s_weg.abbiegeart > 0 &&
+                   (s_weg.abbiegeart != vorher ||
+                    prv_naechster_gleicher(vorher_m, s_weg.entfernung_m));
   // Nur ein neuer Schritt kommt sofort in den Persist (siehe weg_sichern) -
   // stuerzt die App ab, steht beim naechsten Oeffnen wenigstens die Richtung.
   if (neu) weg_sichern();

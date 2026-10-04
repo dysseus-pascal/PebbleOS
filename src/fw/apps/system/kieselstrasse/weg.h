@@ -46,8 +46,10 @@ void weg_init(void);
  * Eine Nachricht uebernehmen.
  *
  * Rueckgabe true heisst: ein NEUER SCHRITT. Das ist der Fall, wenn sich die
- * Abbiegeart geaendert hat - nicht, wenn bloss die Entfernung kleiner wurde.
- * Danach richtet sich das Summen, und nur dann wird der Persist geschrieben.
+ * Abbiegeart geaendert hat - oder bei gleicher Art die Entfernung nach der
+ * Abzweigung deutlich nach oben springt (weg.c, KST_NAH_M). Nicht, wenn
+ * bloss die Entfernung kleiner wurde oder der Name flattert. Danach richtet
+ * sich das Summen, und nur dann wird der Persist geschrieben.
  */
 bool weg_uebernimm(DictionaryIterator *iter);
 

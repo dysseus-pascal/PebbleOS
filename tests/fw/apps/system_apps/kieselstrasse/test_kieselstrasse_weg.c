@@ -7,7 +7,10 @@
 #include "apps/system/kieselstrasse/texte.h"
 #include "apps/system/kieselstrasse/weg.h"
 
+#include "applib/graphics/utf8.h"
+
 #include "stubs_logging.h"
+#include "stubs_passert.h"
 #include "stubs_pbl_malloc.h"
 
 // Die reine Logik der Navigation: was ein neuer Schritt ist, was in den
@@ -87,7 +90,7 @@ void test_kieselstrasse_weg__ohne_persist_leer_und_veraltet(void) {
   cl_assert_equal_i(s_schreibvorgaenge, 0);
 }
 
-void test_kieselstrasse_weg__neuer_schritt_nur_bei_anderer_art(void) {
+void test_kieselstrasse_weg__neuer_schritt_bei_anderer_art(void) {
   weg_init();
   cl_assert(weg_uebernimm(prv_nachricht(5, 250, "Bahnhofstrasse")));
   cl_assert_equal_i(s_schreibvorgaenge, 1);
@@ -100,6 +103,122 @@ void test_kieselstrasse_weg__neuer_schritt_nur_bei_anderer_art(void) {
   cl_assert(!weg_uebernimm(prv_nachricht(0, 80, NULL)));
   cl_assert(weg_uebernimm(prv_nachricht(2, 400, "Hauptstrasse")));
   cl_assert_equal_i(s_schreibvorgaenge, 2);
+}
+
+void test_kieselstrasse_weg__zweimal_dieselbe_art_ist_ein_neuer_schritt(void) {
+  weg_init();
+  // "Rechts, dann wieder rechts": an der ersten Abzweigung springt die
+  // Entfernung zur naechsten nach oben.
+  cl_assert(weg_uebernimm(prv_nachricht(5, 250, "A")));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 120, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 30, NULL)));
+  cl_assert(weg_uebernimm(prv_nachricht(5, 400, "B")));
+  cl_assert_equal_i(s_schreibvorgaenge, 2);
+  // Dicht hintereinander: zehn Meter vor der ersten, achtzig zur zweiten.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 10, NULL)));
+  cl_assert(weg_uebernimm(prv_nachricht(5, 80, NULL)));
+  // Eine neue Route weit weg zaehlt auch ohne Abzweigung davor.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 60, NULL)));
+  cl_assert(weg_uebernimm(prv_nachricht(5, 900, NULL)));
+}
+
+void test_kieselstrasse_weg__flattern_summt_nicht_doppelt(void) {
+  weg_init();
+  cl_assert(weg_uebernimm(prv_nachricht(5, 300, "Bahnhofstrasse")));
+  // Der Name flattert: kein neuer Schritt.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 290, "Bahnhofstr.")));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 280, "Bahnhofstrasse")));
+  // Die Entfernung zappelt um ein paar Dutzend Meter - weit weg wie nah.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 320, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 40, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 70, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 45, NULL)));
+  // Eine Nachricht ohne Entfernung und dann wieder eine: kein Sprung.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, -1, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 40, NULL)));
+}
+
+// --- Lange Namen: an Zeichengrenzen gekuerzt ---
+
+void test_kieselstrasse_weg__langer_name_bleibt_gueltiges_utf8(void) {
+  weg_init();
+  // 51 Byte, das "â" faellt genau auf die Grenze von 47.
+  const char *neuenburg = "Exit 2 · Route de la Gare de Neuchâtel-Serrières";
+  cl_assert(strlen(neuenburg) > KST_STRASSE_LEN);
+  weg_uebernimm(prv_nachricht(13, 200, neuenburg));
+  cl_assert(utf8_is_valid_string(weg_stand()->strasse));
+  cl_assert(strlen(weg_stand()->strasse) <= KST_STRASSE_LEN - 1);
+  cl_assert(strncmp(weg_stand()->strasse, neuenburg, strlen(weg_stand()->strasse)) == 0);
+  cl_assert(strlen(weg_stand()->strasse) >= KST_STRASSE_LEN - 4);
+  // Kyrillisch: jedes Zeichen zwei Byte.
+  weg_uebernimm(prv_nachricht(5, 100, "ПроспектПроспектПроспект"));
+  cl_assert(utf8_is_valid_string(weg_stand()->strasse));
+  cl_assert_equal_s(weg_stand()->strasse, "ПроспектПроспектПроспек");
+}
+
+void test_kieselstrasse_weg__kaputt_gespeicherter_name_wird_repariert(void) {
+  // So kuerzte die vorige Fassung: mitten im "â" (0xC3 0xA2).
+  Weg w = { .abbiegeart = 5, .entfernung_m = 200, .rest_m = -1, .empfangen = s_jetzt };
+  strcpy(w.strasse, "Rue de Neuch\xC3");
+  memcpy(s_persist, &w, sizeof(w));
+  s_persist_laenge = sizeof(w);
+  weg_init();
+  cl_assert(utf8_is_valid_string(weg_stand()->strasse));
+  cl_assert_equal_s(weg_stand()->strasse, "Rue de Neuch");
+}
+
+// --- Zahlen und Texte jeder Form ---
+
+void test_kieselstrasse_weg__zahlen_jeder_breite(void) {
+  weg_init();
+  DictionaryIterator schreiben;
+  dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer));
+  dict_write_int8(&schreiben, MESSAGE_KEY_ABBIEGEART, 5);
+  dict_write_uint16(&schreiben, MESSAGE_KEY_ENTFERNUNG, 450);
+  dict_write_uint8(&schreiben, MESSAGE_KEY_AUSFAHRT, 2);
+  dict_write_int16(&schreiben, MESSAGE_KEY_WINKEL, -90);
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)dict_write_end(&schreiben));
+  cl_assert(weg_uebernimm(&s_iter));
+  cl_assert_equal_i(weg_stand()->abbiegeart, 5);
+  cl_assert_equal_i((int)weg_stand()->entfernung_m, 450);
+  cl_assert_equal_i(weg_ausfahrt(), 2);
+  cl_assert_equal_i(weg_winkel(), -90);
+}
+
+void test_kieselstrasse_weg__text_ohne_abschluss_bleibt_im_tupel(void) {
+  weg_init();
+  DictionaryIterator schreiben;
+  dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer));
+  dict_write_int32(&schreiben, MESSAGE_KEY_ABBIEGEART, 5);
+  dict_write_cstring(&schreiben, MESSAGE_KEY_STRASSE, "Abc");
+  // Dahinter steht etwas anderes - wie im Eingangspuffer der Uhr.
+  dict_write_cstring(&schreiben, MESSAGE_KEY_REST + 100, "YYYYYYYYYYYYYYYYYYYY");
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)dict_write_end(&schreiben));
+  // Die Null des Namens ueberschreiben: ein Sender, der sie vergisst.
+  Tuple *t = dict_find(&s_iter, MESSAGE_KEY_STRASSE);
+  cl_assert(t && t->length == 4);
+  t->value->data[3] = 'X';
+  cl_assert(weg_uebernimm(&s_iter));
+  cl_assert(strlen(weg_stand()->strasse) <= 4);
+  cl_assert(strncmp(weg_stand()->strasse, "Abc", 3) == 0);
+}
+
+// --- Unsinnige Entfernungen ---
+
+void test_kieselstrasse_weg__unsinnige_entfernung_ist_keine(void) {
+  weg_init();
+  weg_uebernimm(prv_nachricht(5, INT32_MAX, NULL));
+  cl_assert(!weg_hat_zahl());
+  weg_uebernimm(prv_nachricht(-1, 1200, NULL));
+  cl_assert(weg_hat_zahl());
+  // Auch aus einem alten Persist.
+  Weg w = { .abbiegeart = 5, .entfernung_m = INT32_MAX - 10, .rest_m = INT32_MAX,
+            .empfangen = s_jetzt };
+  memcpy(s_persist, &w, sizeof(w));
+  s_persist_laenge = sizeof(w);
+  weg_init();
+  cl_assert(!weg_hat_zahl());
+  cl_assert_equal_i((int)weg_stand()->rest_m, -1);
 }
 
 void test_kieselstrasse_weg__leere_strasse_loescht(void) {
