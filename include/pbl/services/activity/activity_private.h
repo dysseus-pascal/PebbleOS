@@ -551,6 +551,12 @@ void activity_sessions_prv_delete_activity_session(ActivitySession *session);
 //! zurueckgenommen wurde.
 bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session);
 
+//! Boulder: Nimmt eine eigene Schlafsitzung zurueck (gleiche Startzeit, jede Schlafart) - auch
+//! wenn ein anderer sie inzwischen abgeschlossen hat. Nur fuer die Sitzungen von
+//! boulder/nacht.c, die bis zur endgueltigen Nacht ersetzbar bleiben. Gibt zurueck, ob eine
+//! zurueckgenommen wurde.
+bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session);
+
 //! Perform our once a minute activity session maintenance logic
 void activity_sessions_prv_minute_handler(time_t utc_sec);
 

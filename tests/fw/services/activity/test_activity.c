@@ -3122,3 +3122,40 @@ void test_activity__laufende_zuruecknehmen_nur_solange_sie_laeuft(void) {
   cl_assert(!activity_sessions_prv_laufende_zuruecknehmen(&frage));
   cl_assert_equal_i(activity_private_state()->activity_sessions_count, 2);
 }
+
+// Boulder: die Nacht nimmt ihren Schlafblock zurueck, auch wenn ein anderer ihn
+// abgeschlossen hat (workout_service.c beim Trainingsstart) und die Nachbearbeitung ein
+// Nickerchen daraus gemacht hat. Stand er schon im Flash, wird die Liste neu geschrieben.
+void test_activity__eigene_schlafsitzung_geht_auch_abgeschlossen(void) {
+  ActivitySession block = {
+    .type = ActivitySessionType_Sleep,
+    .start_utc = 100,
+    .length_min = 300,
+    .ongoing = true,
+  };
+  // Gleiche Startzeit, keine Schlafart: bleibt.
+  ActivitySession training = {
+    .type = ActivitySessionType_Run,
+    .start_utc = 100,
+    .length_min = 30,
+  };
+  activity_sessions_prv_add_activity_session(&block);
+  activity_sessions_prv_add_activity_session(&training);
+  ActivitySession nickerchen = block;
+  nickerchen.type = ActivitySessionType_Nap;
+  nickerchen.ongoing = false;
+  activity_sessions_prv_add_activity_session(&nickerchen);
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 2);
+  activity_private_state()->need_activities_saved = false;   // schon im Flash
+
+  ActivitySession frage = { .type = ActivitySessionType_Sleep, .start_utc = 100 };
+  cl_assert(activity_sessions_prv_eigene_zuruecknehmen(&frage));
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 1);
+  cl_assert_equal_m(&activity_private_state()->activity_sessions[0], &training,
+                    sizeof(ActivitySession));
+  cl_assert(activity_private_state()->need_activities_saved);
+
+  // Nicht (mehr) da: nichts geschieht.
+  cl_assert(!activity_sessions_prv_eigene_zuruecknehmen(&frage));
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 1);
+}

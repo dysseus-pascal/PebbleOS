@@ -377,13 +377,15 @@ static int prv_tief_minuten(const SchlafErgebnis *e, int von, int bis) {
   return summe;
 }
 
-// Die laufenden Sitzungen zuruecknehmen. NUR LAUFENDE: hat ein anderer Teil der
-// Uhr eine abgeschlossen (workout_service.c tut das, sobald dort num_sessions
-// berichtigt ist), hielte das Loeschen die Uhr an (PBL_ASSERT). Sie bleibt
-// dann stehen - lieber ein doppelter Block als ein Neustart.
+// Die laufenden Sitzungen zuruecknehmen - AUCH EINE, DIE EIN ANDERER TEIL DER UHR
+// INZWISCHEN ABGESCHLOSSEN HAT (workout_service.c tut das beim Trainingsstart,
+// sobald dort num_sessions berichtigt ist). Die Nacht ist deshalb nicht fertig;
+// verschiebt die naechste Rechnung ihren Beginn, stuende sonst ein zweiter Block
+// neben dem neuen. Das Loeschen der Firmware hielte dabei die Uhr an
+// (PBL_ASSERT) - darum der eigene Weg in activity_sessions.c.
 static void prv_zuruecknehmen(void) {
   for (int k = 0; k < s_gemeldet_anzahl; k++) {
-    activity_sessions_prv_laufende_zuruecknehmen(&s_gemeldet[k]);
+    activity_sessions_prv_eigene_zuruecknehmen(&s_gemeldet[k]);
   }
   s_gemeldet_anzahl = 0;
   s_block = -1;
@@ -488,7 +490,9 @@ static void prv_festschreiben(void) {
 // Das Bild der Nacht fuer die Uhr
 
 // Unter s_bild_sperre: die zuletzt fertige Nacht aus der Datei, einmal nach
-// einem Neustart. Nur ein Bild dieser Fassung zaehlt.
+// einem Neustart. Es zaehlt ein Bild dieser Fassung - oder eines von b24, das
+// denselben Aufbau hat (nacht.h): sonst fehlte der Health-App nach dem Update
+// die letzte Nacht, und prv_zustand_laden faende nicht, was schon geschickt ist.
 static void prv_bild_laden(void) {
   if (s_bild_da || s_bild_gelesen) {
     return;
@@ -505,6 +509,13 @@ static void prv_bild_laden(void) {
     if (s_bild.version == NACHT_BILD_VERSION) {
       s_bild_da = true;
       s_bild_in_datei = true;
+    } else if (s_bild.version == NACHT_BILD_VERSION_B24) {
+      // Umzug: nur die Fassung kommt dazu. In der Datei steht es noch als b24;
+      // die naechste fertige Rechnung schreibt es in dieser Fassung.
+      s_bild.version = NACHT_BILD_VERSION;
+      s_bild_da = true;
+      s_bild_in_datei = false;
+      PBL_LOG_INFO("Nacht: Bild aus b24 uebernommen");
     } else {
       PBL_LOG_WRN("Nacht: Bild in Fassung %d verworfen", (int)s_bild.version);
       memset(&s_bild, 0, sizeof(s_bild));

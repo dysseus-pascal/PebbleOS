@@ -149,6 +149,19 @@ bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session) {
   return false;
 }
 
+// Die Nacht nimmt ihre eigenen Sitzungen zurueck, laufend oder von anderen abgeschlossen
+// (activity_private.h). Gleich heisst hier wie beim Eintragen: Art und Beginn.
+bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
+  for (uint16_t i = 0; i < s_anzahl; i++) {
+    if (prv_gleich(session, &s_sitzungen[i])) {
+      memmove(&s_sitzungen[i], &s_sitzungen[i + 1], (s_anzahl - i - 1) * sizeof(*s_sitzungen));
+      s_anzahl--;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool activity_sessions_prv_is_sleep_activity(ActivitySessionType activity_type) {
   return activity_type == ActivitySessionType_Sleep ||
          activity_type == ActivitySessionType_RestfulSleep ||

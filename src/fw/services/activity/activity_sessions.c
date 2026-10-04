@@ -275,6 +275,40 @@ bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session) {
   return zurueckgenommen;
 }
 
+// ------------------------------------------------------------------------------------
+// BOULDER: EINE EIGENE SCHLAFSITZUNG ZURUECKNEHMEN, AUCH WENN SIE INZWISCHEN JEMAND ANDERS
+// ABGESCHLOSSEN HAT. Die Nacht (boulder/nacht.c) meldet ihre Sitzungen laufend, bis sie
+// endgueltig ist, und ersetzt sie bei jeder Rechnung. Schliesst ein anderer sie vorher ab -
+// workout_service_start_workout tut das beim Trainingsstart mit jeder laufenden Sitzung -,
+// ist die Nacht trotzdem nicht fertig. Bliebe die Sitzung stehen, laege neben dem naechsten
+// Block ein zweiter, sobald sich der Beginn der Nacht verschiebt: der Schlaf zaehlte doppelt.
+// Ohne PBL_ASSERT. Alle Schlafarten gelten gleich wie beim Eintragen (any_sleep): die
+// Nachbearbeitung macht aus einer abgeschlossenen womoeglich ein Nickerchen.
+bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
+  ActivityState *state = activity_private_state();
+  bool zurueckgenommen = false;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  {
+    for (uint16_t i = 0; i < state->activity_sessions_count; i++) {
+      ActivitySession *gespeichert = &state->activity_sessions[i];
+      if (!prv_activity_sessions_equal(session, gespeichert, true /*any_sleep*/)) {
+        continue;
+      }
+      if (!gespeichert->ongoing) {
+        // Abgeschlossen steht sie womoeglich schon im Flash - dort muss sie auch weg,
+        // sonst kaeme sie mit dem naechsten Neustart zurueck.
+        PBL_LOG_WRN("Session %d ended elsewhere, replaced", (int)gespeichert->type);
+        state->need_activities_saved = true;
+      }
+      prv_remove_activity_session_at(state, i);
+      zurueckgenommen = true;
+      break;
+    }
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return zurueckgenommen;
+}
+
 // --------------------------------------------------------------------------------------------
 // Send an activity session (including sleep sessions) to data logging
 void activity_sessions_prv_send_activity_session_to_data_logging(ActivitySession *session) {

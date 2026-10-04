@@ -7,6 +7,7 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -116,6 +117,11 @@ _Static_assert(sizeof(NachtHrvDlsRecord) == 251, "NachtHrvDlsRecord: Boulder erw
 // Das Bild liegt roh in einer Datei. AENDERT SICH SEIN AUFBAU, MUSS DIE FASSUNG
 // HOCH: sonst laese die neue Firmware ein altes Bild gleicher Groesse falsch.
 #define NACHT_BILD_VERSION 1
+// FASSUNG 0 IST DAS BILD BIS b24: derselbe Aufbau, nur ohne Fassung. Wo sie
+// jetzt steht, lagen dort Fuellbytes, und die waren immer 0 - b24 nullte das
+// ganze Bild vor dem Fuellen (memset im obelix-Bau von nacht.c, geprueft am
+// Maschinencode). So liest die neue Firmware das Bild der letzten Nacht weiter.
+#define NACHT_BILD_VERSION_B24 0
 
 typedef struct {
   uint32_t beginn_utc;     //< Minute 0 der Rechnung
@@ -128,11 +134,17 @@ typedef struct {
   uint8_t ruhepuls;        //< 0 = keiner
   bool fertig;             //< false: die Nacht laeuft noch
   uint8_t anzahl;
-  uint8_t version;         //< NACHT_BILD_VERSION
   NachtDlsAbschnitt abschnitte[NACHT_BILD_ABSCHNITTE];
+  uint8_t version;         //< NACHT_BILD_VERSION; in b24 ein Fuellbyte (0)
 } NachtBild;
 
+// Der Aufbau von b24 bleibt Byte fuer Byte; die Fassung sitzt in seinen
+// Fuellbytes. Nur mit einer neuen Fassung darf sich hier etwas verschieben.
 _Static_assert(sizeof(NachtBild) == 512, "NachtBild: Aufbau geaendert - NACHT_BILD_VERSION hoch");
+_Static_assert(offsetof(NachtBild, abschnitte) == 29,
+               "NachtBild: Abschnitte nicht mehr wie in b24");
+_Static_assert(offsetof(NachtBild, version) == 509,
+               "NachtBild: Fassung nicht mehr in den Fuellbytes von b24");
 
 // false, wenn es noch keine gibt.
 bool boulder_nacht_letzte(NachtBild *aus);
@@ -140,7 +152,6 @@ bool boulder_nacht_letzte(NachtBild *aus);
 void boulder_nacht_minute(time_t utc_sec);
 
 #ifdef UNITTEST
-#include <stddef.h>
 // Wie ein Neustart der Uhr: alle Zustaende weg, die Datei bleibt.
 void boulder_nacht_test_reset(void);
 // Wie viel Heap eine Rechnung braucht.

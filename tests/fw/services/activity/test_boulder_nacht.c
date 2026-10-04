@@ -1007,6 +1007,53 @@ void test_boulder_nacht__fremd_abgeschlossene_sitzung_haelt_die_uhr_nicht_an(voi
   cl_assert_equal_i(prv_ueberlappungen(), 0);
 }
 
+// SCHLIESST JEMAND ANDERS DIE LAUFENDE NACHT AB, UND BEGINNT SIE DANACH ANDERS,
+// bleibt kein zweiter Block stehen. Wer abschliesst: workout_service_start_workout
+// schliesst beim Trainingsstart jede laufende Sitzung ab (heute ohne Wirkung, es
+// liest mit num_sessions = 0 keine). Hier mit denselben zwei Schritten wie dort.
+// Wach am Ende der Rechnung schreibt die Nacht ihren Block nicht fort - nichts
+// oeffnet ihn wieder. Der spaetere Beginn steht fuer alles, was das Einschlafen
+// verschiebt: die erste Stunde Schlaf ist in der naechsten Rechnung wach.
+void test_boulder_nacht__fremd_abgeschlossene_nacht_bleibt_nicht_doppelt(void) {
+  // 07:20, wach seit 07:00: die Nacht ist fertig, aber noch nicht endgueltig -
+  // ihre Sitzungen laufen. Jetzt beginnt ein Training.
+  const int training = 11 * 60 + 20;
+  prv_durch(0, training);
+  const ActivitySession *block = prv_erste(ActivitySessionType_Sleep);
+  cl_assert(block && block->ongoing);
+  const time_t beginn_vorher = block->start_utc;
+  int abgeschlossen = 0;
+  for (int k = 0; k < s_state.activity_sessions_count; k++) {
+    if (s_state.activity_sessions[k].ongoing) {
+      ActivitySession s = s_state.activity_sessions[k];
+      s.ongoing = false;
+      activity_sessions_prv_add_activity_session(&s);
+      abgeschlossen++;
+    }
+  }
+  cl_assert(abgeschlossen >= 2);   // der Block und Tiefschlaf darin
+  const int einschlafen = (beginn_vorher - s_beginn) / SECONDS_PER_MINUTE;
+  prv_setze(einschlafen, einschlafen + 60, true);
+
+  prv_durch(training + 1, MINUTEN);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep) + prv_anzahl(ActivitySessionType_Nap),
+                    1);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+  block = prv_erste(ActivitySessionType_Sleep);
+  cl_assert(block && !block->ongoing);
+  cl_assert(block->start_utc >= beginn_vorher + 60 * SECONDS_PER_MINUTE);
+  // Kein Tiefschlaf aus der ersten Fassung der Nacht liegt noch vor ihr.
+  for (int k = 0; k < s_state.activity_sessions_count; k++) {
+    if (s_state.activity_sessions[k].type == ActivitySessionType_RestfulSleep) {
+      cl_assert(s_state.activity_sessions[k].start_utc > block->start_utc);
+    }
+  }
+  // Die Schlafsumme der Uhr ist die der Nacht, nicht die zweier.
+  const NachtDlsRecord *s = prv_letzter_satz(s_beginn);
+  cl_assert(s);
+  cl_assert_equal_i(prv_schlafsumme(s_beginn), s->schlaf_minuten);
+}
+
 // M2: FEHLT DER SPEICHER FUER DIE RECHNUNG, kommt die Nacht eine Minute
 // spaeter - nicht erst mit dem naechsten Takt. Und der Heap wird vorher
 // gefragt: die Rechnung nimmt ihn sonst anderen weg, die ohne ihn neu starten.
@@ -1210,6 +1257,99 @@ void test_boulder_nacht__bild_anderer_fassung_gilt_nicht(void) {
   settings_file_close(&datei);
   NachtBild b;
   cl_assert(!boulder_nacht_letzte(&b));
+}
+
+// Ein Bild, wie b24 es in die Datei schrieb: der Aufbau von damals, Byte fuer
+// Byte (little endian wie die Uhr), unabhaengig vom heutigen NachtBild. Die
+// drei Fuellbytes am Ende sind 0 - b24 nullte das ganze Bild vor dem Fuellen.
+#define B24_BILD_GROESSE 512
+static void prv_b24_u16(uint8_t *p, int o, uint16_t v) {
+  p[o] = v & 0xFF;
+  p[o + 1] = v >> 8;
+}
+static void prv_b24_u32(uint8_t *p, int o, uint32_t v) {
+  for (int i = 0; i < 4; i++) {
+    p[o + i] = (v >> (8 * i)) & 0xFF;
+  }
+}
+static void prv_b24_bild(uint8_t *alt, const NachtBild *n) {
+  memset(alt, 0, B24_BILD_GROESSE);
+  prv_b24_u32(alt, 0, n->beginn_utc);
+  prv_b24_u32(alt, 4, (uint32_t)n->utc_to_local);
+  prv_b24_u16(alt, 8, n->einschlafen);
+  prv_b24_u16(alt, 10, n->aufwachen);
+  prv_b24_u16(alt, 12, n->schlaf_minuten);
+  for (int p = 0; p < 5; p++) {
+    prv_b24_u16(alt, 14 + 2 * p, n->minuten[p]);
+  }
+  prv_b24_u16(alt, 24, n->hrv);
+  alt[26] = n->ruhepuls;
+  alt[27] = n->fertig;
+  alt[28] = n->anzahl;
+  for (int k = 0; k < n->anzahl; k++) {
+    prv_b24_u16(alt, 29 + 5 * k, n->abschnitte[k].von);
+    prv_b24_u16(alt, 31 + 5 * k, n->abschnitte[k].bis);
+    alt[33 + 5 * k] = n->abschnitte[k].phase;
+  }
+}
+
+// DAS BILD VON b24 GILT NACH DEM UPDATE WEITER. Die Health-App zeigt die letzte
+// Nacht sofort, und die Uhr weiss daraus, dass diese Nacht schon geschickt ist
+// (b24 kannte den Zustand in der Datei noch nicht) - sie geht nicht noch einmal.
+void test_boulder_nacht__bild_aus_b24_gilt_nach_dem_update(void) {
+  // Bis 09:30: die Nacht ist geschickt und endgueltig, das Fenster noch offen.
+  const int update = 13 * 60 + 30;
+  prv_durch(0, update);
+  NachtBild n;
+  cl_assert(boulder_nacht_letzte(&n));
+  cl_assert(n.fertig);
+  cl_assert(n.anzahl > 1);
+  const int saetze = s_saetze_anzahl;
+  cl_assert(saetze >= 1);
+
+  // Das Update: in der Datei steht nur, was b24 dort hatte.
+  uint8_t alt[B24_BILD_GROESSE];
+  prv_b24_bild(alt, &n);
+  fake_settings_file_reset();
+  SettingsFile datei;
+  cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
+  cl_assert_equal_i(settings_file_set(&datei, "letzte", sizeof("letzte"), alt, sizeof(alt)),
+                    S_SUCCESS);
+  settings_file_close(&datei);
+  prv_neustart();
+
+  NachtBild b;
+  cl_assert(boulder_nacht_letzte(&b));
+  cl_assert_equal_i(b.version, NACHT_BILD_VERSION);
+  cl_assert_equal_i(b.beginn_utc, n.beginn_utc);
+  cl_assert_equal_i(b.utc_to_local, n.utc_to_local);
+  cl_assert_equal_i(b.einschlafen, n.einschlafen);
+  cl_assert_equal_i(b.aufwachen, n.aufwachen);
+  cl_assert_equal_i(b.schlaf_minuten, n.schlaf_minuten);
+  for (int p = 0; p < NACHT_PHASEN; p++) {
+    cl_assert_equal_i(b.minuten[p], n.minuten[p]);
+  }
+  cl_assert_equal_i(b.ruhepuls, n.ruhepuls);
+  cl_assert(b.fertig);
+  cl_assert_equal_i(b.anzahl, n.anzahl);
+  for (int k = 0; k < n.anzahl; k++) {
+    cl_assert_equal_i(b.abschnitte[k].von, n.abschnitte[k].von);
+    cl_assert_equal_i(b.abschnitte[k].bis, n.abschnitte[k].bis);
+    cl_assert_equal_i(b.abschnitte[k].phase, n.abschnitte[k].phase);
+  }
+
+  // Bis Mittag: dieselbe Nacht geht nicht noch einmal ans Telefon, und die
+  // Datei traegt das Bild danach in dieser Fassung.
+  prv_durch(update + 1, MINUTEN);
+  cl_assert_equal_i(s_saetze_anzahl, saetze);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+  uint8_t jetzt[B24_BILD_GROESSE];
+  cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
+  cl_assert_equal_i(settings_file_get(&datei, "letzte", sizeof("letzte"), jetzt, sizeof(jetzt)),
+                    S_SUCCESS);
+  settings_file_close(&datei);
+  cl_assert_equal_i(jetzt[509], NACHT_BILD_VERSION);
+  cl_assert_equal_m(jetzt, alt, 509);
 }
 
 // N2: DAS BILD KOMMT NUR IN DIE DATEI, WENN ES SICH AENDERT. Die Uhr rechnet
