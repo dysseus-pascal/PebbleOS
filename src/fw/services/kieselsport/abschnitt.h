@@ -20,13 +20,15 @@
 #define KS_ABSCHNITT_MAX 20
 
 typedef struct {
-  uint16_t beginn_s;   //< Sekunden seit Trainingsbeginn
+  // Die Sekunden in vier Byte: ein Training ueber 18 Stunden liefe in
+  // zweien ueber. Der Text ans Telefon ist eine Zahl, der ist es gleich.
+  uint32_t beginn_s;   //< Sekunden seit Trainingsbeginn
   uint16_t anzahl;     //< Wiederholungen (Kraft) oder 1 (Bahn)
-  uint16_t dauer_s;
+  uint32_t dauer_s;
 } Abschnitt;
 
 void abschnitt_leeren(void);
-void abschnitt_hinzu(uint16_t beginn_s, uint16_t anzahl, uint16_t dauer_s);
+void abschnitt_hinzu(uint32_t beginn_s, uint16_t anzahl, uint32_t dauer_s);
 
 // Wie viele EINZELN dastehen (höchstens KS_ABSCHNITT_MAX).
 int abschnitt_anzahl(void);

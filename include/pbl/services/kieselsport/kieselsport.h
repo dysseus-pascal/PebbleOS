@@ -164,7 +164,10 @@ bool kieselsport_archiv_lesen(int index, Trainingsstand *aus);
 // Die Abschnittsliste: "beginn:anzahl:dauer;..." bis 300 Zeichen.
 #define KS_LISTE_MAX 300
 bool kieselsport_wartend_laden(Trainingsstand *t, char *liste, size_t platz);
-void kieselsport_wartend_vergessen(void);
+// Nach der Bestaetigung des Telefons - nur, wenn die wartende noch zu
+// [beginn] gehoert. Ein spaetes ACK eines frueheren Trainings loescht kein
+// neueres (0 vergisst jede).
+void kieselsport_wartend_vergessen(uint32_t beginn);
 
 // Die Pausen der wartenden Zusammenfassung, als Byte fuer das Telefon:
 // [0] Fassung (KS_PAUSEN_FASSUNG), [1] Zahl aller Pausen (bis 255), dann je
@@ -196,7 +199,13 @@ uint32_t kieselsport_kurve_beginn(void);
 uint16_t kieselsport_kurve_anzahl(void);
 uint16_t kieselsport_kurve_ab(void);
 uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max);
-void kieselsport_kurve_bestaetigt(uint16_t n);
+// Das Telefon hat [n] Werte ab [ab] der Kurve von [beginn] - die Werte des
+// Stuecks, das hinausging. false: inzwischen liegt eine andere Kurve oder
+// ein anderer Zeiger da, die Bestaetigung zaehlt nicht.
+bool kieselsport_kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n);
+// Fehlt der Schluessel des naechsten Stuecks? Dann ist die Kurve kaputt -
+// anders als bei einem Lesefehler, der vorbeigehen kann.
+bool kieselsport_kurve_luecke(void);
 void kieselsport_kurve_vergessen(void);
 // Die Zeit je Zone aus der gemerkten Kurve, fuer den Schirm nach dem
 // Speichern. sekunden[0] ist unter Zone 1.

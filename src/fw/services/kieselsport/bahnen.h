@@ -32,11 +32,11 @@
 // Die Beckenlaenge aus dem Persist.
 void bahnen_laden(void);
 void bahnen_start(void);
-void bahnen_stoppe(uint16_t sekunde);
+void bahnen_stoppe(uint32_t sekunde);
 void bahnen_pause(bool an);
 
 // Je Sekunde aufzurufen, mit der Sekunde seit Trainingsbeginn.
-void bahnen_tick(uint16_t sekunde);
+void bahnen_tick(uint32_t sekunde);
 
 uint16_t bahnen_anzahl(void);
 uint32_t bahnen_meter(void);

@@ -45,10 +45,10 @@ static uint16_t s_seit_rep;      //< Messungen seit der letzten Wiederholung
 
 static uint16_t s_reps;
 static uint16_t s_saetze;
-static uint16_t s_satz_beginn;
+static uint32_t s_satz_beginn;
 static uint16_t s_ruhe_zaehler;
 static bool s_ruht;
-static uint16_t s_ruhe_beginn;
+static uint32_t s_ruhe_beginn;
 static uint16_t s_ruhe_dauer;
 static bool s_gebrummt;
 static bool s_brumm_faellig;   //< die Pause ist um - der Dienst soll brummen
@@ -150,13 +150,13 @@ void reps_start(void) {
   ks_accel(true);
 }
 
-void reps_stoppe(uint16_t sekunde) {
+void reps_stoppe(uint32_t sekunde) {
   if (!s_an) return;
   // DEN OFFENEN SATZ NOCH ABSCHLIESSEN. Wer nach der letzten Wiederholung
   // sofort auf Stop drueckt, haette ihn sonst umsonst gemacht.
   if (!s_ruht && s_reps >= 2) {
     abschnitt_hinzu(s_satz_beginn, s_reps,
-                    sekunde > s_satz_beginn ? (uint16_t)(sekunde - s_satz_beginn) : 0);
+                    sekunde > s_satz_beginn ? sekunde - s_satz_beginn : 0);
     s_saetze++;
     s_reps = 0;
   }
@@ -167,7 +167,7 @@ void reps_stoppe(uint16_t sekunde) {
 void reps_pause(bool an) { s_pausiert = an; }
 
 
-void reps_tick(uint16_t sekunde) {
+void reps_tick(uint32_t sekunde) {
   if (!s_an || s_pausiert) return;
 
   if (s_bewegung < RUHE_SCHWELLE) {
@@ -180,9 +180,8 @@ void reps_tick(uint16_t sekunde) {
     // EIN SATZ AB ZWEI WIEDERHOLUNGEN. Eine einzelne gezaehlte Bewegung ist
     // meistens ein Griff zur Flasche.
     if (s_reps >= 2) {
-      const uint16_t ende = sekunde > RUHE_S ? (uint16_t)(sekunde - RUHE_S) : sekunde;
-      abschnitt_hinzu(s_satz_beginn, s_reps,
-                      ende > s_satz_beginn ? (uint16_t)(ende - s_satz_beginn) : 0);
+      const uint32_t ende = sekunde > RUHE_S ? sekunde - RUHE_S : sekunde;
+      abschnitt_hinzu(s_satz_beginn, s_reps, ende > s_satz_beginn ? ende - s_satz_beginn : 0);
       s_saetze++;
     }
     s_ruht = true;
@@ -192,7 +191,9 @@ void reps_tick(uint16_t sekunde) {
     s_reps = 0;
   }
 
-  s_ruhe_dauer = s_ruht && sekunde > s_ruhe_beginn ? (uint16_t)(sekunde - s_ruhe_beginn) : 0;
+  // Die Anzeige fasst zwei Byte; eine Pause ueber 18 Stunden steht bei 65535.
+  const uint32_t ruhe = s_ruht && sekunde > s_ruhe_beginn ? sekunde - s_ruhe_beginn : 0;
+  s_ruhe_dauer = ruhe > UINT16_MAX ? UINT16_MAX : (uint16_t)ruhe;
 
   if (s_ruht && !s_gebrummt && s_pausenziel > 0 &&
       sekunde >= s_ruhe_beginn + s_pausenziel) {
@@ -236,13 +237,17 @@ bool reps_brumm_holen(void) {
 }
 
 void reps_empfindlichkeit_setze(uint8_t stufe) {
-  if (stufe < 1 || stufe > 3) return;
+  // NUR WAS SICH AENDERT, KOMMT IN DEN FLASH. Boulder schickt beim Speichern
+  // alle Einstellungen, auch die gleich gebliebenen, und jede Zeile waere
+  // sonst ein neuer Satz in der Datei.
+  if (stufe < 1 || stufe > 3 || stufe == s_empfind) return;
   s_empfind = stufe;
   ks_persist_write_int(PERSIST_EMPFIND, stufe);
 }
 uint8_t reps_empfindlichkeit(void) { return s_empfind; }
 
 void reps_pausenziel_setze(uint16_t sekunden) {
+  if (sekunden == s_pausenziel) return;
   s_pausenziel = sekunden;
   ks_persist_write_int(PERSIST_PAUSENZIEL, sekunden);
 }

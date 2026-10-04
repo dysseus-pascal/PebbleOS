@@ -70,13 +70,29 @@ uint16_t kurve_stueck(uint8_t *aus, uint16_t max) {
   return n;
 }
 
-void kurve_bestaetigt(uint16_t n) {
-  const uint16_t neu = (uint16_t)(kurve_ab() + n);
+bool kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n) {
+  // NUR DIE BESTAETIGUNG DES STUECKS, DAS HINAUSGING. Kommt sie spaet, kann
+  // inzwischen die Kurve eines neuen Trainings hier liegen; deren Zeiger
+  // rueckte sie sonst vor - oder loeschte sie ganz.
+  if (!kurve_wartet() || kurve_beginn() != beginn || kurve_ab() != ab) {
+    return false;
+  }
+  const uint16_t neu = (uint16_t)(ab + n);
   if (neu >= kurve_anzahl()) {
     kurve_vergessen();
   } else {
     ks_persist_write_int(PERSIST_KURVE_AB, neu);
   }
+  return true;
+}
+
+bool kurve_luecke(void) {
+  if (!kurve_wartet()) {
+    return false;
+  }
+  // Nur ein fehlender Schluessel ist sicher kaputt; ein Lesefehler bei einem
+  // vorhandenen kann vorbeigehen.
+  return !ks_persist_exists(PERSIST_KURVE_BASIS + kurve_ab() / KS_KURVE_STUECK);
 }
 
 void kurve_vergessen(void) {

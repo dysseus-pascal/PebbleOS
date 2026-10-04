@@ -35,8 +35,12 @@ uint16_t kurve_anzahl(void);
 uint16_t kurve_ab(void);
 // Das naechste Stueck, hoechstens `max` Byte. Rueckgabe: wie viele.
 uint16_t kurve_stueck(uint8_t *aus, uint16_t max);
-// Das Telefon hat `n` Werte bestaetigt.
-void kurve_bestaetigt(uint16_t n);
+// Das Telefon hat `n` Werte ab `ab` der Kurve von `beginn` bestaetigt.
+// false: die Bestaetigung gehoert zu einem anderen Stueck und zaehlt nicht.
+bool kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n);
+// Fehlt der Schluessel, in dem das naechste Stueck liegen muesste? Dann
+// laesst sich die Kurve nie weiterschicken.
+bool kurve_luecke(void);
 void kurve_vergessen(void);
 
 // DIE ZEIT JE ZONE, aus der gemerkten Kurve - fuer den Schirm nach dem

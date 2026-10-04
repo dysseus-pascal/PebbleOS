@@ -96,7 +96,17 @@ uint32_t wartend_ende(void) {
   return prv_bezug(&b) ? b.ende : 0;
 }
 
-void wartend_vergessen(void) {
+void wartend_vergessen(uint32_t beginn) {
+  // EINE SPAET BESTAETIGTE ALTE ZUSAMMENFASSUNG loescht keine neuere - wie
+  // beim Stopp. Inzwischen kann ein zweites Training ihren Platz haben.
+  // Laesst sie sich nicht lesen, bleibt sie: doppelt angekommen schadet
+  // nicht, das Telefon kennt sie am Beginn.
+  if (beginn != 0 && ks_persist_exists(PERSIST_WARTET)) {
+    Trainingsstand t = { 0 };
+    if (ks_persist_read_data(PERSIST_WARTET, &t, sizeof(t)) <= 0 || t.beginn != beginn) {
+      return;
+    }
+  }
   ks_persist_delete(PERSIST_WARTET);
   ks_persist_delete(PERSIST_WARTET_LISTE_A);
   ks_persist_delete(PERSIST_WARTET_LISTE_B);

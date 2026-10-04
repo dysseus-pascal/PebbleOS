@@ -72,11 +72,32 @@ static void prv_brummen_pause_um(void) {
   ks_brummen(s_muster, ARRAY_LENGTH(s_muster));
 }
 
+// EINE ZONE WECHSELT ERST DREI SCHLAEGE JENSEITS DER GRENZE. Ein Puls, der
+// um einen Schlag um die Grenze pendelt, brummte sonst alle paar Sekunden -
+// nachgestellt: 119 Mal in zehn Minuten. Angezeigt wird die Zone weiter ohne
+// Abstand (prv_schnappschuss); nur das Brummen wartet, bis es eindeutig ist.
+#define ZONEN_ABSTAND_BPM 3
+
+static int prv_zone_mit_abstand(uint16_t puls) {
+  const int roh = puls_zone(puls);
+  if (s_letzte_zone <= 0 || roh == s_letzte_zone) {
+    return roh;
+  }
+  // Hinauf gilt die Zone, die auch drei Schlaege tiefer noch gilt, hinab die,
+  // die auch drei hoeher noch gilt. Bis dahin bleibt es die alte.
+  if (roh > s_letzte_zone) {
+    const int z = puls_zone(puls > ZONEN_ABSTAND_BPM ? (uint16_t)(puls - ZONEN_ABSTAND_BPM) : 0);
+    return z > s_letzte_zone ? z : s_letzte_zone;
+  }
+  const int z = puls_zone((uint16_t)(puls + ZONEN_ABSTAND_BPM));
+  return z < s_letzte_zone ? z : s_letzte_zone;
+}
+
 static void prv_zonenwechsel(void) {
   // Das ist die eine Stelle, an der die Uhr von sich aus etwas sagt - und
   // der Grund, warum man sie beim Sport ueberhaupt anschaut. Nur ein frischer
   // Wert darf brummen: ein alter wechselt keine Zone.
-  const int zone = training_puls_frisch() ? puls_zone(training_puls()) : 0;
+  const int zone = training_puls_frisch() ? prv_zone_mit_abstand(training_puls()) : 0;
   if (training_zustand() == LaufLaeuft && zone > 0 && s_letzte_zone > 0 &&
       zone != s_letzte_zone) {
     if (zone > s_letzte_zone) {
@@ -129,10 +150,29 @@ static void prv_schnappschuss(void) {
 
 // --- Takt ---
 
+// EIN VERGESSENES TRAINING ENDET VON SELBST. Steht es eine halbe Stunde am
+// Stueck in der Pause, ist niemand mehr dabei: es wird gespeichert wie mit
+// der Taste, die aktive Zeit endet beim Beginn der Pause. Sonst liefen
+// Sensoren und Sekundentakt die Nacht durch, und das Training kaeme erst
+// ans Telefon, wenn jemand die Uhr wieder in die Hand nimmt.
+#define AUTO_ENDE_S (30 * 60)
+static uint32_t s_pause_s;   //< Takte am Stueck in der Pause
+
+static void prv_speichern(void *daten);
+
 static void prv_tick(void *daten) {
   ks_sperren();
   if (training_zustand() == LaufAus) {
     ks_entsperren();
+    return;
+  }
+  // Gezaehlt wird am Stueck: jedes Weiter faengt von vorn an.
+  s_pause_s = training_zustand() == LaufPause ? s_pause_s + 1 : 0;
+  if (s_pause_s >= AUTO_ENDE_S) {
+    ks_entsperren();
+    PBL_LOG_INFO("Kieselsport: %u min Pause, Training endet von selbst",
+                 (unsigned)(AUTO_ENDE_S / 60));
+    prv_speichern(NULL);
     return;
   }
   training_tick();
@@ -236,6 +276,7 @@ static void prv_starte(void *daten) {
   // Start dieses ersetzt ihn auf dem Telefon.
   stopp_vergessen(0);
   s_letzte_zone = -1;
+  s_pause_s = 0;
   s_sekunde_der_minute = 0;
   memset(s_minute, 0, sizeof(s_minute));
   prv_akku_pruefen();
@@ -250,6 +291,8 @@ static void prv_starte(void *daten) {
 
 static void prv_pause(void *daten) {
   ks_sperren();
+  // Auch Pause-Weiter-Pause zwischen zwei Takten beginnt eine neue Pause.
+  s_pause_s = 0;
   training_pause_umschalten();
   prv_schnappschuss();
   ks_entsperren();
@@ -476,8 +519,8 @@ bool kieselsport_wartend_laden(Trainingsstand *t, char *liste, size_t platz) {
   return wartend_laden(t, liste, platz);
 }
 
-void kieselsport_wartend_vergessen(void) {
-  wartend_vergessen();
+void kieselsport_wartend_vergessen(uint32_t beginn) {
+  wartend_vergessen(beginn);
 }
 
 size_t kieselsport_wartend_pausen(uint8_t *aus, size_t platz) {
@@ -516,8 +559,12 @@ uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max) {
   return kurve_stueck(aus, max);
 }
 
-void kieselsport_kurve_bestaetigt(uint16_t n) {
-  kurve_bestaetigt(n);
+bool kieselsport_kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n) {
+  return kurve_bestaetigt(beginn, ab, n);
+}
+
+bool kieselsport_kurve_luecke(void) {
+  return kurve_luecke();
 }
 
 void kieselsport_kurve_vergessen(void) {
