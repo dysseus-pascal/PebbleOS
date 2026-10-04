@@ -1037,6 +1037,28 @@ static const PrefsTableEntry s_prefs_table[] = {
 };
 #undef PREFS_MACRO
 
+// Boulder: DER PLATZ IN shellpref, BEIM BAUEN GEPRUEFT. settings_file zaehlt je Satz 8 Byte
+// Kopf, den Schluessel samt Null und den Wert, dazu 16 Byte fuer die Datei. Sind alle Prefs
+// geschrieben, muss der groesste noch einmal daneben passen - ueberschrieben wird, indem der
+// neue Satz neben den alten kommt. Sonst scheitert das Schreiben still
+// (prefs_private_write_backing loggt nur eine Warnung).
+#define PREFS_MACRO(key, var) +(8 + sizeof(key) + sizeof(var))
+enum { SHELLPREF_BELEGT = 16
+#include "prefs_values.h.inc"
+};
+#undef PREFS_MACRO
+#define PREFS_MACRO(key, var) char var##_satz[8 + sizeof(key) + sizeof(var)];
+typedef union {
+#include "prefs_values.h.inc"
+} ShellprefGroessterSatz;
+#undef PREFS_MACRO
+_Static_assert(SHELLPREF_BELEGT + sizeof(ShellprefGroessterSatz) <= SHELL_PREFS_FILE_LEN,
+               "shellpref ist voll: SHELL_PREFS_FILE_LEN erhoehen (hoechstens 3343)");
+// Ueber 3343 Byte (x 1.2 plus Kopf) belegt die Datei zwei PFS-Seiten. Dann schriebe die neue
+// Firmware sie beim Update um, und eine aeltere scheiterte beim Verdichten eines Bestands
+// ueber 4011 Byte - und loeschte die Datei samt aller Prefs (settings_raw_iter.c).
+_Static_assert(SHELL_PREFS_FILE_LEN <= 3343, "shellpref muss eine PFS-Seite bleiben (Rueckweg)");
+
 // ------------------------------------------------------------------------------------
 static void prv_convert_deprecated_backlight_behaviour_key(SettingsFile *file) {
   // if present, convert deprecated BACKLIGHT_BEHAVIOUR key to the two new separate keys
