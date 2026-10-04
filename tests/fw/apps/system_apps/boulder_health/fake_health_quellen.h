@@ -8,7 +8,7 @@
 // Zeitzone samt Umstellung. Grenzen der App - was dahinter rechnet, ist
 // nicht ihr Teil.
 
-#include "apps/system/health/daten.h"
+#include "apps/system/boulder_health/daten.h"
 #include "applib/health_service.h"
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/boulder/haken.h"
