@@ -204,7 +204,8 @@ static void prv_lade_nacht(void) {
     if (zeile[0] == '\n' || zeile[0] == '\r') {
       break;  // danach kommen die HRV-Fenster; die kennt die Firmware noch nicht
     }
-    if (!strncmp(zeile, "minute,", 7)) {
+    // Die Kopfzeilen mit '#' sagen, was in der Datei echt ist und was nicht.
+    if (zeile[0] == '#' || !strncmp(zeile, "minute,", 7)) {
       continue;
     }
     char *feld[8] = { 0 };

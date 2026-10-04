@@ -192,6 +192,20 @@ unlock:
 }
 
 // ------------------------------------------------------------------------------------
+// Remove the stored session at `idx`. The caller holds state->mutex.
+static void prv_remove_activity_session_at(ActivityState *state, int idx) {
+  int num_to_move = state->activity_sessions_count - idx - 1;
+  PBL_ASSERTN(num_to_move >= 0);
+  if (num_to_move == 0) {
+    memset(&state->activity_sessions[idx], 0, sizeof(ActivitySession));
+  } else {
+    memmove(&state->activity_sessions[idx], &state->activity_sessions[idx + 1],
+            num_to_move * sizeof(ActivitySession));
+  }
+  state->activity_sessions_count--;
+}
+
+// ------------------------------------------------------------------------------------
 // Delete an ongoing activity. Called by the algorithm code when it decides that an activity
 // that was previously ongoing should not be registered after all.
 void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
@@ -218,19 +232,43 @@ void activity_sessions_prv_delete_activity_session(ActivitySession *session) {
     PBL_ASSERT(stored_session->ongoing, "Only ongoing sessions can be deleted");
 
     // Remove this session
-    int num_to_move = state->activity_sessions_count - found_session_idx - 1;
-    PBL_ASSERTN(num_to_move >= 0);
-    if (num_to_move == 0) {
-      memset(&state->activity_sessions[found_session_idx], 0, sizeof(ActivitySession));
-    } else {
-      memmove(&state->activity_sessions[found_session_idx],
-              &state->activity_sessions[found_session_idx + 1],
-              num_to_move * sizeof(ActivitySession));
-    }
-    state->activity_sessions_count--;
+    prv_remove_activity_session_at(state, found_session_idx);
   }
 unlock:
   pbl_mutex_unlock(&state->mutex);
+}
+
+// ------------------------------------------------------------------------------------
+// BOULDER: EINE LAUFENDE SITZUNG ZURUECKNEHMEN - UND NUR EINE LAUFENDE. Der Gehfilter
+// nimmt eine erkannte Bewegung zurueck, die er selbst als laufend gemeldet hat. Hat sie
+// inzwischen jemand abgeschlossen, gilt sie: activity_sessions_prv_delete_activity_session
+// hielte bei ihr die Uhr an (PBL_ASSERT). Heute verhindert das die Reihenfolge beim
+// Trainingsstart (activity_algorithm_enable_activity_tracking); ein Neustart der Uhr waere
+// aber ein zu hoher Preis, falls einmal jemand vorher abschliesst - etwa workout_service.c,
+// wenn dort num_sessions = 0 berichtigt wird. Pruefen und Loeschen unter derselben Sperre.
+bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session) {
+  ActivityState *state = activity_private_state();
+  bool zurueckgenommen = false;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  {
+    for (uint16_t i = 0; i < state->activity_sessions_count; i++) {
+      ActivitySession *gespeichert = &state->activity_sessions[i];
+      if (!prv_activity_sessions_equal(session, gespeichert, false /*any_sleep*/)) {
+        continue;
+      }
+      if (gespeichert->ongoing) {
+        prv_remove_activity_session_at(state, i);
+        zurueckgenommen = true;
+      } else {
+        PBL_LOG_WRN("Session %d already ended, kept", (int)session->type);
+      }
+      break;
+    }
+    // Nicht gefunden ist hier der Normalfall: nach dem ersten Zuruecknehmen meldet
+    // Kraepelin dieselbe Sitzung jede weitere Minute - darum kein Log.
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return zurueckgenommen;
 }
 
 // --------------------------------------------------------------------------------------------

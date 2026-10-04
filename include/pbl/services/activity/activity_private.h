@@ -544,6 +544,11 @@ void activity_sessions_prv_add_activity_session(ActivitySession *session);
 //! deleted.
 void activity_sessions_prv_delete_activity_session(ActivitySession *session);
 
+//! Boulder: Nimmt die gespeicherte Sitzung gleicher Art und Startzeit zurueck, aber nur, solange
+//! sie laeuft. Eine schon abgeschlossene bleibt stehen (ohne PBL_ASSERT). Gibt zurueck, ob
+//! zurueckgenommen wurde.
+bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session);
+
 //! Perform our once a minute activity session maintenance logic
 void activity_sessions_prv_minute_handler(time_t utc_sec);
 

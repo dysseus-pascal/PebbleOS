@@ -3077,3 +3077,48 @@ void test_activity__activity_sessions_add_delete_sessions(void) {
   cl_assert_equal_m(&activity_private_state()->activity_sessions[0], &a1, sizeof(ActivitySession));
   cl_assert_equal_m(&activity_private_state()->activity_sessions[1], &a3, sizeof(ActivitySession));
 }
+
+// ---------------------------------------------------------------------------------------
+// Boulder: der Gehfilter nimmt eine erkannte Bewegung zurueck - aber nur, solange sie
+// laeuft. Eine abgeschlossene bleibt stehen, und die Uhr haelt nicht an (das alte
+// activity_sessions_prv_delete_activity_session endet hier im PBL_ASSERT).
+void test_activity__laufende_zuruecknehmen_nur_solange_sie_laeuft(void) {
+  ActivitySession laufend = {
+    .type = ActivitySessionType_Movement,
+    .start_utc = 100,
+    .length_min = 12,
+    .ongoing = true,
+  };
+  ActivitySession abgeschlossen = laufend;
+  abgeschlossen.start_utc = 200;
+  abgeschlossen.ongoing = false;
+  // Gleiche Startzeit, andere Art: darf nicht mitgehen.
+  ActivitySession training = laufend;
+  training.type = ActivitySessionType_Run;
+  activity_sessions_prv_add_activity_session(&laufend);
+  activity_sessions_prv_add_activity_session(&abgeschlossen);
+  activity_sessions_prv_add_activity_session(&training);
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 3);
+
+  // Die laufende geht, die beiden anderen ruecken nach.
+  ActivitySession frage = { .type = ActivitySessionType_Movement, .start_utc = 100 };
+  cl_assert(activity_sessions_prv_laufende_zuruecknehmen(&frage));
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 2);
+  cl_assert_equal_m(&activity_private_state()->activity_sessions[0], &abgeschlossen,
+                    sizeof(ActivitySession));
+  cl_assert_equal_m(&activity_private_state()->activity_sessions[1], &training,
+                    sizeof(ActivitySession));
+
+  // Die abgeschlossene bleibt - ohne Anhalten.
+  frage.start_utc = 200;
+  cl_assert(!activity_sessions_prv_laufende_zuruecknehmen(&frage));
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 2);
+  cl_assert_equal_m(&activity_private_state()->activity_sessions[0], &abgeschlossen,
+                    sizeof(ActivitySession));
+
+  // Eine, die es nicht (mehr) gibt: nichts geschieht. Das ist der Normalfall, denn
+  // Kraepelin meldet eine zurueckgenommene Bewegung jede weitere Minute.
+  frage.start_utc = 100;
+  cl_assert(!activity_sessions_prv_laufende_zuruecknehmen(&frage));
+  cl_assert_equal_i(activity_private_state()->activity_sessions_count, 2);
+}
