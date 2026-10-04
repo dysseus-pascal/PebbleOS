@@ -35,6 +35,9 @@ void einstellungen_empfindlichkeit(int32_t stufe) {
 
 void einstellungen_pin_art(int32_t art) {
   if (art < 0 || art > 7) return;
+  // NUR WAS SICH AENDERT, KOMMT IN DEN FLASH: Boulder schickt beim Speichern
+  // alle Einstellungen mit, auch die gleich gebliebenen.
+  if (persist_exists(PERSIST_PIN_ART) && persist_read_int(PERSIST_PIN_ART) == art) return;
   persist_write_int(PERSIST_PIN_ART, art);
 }
 
@@ -43,6 +46,9 @@ void einstellungen_pin_zeit(const char *hhmm) {
   // Nur "H:MM" oder "HH:MM" - was sonst kommt, ist keine Uhrzeit.
   const size_t n = strlen(hhmm);
   if (n < 4 || n > 5 || hhmm[n - 3] != ':') return;
+  char bisher[8] = "";
+  if (persist_exists(PERSIST_PIN_ZEIT)) persist_read_string(PERSIST_PIN_ZEIT, bisher, sizeof(bisher));
+  if (strcmp(bisher, hhmm) == 0) return;
   persist_write_string(PERSIST_PIN_ZEIT, hhmm);
 }
 

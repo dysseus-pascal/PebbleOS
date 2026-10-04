@@ -49,7 +49,7 @@ uint16_t training_puls(void);
 bool training_puls_frisch(void);
 
 // Die Sekunden seit dem Start - fuer alles, was Abschnitte zeitlich einordnet.
-uint16_t training_sekunde(void);
+uint32_t training_sekunde(void);
 
 // --- Archiv ---
 

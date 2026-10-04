@@ -150,7 +150,9 @@ bool puls_maximum_gesetzt(void) {
 }
 
 void puls_setze_maximum(uint16_t schlaege) {
-  if (!prv_plausibel(schlaege)) {
+  // Steht derselbe Wert schon fest, schreibt das Echo des Telefons nichts.
+  // Nicht bei offener Zahl: dann fehlt der Vermerk im Persist noch.
+  if (!prv_plausibel(schlaege) || (s_maximum == schlaege && !s_offen)) {
     return;
   }
   s_offen = 0;
@@ -160,6 +162,11 @@ void puls_setze_maximum(uint16_t schlaege) {
 }
 
 void puls_maximum_nicht_setzen(void) {
+  // Schon "nach Alter" und so im Persist vermerkt: nichts zu schreiben.
+  if (!s_maximum && !s_offen && !ks_persist_exists(PERSIST_MAXPULS) &&
+      ks_persist_exists(PERSIST_MAXPULS_GESETZT) && ks_persist_read_int(PERSIST_MAXPULS_GESETZT) == 0) {
+    return;
+  }
   s_offen = 0;
   s_maximum = 0;
   // LOESCHEN, NICHT 190 SCHREIBEN: eine aeltere Firmware nach einem

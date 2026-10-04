@@ -56,6 +56,7 @@
 #define MESSAGE_KEY_MAXPULS_GESETZT 10040
 
 // Was nur die App im Persist haelt: der Timeline-Pin, den die Konfigseite
-// und Kiesel-Helper stellen. Dieselben Nummern wie in services/kieselsport.
-#define PERSIST_PIN_ART 5
-#define PERSIST_PIN_ZEIT 6
+// und Kiesel-Helper stellen (PERSIST_PIN_ART, PERSIST_PIN_ZEIT). Die Nummern
+// stehen EINMAL, beim Dienst: App und Dienst teilen sich den Persist, und
+// zwei Listen liefen frueher oder spaeter auseinander.
+#include "services/kieselsport/schluessel.h"

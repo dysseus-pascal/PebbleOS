@@ -26,11 +26,11 @@
 // Die Einstellungen aus dem Persist - beim Start des Dienstes und jedes Satzes.
 void reps_laden(void);
 void reps_start(void);
-void reps_stoppe(uint16_t sekunde);   //< schliesst den offenen Satz ab
+void reps_stoppe(uint32_t sekunde);   //< schliesst den offenen Satz ab
 void reps_pause(bool an);
 
 // Je Sekunde aufzurufen. Uebergibt die Sekunde seit Trainingsbeginn.
-void reps_tick(uint16_t sekunde);
+void reps_tick(uint32_t sekunde);
 
 uint16_t reps_laufend(void);   //< Wiederholungen im laufenden Satz
 bool reps_ruht(void);          //< gerade Pause zwischen zwei Saetzen?

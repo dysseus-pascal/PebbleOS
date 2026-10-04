@@ -189,6 +189,12 @@ bool app_install_entry_has_worker(const AppInstallEntry *entry);
 //! @param entry AppInstallEntry to check the parameters of
 bool app_install_entry_is_hidden(const AppInstallEntry *entry);
 
+//! Boulder: Ist das eine Store-App mit der Kennung einer System-App - die
+//! Vorgaengerin von Kieselsport oder Kieselstrasse? Sie steht nicht im
+//! Startmenue (dort ist die System-App) und zaehlt nicht fuer die
+//! Reihenfolge, bleibt aber aufzaehlbar und damit loeschbar.
+bool app_install_entry_ist_abgeloest(const AppInstallEntry *entry);
+
 //! Gets whether the app is visible in the list of apps that can be set as a quick launch shortcut.
 //! @return true if the app is only visible in quick launch, false otherwise
 bool app_install_entry_is_quick_launch_visible_only(const AppInstallEntry *entry);

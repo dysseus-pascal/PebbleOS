@@ -32,7 +32,7 @@ static int32_t s_achse;           //< die Richtung der ersten Bahn
 static bool s_hat_achse;
 static bool s_hin;                //< schwimmt gerade in Achsenrichtung?
 static uint16_t s_bahnen;
-static uint16_t s_letzte_wende;
+static uint32_t s_letzte_wende;
 static bool s_bereit;
 
 /** Winkelabstand in Grad, immer 0..180. */
@@ -98,14 +98,14 @@ void bahnen_start(void) {
   ks_kompass(true);
 }
 
-void bahnen_stoppe(uint16_t sekunde) {
+void bahnen_stoppe(uint32_t sekunde) {
   if (!s_an) return;
   // DIE LETZTE BAHN ZAEHLT MIT. Wer am Beckenrand ankommt und aufhoert, hat
   // sie geschwommen - nur folgt ihr keine Wende mehr, an der man sie
   // erkennen koennte.
   if (s_hat_achse && sekunde > s_letzte_wende + MIN_BAHN_S) {
     s_bahnen++;
-    abschnitt_hinzu(s_letzte_wende, 1, (uint16_t)(sekunde - s_letzte_wende));
+    abschnitt_hinzu(s_letzte_wende, 1, sekunde - s_letzte_wende);
   }
   ks_kompass(false);
   s_an = false;
@@ -113,7 +113,7 @@ void bahnen_stoppe(uint16_t sekunde) {
 
 void bahnen_pause(bool an) { s_pausiert = an; }
 
-void bahnen_tick(uint16_t sekunde) {
+void bahnen_tick(uint32_t sekunde) {
   if (!s_an || s_pausiert || !s_bereit || !s_hat_richtung) return;
 
   const int32_t jetzt = prv_richtung();
@@ -135,7 +135,7 @@ void bahnen_tick(uint16_t sekunde) {
 
   if (hin_jetzt != s_hin && sekunde >= s_letzte_wende + MIN_BAHN_S) {
     s_bahnen++;
-    abschnitt_hinzu(s_letzte_wende, 1, (uint16_t)(sekunde - s_letzte_wende));
+    abschnitt_hinzu(s_letzte_wende, 1, sekunde - s_letzte_wende);
     s_letzte_wende = sekunde;
     s_hin = hin_jetzt;
   }
@@ -152,7 +152,8 @@ bool bahnen_bereit(void) {
 }
 
 void bahnen_becken_setze(uint16_t meter) {
-  if (meter < 5 || meter > 100) return;
+  // Ein unveraendertes Becken nicht noch einmal in den Flash (reps.c).
+  if (meter < 5 || meter > 100 || meter == s_becken) return;
   s_becken = meter;
   ks_persist_write_int(PERSIST_BECKEN, meter);
 }

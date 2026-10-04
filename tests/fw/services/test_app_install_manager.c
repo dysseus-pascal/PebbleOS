@@ -541,3 +541,41 @@ void test_app_install_manager__recently_communicated(void) {
   app_install_unmark_prioritized(music_id);
   cl_assert_equal_b(false, app_install_is_prioritized(music_id));
 }
+
+// Boulder: eine Store-App mit der Kennung einer System-App (wie die alte
+// Kieselsport aus dem Store) bleibt aufzaehlbar und damit loeschbar.
+static bool prv_finde_store_musik(AppInstallEntry *entry, void *data) {
+  AppInstallId *gefunden = (AppInstallId *)data;
+  if (app_install_id_from_app_db(entry->install_id) && uuid_equal(&entry->uuid, &music_uuid)) {
+    *gefunden = entry->install_id;
+  }
+  return true;
+}
+
+void test_app_install_manager__abgeloeste_store_app_bleibt_loeschbar(void) {
+  AppDBEntry store_musik = menu_layer;
+  store_musik.uuid = music_uuid;
+  strcpy(store_musik.name, "Music (Store)");
+  app_db_insert((uint8_t *)&store_musik.uuid, sizeof(Uuid), (uint8_t *)&store_musik,
+                sizeof(AppDBEntry));
+  const AppInstallId store_id = app_db_get_install_id_for_uuid(&music_uuid);
+  cl_assert(app_install_id_from_app_db(store_id));
+
+  // Gestartet wird weiter die System-App.
+  cl_assert_equal_i(music_id, app_install_get_id_for_uuid(&music_uuid));
+
+  // Die Store-App steht in der Aufzaehlung - von dort aus laesst sie sich
+  // finden und loeschen (app list / app remove).
+  AppInstallId gefunden = INSTALL_ID_INVALID;
+  app_install_enumerate_entries(prv_finde_store_musik, &gefunden);
+  cl_assert_equal_i(gefunden, store_id);
+
+  // Nur sie gilt als abgeloest, die System-App nicht.
+  AppInstallEntry entry;
+  cl_assert(app_install_get_entry_for_install_id(store_id, &entry));
+  cl_assert(app_install_entry_ist_abgeloest(&entry));
+  cl_assert(app_install_get_entry_for_install_id(music_id, &entry));
+  cl_assert(!app_install_entry_ist_abgeloest(&entry));
+  cl_assert(app_install_get_entry_for_install_id(menu_layer_id, &entry));
+  cl_assert(!app_install_entry_ist_abgeloest(&entry));
+}

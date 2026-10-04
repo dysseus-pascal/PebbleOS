@@ -27,7 +27,8 @@ bool wartend_laden(Trainingsstand *t, char *liste, size_t platz);
 size_t wartend_pausen(uint8_t *aus, size_t platz);
 // Das Ende der aktiven Zeit, 0 wenn unbekannt.
 uint32_t wartend_ende(void);
-void wartend_vergessen(void);
+// Nur, wenn die wartende noch zu [beginn] gehoert; 0 vergisst jede.
+void wartend_vergessen(uint32_t beginn);
 // Liegt eine da? Ohne sie zu lesen.
 bool wartend_da(void);
 

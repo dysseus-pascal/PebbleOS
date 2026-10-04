@@ -114,6 +114,10 @@ extern fctx_plot_edge_func fctx_plot_edge;
 extern fctx_plot_circle_func fctx_plot_circle;
 extern fctx_end_fill_func fctx_end_fill;
 extern void fctx_deinit_context(FContext* fctx);
+// Boulder: den Flag-Puffer, den die Kontexte teilen, zurueckgeben - beim
+// Ende des Zifferblatts. Und wie gross er gerade ist (0 = keiner).
+void fctx_puffer_freigeben(void);
+size_t fctx_puffer_bytes(void);
 
 #if PBL_COLOR  // Boulder: #if, the firmware defines it as 0 or 1
 void fctx_enable_aa(bool enable);

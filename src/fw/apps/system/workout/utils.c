@@ -95,11 +95,15 @@ const char *workout_utils_get_name_for_activity(ActivitySessionType type) {
     case ActivitySessionType_Run:
       /// Run Label
       return i18n_noop("Run");
+    case ActivitySessionType_Movement:
+      // Boulder: Bewegung ist kein Workout, aber ein Name statt eines WTF -
+      // erkannte Gehphasen sind seit F1 Movement, nicht mehr Walk.
+      /// Movement Label
+      return i18n_noop("Movement");
     case ActivitySessionType_Sleep:
     case ActivitySessionType_RestfulSleep:
     case ActivitySessionType_Nap:
     case ActivitySessionType_RestfulNap:
-    case ActivitySessionType_Movement:  // Boulder: kein Workout
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
       // ActivitySessionType_Invalid should have the same value
@@ -120,11 +124,14 @@ const char *workout_utils_get_detection_text_for_activity(ActivitySessionType ty
     case ActivitySessionType_Run:
       /// Run automatically detected dialog text
       return i18n_noop("Run\nDetected");
+    case ActivitySessionType_Movement:
+      // Boulder: wie beim Namen - ein Text statt eines WTF.
+      /// Movement automatically detected dialog text
+      return i18n_noop("Movement\nDetected");
     case ActivitySessionType_Sleep:
     case ActivitySessionType_RestfulSleep:
     case ActivitySessionType_Nap:
     case ActivitySessionType_RestfulNap:
-    case ActivitySessionType_Movement:  // Boulder: kein Workout
     case ActivitySessionType_None:
     case ActivitySessionTypeCount:
       // ActivitySessionType_Invalid should have the same value
@@ -142,7 +149,10 @@ bool workout_utils_find_ongoing_activity_session(ActivitySession *session_out) {
       app_zalloc_check(sizeof(ActivitySession) * ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT);
   activity_get_sessions(&num_sessions, sessions);
 
-  for (int i = num_sessions; i >= 0; i--) {
+  // Boulder: ab der letzten gefuellten Sitzung, nicht eine dahinter - bei
+  // vollen 32 Sitzungen (mit den Schlafsitzungen von Boulder wahrscheinlicher)
+  // las die Schleife hinter das Ende der Allokation.
+  for (int i = (int)num_sessions - 1; i >= 0; i--) {
     if (workout_service_is_workout_type_supported(sessions[i].type) && sessions[i].ongoing) {
       if (session_out) {
         memcpy(session_out, &sessions[i], sizeof(ActivitySession));

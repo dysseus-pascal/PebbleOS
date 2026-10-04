@@ -13,7 +13,6 @@
 #include "apps/system_app_ids.h"
 #include "process_management/app_install_manager.h"
 #include "process_management/app_manager.h"
-#include "applib/persist.h"
 #include "applib/ui/vibes.h"
 #include "kernel/event_loop.h"
 #include "kernel/pebble_tasks.h"
@@ -27,8 +26,6 @@
 #include "pbl/services/health_sync_endpoint.h"
 #include "pbl/services/new_timer/new_timer.h"
 #include "pbl/services/system_task.h"
-#include "pbl/services/persist.h"
-#include "pbl/services/settings/settings_file.h"
 #include "pbl/util/math.h"
 #include "pbl/util/trig.h"
 #include "system/passert.h"
@@ -49,78 +46,8 @@ time_t ks_jetzt(void) {
 
 // --- Persist ---
 //
-// DER SPEICHER VON KIESELSPORT, NICHT DER DER LAUFENDEN APP. Jeder Zugriff
-// meldet sich als Nutzer der Datei an und wieder ab; laeuft die App oder ein
-// Training, bleibt sie dazwischen offen, und das An- und Abmelden kostet
-// nur einen Zaehler.
-
-static const Uuid s_uuid = KIESELSPORT_UUID_INIT;
-
-static SettingsFile *prv_auf(void) {
-  persist_service_client_open(&s_uuid);
-  return persist_service_lock_and_get_store(&s_uuid);
-}
-
-static void prv_zu(SettingsFile *datei) {
-  persist_service_unlock_store(datei);
-  persist_service_client_close(&s_uuid);
-}
-
-void ks_persist_offen_halten(bool an) {
-  if (an) {
-    persist_service_client_open(&s_uuid);
-  } else {
-    persist_service_client_close(&s_uuid);
-  }
-}
-
-bool ks_persist_exists(uint32_t key) {
-  SettingsFile *datei = prv_auf();
-  const bool da = settings_file_exists(datei, &key, sizeof(key));
-  prv_zu(datei);
-  return da;
-}
-
-int32_t ks_persist_read_int(uint32_t key) {
-  int32_t wert = 0;
-  SettingsFile *datei = prv_auf();
-  settings_file_get(datei, &key, sizeof(key), &wert, sizeof(wert));
-  prv_zu(datei);
-  return wert;
-}
-
-void ks_persist_write_int(uint32_t key, int32_t wert) {
-  SettingsFile *datei = prv_auf();
-  settings_file_set(datei, &key, sizeof(key), &wert, sizeof(wert));
-  prv_zu(datei);
-}
-
-int ks_persist_read_data(uint32_t key, void *puffer, size_t groesse) {
-  SettingsFile *datei = prv_auf();
-  int gelesen = settings_file_get_len(datei, &key, sizeof(key));
-  if (gelesen > 0) {
-    gelesen = MIN((int)groesse, gelesen);
-    if (FAILED(settings_file_get(datei, &key, sizeof(key), puffer, gelesen))) {
-      gelesen = 0;
-    }
-  }
-  prv_zu(datei);
-  return gelesen > 0 ? gelesen : 0;
-}
-
-void ks_persist_write_data(uint32_t key, const void *daten, size_t groesse) {
-  SettingsFile *datei = prv_auf();
-  settings_file_set(datei, &key, sizeof(key), daten, MIN(groesse, PERSIST_DATA_MAX_LENGTH));
-  prv_zu(datei);
-}
-
-void ks_persist_delete(uint32_t key) {
-  SettingsFile *datei = prv_auf();
-  if (settings_file_exists(datei, &key, sizeof(key))) {
-    settings_file_delete(datei, &key, sizeof(key));
-  }
-  prv_zu(datei);
-}
+// Der Speicher von Kieselsport steht in speicher.c - dort pruefbar ohne
+// Sensoren und Dienste der Uhr.
 
 // --- Tageszaehler ---
 

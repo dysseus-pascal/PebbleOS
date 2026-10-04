@@ -648,3 +648,48 @@ void test_app_menu_data_source__app_node_comparator_equality_cases(void) {
     cl_assert_equal_i(node->install_id, desired_order[i]);
   }
 }
+
+// Boulder: die Store-App mit der Kennung einer System-App erscheint nicht
+// neben ihr im Startmenue - auch wenn sie aufzaehlbar ist.
+void test_app_menu_data_source__abgeloeste_store_app_nicht_im_startmenue(void) {
+  AppDBEntry store_musik = menu_layer_app;
+  store_musik.uuid = (Uuid){0x1f, 0x03, 0x29, 0x3d, 0x47, 0xaf, 0x4f, 0x28,
+                            0xb9, 0x60, 0xf2, 0xb0, 0x2a, 0x6d, 0xd7, 0x57};
+  app_db_insert((uint8_t *)&store_musik.uuid, sizeof(Uuid), (uint8_t *)&store_musik,
+                sizeof(AppDBEntry));
+  const AppInstallId store_id = app_db_get_install_id_for_uuid(&store_musik.uuid);
+  cl_assert(store_id > 0);
+  cl_assert_equal_i(APP_ID_MUSIC, app_install_get_id_for_uuid(&store_musik.uuid));
+
+  app_menu_data_source_init(&data_source,
+                            &(AppMenuDataSourceCallbacks){
+                              .changed = prv_menu_layer_reload_data,
+                              .filter = everything_filter_callback,
+                            },
+                            &menu_layer);
+  const uint16_t num_apps = app_menu_data_source_get_count(&data_source);
+  bool musik = false;
+  for (uint16_t i = 0; i < num_apps; i++) {
+    AppMenuNode *node = app_menu_data_source_get_node_at_index(&data_source, i);
+    cl_assert(node->install_id != store_id);
+    musik = musik || node->install_id == APP_ID_MUSIC;
+  }
+  cl_assert(musik);
+  app_menu_data_source_deinit(&data_source);
+}
+
+// Boulder: eine Reihenfolge vom Telefon nennt die Kennung - gemeint ist die
+// System-App, nicht ihre abgeloeste Vorgaengerin aus dem Store.
+void test_app_menu_data_source__reihenfolge_gehoert_der_system_app(void) {
+  AppDBEntry store_musik = menu_layer_app;
+  store_musik.uuid = (Uuid){0x1f, 0x03, 0x29, 0x3d, 0x47, 0xaf, 0x4f, 0x28,
+                            0xb9, 0x60, 0xf2, 0xb0, 0x2a, 0x6d, 0xd7, 0x57};
+  app_db_insert((uint8_t *)&store_musik.uuid, sizeof(Uuid), (uint8_t *)&store_musik,
+                sizeof(AppDBEntry));
+  write_uuid_list_to_file(&store_musik.uuid, 1);
+  AppMenuOrderStorage *reihenfolge = app_order_read_order();
+  cl_assert(reihenfolge);
+  cl_assert_equal_i(reihenfolge->list_length, 1);
+  cl_assert_equal_i(reihenfolge->id_list[0], APP_ID_MUSIC);
+  kernel_free(reihenfolge);
+}

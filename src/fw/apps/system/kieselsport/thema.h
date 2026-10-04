@@ -43,12 +43,6 @@
 // Die Farbe einer Pulszone (1..5); 0 und alles andere: Grau.
 GColor thema_zonenfarbe(int zone);
 
-// DER GRUND DES PULSFELDS - die Zonenfarbe, wo sie Grund sein kann. Wie in
-// der Workout-App der Pebble faerbt sich das ganze Feld, sobald man in einer
-// Zone ist: das sieht man aus dem Augenwinkel, ohne eine Zahl zu lesen.
-// Ohne Zone, ohne frischen Wert und auf Schwarzweiss: der normale Grund.
-GColor thema_zonengrund(int zone);
-
 // Die Farbe einer Sportart - dieselbe wie in Kiesel-Helper, soweit die
 // 64 Farben der Uhr sie hergeben. Grund des Startschirms.
 #include "art_text.h"

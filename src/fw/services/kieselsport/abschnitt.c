@@ -14,7 +14,7 @@ void abschnitt_leeren(void) {
   s_summe = 0;
 }
 
-void abschnitt_hinzu(uint16_t beginn_s, uint16_t anzahl, uint16_t dauer_s) {
+void abschnitt_hinzu(uint32_t beginn_s, uint16_t anzahl, uint32_t dauer_s) {
   s_gesamt++;
   s_summe += anzahl;
   // DIE ZAEHLER LAUFEN WEITER, auch wenn die Liste voll ist. Wer einundzwanzig
@@ -36,12 +36,13 @@ void abschnitt_als_text(char *aus, size_t platz) {
   aus[0] = '\0';
   size_t hier = 0;
   for (int i = 0; i < s_anzahl; i++) {
-    char stueck[24];
-    const int n = snprintf(stueck, sizeof(stueck), "%u:%u:%u;",
-                           (unsigned)s_liste[i].beginn_s,
+    // Platz fuer zweimal zehn Ziffern, fuenf und die Trenner.
+    char stueck[32];
+    const int n = snprintf(stueck, sizeof(stueck), "%lu:%u:%lu;",
+                           (unsigned long)s_liste[i].beginn_s,
                            (unsigned)s_liste[i].anzahl,
-                           (unsigned)s_liste[i].dauer_s);
-    if (n <= 0) continue;
+                           (unsigned long)s_liste[i].dauer_s);
+    if (n <= 0 || (size_t)n >= sizeof(stueck)) continue;
     // ABBRECHEN STATT ABSCHNEIDEN. Ein halb geschriebener Abschnitt am Ende
     // waere auf dem Telefon eine erfundene Zahl.
     if (hier + (size_t)n + 1 > platz) break;

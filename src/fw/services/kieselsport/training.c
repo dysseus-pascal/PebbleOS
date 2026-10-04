@@ -72,7 +72,7 @@ void training_init(void) {
   puls_init();
 }
 
-uint16_t training_sekunde(void) { return (uint16_t)s_sekunden; }
+uint32_t training_sekunde(void) { return s_sekunden; }
 
 Laufzustand training_zustand(void) { return s_zustand; }
 Sportart training_art(void) { return s_art; }
@@ -142,8 +142,11 @@ void training_tick(void) {
   prv_zaehler_tick();
 
   const ArtInfo *info = art_info(s_art);
-  if (info->reps) reps_tick((uint16_t)s_sekunden);
-  if (info->bahnen) bahnen_tick((uint16_t)s_sekunden);
+  // IN VIER BYTE, NICHT IN ZWEI: nach 18 Stunden liefe ein uint16 ueber -
+  // Saetze und Bahnen stuenden beim Telefon 18 Stunden zu frueh, und eine
+  // Bahn ueber die Grenze bekaeme eine falsche Dauer.
+  if (info->reps) reps_tick(s_sekunden);
+  if (info->bahnen) bahnen_tick(s_sekunden);
 
   // NUR FRISCHE WERTE ZAEHLEN. Ein alter, den der Sensor eine halbe Stunde
   // lang wiederholt, zoege den Schnitt auf eine Zahl, die nie gemessen wurde.
@@ -205,8 +208,8 @@ Trainingsstand training_stoppe(void) {
   // ZUERST DIE ZAEHLER SCHLIESSEN, DANN DEN STAND HOLEN: der letzte Satz und
   // die letzte Bahn entstehen erst beim Abschliessen.
   const ArtInfo *info = art_info(s_art);
-  if (info->reps) reps_stoppe((uint16_t)s_sekunden);
-  if (info->bahnen) bahnen_stoppe((uint16_t)s_sekunden);
+  if (info->reps) reps_stoppe(s_sekunden);
+  if (info->bahnen) bahnen_stoppe(s_sekunden);
   const Trainingsstand t = training_stand();
   s_zustand = LaufAus;
   puls_normal_messen();
@@ -221,8 +224,8 @@ Trainingsstand training_stoppe(void) {
 
 void training_verwerfen(void) {
   const ArtInfo *info = art_info(s_art);
-  if (info->reps) reps_stoppe((uint16_t)s_sekunden);
-  if (info->bahnen) bahnen_stoppe((uint16_t)s_sekunden);
+  if (info->reps) reps_stoppe(s_sekunden);
+  if (info->bahnen) bahnen_stoppe(s_sekunden);
   s_zustand = LaufAus;
   puls_normal_messen();
   puls_hrv_stop();

@@ -32,3 +32,10 @@ pbl_clar_test(test_kieselsport_telefon
   # strnlen: in der Firmware-libc da, unter glibc mit -std=c11 nur so.
   DEFINES _GNU_SOURCE=1
 )
+
+# Der Persist von Kieselsport ueber der Datei der Uhr: Fehler beim Lesen,
+# Schreiben und Loeschen muessen im Log stehen.
+pbl_clar_test(test_kieselsport_speicher
+  SOURCES
+    src/fw/services/kieselsport/speicher.c
+)

@@ -38,6 +38,105 @@ FFont* leco;
 // Boulder: static - sidebar.c has its own screen_rect (no -fcommon here).
 static GRect screen_rect;
 
+// Boulder: DAS ZIFFERNBILD WIRD NUR GERECHNET, WENN ES SICH AENDERT.
+// PebbleOS zeichnet bei jedem Bild alle Schichten neu, auch die, die niemand
+// als geaendert markiert hat. Mit dem Sekunden-Widget hiess das jede Sekunde
+// fctx mit Kantenglaettung ueber beide Ziffernzeilen, obwohl sich nur die
+// Leiste aendert. Steht das Sekunden-Widget an, merkt sich die Uhr deshalb
+// den fertigen Bereich neben der Leiste und kopiert ihn hinein, solange
+// Stunde, Minute, Schrift, Farben und Lage gleich bleiben. Ohne das Widget
+// kommt ein neues Bild ohnehin nur mit einer neuen Minute - dann kostete die
+// Kopie (auf emery 166x228 = 37 848 Byte) Speicher fuer nichts.
+typedef struct {
+  char stunden[sizeof(time_hours)];
+  char minuten[sizeof(time_minutes)];
+  FFont *stunden_schrift;
+  FFont *minuten_schrift;
+  // Auch die Einstellung selbst: das Zeichnen liest sie fuer Groesse,
+  // Abstaende und Glaettung, nicht nur ueber die Schriften.
+  uint8_t schrift_einstellung;
+  GColor zeit_farbe;
+  GColor grund_farbe;
+  int leiste;
+  bool leiste_links;
+  GRect bounds;
+} ZiffernStand;
+
+static GBitmap *s_ziffern;
+static ZiffernStand s_ziffern_stand;
+static uint32_t s_ziffern_gerechnet;
+
+static void prv_ziffern_vergessen(void) {
+  gbitmap_destroy(s_ziffern);
+  s_ziffern = NULL;
+}
+
+// Der Bereich neben der Leiste, in Schirmkoordinaten (die Schicht liegt auf
+// dem ganzen Schirm).
+static GRect prv_ziffernbereich(void) {
+  const int16_t breite = screen_rect.size.w - sidebarWidth;
+  return GRect(settings.sidebarOnLeft ? sidebarWidth : 0, 0, breite, screen_rect.size.h);
+}
+
+static void prv_ziffernstand(ZiffernStand *stand, GRect bounds) {
+  memset(stand, 0, sizeof(*stand));
+  memcpy(stand->stunden, time_hours, sizeof(stand->stunden));
+  memcpy(stand->minuten, time_minutes, sizeof(stand->minuten));
+  stand->stunden_schrift = hours_font;
+  stand->minuten_schrift = minutes_font;
+  stand->schrift_einstellung = settings.clockFontId;
+  stand->zeit_farbe = settings.timeColor;
+  stand->grund_farbe = settings.timeBgColor;
+  stand->leiste = sidebarWidth;
+  stand->leiste_links = settings.sidebarOnLeft;
+  stand->bounds = bounds;
+}
+
+// Nach dem Rechnen: den Bereich aus dem Bildspeicher kopieren.
+static void prv_ziffern_merken(GContext *ctx, const ZiffernStand *stand) {
+  if (PBL_ROUND || !dynamicSettings.updateScreenEverySecond) {
+    prv_ziffern_vergessen();
+    return;
+  }
+  const GRect bereich = prv_ziffernbereich();
+  GBitmap *fb = graphics_capture_frame_buffer(ctx);
+  if (!fb) {
+    return;
+  }
+  if (gbitmap_get_format(fb) != GBitmapFormat8Bit) {
+    graphics_release_frame_buffer(ctx, fb);
+    prv_ziffern_vergessen();
+    return;
+  }
+  if (s_ziffern && (gbitmap_get_bounds(s_ziffern).size.w != bereich.size.w ||
+                    gbitmap_get_bounds(s_ziffern).size.h != bereich.size.h)) {
+    prv_ziffern_vergessen();
+  }
+  if (!s_ziffern) {
+    s_ziffern = gbitmap_create_blank(bereich.size, GBitmapFormat8Bit);
+  }
+  if (s_ziffern) {
+    for (int16_t y = 0; y < bereich.size.h; y++) {
+      const GBitmapDataRowInfo von = gbitmap_get_data_row_info(fb, bereich.origin.y + y);
+      const GBitmapDataRowInfo nach = gbitmap_get_data_row_info(s_ziffern, y);
+      memcpy(nach.data, von.data + bereich.origin.x, (size_t)bereich.size.w);
+    }
+    // memcpy, weil der Vergleich mit memcmp auch die Fuellbytes sieht.
+    memcpy(&s_ziffern_stand, stand, sizeof(s_ziffern_stand));
+  }
+  graphics_release_frame_buffer(ctx, fb);
+}
+
+size_t ClockArea_kopie_bytes(void) {
+  return s_ziffern ? (size_t)gbitmap_get_bytes_per_row(s_ziffern) *
+                         (size_t)gbitmap_get_bounds(s_ziffern).size.h
+                   : 0;
+}
+
+uint32_t ClockArea_gerechnet(void) {
+  return s_ziffern_gerechnet;
+}
+
 // "private" functions
 // Boulder: die Zuordnung steht in schriftwahl.c (host-getestet); hier nur,
 // welche geladene Schrift dazu gehoert.
@@ -76,6 +175,17 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   #if PBL_ROUND  // Boulder: the firmware defines PBL_ROUND as 0 or 1
     bounds = GRect(0, ROUND_VERTICAL_PADDING, screen_rect.size.w, screen_rect.size.h - ROUND_VERTICAL_PADDING * 2);
   #endif
+
+  // Boulder: nichts geaendert - die Kopie vom letzten Rechnen (siehe oben).
+  ZiffernStand stand;
+  prv_ziffernstand(&stand, bounds);
+  if (s_ziffern && dynamicSettings.updateScreenEverySecond &&
+      memcmp(&stand, &s_ziffern_stand, sizeof(stand)) == 0) {
+    graphics_context_set_compositing_mode(ctx, GCompOpAssign);
+    graphics_draw_bitmap_in_rect_by_value(ctx, s_ziffern, prv_ziffernbereich());
+    return;
+  }
+  s_ziffern_gerechnet++;
 
   // Boulder: choose the renderer BEFORE fctx_init_context. Upstream switches
   // after it, so the first frame allocated the 8-bit flag buffer of the
@@ -156,6 +266,8 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   fctx_end_fill(&fctx);
 
   fctx_deinit_context(&fctx);
+
+  prv_ziffern_merken(ctx, &stand);
 }
 
 
@@ -186,6 +298,10 @@ void ClockArea_deinit() {
   ffont_destroy(avenir);
   ffont_destroy(avenir_bold);
   ffont_destroy(leco);
+  // Boulder: der gehaltene Flag-Puffer von fctx und die Kopie der Ziffern.
+  fctx_puffer_freigeben();
+  prv_ziffern_vergessen();
+  s_ziffern_gerechnet = 0;
   // Boulder: a system app keeps its statics after it ends.
   avenir = NULL;
   avenir_bold = NULL;

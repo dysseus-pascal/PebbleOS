@@ -37,6 +37,36 @@ typedef enum {
   SendungEinst,
 } Sendung;
 static Sendung s_letzte;
+// Der Beginn der Zusammenfassung, die gerade unterwegs ist. Ihre
+// Bestaetigung loescht nur sie - kam inzwischen ein neueres Training in den
+// Persist, bleibt das liegen und geht als naechstes.
+static uint32_t s_unterwegs_beginn;
+
+// OHNE TELEFON KEIN ANLAUF. Ist es nicht verbunden, scheitert jede Nachricht
+// ohnehin; statt alle 700 ms den Postausgang zu bemuehen, wird alle zehn
+// Sekunden nachgesehen. Gelesen wird nur der Zustand der Verbindung.
+#define VERBINDUNG_WARTEN_MS 10000
+static bool prv_telefon_da(void) {
+  return connection_service_peek_pebble_app_connection();
+}
+
+// Ging app_message_open schief (kein Speicher), ist der Postausgang zu und
+// jedes begin scheitert. Dann wird nichts mehr versucht - die Daten bleiben
+// im Persist, der Dienst holt die App spaeter wieder.
+static bool s_postausgang_zu;
+
+static void prv_abgelehnt(DictionaryIterator *iter, AppMessageResult grund, void *context);
+
+// Nach einem gelungenen begin scheitert send praktisch nicht. Wenn doch,
+// steht es im Log und gilt als abgelehnt - sonst wartete die Schlange auf
+// eine Antwort zu einer Nachricht, die nie hinausging.
+static void prv_senden(void) {
+  const AppMessageResult r = app_message_outbox_send();
+  if (r != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Senden gescheitert: %d", (int)r);
+    prv_abgelehnt(NULL, r, NULL);
+  }
+}
 
 // Die Zustandsmeldungen, der Reihe nach (meldungen.h). Ein paar Anlaeufe je
 // Meldung, nicht endlos: die Zusammenfassung am Ende sagt alles noch einmal.
@@ -81,35 +111,75 @@ static void prv_alles_drueben(void) {
 // naechsten Oeffnen dort weiter.
 #define KURVE_JE_NACHRICHT 300
 static uint16_t s_kurve_unterwegs;
+// Wozu das Stueck gehoert, das unterwegs ist: die Bestaetigung rueckt nur
+// diese Kurve ab dieser Stelle vor (kieselsport_kurve_bestaetigt).
+static uint32_t s_kurve_beginn_unterwegs;
+static uint16_t s_kurve_ab_unterwegs;
 static AppTimer *s_kurve_timer;
+// EIN LESEFEHLER IST NICHT GLEICH EINE KAPUTTE KURVE. Fehlt der Schluessel,
+// ist sie es; liest er sich nur gerade nicht, wird es ein paarmal wieder
+// versucht, bevor sie wegfaellt - sonst stuende die App ohne Ende offen.
+#define KURVE_LESEVERSUCHE 5
+#define KURVE_LESEN_WIEDER_MS 2000
+static uint8_t s_kurve_lesefehler;
 
+
+static void prv_kurve_senden(void *data);
+
+// Das naechste Stueck laesst sich nicht lesen.
+static void prv_kurve_unlesbar(uint16_t ab) {
+  if (!kieselsport_kurve_luecke() && ++s_kurve_lesefehler < KURVE_LESEVERSUCHE) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Kurve ab %u nicht lesbar, neuer Versuch", (unsigned)ab);
+    s_kurve_timer = app_timer_register(KURVE_LESEN_WIEDER_MS, prv_kurve_senden, NULL);
+    return;
+  }
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Kurve ab %u kaputt, verworfen", (unsigned)ab);
+  s_kurve_lesefehler = 0;
+  kieselsport_kurve_vergessen();
+  prv_alles_drueben();
+}
 
 static void prv_kurve_senden(void *data) {
   s_kurve_timer = NULL;
-  if (s_hat_wartende) return;
+  if (s_hat_wartende || s_postausgang_zu) return;
   if (!kieselsport_kurve_wartet()) { prv_alles_drueben(); return; }
+  if (!prv_telefon_da()) {
+    s_kurve_timer = app_timer_register(VERBINDUNG_WARTEN_MS, prv_kurve_senden, NULL);
+    return;
+  }
   // DIE MELDUNGEN ZUERST: ein Start, der hinter Kurvenstuecken anstuende,
   // kaeme nach sechs besetzten Anlaeufen nie an - und die Strecke fehlte.
   if (!meldungen_leer(&s_meldungen)) {
     s_kurve_timer = app_timer_register(700, prv_kurve_senden, NULL);
     return;
   }
+  // ERST LESEN, DANN DEN POSTAUSGANG OEFFNEN. Ein begin ohne send laesst ihn
+  // im Zustand "wird geschrieben" stehen, und jedes weitere begin scheitert -
+  // kein Start, keine Pause, keine Zusammenfassung ginge mehr hinaus, bis
+  // die App zugeht. Ein leeres Stueck darf also gar nicht erst dort landen.
+  static uint8_t stueck[KURVE_JE_NACHRICHT];
+  const uint32_t beginn = kieselsport_kurve_beginn();
+  const uint16_t ab = kieselsport_kurve_ab();
+  const uint16_t n = kieselsport_kurve_stueck(stueck, sizeof(stueck));
+  if (n == 0) {
+    prv_kurve_unlesbar(ab);
+    return;
+  }
+  s_kurve_lesefehler = 0;
   DictionaryIterator *out;
   if (app_message_outbox_begin(&out) != APP_MSG_OK) {
     s_kurve_timer = app_timer_register(700, prv_kurve_senden, NULL);
     return;
   }
-  static uint8_t stueck[KURVE_JE_NACHRICHT];
-  const uint16_t ab = kieselsport_kurve_ab();
-  const uint16_t n = kieselsport_kurve_stueck(stueck, sizeof(stueck));
-  if (n == 0) { kieselsport_kurve_vergessen(); return; }
-  dict_write_int32(out, MESSAGE_KEY_BEGINN, (int32_t)kieselsport_kurve_beginn());
+  dict_write_uint32(out, MESSAGE_KEY_BEGINN, beginn);
   dict_write_int32(out, MESSAGE_KEY_KURVE_ANZAHL, (int32_t)kieselsport_kurve_anzahl());
   dict_write_int32(out, MESSAGE_KEY_KURVE_AB, (int32_t)ab);
   dict_write_data(out, MESSAGE_KEY_KURVE, stueck, n);
   s_kurve_unterwegs = n;
+  s_kurve_beginn_unterwegs = beginn;
+  s_kurve_ab_unterwegs = ab;
   s_letzte = SendungKurve;
-  app_message_outbox_send();
+  prv_senden();
 }
 
 static void prv_sende_jetzt(void);
@@ -125,17 +195,24 @@ static uint8_t s_einst_versuche;
 
 static void prv_einst_senden(void *data) {
   s_einst_timer = NULL;
-  if (!s_einst_offen) return;
+  if (!s_einst_offen || s_postausgang_zu) return;
   if (s_einst_versuche >= 6) { s_einst_offen = false; return; }
-  s_einst_versuche++;
+  if (!prv_telefon_da()) {
+    s_einst_timer = app_timer_register(VERBINDUNG_WARTEN_MS, prv_einst_senden, NULL);
+    return;
+  }
+  // BESETZT IST KEIN ANLAUF, wie bei den Zustandsmeldungen: geht gerade eine
+  // lange Kurve hinaus, fiele das Echo sonst nach neun Sekunden weg, und
+  // Boulder meldete "keine Antwort", obwohl die Uhr die Werte hat.
   DictionaryIterator *out;
   if (s_hat_wartende || app_message_outbox_begin(&out) != APP_MSG_OK) {
     s_einst_timer = app_timer_register(1500, prv_einst_senden, NULL);
     return;
   }
+  s_einst_versuche++;
   einstellungen_melden(out);
   s_letzte = SendungEinst;
-  app_message_outbox_send();
+  prv_senden();
 }
 
 static void prv_einst_vormerken(uint32_t ms) {
@@ -147,7 +224,11 @@ static void prv_einst_vormerken(uint32_t ms) {
 
 static void prv_nachfassen(void *data) {
   s_nachfassen = NULL;
-  if (!s_hat_wartende) return;
+  if (!s_hat_wartende || s_postausgang_zu) return;
+  if (!prv_telefon_da()) {
+    s_nachfassen = app_timer_register(VERBINDUNG_WARTEN_MS, prv_nachfassen, NULL);
+    return;
+  }
   // ERST DIE MELDUNGEN DIESES TRAININGS: ein Weiter, das nach der
   // Zusammenfassung ankaeme, startete das GPS fuer ein beendetes Training.
   if (meldungen_fuer(&s_meldungen, s_wartet.beginn)) {
@@ -253,8 +334,12 @@ static void prv_angekommen(DictionaryIterator *iter, void *context) {
       s_einst_offen = false;
       return;
     case SendungKurve:
-      kieselsport_kurve_bestaetigt(s_kurve_unterwegs);
-      APP_LOG(APP_LOG_LEVEL_INFO, "Kurve: %u Werte bestaetigt", (unsigned)s_kurve_unterwegs);
+      if (kieselsport_kurve_bestaetigt(s_kurve_beginn_unterwegs, s_kurve_ab_unterwegs,
+                                       s_kurve_unterwegs)) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Kurve: %u Werte bestaetigt", (unsigned)s_kurve_unterwegs);
+      } else {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "Kurve: Bestaetigung passt nicht mehr, ignoriert");
+      }
       if (kieselsport_kurve_wartet()) {
         if (!s_kurve_timer) s_kurve_timer = app_timer_register(150, prv_kurve_senden, NULL);
       } else {
@@ -275,8 +360,15 @@ static void prv_angekommen(DictionaryIterator *iter, void *context) {
       return;
   }
   s_hat_wartende = false;
-  kieselsport_wartend_vergessen();
+  kieselsport_wartend_vergessen(s_unterwegs_beginn);
   APP_LOG(APP_LOG_LEVEL_INFO, "Zusammenfassung bestaetigt");
+  // WARTET SCHON DIE NAECHSTE? Wurde waehrend der Antwort ein neues
+  // Training gespeichert, ist es noch da - es geht jetzt, die Kurve danach.
+  // Dieselbe noch einmal nicht: liess sie sich nicht loeschen, ginge sie
+  // sonst ohne Ende hin und her.
+  telefon_nachsenden();
+  if (s_hat_wartende && s_wartet.beginn != s_unterwegs_beginn) return;
+  s_hat_wartende = false;
   // Jetzt die Kurve hinterher.
   if (kieselsport_kurve_wartet()) {
     if (!s_kurve_timer) s_kurve_timer = app_timer_register(150, prv_kurve_senden, NULL);
@@ -291,8 +383,10 @@ static void prv_sende_jetzt(void) {
     if (!s_nachfassen) s_nachfassen = app_timer_register(700, prv_nachfassen, NULL);
     return;
   }
+  // ZEITEN OHNE VORZEICHEN: als int32 kaemen sie ab 2038 negativ an. Boulder
+  // liest beide Arten von Zahl gleich (KieselsportBegleiter.zerlege).
   dict_write_int32(out, MESSAGE_KEY_ART, (int32_t)s_wartet.art);
-  dict_write_int32(out, MESSAGE_KEY_BEGINN, (int32_t)s_wartet.beginn);
+  dict_write_uint32(out, MESSAGE_KEY_BEGINN, s_wartet.beginn);
   dict_write_int32(out, MESSAGE_KEY_DAUER, (int32_t)s_wartet.dauer_s);
   dict_write_int32(out, MESSAGE_KEY_SCHRITTE, (int32_t)s_wartet.schritte);
   dict_write_int32(out, MESSAGE_KEY_METER, (int32_t)s_wartet.meter);
@@ -320,14 +414,15 @@ static void prv_sende_jetzt(void) {
     dict_write_data(out, MESSAGE_KEY_PAUSEN, s_pausen, s_pausen_laenge);
   }
   if (s_ende > 0) {
-    dict_write_int32(out, MESSAGE_KEY_ENDE, (int32_t)s_ende);
+    dict_write_uint32(out, MESSAGE_KEY_ENDE, s_ende);
   }
   // DAS ENDE STEHT IN DERSELBEN NACHRICHT. Eine eigene Stopmeldung daneben
   // straeubte sich mit dieser um den Postausgang - der fasst genau EINE
   // Nachricht, und die zweite fiele mit BUSY aus.
   dict_write_int32(out, MESSAGE_KEY_ZUSTAND, (int32_t)ZustandStop);
+  s_unterwegs_beginn = s_wartet.beginn;
   s_letzte = SendungZusammenfassung;
-  app_message_outbox_send();
+  prv_senden();
 }
 
 bool telefon_wartet(void) { return s_hat_wartende || kieselsport_kurve_wartet(); }
@@ -357,7 +452,7 @@ void telefon_nachsenden(void) {
 static void prv_zustand_senden(void *data) {
   s_zustand_timer = NULL;
   // Eine ist schon unterwegs - ihre Antwort stoesst die naechste an.
-  if (s_meldungen.unterwegs) return;
+  if (s_meldungen.unterwegs || s_postausgang_zu) return;
   while (!meldungen_leer(&s_meldungen) && s_meldungen.anlaeufe >= ZUSTAND_VERSUCHE) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Zustandsmeldung aufgegeben");
     meldungen_vorn_weg(&s_meldungen);
@@ -365,6 +460,13 @@ static void prv_zustand_senden(void *data) {
   const Meldung *m = meldungen_vorn(&s_meldungen);
   if (!m) {
     prv_alles_drueben();
+    return;
+  }
+  // OHNE TELEFON AUCH KEIN ANLAUF: die Meldung wartet, bis es wieder da ist,
+  // statt ihre sechs Versuche ins Leere zu schicken. Mit ihrer Uhrzeit
+  // kommt sie auch spaet noch richtig an.
+  if (!prv_telefon_da()) {
+    s_zustand_timer = app_timer_register(VERBINDUNG_WARTEN_MS, prv_zustand_senden, NULL);
     return;
   }
   DictionaryIterator *out;
@@ -381,12 +483,12 @@ static void prv_zustand_senden(void *data) {
   // DER BEGINN MUSS SCHON HIER MIT. Das Telefon legt die Spurdatei unter
   // diesem Zeitpunkt ab; erfuehre es ihn erst mit der Zusammenfassung,
   // haette es die Punkte unter einem anderen Namen gesammelt.
-  dict_write_int32(out, MESSAGE_KEY_BEGINN, (int32_t)m->beginn);
+  dict_write_uint32(out, MESSAGE_KEY_BEGINN, m->beginn);
   // Wann es geschah: eine Meldung im dritten Anlauf kommt Sekunden spaeter.
-  dict_write_int32(out, MESSAGE_KEY_ZEIT, (int32_t)m->zeit);
+  dict_write_uint32(out, MESSAGE_KEY_ZEIT, m->zeit);
   s_meldungen.unterwegs = true;
   s_letzte = SendungZustand;
-  app_message_outbox_send();
+  prv_senden();
 }
 
 static void prv_zustand_anstossen(uint32_t ms) {
@@ -434,7 +536,12 @@ void telefon_init(void) {
   app_message_register_inbox_received(prv_inbox);
   app_message_register_outbox_failed(prv_abgelehnt);
   app_message_register_outbox_sent(prv_angekommen);
-  app_message_open(INBOX_SIZE, OUTBOX_SIZE);
+  const AppMessageResult offen = app_message_open(INBOX_SIZE, OUTBOX_SIZE);
+  if (offen != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Postausgang nicht offen: %d", (int)offen);
+    s_postausgang_zu = true;
+    return;
+  }
 
   // Liegt noch eine unbestaetigte Zusammenfassung da - vom letzten Mal, als
   // das Telefon nicht zuhoerte -, geht sie jetzt. Und eine liegengebliebene
@@ -457,11 +564,16 @@ void telefon_zuruecksetzen(void) {
   memset(&s_ende, 0, sizeof(s_ende));
   memset(&s_hat_wartende, 0, sizeof(s_hat_wartende));
   memset(&s_letzte, 0, sizeof(s_letzte));
+  memset(&s_unterwegs_beginn, 0, sizeof(s_unterwegs_beginn));
+  memset(&s_postausgang_zu, 0, sizeof(s_postausgang_zu));
   memset(&s_fertig, 0, sizeof(s_fertig));
   memset(&s_stopp_timer, 0, sizeof(s_stopp_timer));
   meldungen_leeren(&s_meldungen);
   memset(&s_zustand_timer, 0, sizeof(s_zustand_timer));
   memset(&s_kurve_unterwegs, 0, sizeof(s_kurve_unterwegs));
+  memset(&s_kurve_beginn_unterwegs, 0, sizeof(s_kurve_beginn_unterwegs));
+  memset(&s_kurve_ab_unterwegs, 0, sizeof(s_kurve_ab_unterwegs));
+  memset(&s_kurve_lesefehler, 0, sizeof(s_kurve_lesefehler));
   memset(&s_kurve_timer, 0, sizeof(s_kurve_timer));
   memset(&s_einst_offen, 0, sizeof(s_einst_offen));
   memset(&s_einst_timer, 0, sizeof(s_einst_timer));

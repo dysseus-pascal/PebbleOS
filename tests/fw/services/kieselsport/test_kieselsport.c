@@ -80,7 +80,10 @@ int ks_persist_read_data(uint32_t key, void *puffer, size_t groesse) {
   return (int)n;
 }
 
+static int s_schreibvorgaenge;   //< jeder ist ein neuer Satz im Flash
+
 void ks_persist_write_data(uint32_t key, const void *daten, size_t groesse) {
+  s_schreibvorgaenge++;
   Eintrag *e = prv_finde(key);
   for (int i = 0; !e && i < EINTRAEGE_MAX; i++) {
     if (!s_persist[i].belegt) {
@@ -211,6 +214,7 @@ void test_kieselsport__initialize(void) {
   s_erkennen = true;
   s_gemeldet_zahl = 0;
   s_alter = 0;
+  s_schreibvorgaenge = 0;
   kieselsport_init();
 }
 
@@ -296,10 +300,10 @@ void test_kieselsport__laufen_von_start_bis_telefon(void) {
   cl_assert_equal_i(stueck[0], 0);
   cl_assert_equal_i(stueck[1], 130);
   cl_assert_equal_i(stueck[7], 150);
-  kieselsport_kurve_bestaetigt(8);
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN - 5, 0, 8));
   cl_assert_equal_i(kieselsport_kurve_ab(), 8);
   cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 5);
-  kieselsport_kurve_bestaetigt(5);
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN - 5, 8, 5));
   cl_assert(!kieselsport_kurve_wartet());
   // Zeiten je Zone aus der Kurve: 130 ist Zone 2, 150 Zone 3.
   kieselsport_starte(ArtLaufen, 0);
@@ -536,7 +540,7 @@ void test_kieselsport__lange_liste_in_zwei_haelften(void) {
   char liste[KS_LISTE_MAX];
   cl_assert(wartend_laden(&gelesen, liste, sizeof(liste)));
   cl_assert_equal_s(liste, lang);
-  wartend_vergessen();
+  wartend_vergessen(BEGINN);
   cl_assert(!wartend_laden(&gelesen, liste, sizeof(liste)));
 }
 
@@ -567,7 +571,7 @@ void test_kieselsport__nachsenden_hoert_auf_wenn_angekommen(void) {
     prv_sekunde_mit_puls(100);
   }
   kieselsport_speichern();
-  kieselsport_wartend_vergessen();
+  kieselsport_wartend_vergessen(0);
   s_minutentakt->cb(s_minutentakt->cb_data);
   cl_assert(!s_minutentakt);
   cl_assert_equal_i(s_geholt, 0);
@@ -771,7 +775,7 @@ void test_kieselsport__pausen_gehen_mit_der_zusammenfassung(void) {
   cl_assert_equal_i(kieselsport_wartend_ende(), BEGINN + 90 + 125);
 
   // Bestaetigt: alles weg, auch Pausen und Ende.
-  kieselsport_wartend_vergessen();
+  kieselsport_wartend_vergessen(BEGINN);
   cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 0);
   cl_assert_equal_i(kieselsport_wartend_ende(), 0);
 }
@@ -892,4 +896,197 @@ void test_kieselsport__nachsenden_auch_fuer_den_stopp(void) {
   s_minutentakt = NULL;
   kieselsport_init();
   cl_assert(s_minutentakt);
+}
+
+// --- Bestaetigungen gehoeren zu ihrem Training ---
+
+static void prv_training(uint32_t beginn, int sekunden) {
+  kieselsport_starte(ArtLaufen, beginn);
+  prv_sekunden(sekunden);
+  kieselsport_speichern();
+}
+
+void test_kieselsport__spaete_bestaetigung_loescht_kein_neueres_training(void) {
+  prv_training(BEGINN, 120);
+  // B kommt dazu, bevor das Telefon A bestaetigt hat - dann dessen ACK.
+  prv_training(BEGINN + 1000, 90);
+  kieselsport_wartend_vergessen(BEGINN);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 1000);
+  // Die Pausen und das Ende von B stehen auch noch.
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+  // Die eigene Bestaetigung loescht B.
+  kieselsport_wartend_vergessen(BEGINN + 1000);
+  cl_assert(!kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+}
+
+void test_kieselsport__spaete_kurvenbestaetigung_trifft_keine_neue_kurve(void) {
+  prv_training(BEGINN, 410);
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 42);
+  // Das Stueck von A ist unterwegs, B wird gespeichert.
+  prv_training(BEGINN + 1000, 300);
+  cl_assert(!kieselsport_kurve_bestaetigt(BEGINN, 0, 42));
+  cl_assert(kieselsport_kurve_wartet());
+  cl_assert_equal_i(kieselsport_kurve_beginn(), BEGINN + 1000);
+  cl_assert_equal_i(kieselsport_kurve_ab(), 0);
+  // Auch ein Stueck von B an falscher Stelle zaehlt nicht.
+  cl_assert(!kieselsport_kurve_bestaetigt(BEGINN + 1000, 5, 10));
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN + 1000, 0, 10));
+  cl_assert_equal_i(kieselsport_kurve_ab(), 10);
+}
+
+void test_kieselsport__kurve_mit_luecke(void) {
+  // 211 Werte in zwei Schluesseln.
+  prv_training(BEGINN, 2100);
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 211);
+  cl_assert(!kieselsport_kurve_luecke());
+  // Der zweite Schluessel fehlt (ein gescheitertes Schreiben): ab Wert 200
+  // laesst sich nichts mehr schicken.
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN, 0, 200));
+  ks_persist_delete(PERSIST_KURVE_BASIS + 1);
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 0);
+  cl_assert(kieselsport_kurve_luecke());
+  kieselsport_kurve_vergessen();
+  cl_assert(!kieselsport_kurve_luecke());
+}
+
+// --- Ein vergessenes Training ---
+
+void test_kieselsport__halbe_stunde_pause_beendet_das_training(void) {
+  kieselsport_starte(ArtWandern, BEGINN);
+  prv_sekunden(600);
+  kieselsport_pause_umschalten();
+  const time_t pause = s_jetzt;
+  for (int i = 0; i < 30 * 60 - 1; i++) {
+    prv_sekunde();
+  }
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  prv_sekunde();
+  // Gespeichert wie mit der Taste: Archiv, Verlauf, Telefon.
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeGespeichert);
+  cl_assert_equal_i(s_gemeldet_zahl, 1);
+  cl_assert_equal_i(kieselsport_archiv_anzahl(), 1);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 600);
+  // Die aktive Zeit endete, als die Pause begann.
+  cl_assert_equal_i(kieselsport_wartend_ende(), (uint32_t)pause);
+  // Sensoren aus, der Takt steht, und der Dienst holt die App zum Senden.
+  cl_assert_equal_i(s_sensor_takt, 0);
+  cl_assert(!s_takt);
+  cl_assert(s_minutentakt);
+}
+
+void test_kieselsport__nur_eine_pause_am_stueck_zaehlt(void) {
+  kieselsport_starte(ArtWandern, BEGINN);
+  prv_sekunden(120);
+  // Zwanzig Minuten Pause, kurz weiter, wieder zwanzig: kein Ende.
+  kieselsport_pause_umschalten();
+  for (int i = 0; i < 20 * 60; i++) prv_sekunde();
+  kieselsport_pause_umschalten();
+  prv_sekunden(10);
+  kieselsport_pause_umschalten();
+  for (int i = 0; i < 20 * 60; i++) prv_sekunde();
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  // Auch Pause-Weiter-Pause zwischen zwei Takten faengt neu an.
+  kieselsport_pause_umschalten();
+  kieselsport_pause_umschalten();
+  for (int i = 0; i < 29 * 60; i++) prv_sekunde();
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert_equal_i(s_gemeldet_zahl, 0);
+}
+
+// --- Brummen nur bei eindeutigem Zonenwechsel ---
+
+void test_kieselsport__zonen_brummen_erst_drei_schlaege_jenseits(void) {
+  // Maximalpuls 190: Zone 3 beginnt bei 133.
+  cl_assert_equal_i(kieselsport_zonengrenze(3), 133);
+  kieselsport_starte(ArtBike, 0);
+  for (int i = 0; i < 10; i++) prv_sekunde_mit_puls(120);
+  // Zehn Minuten lang pendelt der Puls um einen Schlag um die Grenze.
+  for (int i = 0; i < 600; i++) {
+    prv_sekunde_mit_puls((i / 5) % 2 ? 134 : 132);
+  }
+  cl_assert_equal_i(s_brumm_zahl, 0);
+  // Zwei Schlaege drueber reicht nicht, drei schon - einmal hoch.
+  prv_sekunde_mit_puls(135);
+  cl_assert_equal_i(s_brumm_zahl, 0);
+  prv_sekunde_mit_puls(136);
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  cl_assert_equal_i(s_brumm_laenge, 3);
+  // Zurueck an die Grenze: bleibt Zone 3, bis drei Schlaege darunter.
+  prv_sekunde_mit_puls(132);
+  prv_sekunde_mit_puls(130);
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  prv_sekunde_mit_puls(129);
+  cl_assert_equal_i(s_brumm_zahl, 2);
+  cl_assert_equal_i(s_brumm_laenge, 1);
+}
+
+// --- Laenger als 18 Stunden ---
+
+void test_kieselsport__bahnen_nach_achtzehn_stunden_an_der_richtigen_stelle(void) {
+  kieselsport_becken_setze(25);
+  kieselsport_starte(ArtSchwimmen, BEGINN);
+  // Gut 18 Stunden in eine Richtung (vergessen am Beckenrand), dann eine
+  // Bahn zurueck und wieder hin.
+  const int lang = 65536 + 100;
+  prv_schwimmen(lang, 0);
+  prv_schwimmen(30, TRIG_MAX_ANGLE / 2);
+  prv_schwimmen(30, 0);
+  kieselsport_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.bahnen, 3);
+  // Die zweite Bahn begann bei der Wende nach der langen ersten - in vollen
+  // Sekunden, nicht 65536 weniger.
+  unsigned beginn[3] = { 0 }, anzahl = 0, dauer[3] = { 0 };
+  const char *c = liste;
+  for (int i = 0; i < 3; i++) {
+    cl_assert(sscanf(c, "%u:%u:%u;", &beginn[i], &anzahl, &dauer[i]) == 3);
+    c = strchr(c, ';') + 1;
+  }
+  cl_assert(beginn[1] > 65536);
+  cl_assert(dauer[0] > 65536);
+  cl_assert(dauer[1] >= 20 && dauer[1] <= 40);
+}
+
+// --- Gleiche Einstellungen schreiben nichts ---
+
+void test_kieselsport__gleiche_einstellung_schreibt_nichts(void) {
+  kieselsport_becken_setze(33);
+  kieselsport_empfindlichkeit_setze(3);
+  kieselsport_pausenziel_setze(60);
+  kieselsport_maxpuls_setze(185);
+  const int nach_erstem = s_schreibvorgaenge;
+  cl_assert(nach_erstem > 0);
+  // Boulder schickt beim Speichern alle Werte noch einmal mit.
+  kieselsport_becken_setze(33);
+  kieselsport_empfindlichkeit_setze(3);
+  kieselsport_pausenziel_setze(60);
+  kieselsport_maxpuls_setze(185);
+  cl_assert_equal_i(s_schreibvorgaenge, nach_erstem);
+  // "Nach Alter" ebenso: einmal geschrieben, dann nicht mehr.
+  kieselsport_maxpuls_nicht_setzen();
+  const int nach_alter = s_schreibvorgaenge;
+  cl_assert(nach_alter > nach_erstem);
+  kieselsport_maxpuls_nicht_setzen();
+  cl_assert_equal_i(s_schreibvorgaenge, nach_alter);
+  // Was sich aendert, kommt weiter an.
+  kieselsport_becken_setze(50);
+  cl_assert_equal_i(s_schreibvorgaenge, nach_alter + 1);
+  kieselsport_init();
+  cl_assert_equal_i(kieselsport_becken(), 50);
+  cl_assert_equal_i(kieselsport_empfindlichkeit(), 3);
+  cl_assert_equal_i(kieselsport_pausenziel(), 60);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
 }

@@ -257,19 +257,24 @@ typedef struct {
 } EnumerateData;
 
 // Boulder: eine Store-App mit der Kennung einer System-App (Kieselsport) ist
-// deren Vorgaengerin. Sie erscheint nicht ein zweites Mal im Startmenue;
-// gestartet wird ohnehin die System-App (app_install_get_id_for_uuid fragt
-// zuerst die Registry).
+// deren Vorgaengerin. Gestartet wird ohnehin die System-App
+// (app_install_get_id_for_uuid fragt zuerst die Registry).
 static bool prv_uuid_gehoert_system_app(const Uuid *uuid) {
   return uuid && app_get_install_id_for_uuid_from_registry(uuid) != INSTALL_ID_INVALID;
+}
+
+// Boulder: SIE BLEIBT AUFZAEHLBAR. Frueher fiel sie hier ganz heraus - aus dem
+// Startmenue, aber auch aus jeder anderen Liste, und war auf der Uhr nicht mehr
+// zu finden und zu loeschen. Jetzt blenden nur Startmenue und Reihenfolge sie
+// aus (app_menu_data_source.c, app_order_storage.c). Entfernt wird nichts von
+// selbst: ihre Daten gehoeren dem Nutzer.
+bool app_install_entry_ist_abgeloest(const AppInstallEntry *entry) {
+  return app_install_id_from_app_db(entry->install_id) && prv_uuid_gehoert_system_app(&entry->uuid);
 }
 
 static void prv_app_install_enumerate_app_db(AppInstallId install_id, AppDBEntry *db_entry,
                                              void *data) {
   EnumerateData *cb_data = (EnumerateData *)data;
-  if (prv_uuid_gehoert_system_app(&db_entry->uuid)) {
-    return;
-  }
 
   prv_app_install_entry_from_app_db_entry(install_id, db_entry, cb_data->entry_buf);
   cb_data->cb(cb_data->entry_buf, cb_data->data);

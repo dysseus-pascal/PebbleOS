@@ -41,8 +41,6 @@ STR(STR_ART_SCHWIMMEN,  0,  "Swimming",     "Schwimmen",      "Natation",     "N
 // Obertitel im Menue unter Strasse/Gravel und MTB.
 STR(STR_GRUPPE_BIKE,    0,  "Bike",         "Bike",           "Vélo",         "Bici",          "Bici")
 
-// ---- Laufender Schirm: die Kopfzeile in der Pause (Puffer zeile[40]) -----
-STR(STR_ZEILE_PAUSE,    40, "%s · paused",  "%s · Pause",     "%s · pause",   "%s · pausa",    "%s · pausa")
 
 // ---- Startschirm und Laden ------------------------------------------------
 STR(STR_SELECT_STARTET, 0,  "Select starts", "Select startet", "Select démarre", "Select avvia", "Select inicia")
@@ -93,14 +91,7 @@ STR(STR_TEL_AUFGEGEBEN, 0,  "Phone unreachable,\nsent on next launch", "Telefon 
 STR(STR_TEL_WARTET,     0,  "sending to phone …", "geht ans Telefon …", "envoi au téléphone …", "invio al telefono …", "enviando al teléfono …")
 STR(STR_TEL_ANGEKOMMEN, 0,  "received by phone", "beim Telefon angekommen", "reçu par le téléphone", "ricevuto dal telefono", "recibido en el teléfono")
 
-// ---- Die Nacht am Morgen --------------------------------------------------
-STR(STR_NACHT_SENDEN,   0,  "Sending sleep to phone …", "Schlaf geht ans Telefon …", "Envoi du sommeil …", "Invio del sonno …", "Enviando el sueño …")
-STR(STR_NACHT_FERTIG,   0,  "Sleep sent",   "Schlaf übertragen", "Sommeil envoyé", "Sonno inviato", "Sueño enviado")
+// ---- Das Training geht ans Telefon ----------------------------------------
 STR(STR_TRAINING_SENDEN, 0, "Sending workout to phone …", "Training geht ans Telefon …", "Envoi de l'entraînement …", "Invio dell'allenamento …", "Enviando el entrenamiento …")
 STR(STR_TRAINING_FERTIG, 0, "Workout sent", "Training übertragen", "Entraînement envoyé", "Allenamento inviato", "Entrenamiento enviado")
 
-// ---- App-Glance (Untertitel im Startmenue) --------------------------------
-// STR_GLANZ_SEIT ist nur der Kopf; die Dauer haengt glanz.c als Vorlage des
-// Systems an ("25 min"). Deshalb endet er auf ein Leerzeichen.
-STR(STR_GLANZ_SEIT,     64, "%s in background, for ", "%s im Hintergrund, seit ", "%s en arrière-plan, depuis ", "%s in background, da ", "%s en segundo plano, desde hace ")
-STR(STR_GLANZ_HINTERGRUND, 48, "%s in background", "%s im Hintergrund", "%s en arrière-plan", "%s in background", "%s en segundo plano")

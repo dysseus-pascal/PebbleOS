@@ -94,3 +94,28 @@ void test_workout_utils__find_ongoing_activity_session(void) {
   cl_assert_equal_b(found_session, true);
   cl_assert_equal_i(run_session.type, ActivitySessionType_Run);
 }
+
+// ---------------------------------------------------------------------------------------
+// Boulder: volle Sitzungsliste - nichts hinter ihrem Ende lesen.
+void test_workout_utils__volle_sitzungsliste(void) {
+  for (int i = 0; i < ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT; i++) {
+    prv_add_session(&(ActivitySession){ .type = ActivitySessionType_Sleep, .ongoing = false });
+  }
+  // DUMA legt hinter die Allokation eine Schutzseite: ein Lesen dahinter
+  // bricht den Test ab.
+  cl_assert_equal_b(workout_utils_find_ongoing_activity_session(NULL), false);
+  // Die letzte laufende wird gefunden.
+  s_sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT - 1] =
+      (ActivitySession){ .type = ActivitySessionType_Run, .ongoing = true };
+  ActivitySession gefunden = {};
+  cl_assert_equal_b(workout_utils_find_ongoing_activity_session(&gefunden), true);
+  cl_assert_equal_i(gefunden.type, ActivitySessionType_Run);
+}
+
+// Boulder: Bewegung (Movement) hat einen Namen und einen Erkennungstext.
+void test_workout_utils__bewegung_hat_namen(void) {
+  cl_assert_equal_s(workout_utils_get_name_for_activity(ActivitySessionType_Movement),
+                    "Movement");
+  cl_assert_equal_s(workout_utils_get_detection_text_for_activity(ActivitySessionType_Movement),
+                    "Movement\nDetected");
+}

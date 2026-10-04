@@ -11,6 +11,7 @@ set(sources
   plattform.c
   puls.c
   reps.c
+  speicher.c
   training.c
   wartend.c
 )
