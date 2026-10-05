@@ -5,9 +5,9 @@
 # Anmeldung. Die fertigen Pakete liegen deshalb im oeffentlichen Repo
 # dysseus-pascal/boulder-firmware; der Quellcode bleibt hier.
 #
-# DIE VERSION IST v4.38.3-bN: die PebbleOS-Fassung, auf der der Fork beruht,
+# DIE VERSION IST v4.38.4-bN: die PebbleOS-Fassung, auf der der Fork beruht,
 # und die laufende Nummer. Kurz, weil die Uhr ihre Version in 32 Zeichen
-# speichert - auch ein Entwicklungsbau wie v4.38.3-b12-3-gabcdef12-dirty muss
+# speichert - auch ein Entwicklungsbau wie v4.38.4-b12-3-gabcdef12-dirty muss
 # hineinpassen. Boulder vergleicht die Nummer nach dem b.
 #
 # JEDES PAKET IST SIGNIERT (Ed25519, siehe SIGNATUR.md): signiert wird nicht

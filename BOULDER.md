@@ -1,7 +1,7 @@
 # Boulder-Firmware
 
 Fork von PebbleOS (Core Devices, Apache 2.0) ab **v4.38.1**, nachgezogen auf
-**v4.38.3**, für die Begleit-App
+**v4.38.4**, für die Begleit-App
 [Boulder](https://github.com/dysseus-pascal/Boulder). Ziel: Pebbles Aufbau
 behalten (die Uhr misst dauernd, legt Minutenwerte ab, erkennt Abschnitte und
 schickt alles per Datalogging), aber mit unseren Algorithmen und Apps.
@@ -49,6 +49,78 @@ Host-Tests des Trainingsdienstes:
 ```
 cd build-test && ninja fw/services/kieselsport/test_kieselsport/runme && ./fw/services/kieselsport/test_kieselsport/runme
 ```
+
+## Schalter (Kconfig)
+
+Was Boulder an Pebbles Schlaf, Puls- und SpO2-Takt und an der Health-App
+ändert, hängt an vier Schaltern (`src/fw/services/activity/boulder/Kconfig`,
+eingehängt in `services/Kconfig`). Alle an: Verhalten wie bis b24. Alle aus:
+Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
+
+| Schalter | hängt an | gesetzt | bewirkt |
+|---|---|---|---|
+| `BOULDER_SCHLAF` | `SERVICE_ACTIVITY`, zieht `SERVICE_HEALTH_SYNC_ENDPOINT` | `prj_normal.conf` | Nacht und Schlafanalyse (`nacht.c`, `schlafanalyse.c`), Kraepelins Schlafsitzungen fallen weg, Schlafsumme ohne Wachminuten im Block |
+| `BOULDER_HRV` | `BOULDER_SCHLAF && HRM` | `default y` | HRV-Fenster in der Nacht (`hrv.c`), Satz auf `0x4002` |
+| `BOULDER_MESSSTUFE` | `BOULDER_SCHLAF && HRM` | `default y` | Regler „Precision“ (Pref `boulderMessstufe`) für Puls-, SpO2- und HRV-Takt; aus: Pebbles „HR Monitoring“ und „SpO2 Monitoring“ |
+| `BOULDER_HEALTH_APP` | `BOULDER_SCHLAF && PLATFORM_EMERY` | `default y` | Boulders Health-App mit SpO2-Ring (`spo2.c`) |
+
+- Ergebnis je Uhr: obelix und qemu_emery alle vier; asterix, getafix, flint
+  und gabbro nur `BOULDER_SCHLAF` (Schlaf ohne Phasen, Upstream-Health).
+  HRV, Messstufe und Health stehen nicht in `prj_normal.conf`: auf Uhren ohne
+  Pulssensor gäbe das eine Kconfig-Warnung, und die bricht den Bau ab.
+- Pebbles Dateien rufen nur die Haken in
+  `include/pbl/services/activity/boulder/haken.h` (`activity.c`,
+  `activity_sessions.c`, `activity_metrics.c`, Kraepelin). Ist ein Schalter
+  aus, sind sie leer oder sagen „nicht zuständig“, und Pebbles Code läuft wie
+  Upstream. Einstellungen und Prefs (`settings/health.c`, `prefs.c`,
+  `settings_blob_db.c`) mit `#ifdef`.
+- Ohne Schalter, nur bewacht: die erkannte Bewegung (Typ 8) und der
+  Gehfilter. Sie bleiben in jedem Bau Boulder.
+- Probebau mit einem Schalter aus:
+  `pbl configure -b build-x --board obelix@pvt -DCONFIG_RELEASE=y -DCONFIG_BOULDER_HRV=n`.
+  `BOULDER_SCHLAF=n` schaltet alle vier ab.
+- Host-Tests in beiden Modi: `test_activity` und `test_activity_upstream`,
+  `test_activity_algorithm_kraepelin` und `…_upstream`, `test_boulder_nacht`,
+  `…_ohne_hrv`, `…_ohne_messstufe`; Pebbles Health-Tests
+  (`tests/fw/apps/system_apps/health/`) neben Boulders
+  (`…/boulder_health/`).
+
+## Datalogging-Tags und Verträge
+
+- Die Nacht geht auf **`0x4001`** (`NachtDlsRecord`, 328 Byte), ihre
+  HRV-Fenster auf **`0x4002`** (`NachtHrvDlsRecord`, 251 Byte), beide mit
+  `UUID_SYSTEM` (`boulder/nacht.h`). Bis b24 waren es 88 und 89 - Pebbles
+  nächste freie System-Tags; ein Upstream-Merge hätte sie still doppelt
+  belegt. 88 und 89 bleiben gesperrt: eine liegende Sitzung von b24 geht nach
+  dem Update mit ihrem alten Tag hinaus. `data_logging_service.h` ist wieder
+  Upstream.
+- Boulder braucht für `0x4001`/`0x4002` mindestens die App 0.50.0. Eine
+  ältere quittiert unbekannte Tags und wirft sie weg; deshalb die Zeile
+  „Mindest-App“ im Release.
+- **Wächter** für das, was Boulder mit Upstream teilt (Typ 8, Tag 84 Fassung
+  7 mit `manual` an Byte 26, die Tags):
+  - `src/fw/services/activity/boulder/vertraege.c`: Static-Asserts und
+    `switch` ohne `default` über `ActivitySessionType` und `DlsSystemTag` -
+    ein neuer Upstream-Wert bricht den Bau; ein `switch` über alle vergebenen
+    Tag-Zahlen bricht bei einem doppelten.
+  - `tools/boulder/vertraege.py`: Namen und Werte gegen eine eingefrorene
+    Liste, als Bauschritt (`pbl_boulder_vertraege`) und als ctest
+    (`test_boulder_vertraege`, Gegenproben in `test_boulder_vertraege_wache`).
+    Nur hier fällt ein neuer Name mit einem schon vergebenen Wert auf
+    (`Swim = 8` vor `Movement = 8`); der Compiler sieht das nicht.
+  - Schlägt ein Wächter nach einem Upstream-Merge an: erst klären, was die
+    App dann liest (`HealthDataProcessor`, `Datalogging`), dann Liste,
+    `vertraege.c` und diesen Abschnitt nachziehen.
+
+## Einstellungen (shellpref)
+
+`SHELL_PREFS_FILE_LEN` ist 3072 statt 2048 (`prefs_private.h`): alle Prefs
+belegten in b24 schon 1990 Byte. 3072 bleibt dieselbe eine PFS-Seite von
+4011 Byte, die Datei wird beim Update nicht umgeschrieben, und eine ältere
+Firmware verdichtet den Bestand ohne Verlust. `prefs.c` prüft beim Bauen,
+dass alle Prefs plus der größte Satz passen und die Grenze höchstens 3343
+bleibt (darüber zwei Seiten - dann verlöre ein Rückweg alle Prefs). Test:
+`test_shellpref_groesse`.
 
 ## Kieselsport in der Firmware (F4)
 
@@ -237,7 +309,7 @@ JS dauernd eine WebView auf dem Telefon, solange sie Zifferblatt ist.
 ## Releases (F5)
 
 ```
-tools/boulder/release.sh <N>       # Tag v4.38.3-bN, beide Slots, Release in boulder-firmware
+tools/boulder/release.sh <N>       # Tag v4.38.4-bN, beide Slots, Release in boulder-firmware
 ```
 
 Die Pakete liegen im öffentlichen Repo
@@ -246,10 +318,21 @@ weil dieser Fork privat ist und Boulder ohne Anmeldung nach Updates fragt.
 Jedes Release trägt eine Ed25519-Signatur (`<paket>.sig`, siehe
 `tools/boulder/SIGNATUR.md`); ohne den privaten Schlüssel bricht `release.sh`
 ab, und Boulder nimmt nichts Unsigniertes an.
-Vorher `.github/release/v4.38.3-bN.md` anlegen (erste Zeile Titel ohne
+Vorher `.github/release/v4.38.4-bN.md` anlegen (erste Zeile Titel ohne
 Version). Boulder vergleicht erst die PebbleOS-Fassung, dann die Nummer nach
 dem `b`, und bietet eine neue Fassung sofort an. Die Nummer zählt über die
 Basis hinweg weiter (v4.38.1-b6, dann v4.38.3-b7).
+
+**Mindest-App:** die Notizen tragen unter dem Titel genau einmal eine eigene
+Zeile `Mindest-App: X.Y.Z` (ohne Leerzeichen davor oder dahinter, LF). Boulder
+liest sie mit `^Mindest-App: (\d+\.\d+\.\d+)$` aus dem Text des Releases und
+bietet die Firmware einer älteren App nicht an; fehlt die Zeile, gilt keine
+Grenze. `release.sh` bricht vor dem Tag ab, wenn die Zeile fehlt, doppelt,
+falsch geschrieben oder älter als `tools/boulder/mindest_app.txt` ist
+(Prüfung: `tools/boulder/mindest_app.py`, Test
+`test_boulder_release_mindest_app`). Wer etwas einbaut, das eine neuere App
+braucht, zieht `mindest_app.txt` nach; seit den Tags `0x4001`/`0x4002` steht
+dort 0.50.0.
 
 Upstream-Fassungen kommen per Merge des Tags. Nicht übernommen: `b97d3837e`
 (SpO2 aus dem Minutensatz, Version 14 → 13); Boulder liest Version 14. Die geerbten GitHub-Actions dieses Forks sind abgeschaltet;
@@ -257,8 +340,13 @@ gebaut wird lokal.
 
 ## Health-App (F4)
 
-`src/fw/apps/system/health/` ersetzt Pebbles Health-App unter derselben
-Kennung (Zifferblatt-Taste und Übergang bleiben). Drei Karten, Oben/Unten
+`src/fw/apps/system/boulder_health/` ersetzt auf emery Pebbles Health-App
+unter derselben Kennung (Zifferblatt-Taste und Übergang bleiben). Gebaut wird
+genau eine: `apps/system/CMakeLists.txt` nimmt mit `BOULDER_HEALTH_APP`
+Boulders, sonst Pebbles aus `src/fw/apps/system/health/` (Stand der
+Merge-Basis 49c24cfd8, unverändert). Beide exportieren `health_app_get_info`;
+Registry, Quick-Launch und Insights-Pins bleiben. Auf flint, gabbro, asterix
+und getafix läuft also Pebbles Health-App. Drei Karten, Oben/Unten
 blättert: **Heute** (Schritte, km, kcal, aktive Minuten, Schritte je Stunde),
 **Schlaf** (letzte Nacht aus `boulder_nacht_letzte`: Dauer, Zeiten,
 Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live mit schlagendem
