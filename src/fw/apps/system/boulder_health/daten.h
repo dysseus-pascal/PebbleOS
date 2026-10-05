@@ -34,7 +34,7 @@ typedef struct {
   uint8_t puls_min[DATEN_PULS_SPALTEN];   //< 0 = keine Messung in der halben Stunde
   uint8_t puls_max[DATEN_PULS_SPALTEN];
   uint8_t spo2;              //< letzter Wert, 0 = keiner
-  bool spo2_aus;             //< die Uhr misst SpO2 gar nicht (Schalter oder Messstufe 1)
+  bool spo2_aus;             //< die Uhr misst SpO2 nicht (Schalter, "Disabled", Messstufe 1)
   time_t spo2_zeit;
   uint8_t spo2_nacht_tief;   //< tiefster Wert der letzten Nacht, 0 = keiner
 } HealthDaten;

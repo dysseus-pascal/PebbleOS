@@ -54,7 +54,8 @@ cd build-test && ninja fw/services/kieselsport/test_kieselsport/runme && ./fw/se
 
 Was Boulder an Pebbles Schlaf, Puls- und SpO2-Takt und an der Health-App
 ändert, hängt an vier Schaltern (`src/fw/services/activity/boulder/Kconfig`,
-eingehängt in `services/Kconfig`). Alle an: Verhalten wie bis b24. Alle aus:
+eingehängt in `services/Kconfig`). Alle an: Verhalten wie bis b24, mit einer
+bewussten Ausnahme (SpO2 „off“ bei „Disabled“, siehe Health-App). Alle aus:
 Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
 
 | Schalter | hängt an | gesetzt | bewirkt |
@@ -357,7 +358,10 @@ blättert: **Heute** (Schritte, km, kcal, aktive Minuten, Schritte je Stunde),
 Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live mit schlagendem
 Herz, Ruhepuls und HRV der Nacht, letzter SpO2, Puls der letzten 24 h,
 tiefster SpO2 der Nacht). Nur auf der Herz-Karte misst der Sensor
-sekündlich. Die Minutenhistorie für die Kurven liest ein Timer stückweise,
+sekündlich. SpO2 steht auf „off“, wenn die Uhr nicht misst: Schalter
+„Blood Oxygen“ aus, Messstufe 1 oder, seit b25, Pebbles Auswahl „Disabled“ -
+eine Angleichung an `activity.c`, das dann auch nicht misst; bis b24 zeigte
+der Ring dort „an“ (Test `test_health_daten`). Die Minutenhistorie für die Kurven liest ein Timer stückweise,
 damit die App sofort erscheint.
 
 Dafür merkt sich die Firmware die letzte Nacht (auch über einen Neustart, Datei

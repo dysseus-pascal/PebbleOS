@@ -8,7 +8,7 @@
 #include "fake_health_quellen.h"
 
 // Die Daten der Health-App (daten.c): Schritte je Stunde des Tages, auch an
-// den Tagen der Zeitumstellung.
+// den Tagen der Zeitumstellung, und ob die Uhr SpO2 misst.
 
 static HealthDaten s_daten;
 
@@ -23,6 +23,7 @@ static void prv_tag_lesen(void) {
 
 void test_health_daten__initialize(void) {
   memset(s_metriken, 0, sizeof(s_metriken));
+  s_spo2_intervall = HRMonitoringInterval_10Min;
 }
 
 void test_health_daten__cleanup(void) {}
@@ -66,4 +67,19 @@ void test_health_daten__gewoehnlicher_tag(void) {
   cl_assert_equal_i(s_daten.schritte_stunde[0], 60);
   cl_assert_equal_i(s_daten.schritte_stunde[8], 60);
   cl_assert_equal_i(s_daten.schritte_stunde[9], 10);
+}
+
+// SPO2 "AUS" AUCH BEI PEBBLES AUSWAHL "DISABLED": dann misst activity.c nicht
+// (prv_spo2_subscription_update), also zeigt der Ring "off" statt eines
+// veralteten Werts. Eine bewusste Angleichung an activity.c seit 1abe14a79,
+// auch mit allen Schaltern an (BOULDER.md, "Health-App").
+void test_health_daten__spo2_aus_bei_pebbles_auswahl_disabled(void) {
+  s_umstellung = 0;
+  s_versatz_vor = s_versatz_nach = 7200;
+  s_jetzt = 1790493000;
+  prv_tag_lesen();
+  cl_assert(!s_daten.spo2_aus);
+  s_spo2_intervall = HRMonitoringInterval_Disabled;
+  prv_tag_lesen();
+  cl_assert(s_daten.spo2_aus);
 }
