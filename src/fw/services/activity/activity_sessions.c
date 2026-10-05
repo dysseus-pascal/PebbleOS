@@ -317,6 +317,35 @@ bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
   return zurueckgenommen;
 }
 
+// ------------------------------------------------------------------------------------
+// BOULDER: DIE SITZUNGEN JETZT IN DEN FLASH, nicht erst mit dem naechsten Speichern von
+// activity.c (alle ACTIVITY_SETTINGS_UPDATE_MIN Minuten). Die Nacht (boulder/nacht.c) merkt
+// sich in ihrer Datei, dass sie erledigt ist; stuende das dort vor ihren festen Sitzungen,
+// verwarf die Uhr nach einem Absturz dazwischen die damals noch laufenden - und rechnete
+// die erledigte Nacht nie wieder. Dieselbe Sperre und dasselbe Feld wie prv_update_storage.
+bool activity_sessions_prv_speichern(void) {
+  ActivityState *state = activity_private_state();
+  bool gespeichert = true;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  if (state->need_activities_saved) {
+    gespeichert = false;
+    SettingsFile *file = activity_private_settings_open();
+    if (file) {
+      ActivitySettingsKey key = ActivitySettingsKeyStoredActivities;
+      gespeichert = settings_file_set(file, &key, sizeof(key), state->activity_sessions,
+                                      sizeof(state->activity_sessions)) == S_SUCCESS;
+      activity_private_settings_close(file);
+    }
+    if (gespeichert) {
+      state->need_activities_saved = false;
+    } else {
+      PBL_LOG_WRN("Sessions not saved");
+    }
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return gespeichert;
+}
+
 // --------------------------------------------------------------------------------------------
 // Send an activity session (including sleep sessions) to data logging
 void activity_sessions_prv_send_activity_session_to_data_logging(ActivitySession *session) {

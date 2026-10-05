@@ -150,15 +150,23 @@ void activity_algorithm_post_process_sleep_sessions(uint16_t num_input_sessions,
                                                     ActivitySession *sessions) {
 }
 
-// Der Sitzungsspeicher der Uhr ist der echte; sein Zustand liegt hier.
+// Der Sitzungsspeicher der Uhr ist der echte; sein Zustand liegt hier. Seine Datei
+// ("activity") liegt in derselben nachgebauten wie das Bild der Nacht: was die Nacht
+// dort speichert, laedt activity_sessions_prv_init nach einem Absturz wieder.
 static ActivityState s_state;
 ActivityState *activity_private_state(void) {
   return &s_state;
 }
+static SettingsFile s_aktivitaet_datei;
 SettingsFile *activity_private_settings_open(void) {
-  return NULL;
+  if (settings_file_open(&s_aktivitaet_datei, ACTIVITY_SETTINGS_FILE_NAME,
+                         ACTIVITY_SETTINGS_FILE_LEN) != S_SUCCESS) {
+    return NULL;
+  }
+  return &s_aktivitaet_datei;
 }
 void activity_private_settings_close(SettingsFile *file) {
+  settings_file_close(file);
 }
 void event_put(PebbleEvent *e) {
 }
@@ -320,10 +328,19 @@ static void prv_zeitgeber_gestartet(void) {
 
 // Eine Minute wie in activity.c: erst die Sitzungen und der Schlafzustand,
 // dann die Nacht. Der Zeitgeber laeuft dazwischen weiter.
+//
+// Mit s_viertelstuendlich speichert die Minute wie activity.c (prv_update_storage)
+// die Sitzungen alle Viertelstunde, vor der Nacht - zur vollen Viertelstunde, also
+// in derselben Minute, in der die Nacht rechnet. Sonst kommen sie nur in die Datei,
+// wenn die Nacht selbst speichert.
+static bool s_viertelstuendlich;
 static int s_griffe_max;
 static void prv_minute(void) {
   prv_zeitgeber_faellig();
   activity_sessions_prv_minute_handler(s_jetzt);
+  if (s_viertelstuendlich && (s_jetzt / SECONDS_PER_MINUTE) % 15 == 0) {
+    activity_sessions_prv_speichern();
+  }
   s_ablauf_laenge = 0;
   s_ablauf[0] = 0;
   const int griffe = s_griffe;
@@ -353,6 +370,17 @@ static void prv_durch_die_nacht(void) {
 static void prv_neustart(void) {
   boulder_nacht_test_reset();
   activity_sessions_prv_remove_out_of_range_activity_sessions(s_jetzt, true /*remove_ongoing*/);
+}
+
+// Ein Absturz: der Arbeitsspeicher ist weg. Die Uhr laedt die Sitzungen aus ihrer
+// Datei (das echte activity_sessions_prv_init) - also nur, was dort zuletzt stand.
+static void prv_absturz(void) {
+  memset(&s_state, 0, sizeof(s_state));
+  SettingsFile *datei = activity_private_settings_open();
+  cl_assert(datei);
+  activity_sessions_prv_init(datei, s_jetzt);
+  activity_private_settings_close(datei);
+  boulder_nacht_test_reset();
 }
 
 // --- Die Nacht ------------------------------------------------------------------
@@ -523,6 +551,7 @@ void test_boulder_nacht__initialize(void) {
   s_heap_am_stueck = 64 * 1024;
   fake_malloc_set_largest_free_block(~0);
   s_bild_geschrieben = 0;
+  s_viertelstuendlich = false;
   s_griffe = 0;
   s_griffe_max = 0;
   stub_new_timer_cleanup();
@@ -1355,8 +1384,9 @@ void test_boulder_nacht__bild_aus_b24_gilt_nach_dem_update(void) {
     cl_assert_equal_i(b.abschnitte[k].phase, n.abschnitte[k].phase);
   }
 
-  // Bis Mittag: dieselbe Nacht geht nicht noch einmal ans Telefon, und die
-  // Datei traegt das Bild danach in dieser Fassung.
+  // Bis Mittag: dieselbe Nacht geht nicht noch einmal ans Telefon. b24 hat sie schon
+  // eingetragen, gerechnet wird sie nicht mehr (siehe update_von_b24_um_...); das Bild
+  // in der Datei bleibt darum das von b24, bis die naechste Nacht es ersetzt.
   prv_durch(update + 1, MINUTEN);
   cl_assert_equal_i(s_saetze_anzahl, saetze);
   cl_assert_equal_i(prv_ueberlappungen(), 0);
@@ -1365,8 +1395,138 @@ void test_boulder_nacht__bild_aus_b24_gilt_nach_dem_update(void) {
   cl_assert_equal_i(settings_file_get(&datei, "letzte", sizeof("letzte"), jetzt, sizeof(jetzt)),
                     S_SUCCESS);
   settings_file_close(&datei);
-  cl_assert_equal_i(jetzt[509], NACHT_BILD_VERSION);
-  cl_assert_equal_m(jetzt, alt, 509);
+  cl_assert_equal_m(jetzt, alt, sizeof(alt));
+  // Und nach dem naechsten Neustart (jetzt mit Zustand) gilt es weiter.
+  prv_neustart();
+  cl_assert(boulder_nacht_letzte(&b));
+  cl_assert_equal_i(b.version, NACHT_BILD_VERSION);
+  cl_assert_equal_i(b.aufwachen, n.aufwachen);
+  cl_assert_equal_i(b.schlaf_minuten, n.schlaf_minuten);
+}
+
+// DIE SITZUNGEN VON b24, wie dort prv_melde (34c3d2bcc) sie ab "fertig" fest eintrug: je
+// Schlafstueck zwischen zwei Wachphasen ein Schlafblock, darin je Tiefschlaf-Abschnitt ein
+// Tiefschlafblock (beginnt er mit dem Block, eine Minute spaeter), zusammen hoechstens 24.
+// Aus allen Teilen der geschickten Nacht - b24 rechnete dieselbe. Rueckgabe: Schlafbloecke.
+#define B24_SITZUNGEN_MAX 24
+static int prv_b24_sitzungen(time_t beginn) {
+  static NachtDlsAbschnitt a[SAETZE * NACHT_DLS_ABSCHNITTE];
+  const NachtDlsRecord *kopf = prv_letzter_satz(beginn);
+  cl_assert(kopf);
+  int n = 0;
+  for (const NachtDlsRecord *t = kopf; t < kopf + kopf->teile; t++) {
+    cl_assert(t < s_saetze + s_saetze_anzahl && t->beginn_utc == beginn);
+    memcpy(&a[n], t->abschnitte, t->anzahl * sizeof(a[0]));
+    n += t->anzahl;
+  }
+  int gemeldet = 0;
+  int bloecke = 0;
+  int k = 0;
+  while (k < n && gemeldet < B24_SITZUNGEN_MAX) {
+    if (a[k].phase == SchlafPhaseWach) {
+      k++;
+      continue;
+    }
+    const int von = a[k].von;
+    int j = k;
+    while (j < n && a[j].phase != SchlafPhaseWach) {
+      j++;
+    }
+    ActivitySession block = {
+      .type = ActivitySessionType_Sleep,
+      .start_utc = beginn + von * SECONDS_PER_MINUTE,
+      .length_min = a[j - 1].bis - von,
+    };
+    cl_assert(activity_sessions_prv_add_activity_session(&block));
+    gemeldet++;
+    bloecke++;
+    for (int m = k; m < j && gemeldet < B24_SITZUNGEN_MAX; m++) {
+      if (a[m].phase != SchlafPhaseTief) {
+        continue;
+      }
+      const int t_von = (a[m].von == von) ? von + 1 : a[m].von;
+      ActivitySession tief = {
+        .type = ActivitySessionType_RestfulSleep,
+        .start_utc = beginn + t_von * SECONDS_PER_MINUTE,
+        .length_min = a[m].bis - t_von,
+      };
+      cl_assert(activity_sessions_prv_add_activity_session(&tief));
+      gemeldet++;
+    }
+    k = j;
+  }
+  return bloecke;
+}
+
+// DAS UPDATE VON b24 AM MORGEN ZAEHLT DEN SCHLAF EINMAL. b24 hat die Nacht bei "fertig"
+// (07:15) fest eingetragen, je Schlafstueck einen Block; diese Sitzungen stehen nach dem
+// Update noch in der Uhr, einen Zustand der Nacht gibt es noch nicht. Rechnete die neue
+// Fassung die Nacht neu, stuende ihr Block neben den Stuecken von b24 - die Schlafsumme
+// der Uhr waere fast doppelt so gross.
+static void prv_update_von_b24_um(int update) {
+  prv_durch(0, update);
+  const NachtDlsRecord *satz = prv_letzter_satz(s_beginn);
+  cl_assert(satz);
+  const NachtDlsRecord nacht = *satz;
+  const int saetze = s_saetze_anzahl;
+  NachtBild n;
+  cl_assert(boulder_nacht_letzte(&n));
+  cl_assert(n.fertig);
+
+  // Die Uhr, wie b24 sie hinterliess: ihre Sitzungen, ihr Bild, kein Zustand der Nacht.
+  memset(&s_state, 0, sizeof(s_state));
+  const int bloecke = prv_b24_sitzungen(s_beginn);
+  cl_assert(bloecke >= 2);   // eine Nacht mit Wachphasen, sonst prueft das nichts
+  uint8_t alt[B24_BILD_GROESSE];
+  prv_b24_bild(alt, &n);
+  fake_settings_file_reset();
+  SettingsFile datei;
+  cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
+  cl_assert_equal_i(settings_file_set(&datei, "letzte", sizeof("letzte"), alt, sizeof(alt)),
+                    S_SUCCESS);
+  settings_file_close(&datei);
+  prv_neustart();
+
+  // Bis Mittag: der Schlaf zaehlt einmal, nichts ueberlappt, nichts geht noch einmal hinaus.
+  prv_durch(update + 1, MINUTEN);
+  printf("\nUpdate von b24 um %02d:%02d: %d Bloecke von b24, Schlafsumme der Uhr %d, Nacht %d\n",
+         (20 * 60 + update) / 60 % 24, update % 60, bloecke, (int)s_state.sleep_data.total_minutes,
+         nacht.schlaf_minuten);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+  cl_assert_equal_i(prv_schlafsumme(s_beginn), nacht.schlaf_minuten);
+  cl_assert_equal_i(s_state.sleep_data.total_minutes, nacht.schlaf_minuten);
+  cl_assert_equal_i(s_saetze_anzahl, saetze);
+}
+
+void test_boulder_nacht__update_von_b24_um_halb_acht_zaehlt_den_schlaf_einmal(void) {
+  prv_update_von_b24_um(11 * 60 + 30);
+}
+
+void test_boulder_nacht__update_von_b24_um_halb_zehn_zaehlt_den_schlaf_einmal(void) {
+  prv_update_von_b24_um(13 * 60 + 30);
+}
+
+// EIN ABSTURZ NACH DEM ENDGUELTIG VERLIERT DIE NACHT NICHT. Um 09:00 wird sie endgueltig
+// und fest eingetragen; activity.c hat die Sitzungen in dieser Minute schon vorher
+// gespeichert (da liefen sie noch) und speichert erst um 09:15 wieder. Stuerzt die Uhr um
+// 09:05 ab, laedt sie die laufenden und verwirft sie. Stuende "erledigt" dann schon in der
+// Datei der Nacht, kaeme die Nacht nie wieder - die Uhr haette fuer heute keinen Schlaf.
+void test_boulder_nacht__absturz_nach_dem_endgueltig_verliert_die_nacht_nicht(void) {
+  s_viertelstuendlich = true;
+  prv_durch(0, 13 * 60 + 5);
+  const ActivitySession *block = prv_erste(ActivitySessionType_Sleep);
+  cl_assert(block && !block->ongoing);
+  const NachtDlsRecord *satz = prv_letzter_satz(s_beginn);
+  cl_assert(satz);
+  const int schlaf = satz->schlaf_minuten;
+  const int saetze = s_saetze_anzahl;
+
+  prv_absturz();
+  prv_durch(13 * 60 + 6, MINUTEN);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+  cl_assert_equal_i(prv_schlafsumme(s_beginn), schlaf);
+  cl_assert_equal_i(s_saetze_anzahl, saetze);
 }
 
 // N2: DAS BILD KOMMT NUR IN DIE DATEI, WENN ES SICH AENDERT. Die Uhr rechnet

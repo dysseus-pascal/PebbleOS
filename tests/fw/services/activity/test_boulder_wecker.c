@@ -144,10 +144,18 @@ bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *h
 ActivityState *activity_private_state(void) {
   return &s_state;
 }
+// Die Datei des Aktivitaetsdienstes auf dem nachgebauten Flash: die Nacht speichert
+// ihre festen Sitzungen dort, bevor sie sich "erledigt" merkt.
+static SettingsFile s_aktivitaet_datei;
 SettingsFile *activity_private_settings_open(void) {
-  return NULL;
+  if (settings_file_open(&s_aktivitaet_datei, ACTIVITY_SETTINGS_FILE_NAME,
+                         ACTIVITY_SETTINGS_FILE_LEN) != S_SUCCESS) {
+    return NULL;
+  }
+  return &s_aktivitaet_datei;
 }
 void activity_private_settings_close(SettingsFile *file) {
+  settings_file_close(file);
 }
 void activity_algorithm_post_process_sleep_sessions(uint16_t n, ActivitySession *sessions) {
 }

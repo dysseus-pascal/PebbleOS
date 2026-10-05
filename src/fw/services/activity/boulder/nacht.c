@@ -168,6 +168,7 @@ static NachtBild s_bild;
 static bool s_bild_da;
 static bool s_bild_gelesen;
 static bool s_bild_in_datei;   //< s_bild steht so in der Datei
+static bool s_bild_aus_b24;    //< s_bild kam beim Update aus der Datei von b24
 
 // WAS EINEN NEUSTART UEBERSTEHEN MUSS, damit die Uhr am Morgen nicht eine
 // schon endgueltige Nacht neu rechnet - und sie mit dem Morgenschlaf zu einer
@@ -517,6 +518,7 @@ static void prv_bild_laden(void) {
       s_bild.version = NACHT_BILD_VERSION;
       s_bild_da = true;
       s_bild_in_datei = false;
+      s_bild_aus_b24 = true;
       PBL_LOG_INFO("Nacht: Bild aus b24 uebernommen");
     } else {
       PBL_LOG_WRN("Nacht: Bild in Fassung %d verworfen", (int)s_bild.version);
@@ -646,6 +648,21 @@ static void prv_zustand_laden(time_t beginn) {
     s_gesendet_beginn = s_bild.beginn_utc;
     s_gesendet_aufwachen = s_bild.aufwachen;
     s_gesendet_schlaf = s_bild.schlaf_minuten;
+    // DAS UPDATE VON b24 AM MORGEN: b24 trug die Nacht schon bei "fertig" fest ein, je
+    // Schlafstueck einen Block samt Tiefschlaf, und diese Sitzungen stehen nach dem
+    // Neustart noch da. Rechnete die Uhr die Nacht jetzt ab Fensterbeginn neu, ersetzte ihr
+    // einer Block nur das Stueck mit gleichem Beginn - die anderen blieben daneben, und der
+    // Schlaf zaehlte fast doppelt. Die Nacht des Bildes ist also erledigt, wie b24 es beim
+    // Endgueltig selbst gemerkt haette. Nur fuer ein Bild von b24: eines dieser Fassung ohne
+    // Zustand (Absturz vor dem ersten Schreiben) hat womoeglich nur laufende Sitzungen, und
+    // die verwirft der Neustart.
+    const time_t bild_beginn = (time_t)s_bild.beginn_utc;
+    if (s_bild_aus_b24 && bild_beginn >= beginn &&
+        bild_beginn < beginn + FENSTER_DAUER_MIN * SECONDS_PER_MINUTE) {
+      s_erledigt_bis = bild_beginn + s_bild.aufwachen * SECONDS_PER_MINUTE;
+      PBL_LOG_INFO("Nacht: von b24 schon eingetragen, erledigt bis Minute %d",
+                   (int)s_bild.aufwachen);
+    }
   }
   pbl_mutex_unlock(&s_bild_sperre);
 }
@@ -662,6 +679,15 @@ static void prv_zustand_schreiben(time_t beginn) {
     .gesendet_schlaf = s_gesendet_schlaf,
   };
   if (memcmp(&z, &s_zustand_datei, sizeof(z)) == 0) {
+    return;
+  }
+  // ERST DIE SITZUNGEN, DANN DER ZUSTAND. activity.c speichert die Sitzungen nur alle
+  // Viertelstunde, und in der Minute, in der die Nacht endgueltig wird, schon vor ihr.
+  // Stuende "erledigt" vorher im Flash, verwarf die Uhr nach einem Absturz dazwischen die
+  // damals noch laufenden Sitzungen und rechnete die Nacht nie wieder. Klappt das Speichern
+  // nicht, bleibt der alte Zustand; der naechste Aufruf versucht beides wieder.
+  if (!activity_sessions_prv_speichern()) {
+    PBL_LOG_WRN("Nacht: Sitzungen nicht gespeichert, Zustand spaeter");
     return;
   }
   SettingsFile datei;
@@ -1004,6 +1030,7 @@ void boulder_nacht_test_reset(void) {
   s_bild_da = false;
   s_bild_gelesen = false;
   s_bild_in_datei = false;
+  s_bild_aus_b24 = false;
   memset(&s_bild, 0, sizeof(s_bild));
   memset(&s_zustand_datei, 0, sizeof(s_zustand_datei));
   s_zustand_geladen = false;
