@@ -14,10 +14,10 @@
 #include "pbl/util/trig.h"
 
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
 #include "stubs_system_task.h"
 
 #include <math.h>
+#include <setjmp.h>
 
 // Der Trainingsdienst aus Kieselsport, in der Firmware. Die Plattform ist hier
 // nachgebaut: ein Persist im Speicher, Zaehler, die der Test stellt, und ein
@@ -46,6 +46,60 @@ bool regular_timer_remove_callback(RegularTimerInfo *cb) {
 bool regular_timer_is_scheduled(RegularTimerInfo *cb) {
   return s_takt == cb || s_minutentakt == cb;
 }
+
+// --- Die Sperre des Dienstes, zwischen zwei Aufgaben ---
+//
+// Der Dienst schreibt auf KernelBG, die App bestaetigt auf ihrer eigenen
+// Aufgabe - mit hoeherer Prioritaet: sie kann KernelBG mitten im Speichern
+// unterbrechen. Der Test laeuft in einem Faden; s_aufgabe sagt, wer dran ist.
+// Greift die App zur Sperre, waehrend KernelBG sie haelt, muesste sie warten:
+// hier springt ihr Aufruf zurueck (longjmp, vor jeder Wirkung) und laeuft,
+// sobald KernelBG entsperrt, von vorn - wie nach dem Warten. Die Sperre ist
+// rekursiv wie die der Firmware.
+typedef enum { AufgabeKernelBG, AufgabeApp } Aufgabe;
+static Aufgabe s_aufgabe;
+static Aufgabe s_halter;
+static int s_tiefe;
+static jmp_buf s_warten;
+static bool s_app_wartet;
+
+// Was die App tut, wenn sie KernelBG unterbricht - kurz bevor dieser Schluessel
+// geschrieben wird.
+static void (*s_app_aktion)(void);
+static uint32_t s_unterbrich_vor;
+
+static void prv_app_laeuft(void) {
+  s_aufgabe = AufgabeApp;
+  s_app_wartet = false;
+  if (setjmp(s_warten) == 0) {
+    s_app_aktion();
+    s_app_aktion = NULL;
+  } else {
+    s_app_wartet = true;
+  }
+  s_aufgabe = AufgabeKernelBG;
+}
+
+void pbl_mutex_init(struct pbl_mutex *m) {}
+void pbl_mutex_deinit(struct pbl_mutex *m) {}
+int pbl_mutex_lock_lr(struct pbl_mutex *m, pbl_timeout_t timeout, uintptr_t lr) {
+  if (s_tiefe > 0 && s_halter != s_aufgabe) {
+    cl_assert(s_aufgabe == AufgabeApp);
+    longjmp(s_warten, 1);
+  }
+  s_halter = s_aufgabe;
+  s_tiefe++;
+  return 0;
+}
+void pbl_mutex_unlock(struct pbl_mutex *m) {
+  cl_assert(s_tiefe > 0 && s_halter == s_aufgabe);
+  // Gibt KernelBG die Sperre frei, kommt die wartende App dran.
+  if (--s_tiefe == 0 && s_app_wartet && s_aufgabe == AufgabeKernelBG) {
+    prv_app_laeuft();
+  }
+}
+bool pbl_mutex_is_owner(const struct pbl_mutex *m) { return s_tiefe > 0 && s_halter == s_aufgabe; }
+void pbl_mutex_assert_held(const struct pbl_mutex *m, bool held) {}
 
 // --- Persist ---
 
@@ -83,6 +137,9 @@ int ks_persist_read_data(uint32_t key, void *puffer, size_t groesse) {
 static int s_schreibvorgaenge;   //< jeder ist ein neuer Satz im Flash
 
 void ks_persist_write_data(uint32_t key, const void *daten, size_t groesse) {
+  if (s_app_aktion && !s_app_wartet && key == s_unterbrich_vor) {
+    prv_app_laeuft();
+  }
   s_schreibvorgaenge++;
   Eintrag *e = prv_finde(key);
   for (int i = 0; !e && i < EINTRAEGE_MAX; i++) {
@@ -215,6 +272,10 @@ void test_kieselsport__initialize(void) {
   s_gemeldet_zahl = 0;
   s_alter = 0;
   s_schreibvorgaenge = 0;
+  s_aufgabe = AufgabeKernelBG;
+  s_tiefe = 0;
+  s_app_wartet = false;
+  s_app_aktion = NULL;
   kieselsport_init();
 }
 
@@ -937,6 +998,58 @@ void test_kieselsport__spaete_kurvenbestaetigung_trifft_keine_neue_kurve(void) {
   cl_assert(!kieselsport_kurve_bestaetigt(BEGINN + 1000, 5, 10));
   cl_assert(kieselsport_kurve_bestaetigt(BEGINN + 1000, 0, 10));
   cl_assert_equal_i(kieselsport_kurve_ab(), 10);
+}
+
+// DAS SPAETE ACK MITTEN IM SPEICHERN. Die App bestaetigt die Zusammenfassung von
+// A, waehrend KernelBG gerade B speichert: Pausen und Ende von B stehen schon
+// da, der wartende Stand noch nicht - er sagt noch A. Ohne die Sperre passte
+// die Pruefung, und das Loeschen naehme die Pausen und das Ende von B mit; B
+// ginge ohne sie ans Telefon.
+static void prv_ack_a(void) {
+  kieselsport_wartend_vergessen(BEGINN);
+}
+
+void test_kieselsport__spaetes_ack_mitten_im_speichern_loescht_nichts_von_b(void) {
+  prv_training(BEGINN, 120);
+  kieselsport_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(60);
+  prv_pause_fuer(30);
+  prv_sekunden(60);
+  s_app_aktion = prv_ack_a;
+  s_unterbrich_vor = PERSIST_WARTET;
+  kieselsport_speichern();
+  cl_assert(s_app_aktion == NULL);   // die App kam dran
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 1000);
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert(kieselsport_wartend_pausen(b, sizeof(b)) > 2);
+  cl_assert(kieselsport_wartend_ende() != 0);
+}
+
+// Dasselbe fuer die Kurve: die App bestaetigt das letzte Stueck der Kurve von
+// A, waehrend KernelBG die Stuecke von B schon geschrieben hat, Anzahl und
+// Beginn aber noch nicht. Ohne die Sperre loeschte kurve_vergessen die Stuecke
+// von B, und deren Kurve haette eine Luecke - sie wuerde verworfen.
+static void prv_kurven_ack_a(void) {
+  kieselsport_kurve_bestaetigt(BEGINN, 0, 42);
+}
+
+void test_kieselsport__spaetes_kurven_ack_mitten_im_speichern_loescht_nichts_von_b(void) {
+  prv_training(BEGINN, 410);
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 42);
+  kieselsport_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(300);
+  s_app_aktion = prv_kurven_ack_a;
+  s_unterbrich_vor = PERSIST_KURVE_ANZAHL;
+  kieselsport_speichern();
+  cl_assert(s_app_aktion == NULL);
+  cl_assert(kieselsport_kurve_wartet());
+  cl_assert_equal_i(kieselsport_kurve_beginn(), BEGINN + 1000);
+  cl_assert(!kieselsport_kurve_luecke());
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), kieselsport_kurve_anzahl());
 }
 
 void test_kieselsport__kurve_mit_luecke(void) {
