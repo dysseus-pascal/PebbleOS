@@ -204,12 +204,16 @@ unlock:
 static void prv_remove_activity_session_at(ActivityState *state, int idx) {
   int num_to_move = state->activity_sessions_count - idx - 1;
   PBL_ASSERTN(num_to_move >= 0);
-  if (num_to_move == 0) {
-    memset(&state->activity_sessions[idx], 0, sizeof(ActivitySession));
-  } else {
+  if (num_to_move > 0) {
     memmove(&state->activity_sessions[idx], &state->activity_sessions[idx + 1],
             num_to_move * sizeof(ActivitySession));
   }
+  // Boulder: den frei gewordenen letzten Platz nullen, auch nach dem Nachruecken. Dort
+  // stand sonst eine Kopie der letzten Sitzung; activity.c speichert das ganze Feld, und
+  // activity_sessions_prv_init zaehlt bis zum ersten leeren Platz - nach einem Neustart
+  // stuende sie doppelt da.
+  memset(&state->activity_sessions[state->activity_sessions_count - 1], 0,
+         sizeof(ActivitySession));
   state->activity_sessions_count--;
 }
 

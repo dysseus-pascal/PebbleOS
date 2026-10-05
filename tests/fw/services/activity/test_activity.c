@@ -3168,6 +3168,47 @@ void test_activity__eigene_schlafsitzung_geht_auch_abgeschlossen(void) {
   cl_assert_equal_i(activity_private_state()->activity_sessions_count, 1);
 }
 
+// Boulder: NACH DEM ZURUECKNEHMEN STEHT HINTER DEN SITZUNGEN NICHTS MEHR. Die Nacht hat
+// workout_service.c abgeschlossen, dahinter ein Training; die Nacht nimmt ihren Block
+// zurueck, die Liste wird gespeichert, die Uhr startet neu. activity.c schreibt das ganze
+// Feld, und das Laden zaehlt bis zum ersten leeren Platz - das Training darf danach nicht
+// zweimal dastehen.
+void test_activity__zuruecknehmen_laesst_keine_kopie_stehen(void) {
+  activity_start_tracking(false /*test_mode*/);
+  fake_system_task_callbacks_invoke_pending();
+  const time_t jetzt = rtc_get_time();   // 17 Uhr
+  ActivitySession nacht = {
+    .type = ActivitySessionType_Sleep,
+    .start_utc = jetzt - 10 * SECONDS_PER_HOUR,
+    .length_min = 8 * MINUTES_PER_HOUR,
+  };
+  ActivitySession training = {
+    .type = ActivitySessionType_Run,
+    .start_utc = jetzt - SECONDS_PER_HOUR,
+    .length_min = 30,
+    .manual = true,
+  };
+  activity_sessions_prv_add_activity_session(&nacht);
+  activity_sessions_prv_add_activity_session(&training);
+  ActivityState *state = activity_private_state();
+  cl_assert_equal_i(state->activity_sessions_count, 2);
+
+  ActivitySession frage = { .type = ActivitySessionType_Sleep, .start_utc = nacht.start_utc };
+  cl_assert(activity_sessions_prv_eigene_zuruecknehmen(&frage));
+  cl_assert_equal_i(state->activity_sessions_count, 1);
+  // Der frei gewordene Platz ist leer.
+  static const ActivitySession s_leer;
+  cl_assert_equal_m(&state->activity_sessions[1], &s_leer, sizeof(s_leer));
+
+  // Speichern (wie beim Beenden) und neu laden (wie nach dem Neustart).
+  activity_stop_tracking();
+  fake_system_task_callbacks_invoke_pending();
+  prv_activity_init_and_set_enabled(true);
+  state = activity_private_state();
+  cl_assert_equal_i(state->activity_sessions_count, 1);
+  cl_assert_equal_m(&state->activity_sessions[0], &training, sizeof(training));
+}
+
 // ---------------------------------------------------------------------------------------
 // Boulder: DIE SCHALTER IM AKTIVITAETSDIENST (boulder/haken.h). Gebaut einmal mit allen
 // (test_activity) und einmal ohne (test_activity_upstream) - ohne gilt Pebbles Verhalten.
