@@ -235,10 +235,11 @@ static uint32_t s_kurve_beginn;
 static int s_kurve_leer;      //< so oft liefert das Lesen nichts
 static bool s_kurve_luecke;   //< der Schluessel des naechsten Stuecks fehlt
 bool kieselsport_kurve_wartet(void) { return s_kurve_ab < s_kurve_anzahl; }
-uint32_t kieselsport_kurve_beginn(void) { return s_kurve_beginn; }
-uint16_t kieselsport_kurve_anzahl(void) { return s_kurve_anzahl; }
-uint16_t kieselsport_kurve_ab(void) { return s_kurve_ab; }
-uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max) {
+uint16_t kieselsport_kurve_lesen(uint32_t *beginn, uint16_t *ab, uint16_t *anzahl, uint8_t *aus,
+                                 uint16_t max) {
+  *beginn = s_kurve_beginn;
+  *ab = s_kurve_ab;
+  *anzahl = s_kurve_anzahl;
   if (s_kurve_leer > 0) {
     s_kurve_leer--;
     return 0;
