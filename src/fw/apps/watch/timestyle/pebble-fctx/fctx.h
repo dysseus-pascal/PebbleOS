@@ -118,6 +118,9 @@ extern void fctx_deinit_context(FContext* fctx);
 // Ende des Zifferblatts. Und wie gross er gerade ist (0 = keiner).
 void fctx_puffer_freigeben(void);
 size_t fctx_puffer_bytes(void);
+// Boulder: beim Start des Zifferblatts - den Zeiger eines vorigen Laufs, der
+// ohne Ende abbrach, vergessen, ohne ihn freizugeben (sein Heap ist weg).
+void fctx_puffer_vergessen(void);
 
 #if PBL_COLOR  // Boulder: #if, the firmware defines it as 0 or 1
 void fctx_enable_aa(bool enable);

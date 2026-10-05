@@ -272,6 +272,17 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
 
 
 void ClockArea_init(Window* window) {
+  // Boulder: EIN ABSTURZ RUFT KEIN ClockArea_deinit. Die Statics einer
+  // System-App ueberleben ihr Ende, ihr Heap nicht - der Flag-Puffer von fctx
+  // und die Kopie der Ziffern zeigten sonst in den alten Heap: fctx gaebe den
+  // fremden Zeiger frei (die App stuerzte bei jedem Start wieder ab), und die
+  // Kopie zeichnete ein Bild, das es nicht mehr gibt. Nur vergessen, nicht
+  // freigeben; nach einem normalen Ende sind sie ohnehin leer.
+  fctx_puffer_vergessen();
+  s_ziffern = NULL;
+  memset(&s_ziffern_stand, 0, sizeof(s_ziffern_stand));
+  s_ziffern_gerechnet = 0;
+
   // record the screen size, since we NEVER GET IT AGAIN
   screen_rect = layer_get_bounds(window_get_root_layer(window));
 
