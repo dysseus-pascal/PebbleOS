@@ -105,9 +105,10 @@ uint8_t boulder_hrv_puls(void) {
 }
 
 #ifdef CONFIG_HRM
-// NUR SICHERE ABSTAENDE, UND KEINER UEBER EINE LUECKE. Der Treiber sagt
-// "Worst" unter 70 % Konfidenz; ein solcher Abstand zaehlt nicht, und auch der
-// danach nicht gegen den davor - zwischen beiden fehlt die Gewissheit.
+// NUR SICHERE ABSTAENDE, UND KEINER UEBER EINE LUECKE. Unter "Acceptable" -
+// beim Treiber unter 80 % Konfidenz ("Poor" ab 70 %, darunter "Worst",
+// gh3x2x.c) - zaehlt ein Abstand nicht, und auch der danach nicht gegen den
+// davor: zwischen beiden fehlt die Gewissheit.
 static void prv_hrm_ereignis(PebbleHRMEvent *e, void *context) {
   if (!s_misst || e->event_type != HRMEvent_HRV) {
     return;

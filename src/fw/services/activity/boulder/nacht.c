@@ -82,10 +82,11 @@
 // 11 Uhr, und die aeltesten liegen dann ohnehin vor dem Fenster. Eine lange
 // Pause teilt ein Training in zwei.
 #define TRAININGS_MAX 6
-// EIN VERGESSENES TRAINING LOESCHT NICHT DIE NACHT. Kieselsport beendet von
-// selbst nichts, auch keine Pause. Eine Pause zaehlt deshalb nur eine halbe
-// Stunde lang zum Training, ein Training hoechstens drei Stunden; danach ist
-// es vergessen, und der Schlaf darin zaehlt.
+// EIN VERGESSENES TRAINING LOESCHT NICHT DIE NACHT. Kieselsport beendet ein
+// Training nach einer halben Stunde Pause selbst (dienst.c, AUTO_ENDE_S); so
+// lange zaehlt die Pause zum Training, laenger auch hier nicht. Ein laufendes
+// Training beendet niemand von selbst: es zaehlt hoechstens drei Stunden,
+// danach ist es vergessen, und der Schlaf darin zaehlt.
 #define PAUSE_MAX_MIN 30
 #define TRAINING_MAX_MIN (3 * MINUTES_PER_HOUR)
 
