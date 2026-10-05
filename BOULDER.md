@@ -82,9 +82,12 @@ Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
   beim Zurücknehmen den frei gewordenen letzten Platz (sonst stand die letzte
   Sitzung nach einem Neustart doppelt da). Beides gilt auch mit
   `BOULDER_SCHLAF=n`, etwa wenn Kraepelin einen Schlafzyklus verwirft.
-- Probebau mit einem Schalter aus:
+- Probebau mit einem Schalter aus, **nur mit eigenem Bauordner (`-b`)**:
   `pbl configure -b build-x --board obelix@pvt -DCONFIG_RELEASE=y -DCONFIG_BOULDER_HRV=n`.
-  `BOULDER_SCHLAF=n` schaltet alle vier ab.
+  `BOULDER_SCHLAF=n` schaltet alle vier ab. In `build/` bliebe der Schalter
+  im CMake-Cache stehen; `bundle.sh` konfiguriert darum mit `--fresh`, bricht
+  bei `build/menuconfig.conf` ab und prüft für obelix in `build/.config`,
+  dass alle vier `=y` sind (Test `test_boulder_bundle_schalter`).
 - Host-Tests in beiden Modi: `test_activity` und `test_activity_upstream`,
   `test_activity_algorithm_kraepelin` und `…_upstream`, `test_boulder_nacht`,
   `…_ohne_hrv`, `…_ohne_messstufe`; Pebbles Health-Tests
