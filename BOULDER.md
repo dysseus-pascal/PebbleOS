@@ -102,7 +102,10 @@ Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
   Upstream.
 - Boulder braucht für `0x4001`/`0x4002` mindestens die App 0.50.0. Eine
   ältere quittiert unbekannte Tags und wirft sie weg; deshalb die Zeile
-  „Mindest-App“ im Release.
+  „Mindest-App“ im Release. Die wertet aber erst 0.50 aus: App 0.49 bietet
+  b25 trotzdem an und verlöre die Nächte. Das Telefon muss also vor dem
+  Veröffentlichen von b25 auf 0.50 oder neuer stehen; `release.sh` prüft
+  dafür, dass das App-Release veröffentlicht ist (siehe Releases).
 - **Wächter** für das, was Boulder mit Upstream teilt (Typ 8, Tag 84 Fassung
   7 mit `manual` an Byte 26, die Tags):
   - `src/fw/services/activity/boulder/vertraege.c`: Static-Asserts und
@@ -330,13 +333,17 @@ dem `b`, und bietet eine neue Fassung sofort an. Die Nummer zählt über die
 Basis hinweg weiter (v4.38.1-b6, dann v4.38.3-b7).
 
 **Mindest-App:** die Notizen tragen unter dem Titel genau einmal eine eigene
-Zeile `Mindest-App: X.Y.Z` (ohne Leerzeichen davor oder dahinter, LF). Boulder
-liest sie mit `^Mindest-App: (\d+\.\d+\.\d+)$` aus dem Text des Releases und
-bietet die Firmware einer älteren App nicht an; fehlt die Zeile, gilt keine
-Grenze. `release.sh` bricht vor dem Tag ab, wenn die Zeile fehlt, doppelt,
-falsch geschrieben oder älter als `tools/boulder/mindest_app.txt` ist
-(Prüfung: `tools/boulder/mindest_app.py`, Test
-`test_boulder_release_mindest_app`). Wer etwas einbaut, das eine neuere App
+Zeile `Mindest-App: X.Y.Z` (ohne Leerzeichen davor oder dahinter, LF; CR lehnt
+`mindest_app.py` ab, obwohl die App sie nähme). Boulder ab 0.50 liest sie mit
+`^Mindest-App: (\d+\.\d+\.\d+)$` aus dem Text des Releases und bietet die
+Firmware einer älteren App nicht an; fehlt die Zeile, gilt keine Grenze. **App
+0.49 und älter werten die Zeile nicht aus** und bieten jede Firmware an: vor
+dem Release muss das Telefon die Mindest-App schon haben. `release.sh` bricht
+vor dem Tag ab, wenn die Zeile fehlt, doppelt, falsch geschrieben oder älter
+als `tools/boulder/mindest_app.txt` ist (Prüfung: `tools/boulder/mindest_app.py`)
+oder wenn das App-Release `v<Mindest-App>` in `dysseus-pascal/Boulder` fehlt
+oder ein Entwurf ist (`gh release view`); Test
+`test_boulder_release_mindest_app`. Wer etwas einbaut, das eine neuere App
 braucht, zieht `mindest_app.txt` nach; seit den Tags `0x4001`/`0x4002` steht
 dort 0.50.0.
 
