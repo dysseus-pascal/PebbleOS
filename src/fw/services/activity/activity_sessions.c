@@ -65,6 +65,8 @@ void activity_sessions_prv_remove_out_of_range_activity_sessions(time_t utc_sec,
     // Boulder: memmove statt memcpy - Quelle und Ziel ueberlappen, sobald hinter der
     // entfernten Sitzung mehr als eine steht (Neustart in der Nacht: der laufende Block
     // vor seinen Tiefschlafbloecken). memcpy darf dann in beliebiger Reihenfolge kopieren.
+    // Ohne Schalter, mit Absicht: ein Upstream-Fehler, den auch ein Bau mit
+    // BOULDER_SCHLAF=n nicht wieder braucht (BOULDER.md, "Ohne Schalter").
     uint32_t remaining = *session_entries - i - 1;
     memmove(&sessions[i], &sessions[i + 1], remaining * sizeof(*sessions));
     (*session_entries)--;
@@ -211,7 +213,10 @@ static void prv_remove_activity_session_at(ActivityState *state, int idx) {
   // Boulder: den frei gewordenen letzten Platz nullen, auch nach dem Nachruecken. Dort
   // stand sonst eine Kopie der letzten Sitzung; activity.c speichert das ganze Feld, und
   // activity_sessions_prv_init zaehlt bis zum ersten leeren Platz - nach einem Neustart
-  // stuende sie doppelt da.
+  // stuende sie doppelt da. OHNE SCHALTER, MIT ABSICHT: das ist ein Upstream-Fehler, kein
+  // Boulder-Verhalten. Auch im Bau mit BOULDER_SCHLAF=n laeuft Kraepelins Zuruecknehmen
+  // eines verworfenen Schlafzyklus hier durch; Upstream liesse dort die Kopie stehen
+  // (BOULDER.md, "Ohne Schalter"; test_activity_upstream prueft es mit).
   memset(&state->activity_sessions[state->activity_sessions_count - 1], 0,
          sizeof(ActivitySession));
   state->activity_sessions_count--;

@@ -76,6 +76,11 @@ Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
   `settings_blob_db.c`) mit `#ifdef`.
 - Ohne Schalter, nur bewacht: die erkannte Bewegung (Typ 8) und der
   Gehfilter. Sie bleiben in jedem Bau Boulder.
+- Ohne Schalter, weil es Upstream-Fehler sind: `activity_sessions.c` rückt
+  beim Entfernen mit `memmove` nach (Quelle und Ziel überlappen) und nullt
+  beim Zurücknehmen den frei gewordenen letzten Platz (sonst stand die letzte
+  Sitzung nach einem Neustart doppelt da). Beides gilt auch mit
+  `BOULDER_SCHLAF=n`, etwa wenn Kraepelin einen Schlafzyklus verwirft.
 - Probebau mit einem Schalter aus:
   `pbl configure -b build-x --board obelix@pvt -DCONFIG_RELEASE=y -DCONFIG_BOULDER_HRV=n`.
   `BOULDER_SCHLAF=n` schaltet alle vier ab.
