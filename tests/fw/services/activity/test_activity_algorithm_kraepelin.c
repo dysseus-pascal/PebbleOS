@@ -291,11 +291,28 @@ void kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *orientation, bo
 void kalg_set_weight(KAlgState *state, uint32_t grams) {
 }
 
+// Boulder: so viele Sitzungen meldet Kraepelin in der naechsten Minute ueber den echten
+// Rueckruf (prv_create_activity_session_cb), sonst keine.
+typedef struct {
+  KAlgActivityType art;
+  uint32_t len_min;
+  uint32_t schritte;
+} KalgMeldung;
+static const KalgMeldung *s_kalg_meldungen;
+static int s_kalg_meldungen_anzahl;
+
 void kalg_activities_update(KAlgState *state, time_t utc_now, uint16_t steps, uint16_t vmc,
                             uint8_t orientation, bool definitely_not_worn,
                             uint32_t resting_calories, uint32_t active_calories,
                             uint32_t distance_mm, bool shutting_down,
                             KAlgActivitySessionCallback sessions_cb, void *context) {
+  for (int i = 0; i < s_kalg_meldungen_anzahl; i++) {
+    const KalgMeldung *m = &s_kalg_meldungen[i];
+    sessions_cb(context, m->art, utc_now - m->len_min * SECONDS_PER_MINUTE,
+                m->len_min * SECONDS_PER_MINUTE, true /*ongoing*/, false /*delete*/, m->schritte,
+                0, 0, 0);
+  }
+  s_kalg_meldungen_anzahl = 0;
 }
 
 time_t kalg_activity_last_processed_time(KAlgState *state, KAlgActivityType activity) {
@@ -1022,4 +1039,37 @@ void test_activity_algorithm_kraepelin__disable_tracking_ends_ongoing_sessions(v
   cl_assert(!s_activity_sessions[1].ongoing);
   cl_assert_equal_i(s_activity_sessions[2].type, ActivitySessionType_RestfulSleep);
   cl_assert(s_activity_sessions[2].ongoing);
+}
+
+// ---------------------------------------------------------------------------------------
+// Boulder: KRAEPELINS SCHLAFSITZUNGEN FALLEN NUR MIT BOULDER_SCHLAF WEG (boulder/haken.h).
+// Ohne den Schalter traegt er sie ein wie Upstream. Die Bewegung kommt in beiden Faellen -
+// sie hat keinen Schalter. Gebaut einmal mit und einmal ohne (CMakeLists.txt).
+void test_activity_algorithm_kraepelin__schlafsitzungen_nach_schalter(void) {
+  s_activity_sessions_count = 0;
+  static const KalgMeldung s_meldungen[] = {
+    { KAlgActivityType_Sleep, 120, 0 },
+    { KAlgActivityType_RestfulSleep, 40, 0 },
+    { KAlgActivityType_Movement, 15, 1500 },
+  };
+  s_kalg_meldungen = s_meldungen;
+  s_kalg_meldungen_anzahl = ARRAY_LENGTH(s_meldungen);
+  AlgMinuteDLSSample minute_data[1];
+  prv_create_test_data(1, minute_data);
+  prv_feed_minute_data(1, minute_data, false /*simulate_bg_delays*/);
+
+  int schlaf = 0, tief = 0, bewegung = 0;
+  for (int i = 0; i < s_activity_sessions_count; i++) {
+    schlaf += s_activity_sessions[i].type == ActivitySessionType_Sleep;
+    tief += s_activity_sessions[i].type == ActivitySessionType_RestfulSleep;
+    bewegung += s_activity_sessions[i].type == ActivitySessionType_Movement;
+  }
+  cl_assert_equal_i(bewegung, 1);
+#ifdef CONFIG_BOULDER_SCHLAF
+  cl_assert_equal_i(schlaf, 0);
+  cl_assert_equal_i(tief, 0);
+#else
+  cl_assert_equal_i(schlaf, 1);
+  cl_assert_equal_i(tief, 1);
+#endif
 }

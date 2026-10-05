@@ -557,6 +557,11 @@ bool activity_sessions_prv_laufende_zuruecknehmen(ActivitySession *session);
 //! zurueckgenommen wurde.
 bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session);
 
+//! Boulder: Schreibt die Sitzungen sofort in die Datei, wenn sich eine feste geaendert hat
+//! (sonst bis zu ACTIVITY_SETTINGS_UPDATE_MIN spaeter). Gibt zurueck, ob sie jetzt dort
+//! stehen.
+bool activity_sessions_prv_speichern(void);
+
 //! Perform our once a minute activity session maintenance logic
 void activity_sessions_prv_minute_handler(time_t utc_sec);
 

@@ -78,7 +78,9 @@
   PREFS_MACRO(PREF_KEY_MUSIC_SHOW_VOLUME_CONTROLS, s_music_show_volume_controls)
   PREFS_MACRO(PREF_KEY_MUSIC_SHOW_PROGRESS_BAR, s_music_show_progress_bar)
   PREFS_MACRO(PREF_KEY_MUSIC_SHOW_ALBUM_ART, s_music_show_album_art)
+#ifdef CONFIG_BOULDER_MESSSTUFE
   PREFS_MACRO(PREF_KEY_BOULDER_MESSSTUFE, s_boulder_messstufe)
+#endif
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
   PREFS_MACRO(PREF_KEY_BOULDER_TIMESTYLE, s_boulder_timestyle_gesetzt)
   // Boulder: die Einstellungen von TimeStyle Bedrock (32 Byte aus Boulder).

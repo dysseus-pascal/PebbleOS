@@ -4,7 +4,8 @@
 #include "pbl/services/activity/boulder/hrv.h"
 
 #include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/boulder/messstufe.h"
+// Der Takt kommt von der Messstufe, ohne sie fest (boulder/haken.h).
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/settings/settings_file.h"
 #include "util/time/time.h"
 #include <pbl/drivers/rtc.h>
@@ -27,7 +28,7 @@
 
 // DIE FENSTER UEBERSTEHEN EINEN NEUSTART: sonst rechnete die Uhr eine Nacht,
 // die am Morgen neu gerechnet wird, ohne HRV - mit anderen Phasen, und ohne
-// den Satz auf Tag 89. Je Fenster ein kleiner Satz unter seinem Platz im Ring.
+// den eigenen HRV-Satz. Je Fenster ein kleiner Satz unter seinem Platz im Ring.
 #define FENSTER_DATEI "boulder_hrv"
 #define FENSTER_DATEI_GROESSE 4096
 
@@ -104,9 +105,10 @@ uint8_t boulder_hrv_puls(void) {
 }
 
 #ifdef CONFIG_HRM
-// NUR SICHERE ABSTAENDE, UND KEINER UEBER EINE LUECKE. Der Treiber sagt
-// "Worst" unter 70 % Konfidenz; ein solcher Abstand zaehlt nicht, und auch der
-// danach nicht gegen den davor - zwischen beiden fehlt die Gewissheit.
+// NUR SICHERE ABSTAENDE, UND KEINER UEBER EINE LUECKE. Unter "Acceptable" -
+// beim Treiber unter 80 % Konfidenz ("Poor" ab 70 %, darunter "Worst",
+// gh3x2x.c) - zaehlt ein Abstand nicht, und auch der danach nicht gegen den
+// davor: zwischen beiden fehlt die Gewissheit.
 static void prv_hrm_ereignis(PebbleHRMEvent *e, void *context) {
   if (!s_misst || e->event_type != HRMEvent_HRV) {
     return;

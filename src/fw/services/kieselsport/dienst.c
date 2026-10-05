@@ -505,7 +505,13 @@ void kieselsport_becken_setze(uint16_t meter) {
 }
 
 // Archiv, Zusammenfassung und Kurve liegen nur im Persist, und der hat seine
-// eigene Sperre. Die des Dienstes braucht es dafuer nicht.
+// eigene Sperre - fuer einzelnes Lesen reicht sie. NICHT FUER PRUEFEN UND
+// DANN LOESCHEN: das Vergessen nach einer Bestaetigung prueft erst, ob noch
+// das bestaetigte Training dasteht, und loescht dann mehrere Schluessel.
+// Unterbricht die App (hoehere Prioritaet) dabei prv_speichern eines neuen
+// Trainings auf KernelBG, stehen dessen erste Schluessel schon da, der
+// gepruefte noch nicht - und das Loeschen nimmt sie mit. prv_speichern
+// schreibt unter der Sperre des Dienstes; dieselbe nehmen darum diese drei.
 
 int kieselsport_archiv_anzahl(void) {
   return training_archiv_anzahl();
@@ -520,7 +526,9 @@ bool kieselsport_wartend_laden(Trainingsstand *t, char *liste, size_t platz) {
 }
 
 void kieselsport_wartend_vergessen(uint32_t beginn) {
+  ks_sperren();
   wartend_vergessen(beginn);
+  ks_entsperren();
 }
 
 size_t kieselsport_wartend_pausen(uint8_t *aus, size_t platz) {
@@ -560,7 +568,10 @@ uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max) {
 }
 
 bool kieselsport_kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n) {
-  return kurve_bestaetigt(beginn, ab, n);
+  ks_sperren();
+  const bool passt = kurve_bestaetigt(beginn, ab, n);
+  ks_entsperren();
+  return passt;
 }
 
 bool kieselsport_kurve_luecke(void) {
@@ -568,7 +579,9 @@ bool kieselsport_kurve_luecke(void) {
 }
 
 void kieselsport_kurve_vergessen(void) {
+  ks_sperren();
   kurve_vergessen();
+  ks_entsperren();
 }
 
 bool kieselsport_kurve_zeiten(uint32_t sekunden[KS_ZONEN + 1]) {

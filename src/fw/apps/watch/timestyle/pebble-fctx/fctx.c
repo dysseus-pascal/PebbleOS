@@ -82,6 +82,14 @@ void fctx_puffer_freigeben(void) {
     s_flag_puffer = NULL;
 }
 
+// Boulder: NACH EINEM ABSTURZ NUR VERGESSEN, NICHT FREIGEBEN. Der Zeiger
+// ueberlebt als Static das Ende der App, der App-Heap nicht: der neue ist
+// genullt, und gbitmap_destroy auf den alten Zeiger hielte die App gleich
+// wieder an (Double Free) - bei jedem Start, bis die Uhr neu startet.
+void fctx_puffer_vergessen(void) {
+    s_flag_puffer = NULL;
+}
+
 size_t fctx_puffer_bytes(void) {
     if (!s_flag_puffer) {
         return 0;

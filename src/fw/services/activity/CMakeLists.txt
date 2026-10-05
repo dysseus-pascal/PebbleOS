@@ -7,11 +7,6 @@ set(sources
   activity_insights.c
   activity_metrics.c
   activity_sessions.c
-  boulder/hrv.c
-  boulder/messstufe.c
-  boulder/nacht.c
-  boulder/schlafanalyse.c
-  boulder/spo2.c
   health_util.c
   hr_util.c
   insights_settings.c

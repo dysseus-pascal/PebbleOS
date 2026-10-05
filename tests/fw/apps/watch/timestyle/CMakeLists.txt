@@ -57,6 +57,8 @@ pbl_clar_test(test_timestyle_standard
     tests/fakes/fake_rtc.c
   DEFINES
     CONFIG_APPS_WATCH_TIMESTYLE=1
+    # Boulder: wie auf emery, wo TimeStyle gebaut wird
+    CONFIG_BOULDER_MESSSTUFE=1
   OVERRIDES dummy_board
 )
 
@@ -84,12 +86,15 @@ pbl_clar_test(test_timestyle_bedrock_pref
     tests/fakes/fake_rtc.c
   DEFINES
     CONFIG_APPS_WATCH_TIMESTYLE=1
+    # Boulder: wie auf emery, wo TimeStyle gebaut wird
+    CONFIG_BOULDER_MESSSTUFE=1
   OVERRIDES dummy_board
 )
 
 # Die Uhrzeit selbst (clock_area.c) mit echtem fctx, echten Schriften und
 # echter Grafik: gerechnet wird nur, wenn sich das Ziffernbild aendert, der
-# Flag-Puffer bleibt, und was die Uhr im App-Heap braucht.
+# Flag-Puffer bleibt, und was die Uhr im App-Heap braucht. Anlegen und
+# Freigeben der Bilder schreibt der Test mit (--wrap), fuer den Absturz.
 pbl_clar_test(test_timestyle_ziffern
   SOURCES
     src/fw/apps/watch/timestyle/clock_area.c
@@ -114,4 +119,5 @@ pbl_clar_test(test_timestyle_ziffern
   INCLUDES
     tests/fw/apps/watch/timestyle/shim_ziffern
     src/fw/apps/watch/timestyle
+  LIBS -Wl,--wrap=gbitmap_create_blank -Wl,--wrap=gbitmap_destroy
 )

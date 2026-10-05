@@ -5,9 +5,9 @@
 # Anmeldung. Die fertigen Pakete liegen deshalb im oeffentlichen Repo
 # dysseus-pascal/boulder-firmware; der Quellcode bleibt hier.
 #
-# DIE VERSION IST v4.38.3-bN: die PebbleOS-Fassung, auf der der Fork beruht,
+# DIE VERSION IST v4.38.4-bN: die PebbleOS-Fassung, auf der der Fork beruht,
 # und die laufende Nummer. Kurz, weil die Uhr ihre Version in 32 Zeichen
-# speichert - auch ein Entwicklungsbau wie v4.38.3-b12-3-gabcdef12-dirty muss
+# speichert - auch ein Entwicklungsbau wie v4.38.4-b12-3-gabcdef12-dirty muss
 # hineinpassen. Boulder vergleicht die Nummer nach dem b.
 #
 # JEDES PAKET IST SIGNIERT (Ed25519, siehe SIGNATUR.md): signiert wird nicht
@@ -17,8 +17,9 @@
 # die Signatur vor dem Einspielen und nimmt nichts Unsigniertes an.
 #
 # Aufruf: tools/boulder/release.sh <nummer>
-# Voraussetzung: .github/release/v4.38.3-b<nummer>.md, erste Zeile der Titel
-# ohne Version, darunter die Notizen (Deutsch). Der private Schluessel liegt
+# Voraussetzung: .github/release/v4.38.4-b<nummer>.md, erste Zeile der Titel
+# ohne Version, darunter die Notizen (Deutsch) mit einer Zeile
+# "Mindest-App: X.Y.Z" (siehe unten). Der private Schluessel liegt
 # ausserhalb des Repos (BOULDER_SIGNATUR, sonst ~/.config/boulder-firmware/signatur.pem).
 set -eu
 cd "$(dirname "$0")/../.."
@@ -33,6 +34,11 @@ OEFFENTLICH=tools/boulder/signatur.pub
 # ALLE VORBEDINGUNGEN VOR DEM TAG: ein Abbruch danach liesse ein Tag ohne
 # Release zurueck.
 test -f "$NOTIZEN" || { echo "Es fehlen die Notizen $NOTIZEN" >&2; exit 1; }
+# DIE MINDEST-APP STEHT IN DEN NOTIZEN, als eigene Zeile "Mindest-App: X.Y.Z".
+# Boulder liest sie aus dem Text des Releases und bietet die Firmware einer
+# aelteren App nicht an - die verloere etwa Datalogging-Tags, die sie nicht
+# kennt. Mindestens die Fassung aus tools/boulder/mindest_app.txt.
+MINDEST_APP="$(python3 tools/boulder/mindest_app.py "$NOTIZEN" tools/boulder/mindest_app.txt)" || exit 1
 test -r "$SCHLUESSEL" || { echo "Signaturschluessel fehlt: $SCHLUESSEL (siehe tools/boulder/SIGNATUR.md)" >&2; exit 1; }
 test "$(openssl pkey -in "$SCHLUESSEL" -pubout)" = "$(cat "$OEFFENTLICH")" \
   || { echo "Der Schluessel $SCHLUESSEL passt nicht zu $OEFFENTLICH - die App kennt ihn nicht" >&2; exit 1; }
@@ -59,6 +65,7 @@ openssl pkeyutl -sign -inkey "$SCHLUESSEL" -rawin -in "$AUSSAGE" -out "$PAKET.si
 test "$(wc -c < "$PAKET.sig" | tr -d ' ')" -eq 64 || { echo "Signatur hat nicht 64 Byte" >&2; exit 1; }
 openssl pkeyutl -verify -pubin -inkey "$OEFFENTLICH" -rawin -in "$AUSSAGE" -sigfile "$PAKET.sig" >/dev/null \
   || { echo "Die Signatur prueft nicht gegen $OEFFENTLICH" >&2; exit 1; }
+echo "Mindest-App $MINDEST_APP"
 echo "Signiert mit Schluessel $(openssl pkey -pubin -in "$OEFFENTLICH" -outform DER | tail -c 32 | xxd -p -c 32 | cut -c1-8)…"
 
 git push -q origin "$TAG"

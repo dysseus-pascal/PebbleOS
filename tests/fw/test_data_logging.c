@@ -19,6 +19,7 @@
 #include "pbl/services/data_logging/dls_list.h"
 #include "pbl/services/data_logging/dls_storage.h"
 
+#include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/regular_timer.h"
 #include <pbl/logging/logging.h>
 #include "system/passert.h"
@@ -85,8 +86,20 @@ static DataLoggingSendDataMessage s_prev_send_data_hdr;
 static uint8_t s_prev_send_data[COMM_MAX_OUTBOUND_PAYLOAD_SIZE];
 static uint32_t s_prev_send_data_bytes;
 
+// Boulder: die Tags der Open-Nachrichten, wie das Telefon sie bekommt. Die Nachricht ist
+// command, session_id, uuid[16], timestamp (4), tag (4, LE), item_type, item_size (2) -
+// DataLoggingOpenSessionMessage in dls_endpoint.c.
+#define OPEN_NACHRICHT_LAENGE 29
+#define OPEN_NACHRICHT_TAG 22
+static uint32_t s_open_tags[16];
+static int s_open_anzahl;
+
 static void prv_transport_sent_data_cb(uint16_t endpoint_id, const uint8_t *data,
                                        unsigned int data_length) {
+  if (data_length == OPEN_NACHRICHT_LAENGE && data[0] == DataLoggingEndpointCmdOpen &&
+      s_open_anzahl < (int)ARRAY_LENGTH(s_open_tags)) {
+    memcpy(&s_open_tags[s_open_anzahl++], data + OPEN_NACHRICHT_TAG, sizeof(uint32_t));
+  }
   PBL_LOG_INFO("Received %d bytes of data from watch", data_length);
   if (data_length >= sizeof(s_prev_send_data_hdr)) {
     memcpy(&s_prev_send_data_hdr, data, sizeof(s_prev_send_data_hdr));
@@ -592,4 +605,88 @@ void test_data_logging__send_session_medium(void) {
 //  exposes issue PBL-21331
 void test_data_logging__send_session_small(void) {
   prv_endpoint_test(true /*buffered*/, 19, 45);
+}
+
+// ----------------------------------------------------------------------------------------
+// Boulder: DIE NACHT AUF IHREN EIGENEN TAGS, UND EINE LIEGENDE NACHT VON b24 UEBERSTEHT DAS
+// UPDATE. b24 legte die Nacht auf Tag 88; die neue Firmware nimmt 0x4001 und 0x4002. Eine
+// Sitzung 88, die vor dem Update nicht mehr zum Telefon kam, liegt im Flash und geht danach
+// mit ihrem Tag hinaus - die App liest beide. Die Tags sind im Speicher und im Protokoll
+// 32 Bit breit; nichts schneidet 0x4001 ab.
+static void prv_neu_aus_dem_flash(void) {
+  dls_list_remove_all();
+  regular_timer_deinit();
+  regular_timer_init();
+  dls_init();
+  fake_system_task_callbacks_invoke_pending();
+}
+
+static void prv_satz(uint8_t *satz, int laenge, int saat) {
+  for (int i = 0; i < laenge; i++) {
+    satz[i] = (uint8_t)(i * 3 + saat);
+  }
+}
+
+// Die Sitzung mit diesem Tag pruefen: genau ein Satz, Byte fuer Byte.
+static void prv_pruefe_sitzung(uint32_t tag, int laenge, int saat) {
+  DataLoggingSession *gefunden = NULL;
+  for (DataLoggingSession *s = dls_list_get_next(NULL); s; s = dls_list_get_next(s)) {
+    if (dls_test_get_tag(s) == tag) {
+      cl_assert(gefunden == NULL);
+      gefunden = s;
+    }
+  }
+  cl_assert(gefunden);
+  uint8_t soll[sizeof(NachtDlsRecord)], ist[sizeof(NachtDlsRecord)];
+  prv_satz(soll, laenge, saat);
+  cl_assert_equal_i(dls_test_get_num_bytes(gefunden), laenge);
+  cl_assert_equal_i(dls_test_read(gefunden, ist, laenge), laenge);
+  cl_assert_equal_m(ist, soll, laenge);
+}
+
+void test_data_logging__boulder_nacht_auf_eigenen_tags_und_ueber_das_update(void) {
+  const Uuid system = UUID_SYSTEM;
+  uint8_t satz[sizeof(NachtDlsRecord)];
+
+  // b24: die Nacht auf Tag 88, das Telefon ist nicht erreichbar.
+  DataLoggingSession *alt = dls_create(BOULDER_DLS_TAG_NACHT_ALT, DATA_LOGGING_BYTE_ARRAY,
+                                       sizeof(NachtDlsRecord), false, false, &system);
+  cl_assert(alt);
+  prv_satz(satz, sizeof(NachtDlsRecord), 1);
+  cl_assert_equal_i(dls_log(alt, satz, 1), DATA_LOGGING_SUCCESS);
+
+  // Das Update: neue Firmware, derselbe Flash.
+  s_open_anzahl = 0;
+  prv_neu_aus_dem_flash();
+  prv_pruefe_sitzung(BOULDER_DLS_TAG_NACHT_ALT, sizeof(NachtDlsRecord), 1);
+
+  // Die naechste Nacht auf den neuen Tags.
+  DataLoggingSession *nacht = dls_create(BOULDER_DLS_TAG_NACHT, DATA_LOGGING_BYTE_ARRAY,
+                                         sizeof(NachtDlsRecord), false, false, &system);
+  DataLoggingSession *hrv = dls_create(BOULDER_DLS_TAG_NACHT_HRV, DATA_LOGGING_BYTE_ARRAY,
+                                       sizeof(NachtHrvDlsRecord), false, false, &system);
+  cl_assert(nacht && hrv);
+  prv_satz(satz, sizeof(NachtDlsRecord), 2);
+  cl_assert_equal_i(dls_log(nacht, satz, 1), DATA_LOGGING_SUCCESS);
+  prv_satz(satz, sizeof(NachtHrvDlsRecord), 3);
+  cl_assert_equal_i(dls_log(hrv, satz, 1), DATA_LOGGING_SUCCESS);
+  dls_send_all_sessions();
+  fake_system_task_callbacks_invoke_pending();
+  for (int i = 0; i < 8; i++) {
+    fake_comm_session_process_send_next();
+  }
+  // Das Telefon sieht die alte Nacht mit 88 und beide neuen Tags in voller Breite.
+  bool alt_offen = false, nacht_offen = false, hrv_offen = false;
+  for (int i = 0; i < s_open_anzahl; i++) {
+    alt_offen |= (s_open_tags[i] == BOULDER_DLS_TAG_NACHT_ALT);
+    nacht_offen |= (s_open_tags[i] == BOULDER_DLS_TAG_NACHT);
+    hrv_offen |= (s_open_tags[i] == BOULDER_DLS_TAG_NACHT_HRV);
+  }
+  cl_assert(alt_offen && nacht_offen && hrv_offen);
+
+  // Noch ein Neustart: alle drei Sitzungen mit Tag und Daten.
+  prv_neu_aus_dem_flash();
+  prv_pruefe_sitzung(BOULDER_DLS_TAG_NACHT_ALT, sizeof(NachtDlsRecord), 1);
+  prv_pruefe_sitzung(BOULDER_DLS_TAG_NACHT, sizeof(NachtDlsRecord), 2);
+  prv_pruefe_sitzung(BOULDER_DLS_TAG_NACHT_HRV, sizeof(NachtHrvDlsRecord), 3);
 }

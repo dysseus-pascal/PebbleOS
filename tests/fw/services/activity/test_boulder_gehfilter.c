@@ -162,6 +162,12 @@ bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
   return false;
 }
 
+// Die Nacht speichert die Sitzungen, bevor sie sich "erledigt" merkt. Dieser Test hat
+// keine Datei dafuer; die Sitzungen stehen hier nur im Speicher - das gilt als gespeichert.
+bool activity_sessions_prv_speichern(void) {
+  return true;
+}
+
 bool activity_sessions_prv_is_sleep_activity(ActivitySessionType activity_type) {
   return activity_type == ActivitySessionType_Sleep ||
          activity_type == ActivitySessionType_RestfulSleep ||

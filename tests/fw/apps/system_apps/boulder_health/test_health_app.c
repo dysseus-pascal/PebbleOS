@@ -6,7 +6,7 @@
 #include "stubs_logging.h"
 
 #include "fake_health_quellen.h"
-#include "apps/system/health/karten.h"
+#include "apps/system/boulder_health/karten.h"
 #include "process_management/pebble_process_md.h"
 
 // Die Health-App (health.c) mit ihren echten Daten (daten.c). Nachgebaut sind

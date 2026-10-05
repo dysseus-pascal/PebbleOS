@@ -9,8 +9,9 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
-#include "pbl/services/activity/boulder/hrv.h"
-#include "pbl/services/activity/boulder/messstufe.h"
+// Die HRV-Fenster und die Messstufe ueber die Haken: ist ihr Schalter aus, kommt die Antwort
+// ohne sie (keine Fenster, Stufe 0).
+#include "pbl/services/activity/boulder/haken.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/data_logging/data_logging_service.h"
@@ -81,10 +82,11 @@
 // 11 Uhr, und die aeltesten liegen dann ohnehin vor dem Fenster. Eine lange
 // Pause teilt ein Training in zwei.
 #define TRAININGS_MAX 6
-// EIN VERGESSENES TRAINING LOESCHT NICHT DIE NACHT. Kieselsport beendet von
-// selbst nichts, auch keine Pause. Eine Pause zaehlt deshalb nur eine halbe
-// Stunde lang zum Training, ein Training hoechstens drei Stunden; danach ist
-// es vergessen, und der Schlaf darin zaehlt.
+// EIN VERGESSENES TRAINING LOESCHT NICHT DIE NACHT. Kieselsport beendet ein
+// Training nach einer halben Stunde Pause selbst (dienst.c, AUTO_ENDE_S); so
+// lange zaehlt die Pause zum Training, laenger auch hier nicht. Ein laufendes
+// Training beendet niemand von selbst: es zaehlt hoechstens drei Stunden,
+// danach ist es vergessen, und der Schlaf darin zaehlt.
 #define PAUSE_MAX_MIN 30
 #define TRAINING_MAX_MIN (3 * MINUTES_PER_HOUR)
 
@@ -166,6 +168,7 @@ static NachtBild s_bild;
 static bool s_bild_da;
 static bool s_bild_gelesen;
 static bool s_bild_in_datei;   //< s_bild steht so in der Datei
+static bool s_bild_aus_b24;    //< s_bild kam beim Update aus der Datei von b24
 
 // WAS EINEN NEUSTART UEBERSTEHEN MUSS, damit die Uhr am Morgen nicht eine
 // schon endgueltige Nacht neu rechnet - und sie mit dem Morgenschlaf zu einer
@@ -515,6 +518,7 @@ static void prv_bild_laden(void) {
       s_bild.version = NACHT_BILD_VERSION;
       s_bild_da = true;
       s_bild_in_datei = false;
+      s_bild_aus_b24 = true;
       PBL_LOG_INFO("Nacht: Bild aus b24 uebernommen");
     } else {
       PBL_LOG_WRN("Nacht: Bild in Fassung %d verworfen", (int)s_bild.version);
@@ -644,6 +648,21 @@ static void prv_zustand_laden(time_t beginn) {
     s_gesendet_beginn = s_bild.beginn_utc;
     s_gesendet_aufwachen = s_bild.aufwachen;
     s_gesendet_schlaf = s_bild.schlaf_minuten;
+    // DAS UPDATE VON b24 AM MORGEN: b24 trug die Nacht schon bei "fertig" fest ein, je
+    // Schlafstueck einen Block samt Tiefschlaf, und diese Sitzungen stehen nach dem
+    // Neustart noch da. Rechnete die Uhr die Nacht jetzt ab Fensterbeginn neu, ersetzte ihr
+    // einer Block nur das Stueck mit gleichem Beginn - die anderen blieben daneben, und der
+    // Schlaf zaehlte fast doppelt. Die Nacht des Bildes ist also erledigt, wie b24 es beim
+    // Endgueltig selbst gemerkt haette. Nur fuer ein Bild von b24: eines dieser Fassung ohne
+    // Zustand (Absturz vor dem ersten Schreiben) hat womoeglich nur laufende Sitzungen, und
+    // die verwirft der Neustart.
+    const time_t bild_beginn = (time_t)s_bild.beginn_utc;
+    if (s_bild_aus_b24 && bild_beginn >= beginn &&
+        bild_beginn < beginn + FENSTER_DAUER_MIN * SECONDS_PER_MINUTE) {
+      s_erledigt_bis = bild_beginn + s_bild.aufwachen * SECONDS_PER_MINUTE;
+      PBL_LOG_INFO("Nacht: von b24 schon eingetragen, erledigt bis Minute %d",
+                   (int)s_bild.aufwachen);
+    }
   }
   pbl_mutex_unlock(&s_bild_sperre);
 }
@@ -660,6 +679,15 @@ static void prv_zustand_schreiben(time_t beginn) {
     .gesendet_schlaf = s_gesendet_schlaf,
   };
   if (memcmp(&z, &s_zustand_datei, sizeof(z)) == 0) {
+    return;
+  }
+  // ERST DIE SITZUNGEN, DANN DER ZUSTAND. activity.c speichert die Sitzungen nur alle
+  // Viertelstunde, und in der Minute, in der die Nacht endgueltig wird, schon vor ihr.
+  // Stuende "erledigt" vorher im Flash, verwarf die Uhr nach einem Absturz dazwischen die
+  // damals noch laufenden Sitzungen und rechnete die Nacht nie wieder. Klappt das Speichern
+  // nicht, bleibt der alte Zustand; der naechste Aufruf versucht beides wieder.
+  if (!activity_sessions_prv_speichern()) {
+    PBL_LOG_WRN("Nacht: Sitzungen nicht gespeichert, Zustand spaeter");
     return;
   }
   SettingsFile datei;
@@ -729,7 +757,7 @@ static bool prv_log(DataLoggingSession **sitzung, const void *satz) {
 // Rueckgabe: alle Teile im Datalogging.
 static bool prv_schicke(Rechnung *r, time_t beginn) {
   const SchlafErgebnis *e = &r->ergebnis;
-  if (!prv_sitzung(&s_dls, DlsSystemTagBoulderNacht, sizeof(NachtDlsRecord))) {
+  if (!prv_sitzung(&s_dls, BOULDER_DLS_TAG_NACHT, sizeof(NachtDlsRecord))) {
     return false;
   }
   const time_t eingeschlafen = beginn + e->einschlafen * SECONDS_PER_MINUTE;
@@ -770,13 +798,13 @@ static bool prv_schicke(Rechnung *r, time_t beginn) {
   return true;
 }
 
-// Die HRV-Fenster der Nacht an Boulder (Tag 89), gleich hinter dem Satz der
+// Die HRV-Fenster der Nacht an Boulder (eigener Tag), gleich hinter dem Satz der
 // Nacht. Ohne Fenster kein Satz: die Nacht wurde ohne HRV gerechnet.
 static bool prv_schicke_hrv(Rechnung *r, time_t beginn, int hrv_anzahl) {
   if (hrv_anzahl <= 0) {
     return true;
   }
-  if (!prv_sitzung(&s_dls_hrv, DlsSystemTagBoulderNachtHrv, sizeof(NachtHrvDlsRecord))) {
+  if (!prv_sitzung(&s_dls_hrv, BOULDER_DLS_TAG_NACHT_HRV, sizeof(NachtHrvDlsRecord))) {
     return false;
   }
   const int teile = (hrv_anzahl + NACHT_HRV_DLS_FENSTER - 1) / NACHT_HRV_DLS_FENSTER;
@@ -828,6 +856,11 @@ bool boulder_nacht_im_fenster(time_t utc) {
   time_t ende;
   boulder_nacht_fenster(utc, &beginn, &ende);
   return utc >= beginn && utc < ende;
+}
+
+bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung) {
+  // Dieselbe Schwelle wie im Schlaf: was darueber liegt, ist wach.
+  return boulder_nacht_im_fenster(utc) && letzte_bewegung <= SCHLAF_SCHWELLE_VMC;
 }
 
 // Reicht der Kernel-Heap fuer die Rechnung - und bleibt danach genug fuer den
@@ -997,6 +1030,7 @@ void boulder_nacht_test_reset(void) {
   s_bild_da = false;
   s_bild_gelesen = false;
   s_bild_in_datei = false;
+  s_bild_aus_b24 = false;
   memset(&s_bild, 0, sizeof(s_bild));
   memset(&s_zustand_datei, 0, sizeof(s_zustand_datei));
   s_zustand_geladen = false;

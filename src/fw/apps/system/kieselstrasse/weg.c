@@ -21,12 +21,21 @@
 #define KST_WEITESTE_M 10000000
 
 // DERSELBE ABBIEGETYP NOCH EINMAL - "rechts, dann wieder rechts". Die Art
-// sagt dann nichts, wohl aber die Entfernung: war man an der Abzweigung
-// (hoechstens KST_NAH_M davor) und springt sie danach um mindestens
-// KST_SPRUNG_M nach oben, ist das die naechste. Ein Sprung um KST_WEIT_M
-// gilt immer - so weit springt kein GPS (auch nach einer neuen Route ist es
-// eine neue Anweisung). Ein flatternder Name zaehlt nie, eine Entfernung, die
-// um ein paar Meter zappelt, auch nicht.
+// sagt dann nichts. VERLAESSLICH IST DIE LAGE DER ABZWEIGUNG AUF DER ROUTE:
+// ihre Meter bis zum Ziel, REST minus ENTFERNUNG. Faehrt man auf dieselbe
+// Abzweigung zu, schrumpfen beide gleich, und die Lage bleibt bis auf ein paar
+// Meter Rundung. Die naechste Anweisung liegt naeher am Ziel - die Lage
+// springt um den Abstand der beiden Abzweigungen, wie schnell man auch faehrt
+// und wie selten Boulder bei gleicher Art schickt (hoechstens alle vier
+// Sekunden). Mehr als KST_LAGE_M ist eine neue Anweisung, auch nach einer
+// neuen Route. Abzweigungen, die naeher beieinander liegen, sind eine.
+#define KST_LAGE_M 30
+// OHNE REST (am Ziel, ein anderer Sender) bleibt nur die Entfernung: war man
+// an der Abzweigung (hoechstens KST_NAH_M davor) und springt sie danach um
+// mindestens KST_SPRUNG_M nach oben, ist das die naechste. Ein Sprung um
+// KST_WEIT_M gilt immer - so weit springt kein GPS. Das erkennt nur, wer
+// zwischen zwei Meldungen wenig Weg macht. Ein flatternder Name zaehlt nie,
+// eine Entfernung, die um ein paar Meter zappelt, auch nicht.
 #define KST_NAH_M 50
 #define KST_SPRUNG_M 50
 #define KST_WEIT_M 500
@@ -36,6 +45,10 @@ static Weg s_weg;
 // Ausfahrt und Winkel stehen neben s_weg, nicht darin (siehe weg.h).
 static int s_ausfahrt;
 static int s_winkel;
+// Die Lage der Abzweigung aus der letzten Nachricht (siehe KST_LAGE_M), -1 =
+// unbekannt. Nur im Speicher: nach dem Oeffnen gilt bis zur zweiten
+// Nachricht die Regel ueber die Entfernung.
+static int32_t s_lage_m;
 
 // Weicht der Stand vom Persist ab? Nur dann lohnt ein Schreibvorgang - ein
 // Blick auf die Uhr ohne eine einzige Nachricht soll den Flash nicht beruehren.
@@ -47,6 +60,7 @@ static void prv_anfang(void) {
   s_weg.rest_m = -1;
   s_ausfahrt = 0;
   s_winkel = WEG_KEIN_WINKEL;
+  s_lage_m = -1;
 }
 
 // Ungueltiges UTF-8 vom Ende her abschneiden, bis der Rest gueltig ist.
@@ -148,9 +162,28 @@ static bool prv_zahl(DictionaryIterator *iter, uint32_t key, int32_t *aus) {
   return false;
 }
 
-// Gleiche Art, aber die Entfernung springt deutlich nach oben: der naechste
-// Schritt derselben Art (siehe KST_NAH_M).
-static bool prv_naechster_gleicher(int32_t vorher_m, int32_t jetzt_m) {
+/**
+ * Ein Zeitpunkt in UTC-Sekunden: die vier Byte als vorzeichenlose Zahl, gleich
+ * ob als TUPLE_INT oder TUPLE_UINT geschickt. Boulder schickt TUPLE_INT mit den
+ * Bits der vorzeichenlosen Zahl - ab 2038 waere das als int32 gelesen negativ,
+ * und die Ankunft verschwaende. Ein Zeitpunkt in weniger als vier Byte ist
+ * keiner. false: kein Schluessel oder kein Zeitpunkt.
+ */
+static bool prv_zeitpunkt(DictionaryIterator *iter, uint32_t key, uint32_t *aus) {
+  Tuple *t = dict_find(iter, key);
+  if (!t || (t->type != TUPLE_INT && t->type != TUPLE_UINT) || t->length != 4) return false;
+  *aus = t->value->uint32;
+  return true;
+}
+
+// Gleiche Art, aber eine andere Abzweigung: die Lage auf der Route springt
+// (KST_LAGE_M) - oder, ohne Lage, die Entfernung deutlich nach oben (KST_NAH_M).
+static bool prv_naechster_gleicher(int32_t vorher_m, int32_t jetzt_m, int32_t lage_vorher,
+                                   int32_t lage_jetzt) {
+  if (lage_vorher >= 0 && lage_jetzt >= 0) {
+    const int32_t sprung = lage_jetzt - lage_vorher;
+    return sprung > KST_LAGE_M || sprung < -KST_LAGE_M;
+  }
   if (vorher_m < 0 || jetzt_m < 0) return false;
   if (jetzt_m - vorher_m >= KST_WEIT_M) return true;
   return vorher_m <= KST_NAH_M && jetzt_m - vorher_m >= KST_SPRUNG_M;
@@ -175,23 +208,33 @@ bool weg_uebernimm(DictionaryIterator *iter) {
     s_winkel = zahl;
   }
 
-  if (prv_zahl(iter, MESSAGE_KEY_ENTFERNUNG, &zahl)) s_weg.entfernung_m = prv_meter(zahl);
+  const bool mit_entfernung = prv_zahl(iter, MESSAGE_KEY_ENTFERNUNG, &zahl);
+  if (mit_entfernung) s_weg.entfernung_m = prv_meter(zahl);
 
-  if (prv_zahl(iter, MESSAGE_KEY_REST, &zahl)) s_weg.rest_m = prv_meter(zahl);
+  const bool mit_rest = prv_zahl(iter, MESSAGE_KEY_REST, &zahl);
+  if (mit_rest) s_weg.rest_m = prv_meter(zahl);
 
-  if (prv_zahl(iter, MESSAGE_KEY_ANKUNFT, &zahl)) s_weg.ankunft = (time_t)zahl;
+  // DIE LAGE NUR AUS BEIDEN ZAHLEN DIESER NACHRICHT: ein REST von vorhin
+  // passte nicht zur Entfernung von jetzt.
+  const int32_t lage_vorher = s_lage_m;
+  s_lage_m = (mit_entfernung && mit_rest && s_weg.entfernung_m >= 0 &&
+              s_weg.rest_m >= s_weg.entfernung_m)
+                 ? s_weg.rest_m - s_weg.entfernung_m : -1;
+
+  uint32_t zeitpunkt = 0;
+  if (prv_zeitpunkt(iter, MESSAGE_KEY_ANKUNFT, &zeitpunkt)) s_weg.ankunft = zeitpunkt;
 
   prv_nimm_text(iter, MESSAGE_KEY_STRASSE, s_weg.strasse, KST_STRASSE_LEN);
 
   s_weg.empfangen = time(NULL);
   s_geaendert = true;
 
-  // NEU heisst: eine andere Abbiegeart - oder dieselbe noch einmal, wenn die
-  // Entfernung nach der Abzweigung deutlich nach oben springt. Eine
-  // schrumpfende Entfernung ist derselbe Schritt und kein Anlass zu summen.
+  // NEU heisst: eine andere Abbiegeart - oder dieselbe noch einmal an einer
+  // anderen Abzweigung (prv_naechster_gleicher). Eine schrumpfende Entfernung
+  // ist derselbe Schritt und kein Anlass zu summen.
   const bool neu = s_weg.abbiegeart > 0 &&
                    (s_weg.abbiegeart != vorher ||
-                    prv_naechster_gleicher(vorher_m, s_weg.entfernung_m));
+                    prv_naechster_gleicher(vorher_m, s_weg.entfernung_m, lage_vorher, s_lage_m));
   // Nur ein neuer Schritt kommt sofort in den Persist (siehe weg_sichern) -
   // stuerzt die App ab, steht beim naechsten Oeffnen wenigstens die Richtung.
   if (neu) weg_sichern();

@@ -1,7 +1,9 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 #include "pbl/services/activity/boulder/messstufe.h"
+#endif
 #include "quick_launch.h"
 #include "shell/normal/quick_launch.h"
 #include "shell/normal/watchface.h"
@@ -278,9 +280,11 @@ static uint8_t s_activity_prefs_workout_app_opened = 0;
 #define PREF_KEY_ALARMS_APP_OPENED "alarmsAppOpened"
 static uint8_t s_alarms_app_opened = 0;
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 // Boulder: der Regler zwischen Genauigkeit und Akkulaufzeit (boulder/messstufe.h)
 #define PREF_KEY_BOULDER_MESSSTUFE "boulderMessstufe"
 static uint8_t s_boulder_messstufe = MESSSTUFE_VORGABE;
+#endif
 
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
 // Boulder: ob das System-TimeStyle schon einmal Standard-Zifferblatt wurde
@@ -436,6 +440,7 @@ static bool prv_set_s_units_distance(uint8_t *new_unit) {
   return true;
 };
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
   if (*neu < MESSSTUFE_MIN || *neu > MESSSTUFE_MAX) {
     s_boulder_messstufe = MESSSTUFE_VORGABE;
@@ -444,6 +449,7 @@ static bool prv_set_s_boulder_messstufe(uint8_t *neu) {
   s_boulder_messstufe = *neu;
   return true;
 }
+#endif
 
 #ifdef CONFIG_APPS_WATCH_TIMESTYLE
 static bool prv_set_s_boulder_timestyle_gesetzt(uint8_t *neu) {
@@ -1036,6 +1042,28 @@ static const PrefsTableEntry s_prefs_table[] = {
 #include "prefs_values.h.inc"
 };
 #undef PREFS_MACRO
+
+// Boulder: DER PLATZ IN shellpref, BEIM BAUEN GEPRUEFT. settings_file zaehlt je Satz 8 Byte
+// Kopf, den Schluessel samt Null und den Wert, dazu 16 Byte fuer die Datei. Sind alle Prefs
+// geschrieben, muss der groesste noch einmal daneben passen - ueberschrieben wird, indem der
+// neue Satz neben den alten kommt. Sonst scheitert das Schreiben still
+// (prefs_private_write_backing loggt nur eine Warnung).
+#define PREFS_MACRO(key, var) +(8 + sizeof(key) + sizeof(var))
+enum { SHELLPREF_BELEGT = 16
+#include "prefs_values.h.inc"
+};
+#undef PREFS_MACRO
+#define PREFS_MACRO(key, var) char var##_satz[8 + sizeof(key) + sizeof(var)];
+typedef union {
+#include "prefs_values.h.inc"
+} ShellprefGroessterSatz;
+#undef PREFS_MACRO
+_Static_assert(SHELLPREF_BELEGT + sizeof(ShellprefGroessterSatz) <= SHELL_PREFS_FILE_LEN,
+               "shellpref ist voll: SHELL_PREFS_FILE_LEN erhoehen (hoechstens 3343)");
+// Ueber 3343 Byte (x 1.2 plus Kopf) belegt die Datei zwei PFS-Seiten. Dann schriebe die neue
+// Firmware sie beim Update um, und eine aeltere scheiterte beim Verdichten eines Bestands
+// ueber 4011 Byte - und loeschte die Datei samt aller Prefs (settings_raw_iter.c).
+_Static_assert(SHELL_PREFS_FILE_LEN <= 3343, "shellpref muss eine PFS-Seite bleiben (Rueckweg)");
 
 // ------------------------------------------------------------------------------------
 static void prv_convert_deprecated_backlight_behaviour_key(SettingsFile *file) {
@@ -2181,6 +2209,7 @@ HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
   return (HRMonitoringInterval)interval;
 }
 
+#ifdef CONFIG_BOULDER_MESSSTUFE
 uint8_t boulder_messstufe(void) {
   return s_boulder_messstufe;
 }
@@ -2192,6 +2221,7 @@ void boulder_messstufe_setzen(uint8_t stufe) {
   s_boulder_messstufe = stufe;
   prv_pref_set(PREF_KEY_BOULDER_MESSSTUFE, &s_boulder_messstufe, sizeof(s_boulder_messstufe));
 }
+#endif
 
 void activity_prefs_set_hrm_measurement_interval(HRMonitoringInterval interval) {
   if (s_activity_hrm_preferences.measurement_interval != (uint8_t)interval) {

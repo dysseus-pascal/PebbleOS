@@ -34,9 +34,6 @@
 uint8_t boulder_messstufe(void);
 void boulder_messstufe_setzen(uint8_t stufe);
 
-// Ruht man im Nachtfenster? `letzte_bewegung`: das VMC der letzten Minute.
-bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung);
-
 // Wie oft der Puls gemessen wird, in Sekunden.
 uint32_t boulder_puls_takt_s(time_t utc, uint16_t letzte_bewegung);
 // Wie oft SpO2 gemessen wird, in Sekunden; 0 = gar nicht.

@@ -10,7 +10,12 @@
 #define SHELL_PREFS_FILE_NAME "shellpref"
 // TODO: PBL-42170 Improve settings file to better utilize large sector sizes
 // We want to use a full page, but requesting such a size can end up using two pages
-#define SHELL_PREFS_FILE_LEN (2048)
+// Boulder: 3072 statt 2048. Alle Prefs zusammen belegten 1990 von 2048 Byte (b24), und ein
+// Ueberschreiben braucht Platz fuer den neuen Satz neben dem alten. 3072 bleibt dieselbe eine
+// PFS-Seite von 4011 Byte: die Datei wird beim Update nicht umgeschrieben, und eine aeltere
+// Firmware (2048) verdichtet den Bestand ohne Verlust (test_shellpref_groesse). Die Grenzen
+// prueft prefs.c beim Bauen.
+#define SHELL_PREFS_FILE_LEN (3072)
 
 //! Update the backing store for the given preference.
 //! @param[in] key the preference's name, as defined in prefs.c

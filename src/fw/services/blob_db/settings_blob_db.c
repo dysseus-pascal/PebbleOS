@@ -109,8 +109,10 @@ static const char *s_syncable_settings[] = {
   "activityWorkoutAppOpened",
   "alarmsAppOpened",
   "hrmPreferences",
+#ifdef CONFIG_BOULDER_MESSSTUFE
   // Boulder: der Schieberegler Genauigkeit/Akku in der App
   "boulderMessstufe",
+#endif
   "heartRatePreferences",
   "spo2Preferences",
   "bloodOxygenPreferences",

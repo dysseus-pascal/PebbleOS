@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 dysseus-pascal
+# SPDX-License-Identifier: Apache-2.0
+
+# Boulder: was Boulders Schlaf, HRV, Messstufe und Health-App in Pebbles
+# Aktivitaetsdienst aendern, je mit eigenem Schalter. Alle aus: Schlaf, Puls-
+# und SpO2-Takt und Health-App wie Upstream. Die erkannte Bewegung (Typ 8) und
+# der Gehfilter haben keinen Schalter; sie sind mit Upstream geteilt und nur
+# bewacht (vertraege.c). Die Haken stehen in boulder/haken.h.
+#
+# HRV, MESSSTUFE und HEALTH_APP stehen mit "default y" hier, nicht in
+# prj_normal.conf: auf Uhren ohne Pulssensor oder ausser emery gaebe ein
+# gesetzter Wert eine Kconfig-Warnung, und die bricht den Bau ab.
+
+config BOULDER_SCHLAF
+    bool "Boulder: night and sleep analysis"
+    depends on SERVICE_ACTIVITY
+    # Die fertige Nacht geht gleich ueber health_sync_schicken() hinaus.
+    select SERVICE_HEALTH_SYNC_ENDPOINT
+    help
+      Boulder's night computation (nacht.c, schlafanalyse.c) records one sleep
+      block per night and sends the night with all phases on its own data
+      logging tag. Kraepelin's sleep sessions are dropped. Off: sleep as
+      upstream.
+
+config BOULDER_HRV
+    bool "Boulder: HRV windows at night"
+    default y
+    depends on BOULDER_SCHLAF && HRM
+    help
+      Five minutes of beat intervals at the pace of the measuring level, RMSSD
+      for the sleep analysis and as its own data logging record.
+
+config BOULDER_MESSSTUFE
+    bool "Boulder: measuring level"
+    default y
+    depends on BOULDER_SCHLAF && HRM
+    help
+      One slider (pref boulderMessstufe, watch setting "Precision") sets the
+      heart rate, SpO2 and HRV pace. Off: upstream's "HR Monitoring" and
+      "SpO2 Monitoring" choices.
+
+config BOULDER_HEALTH_APP
+    bool "Boulder: own Health app"
+    default y
+    depends on BOULDER_SCHLAF && PLATFORM_EMERY
+    help
+      Boulder's Health app (apps/system/boulder_health) under upstream's app
+      id, with the last night and the SpO2 ring. Off, and on other watches:
+      upstream's Health app.

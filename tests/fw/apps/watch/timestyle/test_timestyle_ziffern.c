@@ -119,6 +119,58 @@ void layer_add_child(Layer *parent, Layer *child) {}
 void layer_set_update_proc(Layer *layer, LayerUpdateProc update_proc) {}
 void layer_mark_dirty(Layer *layer) {}
 
+// --- Die Bilder der Uhr, mitgeschrieben (--wrap) ---
+//
+// Flag-Puffer und Kopie der Ziffern sind GBitmaps im App-Heap. Ein Absturz
+// laesst die Statics der System-App stehen, der Heap kommt beim naechsten
+// Start neu und genullt (app_manager.c, prv_app_start). Nachgebaut: was bis
+// dahin angelegt war, wird genullt und gilt als tot - wer es danach freigibt,
+// greift in den alten Heap (auf der Uhr: Double Free, die App stuerzt ab).
+
+#define BILDER_MAX 16
+static GBitmap *s_lebende[BILDER_MAX];
+static int s_lebende_anzahl;
+static GBitmap *s_tote[BILDER_MAX];
+static void *s_tote_daten[BILDER_MAX];
+static int s_tote_anzahl;
+
+GBitmap *__real_gbitmap_create_blank(GSize size, GBitmapFormat format);
+GBitmap *__wrap_gbitmap_create_blank(GSize size, GBitmapFormat format) {
+  GBitmap *b = __real_gbitmap_create_blank(size, format);
+  if (b) {
+    cl_assert(s_lebende_anzahl < BILDER_MAX);
+    s_lebende[s_lebende_anzahl++] = b;
+  }
+  return b;
+}
+
+void __real_gbitmap_destroy(GBitmap *bitmap);
+void __wrap_gbitmap_destroy(GBitmap *bitmap) {
+  for (int i = 0; bitmap && i < s_tote_anzahl; i++) {
+    if (bitmap == s_tote[i]) {
+      cl_fail("gbitmap_destroy auf ein Bild aus dem Heap vor dem Absturz");
+    }
+  }
+  for (int i = 0; i < s_lebende_anzahl; i++) {
+    if (s_lebende[i] == bitmap) {
+      s_lebende[i] = s_lebende[--s_lebende_anzahl];
+      break;
+    }
+  }
+  __real_gbitmap_destroy(bitmap);
+}
+
+// Der Absturz: kein ClockArea_deinit, der Heap ist weg (genullt).
+static void prv_absturz(void) {
+  for (int i = 0; i < s_lebende_anzahl; i++) {
+    cl_assert(s_tote_anzahl < BILDER_MAX);
+    s_tote_daten[s_tote_anzahl] = gbitmap_get_data(s_lebende[i]);
+    memset(s_lebende[i], 0, sizeof(GBitmap));
+    s_tote[s_tote_anzahl++] = s_lebende[i];
+  }
+  s_lebende_anzahl = 0;
+}
+
 // --- Bildspeicher ---
 
 static FrameBuffer s_fb;
@@ -153,6 +205,8 @@ void test_timestyle_ziffern__initialize(void) {
   settings.sidebarOnLeft = false;
   sidebarWidth = LEISTE_EMERY;
   s_geladen = 0;
+  s_lebende_anzahl = 0;
+  s_tote_anzahl = 0;
   strcpy(time_hours, "10");
   strcpy(time_minutes, "42");
   ClockArea_init(&s_fenster);
@@ -160,6 +214,12 @@ void test_timestyle_ziffern__initialize(void) {
 
 void test_timestyle_ziffern__cleanup(void) {
   ClockArea_deinit();
+  // Was im "alten Heap" lag, gibt der Rechner hier zurueck.
+  for (int i = 0; i < s_tote_anzahl; i++) {
+    free(s_tote_daten[i]);
+    free(s_tote[i]);
+  }
+  s_tote_anzahl = 0;
 }
 
 void test_timestyle_ziffern__mit_sekunden_nur_bei_neuer_minute_gerechnet(void) {
@@ -275,4 +335,31 @@ void test_timestyle_ziffern__speicher_im_app_heap(void) {
   cl_assert_equal_i(kopie, (200 - LEISTE_EMERY) * 228);
   // Auch mit beidem bleibt mehr als ein Viertel frei.
   cl_assert(schriften + puffer + kopie < APP_HEAP_EMERY * 3 / 4);
+}
+
+// NACH EINEM ABSTURZ GREIFT DIE UHR NICHT IN DEN ALTEN HEAP. Flag-Puffer und
+// Kopie der Ziffern ueberleben als Statics; ClockArea_init muss sie vergessen.
+// Sonst zeichnete die Kopie im selben Minutenstand ein Bild, das es nicht mehr
+// gibt, und fctx gaebe den alten Puffer frei - auf der Uhr ein Absturz bei
+// jedem Start, bis sie neu startet (zwei in einer Minute: Zifferblatt weg).
+void test_timestyle_ziffern__nach_einem_absturz_kein_griff_in_den_alten_heap(void) {
+  dynamicSettings.updateScreenEverySecond = true;
+  prv_bild();
+  cl_assert_equal_i(fctx_puffer_bytes(), 200 * 228);
+  cl_assert(ClockArea_kopie_bytes() > 0);
+  prv_bild_merken();
+
+  prv_absturz();
+  ClockArea_init(&s_fenster);
+
+  // Dieselbe Minute: neu gerechnet, dasselbe Bild wie vor dem Absturz.
+  framebuffer_clear(&s_fb);
+  prv_bild();
+  cl_assert(prv_bild_gleich());
+  cl_assert_equal_i(ClockArea_gerechnet(), 1);
+  // Eine neue Minute: fctx rechnet in einem eigenen, neuen Puffer.
+  strcpy(time_minutes, "43");
+  prv_bild();
+  cl_assert_equal_i(ClockArea_gerechnet(), 2);
+  cl_assert_equal_i(fctx_puffer_bytes(), 200 * 228);
 }

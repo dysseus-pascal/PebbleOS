@@ -31,11 +31,6 @@ static const Stufe *prv_stufe(void) {
   return &s_stufen[s - 1];
 }
 
-bool boulder_nachtruhe(time_t utc, uint16_t letzte_bewegung) {
-  // Dieselbe Schwelle wie im Schlaf: was darueber liegt, ist wach.
-  return boulder_nacht_im_fenster(utc) && letzte_bewegung <= SCHLAF_SCHWELLE_VMC;
-}
-
 uint32_t boulder_puls_takt_s(time_t utc, uint16_t letzte_bewegung) {
   const Stufe *s = prv_stufe();
   return boulder_nachtruhe(utc, letzte_bewegung) ? s->puls_nacht_s : s->puls_tag_s;

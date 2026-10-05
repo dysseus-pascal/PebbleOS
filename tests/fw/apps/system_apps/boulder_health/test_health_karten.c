@@ -5,7 +5,7 @@
 
 #include "stubs_logging.h"
 
-#include "apps/system/health/karten.h"
+#include "apps/system/boulder_health/karten.h"
 #undef malloc
 #undef calloc
 #undef free

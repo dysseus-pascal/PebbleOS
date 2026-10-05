@@ -27,10 +27,6 @@ typedef enum {
   DlsSystemTagProtobufLogSession = 85,
   // Tag 86 is retired; do not reuse.
   DlsSystemTagAnalyticsNativeHeartbeat = 87,
-  // Boulder: eine Nacht mit allen Schlafphasen (NachtDlsRecord, boulder/nacht.h)
-  DlsSystemTagBoulderNacht = 88,
-  // Boulder: die HRV-Fenster dieser Nacht (NachtHrvDlsRecord, boulder/nacht.h)
-  DlsSystemTagBoulderNachtHrv = 89,
 } DlsSystemTag;
 
 //! Init the data logging service. Called by the system at boot time.

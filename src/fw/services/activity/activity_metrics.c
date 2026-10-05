@@ -20,7 +20,7 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_calculators.h"
 #include "pbl/services/activity/activity_private.h"
-#include "pbl/services/activity/boulder/spo2.h"
+#include "pbl/services/activity/boulder/haken.h"
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
@@ -566,10 +566,8 @@ void activity_metrics_prv_get_spo2_sample(uint8_t *percent_out, uint8_t *quality
     state->spo2.pending_quality = 0;
   }
   pbl_mutex_unlock(&state->mutex);
-  // Boulder: dieselbe Messung auch fuer die Health-App der Uhr.
-  if (*percent_out) {
-    boulder_spo2_merken(rtc_get_time(), *percent_out);
-  }
+  // Boulder: dieselbe Messung auch fuer Boulders Health-App (boulder/haken.h).
+  boulder_spo2_gemessen(*percent_out);
 }
 
 // --------------------------------------------------------------------------------------------

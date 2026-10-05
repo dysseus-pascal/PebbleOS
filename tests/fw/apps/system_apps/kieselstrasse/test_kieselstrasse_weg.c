@@ -70,6 +70,21 @@ static DictionaryIterator *prv_nachricht(int art, int entfernung, const char *st
   return &s_iter;
 }
 
+// Wie prv_nachricht, dazu REST (Meter bis zum Ziel) - so schickt Boulder
+// waehrend einer Navigation jede Anweisung (Kieselstrasse.kt, felderFuerUhr).
+static DictionaryIterator *prv_nachricht_mit_rest(int art, int entfernung, int rest,
+                                                  const char *strasse) {
+  DictionaryIterator schreiben;
+  cl_assert_equal_i(dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer)), DICT_OK);
+  dict_write_int32(&schreiben, MESSAGE_KEY_ABBIEGEART, art);
+  dict_write_int32(&schreiben, MESSAGE_KEY_ENTFERNUNG, entfernung);
+  if (strasse) dict_write_cstring(&schreiben, MESSAGE_KEY_STRASSE, strasse);
+  dict_write_int32(&schreiben, MESSAGE_KEY_REST, rest);
+  const uint32_t benutzt = dict_write_end(&schreiben);
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)benutzt);
+  return &s_iter;
+}
+
 void test_kieselstrasse_weg__initialize(void) {
   s_jetzt = 1700000000;
   memset(s_persist, 0, sizeof(s_persist));
@@ -105,6 +120,8 @@ void test_kieselstrasse_weg__neuer_schritt_bei_anderer_art(void) {
   cl_assert_equal_i(s_schreibvorgaenge, 2);
 }
 
+// Ohne REST (am Ziel, ein anderer Sender) nur ueber die Entfernung - das
+// erkennt nur, wer zwischen zwei Meldungen wenig Weg macht (siehe unten).
 void test_kieselstrasse_weg__zweimal_dieselbe_art_ist_ein_neuer_schritt(void) {
   weg_init();
   // "Rechts, dann wieder rechts": an der ersten Abzweigung springt die
@@ -183,6 +200,40 @@ void test_kieselstrasse_weg__zahlen_jeder_breite(void) {
   cl_assert_equal_i((int)weg_stand()->entfernung_m, 450);
   cl_assert_equal_i(weg_ausfahrt(), 2);
   cl_assert_equal_i(weg_winkel(), -90);
+}
+
+// DIE ANKUNFT NACH 2038: Boulder schickt TUPLE_INT mit den Bits der vorzeichenlosen
+// Sekundenzahl. Als int32 gelesen waere der 1.9.2039 negativ, und die Ankunft verschwaende
+// vom Schirm (nav_window.c zeigt nur eine gesetzte). Ein anderer Sender darf TUPLE_UINT
+// schicken; ein Zeitpunkt in zwei Byte ist keiner und laesst den vorigen stehen.
+static void prv_ankunft(TupleType typ, uint8_t breite, uint32_t bits) {
+  DictionaryIterator schreiben;
+  dict_write_begin(&schreiben, s_puffer, sizeof(s_puffer));
+  dict_write_int32(&schreiben, MESSAGE_KEY_ABBIEGEART, 5);
+  if (typ == TUPLE_INT && breite == 4) dict_write_int32(&schreiben, MESSAGE_KEY_ANKUNFT, (int32_t)bits);
+  if (typ == TUPLE_UINT && breite == 4) dict_write_uint32(&schreiben, MESSAGE_KEY_ANKUNFT, bits);
+  if (typ == TUPLE_INT && breite == 2) dict_write_int16(&schreiben, MESSAGE_KEY_ANKUNFT, (int16_t)bits);
+  dict_read_begin_from_buffer(&s_iter, s_puffer, (uint16_t)dict_write_end(&schreiben));
+  weg_uebernimm(&s_iter);
+}
+
+void test_kieselstrasse_weg__ankunft_nach_2038_bleibt_positiv(void) {
+  weg_init();
+  const uint32_t heute = 1790445600u;      // 26.9.2026
+  const uint32_t spaeter = 2198995200u;    // 1.9.2039, ueber INT32_MAX
+  prv_ankunft(TUPLE_INT, 4, heute);
+  cl_assert(weg_stand()->ankunft == heute);
+  prv_ankunft(TUPLE_INT, 4, spaeter);
+  cl_assert(weg_stand()->ankunft == spaeter);
+  cl_assert((uint64_t)weg_stand()->ankunft > (uint64_t)INT32_MAX);
+  prv_ankunft(TUPLE_UINT, 4, spaeter + 60);
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
+  prv_ankunft(TUPLE_INT, 2, 1234);
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
+  // Und der Persist traegt dieselben vier Byte.
+  weg_sichern();
+  weg_init();
+  cl_assert(weg_stand()->ankunft == spaeter + 60);
 }
 
 void test_kieselstrasse_weg__text_ohne_abschluss_bleibt_im_tupel(void) {
@@ -363,4 +414,111 @@ void test_kieselstrasse_weg__ausfahrt_nicht_im_persist(void) {
   weg_init();
   cl_assert_equal_i(weg_stand()->abbiegeart, 13);
   cl_assert_equal_i(weg_ausfahrt(), 0);
+}
+
+// --- Gleiche Art, an der Lage auf der Route erkannt ---
+
+void test_kieselstrasse_weg__gleiche_art_an_der_lage_erkannt(void) {
+  weg_init();
+  // Abzweigung A liegt 1750 m vor dem Ziel.
+  cl_assert(weg_uebernimm(prv_nachricht_mit_rest(5, 250, 2000, "A")));
+  // Naeher heran, REST und Entfernung schrumpfen gleich; ein paar Meter
+  // Rundung und ein flatternder Name aendern nichts.
+  cl_assert(!weg_uebernimm(prv_nachricht_mit_rest(5, 120, 1873, "A.")));
+  cl_assert(!weg_uebernimm(prv_nachricht_mit_rest(5, 31, 1778, "A")));
+  // Vorbei, die naechste Rechtskurve ist 300 m weiter: Lage 1450 - neu, auch
+  // wenn die Entfernung kleiner ist als die letzte.
+  cl_assert(weg_uebernimm(prv_nachricht_mit_rest(5, 25, 1475, "B")));
+  cl_assert_equal_i(s_schreibvorgaenge, 2);
+  // Fehlt REST einmal, gilt fuer diese Nachricht die Entfernung - und danach
+  // passt die Lage von vorhin nicht zur neuen Nachricht: keine Lage.
+  cl_assert(!weg_uebernimm(prv_nachricht(5, 20, NULL)));
+  cl_assert(!weg_uebernimm(prv_nachricht_mit_rest(5, 15, 1465, NULL)));
+  // Eine neue Route: die Lage springt weit.
+  cl_assert(weg_uebernimm(prv_nachricht_mit_rest(5, 400, 5200, NULL)));
+}
+
+// IM TAKT VON BOULDER. Boulder (Kieselstrasse.kt, melde) fragt OsmAnd alle
+// zwei Sekunden und schickt eine Anweisung gleicher Art hoechstens alle vier
+// Sekunden, eine unveraenderte Entfernung gar nicht - mit REST. Gefahren wird
+// mit 30, 50 und 80 km/h ueber vier Rechtskurven im Abstand von 80 bis 500 m;
+// OsmAnd rundet Entfernung und REST unabhaengig (bis 3 m daneben), und die
+// Abfrage beginnt zu verschiedenen Zeitpunkten. Die Uhr soll fuer jede
+// Abzweigung, von der sie erfaehrt, genau einmal summen - und sonst nie.
+#define BOULDER_ABFRAGE_S 2.0
+#define BOULDER_TAKT_S 4.0
+#define KURVEN 4
+
+typedef struct {
+  int gesehen;    //< Abzweigungen, zu denen eine Anweisung kam
+  int gesummt;
+  int falsch;     //< Nachrichten, bei denen Summen und neue Abzweigung nicht passen
+} Fahrt;
+
+static Fahrt prv_fahrt(double kmh, int abstand, double phase_s) {
+  const double v = kmh / 3.6;
+  double kurve[KURVEN];
+  for (int i = 0; i < KURVEN; i++) kurve[i] = 400.0 + i * abstand;
+  const double ziel = kurve[KURVEN - 1] + 300.0;
+  Fahrt f = { 0 };
+  // Eine frische Navigation: nichts im Persist.
+  s_persist_laenge = 0;
+  weg_init();
+  const time_t start = s_jetzt;
+  int letzte_art = -1;
+  int letzte_meter = -1;
+  double letzter_takt = -1000.0;
+  int letzte_kurve = -1;
+  int k = 0;
+  for (double t = phase_s;; t += BOULDER_ABFRAGE_S, k++) {
+    const double ort = v * t;
+    int i = 0;
+    while (i < KURVEN && kurve[i] - ort < 1.0) i++;
+    if (i == KURVEN) break;
+    // Die Rundung von OsmAnd: beide Zahlen bis 3 m daneben, nicht gleich.
+    const int meter = (int)(kurve[i] - ort + 0.5) + (k * 5) % 7 - 3;
+    const int rest = (int)(ziel - ort + 0.5) + (k * 3) % 7 - 3;
+    const int art = 5;
+    if (art == letzte_art && meter == letzte_meter) continue;
+    if (art == letzte_art && t - letzter_takt < BOULDER_TAKT_S) continue;
+    letzte_art = art;
+    letzte_meter = meter;
+    letzter_takt = t;
+    s_jetzt = start + (time_t)t;
+    char name[16];
+    snprintf(name, sizeof(name), "Kurve %d", i);
+    const bool summt = weg_uebernimm(prv_nachricht_mit_rest(art, meter, rest, name));
+    const bool neue_kurve = i != letzte_kurve;
+    f.gesehen += neue_kurve ? 1 : 0;
+    f.gesummt += summt ? 1 : 0;
+    f.falsch += (summt != neue_kurve) ? 1 : 0;
+    letzte_kurve = i;
+  }
+  s_jetzt = start;
+  return f;
+}
+
+void test_kieselstrasse_weg__gleiche_art_im_takt_von_boulder(void) {
+  const double tempi[] = { 30, 50, 80 };
+  const int abstaende[] = { 80, 150, 250, 500 };
+  const double phasen[] = { 0.0, 0.5, 1.0, 1.5 };
+  int falsch = 0;
+  for (size_t a = 0; a < ARRAY_LENGTH(tempi); a++) {
+    for (size_t b = 0; b < ARRAY_LENGTH(abstaende); b++) {
+      int gesehen = 0;
+      int gesummt = 0;
+      int falsch_hier = 0;
+      for (size_t c = 0; c < ARRAY_LENGTH(phasen); c++) {
+        const Fahrt f = prv_fahrt(tempi[a], abstaende[b], phasen[c]);
+        cl_assert(f.gesehen >= 2);
+        gesehen += f.gesehen;
+        gesummt += f.gesummt;
+        falsch_hier += f.falsch;
+      }
+      printf("%2.0f km/h, %3d m: %2d Abzweigungen gemeldet, %2d mal gesummt, %d falsch\n",
+             tempi[a], abstaende[b], gesehen, gesummt, falsch_hier);
+      falsch += falsch_hier;
+    }
+  }
+  cl_assert_equal_i(falsch, 0);
 }

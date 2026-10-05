@@ -16,6 +16,7 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/haken.h"
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
@@ -61,8 +62,11 @@ void activity_sessions_prv_remove_out_of_range_activity_sessions(time_t utc_sec,
     }
 
     // This one needs to be removed
+    // Boulder: memmove statt memcpy - Quelle und Ziel ueberlappen, sobald hinter der
+    // entfernten Sitzung mehr als eine steht (Neustart in der Nacht: der laufende Block
+    // vor seinen Tiefschlafbloecken). memcpy darf dann in beliebiger Reihenfolge kopieren.
     uint32_t remaining = *session_entries - i - 1;
-    memcpy(&sessions[i], &sessions[i + 1], remaining * sizeof(*sessions));
+    memmove(&sessions[i], &sessions[i + 1], remaining * sizeof(*sessions));
     (*session_entries)--;
     num_sessions_to_clear++;
     i--;
@@ -200,12 +204,16 @@ unlock:
 static void prv_remove_activity_session_at(ActivityState *state, int idx) {
   int num_to_move = state->activity_sessions_count - idx - 1;
   PBL_ASSERTN(num_to_move >= 0);
-  if (num_to_move == 0) {
-    memset(&state->activity_sessions[idx], 0, sizeof(ActivitySession));
-  } else {
+  if (num_to_move > 0) {
     memmove(&state->activity_sessions[idx], &state->activity_sessions[idx + 1],
             num_to_move * sizeof(ActivitySession));
   }
+  // Boulder: den frei gewordenen letzten Platz nullen, auch nach dem Nachruecken. Dort
+  // stand sonst eine Kopie der letzten Sitzung; activity.c speichert das ganze Feld, und
+  // activity_sessions_prv_init zaehlt bis zum ersten leeren Platz - nach einem Neustart
+  // stuende sie doppelt da.
+  memset(&state->activity_sessions[state->activity_sessions_count - 1], 0,
+         sizeof(ActivitySession));
   state->activity_sessions_count--;
 }
 
@@ -309,6 +317,35 @@ bool activity_sessions_prv_eigene_zuruecknehmen(ActivitySession *session) {
   return zurueckgenommen;
 }
 
+// ------------------------------------------------------------------------------------
+// BOULDER: DIE SITZUNGEN JETZT IN DEN FLASH, nicht erst mit dem naechsten Speichern von
+// activity.c (alle ACTIVITY_SETTINGS_UPDATE_MIN Minuten). Die Nacht (boulder/nacht.c) merkt
+// sich in ihrer Datei, dass sie erledigt ist; stuende das dort vor ihren festen Sitzungen,
+// verwarf die Uhr nach einem Absturz dazwischen die damals noch laufenden - und rechnete
+// die erledigte Nacht nie wieder. Dieselbe Sperre und dasselbe Feld wie prv_update_storage.
+bool activity_sessions_prv_speichern(void) {
+  ActivityState *state = activity_private_state();
+  bool gespeichert = true;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  if (state->need_activities_saved) {
+    gespeichert = false;
+    SettingsFile *file = activity_private_settings_open();
+    if (file) {
+      ActivitySettingsKey key = ActivitySettingsKeyStoredActivities;
+      gespeichert = settings_file_set(file, &key, sizeof(key), state->activity_sessions,
+                                      sizeof(state->activity_sessions)) == S_SUCCESS;
+      activity_private_settings_close(file);
+    }
+    if (gespeichert) {
+      state->need_activities_saved = false;
+    } else {
+      PBL_LOG_WRN("Sessions not saved");
+    }
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return gespeichert;
+}
+
 // --------------------------------------------------------------------------------------------
 // Send an activity session (including sleep sessions) to data logging
 void activity_sessions_prv_send_activity_session_to_data_logging(ActivitySession *session) {
@@ -400,11 +437,10 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
         (session->type == ActivitySessionType_Nap)) {
       rv = true;
       // Accumulate sleep container stats
-      // Boulder: ohne das Wachliegen im Block (activity.h, nicht_schlaf_min). Die Schlafsumme
-      // der Uhr ist dieselbe wie die der Nacht in Boulder. Upstream-Sitzungen tragen dort 0.
+      // Boulder: ohne das Wachliegen im Block (boulder/haken.h, Schalter BOULDER_SCHLAF). Die
+      // Schlafsumme der Uhr ist dieselbe wie die der Nacht in Boulder.
       if (session_exit_utc <= max_end_utc) {
-        stats->total_minutes += session->length_min - MIN(session->nicht_schlaf_min,
-                                                          session->length_min);
+        stats->total_minutes += boulder_schlaf_minuten(session);
       }
       // Only regular sleep (not naps) should affect the enter and exit times
       if (session->type == ActivitySessionType_Sleep) {
@@ -420,8 +456,7 @@ static bool prv_compute_sleep_stats(time_t now_utc, time_t min_end_utc, time_t m
       if (session_exit_utc <= max_end_utc) {
         // Accumulate restful sleep stats
         // Boulder: zusammengelegte Tiefschlafbloecke zaehlen ihre Luecken nicht mit.
-        stats->restful_minutes += session->length_min - MIN(session->nicht_schlaf_min,
-                                                             session->length_min);
+        stats->restful_minutes += boulder_schlaf_minuten(session);
       }
       stats->last_deep_exit_utc = MAX(stats->last_deep_exit_utc, session_exit_utc);
     }
