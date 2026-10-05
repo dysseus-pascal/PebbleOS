@@ -1458,12 +1458,32 @@ static int prv_b24_sitzungen(time_t beginn) {
   return bloecke;
 }
 
+// Der Zustand der Nacht, wie diese Fassung ihn in die Datei schrieb - als Bytes,
+// ohne seinen Aufbau zu kennen.
+#define ZUSTAND_MAX 64
+typedef struct {
+  uint8_t bytes[ZUSTAND_MAX];
+  int laenge;
+} Zustand;
+
+static void prv_zustand_lesen(Zustand *aus) {
+  SettingsFile datei;
+  cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
+  aus->laenge = settings_file_get_len(&datei, "zustand", sizeof("zustand"));
+  cl_assert(aus->laenge > 0 && aus->laenge <= ZUSTAND_MAX);
+  cl_assert_equal_i(settings_file_get(&datei, "zustand", sizeof("zustand"), aus->bytes,
+                                      aus->laenge),
+                    S_SUCCESS);
+  settings_file_close(&datei);
+}
+
 // DAS UPDATE VON b24 AM MORGEN ZAEHLT DEN SCHLAF EINMAL. b24 hat die Nacht bei "fertig"
 // (07:15) fest eingetragen, je Schlafstueck einen Block; diese Sitzungen stehen nach dem
-// Update noch in der Uhr, einen Zustand der Nacht gibt es noch nicht. Rechnete die neue
-// Fassung die Nacht neu, stuende ihr Block neben den Stuecken von b24 - die Schlafsumme
-// der Uhr waere fast doppelt so gross.
-static void prv_update_von_b24_um(int update) {
+// Update noch in der Uhr. Rechnete die neue Fassung die Nacht neu, stuende ihr Block neben
+// den Stuecken von b24 - die Schlafsumme der Uhr waere fast doppelt so gross. Einen
+// Zustand der Nacht gibt es nicht - oder, auf dem Rueckweg, einen alten (`alt`), den b24
+// stehen liess.
+static void prv_update_von_b24_mit(int update, const Zustand *alt_zustand) {
   prv_durch(0, update);
   const NachtDlsRecord *satz = prv_letzter_satz(s_beginn);
   cl_assert(satz);
@@ -1473,7 +1493,7 @@ static void prv_update_von_b24_um(int update) {
   cl_assert(boulder_nacht_letzte(&n));
   cl_assert(n.fertig);
 
-  // Die Uhr, wie b24 sie hinterliess: ihre Sitzungen, ihr Bild, kein Zustand der Nacht.
+  // Die Uhr, wie b24 sie hinterliess: ihre Sitzungen, ihr Bild, kein Zustand dieser Nacht.
   memset(&s_state, 0, sizeof(s_state));
   const int bloecke = prv_b24_sitzungen(s_beginn);
   cl_assert(bloecke >= 2);   // eine Nacht mit Wachphasen, sonst prueft das nichts
@@ -1484,6 +1504,11 @@ static void prv_update_von_b24_um(int update) {
   cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
   cl_assert_equal_i(settings_file_set(&datei, "letzte", sizeof("letzte"), alt, sizeof(alt)),
                     S_SUCCESS);
+  if (alt_zustand) {
+    cl_assert_equal_i(settings_file_set(&datei, "zustand", sizeof("zustand"), alt_zustand->bytes,
+                                        alt_zustand->laenge),
+                      S_SUCCESS);
+  }
   settings_file_close(&datei);
   prv_neustart();
 
@@ -1499,11 +1524,58 @@ static void prv_update_von_b24_um(int update) {
 }
 
 void test_boulder_nacht__update_von_b24_um_halb_acht_zaehlt_den_schlaf_einmal(void) {
-  prv_update_von_b24_um(11 * 60 + 30);
+  prv_update_von_b24_mit(11 * 60 + 30, NULL);
 }
 
 void test_boulder_nacht__update_von_b24_um_halb_zehn_zaehlt_den_schlaf_einmal(void) {
-  prv_update_von_b24_um(13 * 60 + 30);
+  prv_update_von_b24_mit(13 * 60 + 30, NULL);
+}
+
+// DER RUECKWEG b25 -> b24 -> b25. Diese Fassung schrieb vor drei Tagen ihren Zustand,
+// dann lief wieder b24 - es laesst ihn stehen, schreibt aber sein Bild und traegt die
+// Nacht fest ein. Am Morgen kommt das Update zurueck. Der alte Zustand kennt die Nacht von
+// b24 nicht: folgte die Uhr ihm, rechnete sie die Nacht neu neben die Bloecke von b24 und
+// schickte sie noch einmal.
+void test_boulder_nacht__rueckweg_ueber_b24_zaehlt_den_schlaf_einmal(void) {
+  // Der Zustand, wie diese Fassung ihn nach einer echten Nacht drei Tage frueher schrieb.
+  s_beginn -= 3 * SECONDS_PER_DAY;
+  prv_durch_die_nacht();
+  cl_assert(prv_letzter_satz(s_beginn));
+  Zustand alt;
+  prv_zustand_lesen(&alt);
+  test_boulder_nacht__initialize();
+  prv_update_von_b24_mit(11 * 60 + 30, &alt);
+}
+
+// EIN NEUERER ZUSTAND BLEIBT NEBEN EINEM ALTEN BILD VON b24. Diese Fassung rechnete und
+// schickte die Nacht, ihr Bild kam aber nicht in die Datei (Flash voll) - dort steht noch
+// das von b24 aus einer frueheren Nacht. Der Zustand kennt die spaetere Nacht und gilt:
+// sonst rechnete die Uhr nach einem Neustart die schon feste Nacht neu und schickte sie
+// noch einmal.
+void test_boulder_nacht__neuerer_zustand_bleibt_neben_altem_bild_von_b24(void) {
+  const int neustart = 13 * 60 + 30;
+  prv_durch(0, neustart);
+  const NachtDlsRecord *satz = prv_letzter_satz(s_beginn);
+  cl_assert(satz);
+  const int schlaf = satz->schlaf_minuten;
+  const int saetze = s_saetze_anzahl;
+  NachtBild n;
+  cl_assert(boulder_nacht_letzte(&n));
+  n.beginn_utc -= 3 * SECONDS_PER_DAY;
+  uint8_t alt[B24_BILD_GROESSE];
+  prv_b24_bild(alt, &n);
+  SettingsFile datei;
+  cl_assert_equal_i(settings_file_open(&datei, "boulder_nacht", 2048), S_SUCCESS);
+  cl_assert_equal_i(settings_file_set(&datei, "letzte", sizeof("letzte"), alt, sizeof(alt)),
+                    S_SUCCESS);
+  settings_file_close(&datei);
+  prv_neustart();
+
+  prv_durch(neustart + 1, MINUTEN);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+  cl_assert_equal_i(prv_ueberlappungen(), 0);
+  cl_assert_equal_i(prv_schlafsumme(s_beginn), schlaf);
+  cl_assert_equal_i(s_saetze_anzahl, saetze);
 }
 
 // EIN ABSTURZ NACH DEM ENDGUELTIG VERLIERT DIE NACHT NICHT. Um 09:00 wird sie endgueltig
