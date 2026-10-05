@@ -1052,6 +1052,44 @@ void test_kieselsport__spaetes_kurven_ack_mitten_im_speichern_loescht_nichts_von
   cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), kieselsport_kurve_anzahl());
 }
 
+// DAS KURVENSTUECK MITTEN IM SPEICHERN. Die App liest das naechste Stueck der
+// Kurve von A, waehrend KernelBG B speichert: die Werte von B stehen schon da,
+// Anzahl, Beginn und Zeiger noch die von A. Einzeln gelesen ginge der Puls von B
+// unter dem Beginn von A hinaus, und das Telefon truege ihn dort ein.
+static uint32_t s_gelesen_beginn;
+static uint16_t s_gelesen_ab;
+static uint16_t s_gelesen_anzahl;
+static uint16_t s_gelesen_n;
+static uint8_t s_gelesen[300];
+static void prv_kurve_lesen(void) {
+  s_gelesen_n = kieselsport_kurve_lesen(&s_gelesen_beginn, &s_gelesen_ab, &s_gelesen_anzahl,
+                                        s_gelesen, sizeof(s_gelesen));
+}
+
+void test_kieselsport__kurvenstueck_mitten_im_speichern_gehoert_zu_einem_training(void) {
+  // A mit Puls 100, 42 Werte; B mit Puls 150, 31 Werte.
+  kieselsport_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 410; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  kieselsport_speichern();
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 42);
+  kieselsport_starte(ArtLaufen, BEGINN + 1000);
+  for (int i = 0; i < 300; i++) {
+    prv_sekunde_mit_puls(150);
+  }
+  s_app_aktion = prv_kurve_lesen;
+  s_unterbrich_vor = PERSIST_KURVE_ANZAHL;
+  kieselsport_speichern();
+  cl_assert(s_app_aktion == NULL);
+  // Alles, was die App las, gehoert zu B.
+  cl_assert_equal_i(s_gelesen_beginn, BEGINN + 1000);
+  cl_assert_equal_i(s_gelesen_ab, 0);
+  cl_assert_equal_i(s_gelesen_anzahl, 31);
+  cl_assert_equal_i(s_gelesen_n, 31);
+  cl_assert_equal_i(s_gelesen[20], 150);
+}
+
 void test_kieselsport__kurve_mit_luecke(void) {
   // 211 Werte in zwei Schluesseln.
   prv_training(BEGINN, 2100);

@@ -199,6 +199,10 @@ uint32_t kieselsport_kurve_beginn(void);
 uint16_t kieselsport_kurve_anzahl(void);
 uint16_t kieselsport_kurve_ab(void);
 uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max);
+// Das naechste Stueck mit Beginn, Zeiger und Anzahl, alles aus derselben
+// Kurve (unter der Sperre des Dienstes). Rueckgabe: Werte in [aus].
+uint16_t kieselsport_kurve_lesen(uint32_t *beginn, uint16_t *ab, uint16_t *anzahl, uint8_t *aus,
+                                 uint16_t max);
 // Das Telefon hat [n] Werte ab [ab] der Kurve von [beginn] - die Werte des
 // Stuecks, das hinausging. false: inzwischen liegt eine andere Kurve oder
 // ein anderer Zeiger da, die Bestaetigung zaehlt nicht.

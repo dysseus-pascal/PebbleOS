@@ -71,9 +71,11 @@ bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *h
   return true;
 }
 
+// Pebbles Auswahl "SpO2 Monitoring": an, alle 10 Minuten - ein Test kann sie umstellen.
+static HRMonitoringInterval s_spo2_intervall = HRMonitoringInterval_10Min;
 bool activity_prefs_blood_oxygen_is_enabled(void) { return true; }
 HRMonitoringInterval activity_prefs_get_spo2_measurement_interval(void) {
-  return HRMonitoringInterval_10Min;
+  return s_spo2_intervall;
 }
 uint32_t boulder_spo2_takt_s(void) { return 600; }
 int boulder_spo2_werte(time_t von, time_t bis, Spo2Wert *aus, int max) { return 0; }

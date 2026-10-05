@@ -5,6 +5,7 @@ menu "Services"
 
 rsource "accel_manager/Kconfig"
 rsource "activity/Kconfig"
+# Boulder: eigene Schalter des Aktivitaetsdienstes (activity/boulder)
 rsource "activity/boulder/Kconfig"
 rsource "alarms/Kconfig"
 rsource "analytics/Kconfig"

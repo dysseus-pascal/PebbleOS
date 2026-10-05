@@ -157,10 +157,12 @@ static void prv_kurve_senden(void *data) {
   // im Zustand "wird geschrieben" stehen, und jedes weitere begin scheitert -
   // kein Start, keine Pause, keine Zusammenfassung ginge mehr hinaus, bis
   // die App zugeht. Ein leeres Stueck darf also gar nicht erst dort landen.
+  // Kopf und Werte in einem Griff: sonst kaemen mitten im Speichern eines
+  // neuen Trainings dessen Werte unter dem Beginn des alten hinaus.
   static uint8_t stueck[KURVE_JE_NACHRICHT];
-  const uint32_t beginn = kieselsport_kurve_beginn();
-  const uint16_t ab = kieselsport_kurve_ab();
-  const uint16_t n = kieselsport_kurve_stueck(stueck, sizeof(stueck));
+  uint32_t beginn;
+  uint16_t ab, anzahl;
+  const uint16_t n = kieselsport_kurve_lesen(&beginn, &ab, &anzahl, stueck, sizeof(stueck));
   if (n == 0) {
     prv_kurve_unlesbar(ab);
     return;
@@ -172,7 +174,7 @@ static void prv_kurve_senden(void *data) {
     return;
   }
   dict_write_uint32(out, MESSAGE_KEY_BEGINN, beginn);
-  dict_write_int32(out, MESSAGE_KEY_KURVE_ANZAHL, (int32_t)kieselsport_kurve_anzahl());
+  dict_write_int32(out, MESSAGE_KEY_KURVE_ANZAHL, (int32_t)anzahl);
   dict_write_int32(out, MESSAGE_KEY_KURVE_AB, (int32_t)ab);
   dict_write_data(out, MESSAGE_KEY_KURVE, stueck, n);
   s_kurve_unterwegs = n;

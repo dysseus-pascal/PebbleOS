@@ -629,6 +629,23 @@ static void prv_zustand_laden(time_t beginn) {
   }
   if (da) {
     s_zustand_datei = z;
+  }
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  prv_bild_laden();
+  // DER RUECKWEG b25 -> b24 -> b25: b24 kennt den Zustand nicht und laesst ihn
+  // stehen, schreibt aber bei "fertig" sein Bild und traegt die Nacht fest ein.
+  // Steht nach dem erneuten Update ein Bild von b24 da, dessen Nacht nach der
+  // zuletzt geschickten des Zustands begann, ist der Zustand aelter als diese
+  // Nacht. Ihm zu folgen hiesse: die Nacht von b24 ab Fensterbeginn neu
+  // rechnen, ihr Block neben den festen von b24 (Schlaf doppelt) und dieselbe
+  // Nacht noch einmal ans Telefon. Dann gilt, was fuer ein Update von b24 ohne
+  // Zustand gilt. Kennt der Zustand die Nacht des Bildes oder eine spaetere
+  // (das Bild dieser Fassung kam nicht in die Datei), bleibt er.
+  if (da && s_bild_da && s_bild_aus_b24 && z.gesendet_beginn < s_bild.beginn_utc) {
+    PBL_LOG_INFO("Nacht: Zustand aelter als das Bild von b24, verworfen");
+    da = false;
+  }
+  if (da) {
     s_gesendet_beginn = z.gesendet_beginn;
     s_gesendet_aufwachen = z.gesendet_aufwachen;
     s_gesendet_schlaf = z.gesendet_schlaf;
@@ -638,13 +655,9 @@ static void prv_zustand_laden(time_t beginn) {
       s_fest_im_fenster = z.fest;
       s_fest_fenster = beginn;
     }
-    return;
-  }
-  // Von einer Fassung ohne diesen Zustand: die zuletzt geschickte Nacht ist die
-  // fertige im Bild - sonst ginge dieselbe Nacht noch einmal ans Telefon.
-  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
-  prv_bild_laden();
-  if (s_bild_da && s_bild.fertig) {
+  } else if (s_bild_da && s_bild.fertig) {
+    // Von einer Fassung ohne diesen Zustand: die zuletzt geschickte Nacht ist die
+    // fertige im Bild - sonst ginge dieselbe Nacht noch einmal ans Telefon.
     s_gesendet_beginn = s_bild.beginn_utc;
     s_gesendet_aufwachen = s_bild.aufwachen;
     s_gesendet_schlaf = s_bild.schlaf_minuten;

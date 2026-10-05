@@ -54,7 +54,8 @@ cd build-test && ninja fw/services/kieselsport/test_kieselsport/runme && ./fw/se
 
 Was Boulder an Pebbles Schlaf, Puls- und SpO2-Takt und an der Health-App
 ändert, hängt an vier Schaltern (`src/fw/services/activity/boulder/Kconfig`,
-eingehängt in `services/Kconfig`). Alle an: Verhalten wie bis b24. Alle aus:
+eingehängt in `services/Kconfig`). Alle an: Verhalten wie bis b24, mit einer
+bewussten Ausnahme (SpO2 „off“ bei „Disabled“, siehe Health-App). Alle aus:
 Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
 
 | Schalter | hängt an | gesetzt | bewirkt |
@@ -76,9 +77,17 @@ Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
   `settings_blob_db.c`) mit `#ifdef`.
 - Ohne Schalter, nur bewacht: die erkannte Bewegung (Typ 8) und der
   Gehfilter. Sie bleiben in jedem Bau Boulder.
-- Probebau mit einem Schalter aus:
+- Ohne Schalter, weil es Upstream-Fehler sind: `activity_sessions.c` rückt
+  beim Entfernen mit `memmove` nach (Quelle und Ziel überlappen) und nullt
+  beim Zurücknehmen den frei gewordenen letzten Platz (sonst stand die letzte
+  Sitzung nach einem Neustart doppelt da). Beides gilt auch mit
+  `BOULDER_SCHLAF=n`, etwa wenn Kraepelin einen Schlafzyklus verwirft.
+- Probebau mit einem Schalter aus, **nur mit eigenem Bauordner (`-b`)**:
   `pbl configure -b build-x --board obelix@pvt -DCONFIG_RELEASE=y -DCONFIG_BOULDER_HRV=n`.
-  `BOULDER_SCHLAF=n` schaltet alle vier ab.
+  `BOULDER_SCHLAF=n` schaltet alle vier ab. In `build/` bliebe der Schalter
+  im CMake-Cache stehen; `bundle.sh` konfiguriert darum mit `--fresh`, bricht
+  bei `build/menuconfig.conf` ab und prüft für obelix in `build/.config`,
+  dass alle vier `=y` sind (Test `test_boulder_bundle_schalter`).
 - Host-Tests in beiden Modi: `test_activity` und `test_activity_upstream`,
   `test_activity_algorithm_kraepelin` und `…_upstream`, `test_boulder_nacht`,
   `…_ohne_hrv`, `…_ohne_messstufe`; Pebbles Health-Tests
@@ -96,7 +105,10 @@ Schlaf, Takte, Einstellungen „Health“ und Health-App wie Upstream.
   Upstream.
 - Boulder braucht für `0x4001`/`0x4002` mindestens die App 0.50.0. Eine
   ältere quittiert unbekannte Tags und wirft sie weg; deshalb die Zeile
-  „Mindest-App“ im Release.
+  „Mindest-App“ im Release. Die wertet aber erst 0.50 aus: App 0.49 bietet
+  b25 trotzdem an und verlöre die Nächte. Das Telefon muss also vor dem
+  Veröffentlichen von b25 auf 0.50 oder neuer stehen; `release.sh` prüft
+  dafür, dass das App-Release veröffentlicht ist (siehe Releases).
 - **Wächter** für das, was Boulder mit Upstream teilt (Typ 8, Tag 84 Fassung
   7 mit `manual` an Byte 26, die Tags):
   - `src/fw/services/activity/boulder/vertraege.c`: Static-Asserts und
@@ -324,13 +336,17 @@ dem `b`, und bietet eine neue Fassung sofort an. Die Nummer zählt über die
 Basis hinweg weiter (v4.38.1-b6, dann v4.38.3-b7).
 
 **Mindest-App:** die Notizen tragen unter dem Titel genau einmal eine eigene
-Zeile `Mindest-App: X.Y.Z` (ohne Leerzeichen davor oder dahinter, LF). Boulder
-liest sie mit `^Mindest-App: (\d+\.\d+\.\d+)$` aus dem Text des Releases und
-bietet die Firmware einer älteren App nicht an; fehlt die Zeile, gilt keine
-Grenze. `release.sh` bricht vor dem Tag ab, wenn die Zeile fehlt, doppelt,
-falsch geschrieben oder älter als `tools/boulder/mindest_app.txt` ist
-(Prüfung: `tools/boulder/mindest_app.py`, Test
-`test_boulder_release_mindest_app`). Wer etwas einbaut, das eine neuere App
+Zeile `Mindest-App: X.Y.Z` (ohne Leerzeichen davor oder dahinter, LF; CR lehnt
+`mindest_app.py` ab, obwohl die App sie nähme). Boulder ab 0.50 liest sie mit
+`^Mindest-App: (\d+\.\d+\.\d+)$` aus dem Text des Releases und bietet die
+Firmware einer älteren App nicht an; fehlt die Zeile, gilt keine Grenze. **App
+0.49 und älter werten die Zeile nicht aus** und bieten jede Firmware an: vor
+dem Release muss das Telefon die Mindest-App schon haben. `release.sh` bricht
+vor dem Tag ab, wenn die Zeile fehlt, doppelt, falsch geschrieben oder älter
+als `tools/boulder/mindest_app.txt` ist (Prüfung: `tools/boulder/mindest_app.py`)
+oder wenn das App-Release `v<Mindest-App>` in `dysseus-pascal/Boulder` fehlt
+oder ein Entwurf ist (`gh release view`); Test
+`test_boulder_release_mindest_app`. Wer etwas einbaut, das eine neuere App
 braucht, zieht `mindest_app.txt` nach; seit den Tags `0x4001`/`0x4002` steht
 dort 0.50.0.
 
@@ -352,7 +368,10 @@ blättert: **Heute** (Schritte, km, kcal, aktive Minuten, Schritte je Stunde),
 Hypnogramm, Minuten je Phase), **Herz & SpO2** (Puls live mit schlagendem
 Herz, Ruhepuls und HRV der Nacht, letzter SpO2, Puls der letzten 24 h,
 tiefster SpO2 der Nacht). Nur auf der Herz-Karte misst der Sensor
-sekündlich. Die Minutenhistorie für die Kurven liest ein Timer stückweise,
+sekündlich. SpO2 steht auf „off“, wenn die Uhr nicht misst: Schalter
+„Blood Oxygen“ aus, Messstufe 1 oder, seit b25, Pebbles Auswahl „Disabled“ -
+eine Angleichung an `activity.c`, das dann auch nicht misst; bis b24 zeigte
+der Ring dort „an“ (Test `test_health_daten`). Die Minutenhistorie für die Kurven liest ein Timer stückweise,
 damit die App sofort erscheint.
 
 Dafür merkt sich die Firmware die letzte Nacht (auch über einen Neustart, Datei

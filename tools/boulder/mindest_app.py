@@ -7,16 +7,23 @@ Aufruf: mindest_app.py <notizen.md> <untergrenze-datei>
 
 Gibt die Fassung aus (Rueckgabe 0) oder sagt, was fehlt (Rueckgabe 1).
 
-WARUM: Boulder bietet eine Firmware nur an, wenn die App mindestens die
-genannte Fassung hat. Eine Firmware, die etwas schickt, das eine alte App
+WARUM: Boulder ab 0.50 bietet eine Firmware nur an, wenn die App mindestens
+die genannte Fassung hat. Eine Firmware, die etwas schickt, das eine alte App
 nicht kennt (etwa neue Datalogging-Tags, die sie quittiert und verwirft),
 verloere sonst Daten. Die App liest den Text des GitHub-Releases mit genau
 dem Muster unten, Zeile fuer Zeile.
 
+APP 0.49 UND AELTER werten die Zeile nicht aus und bieten die
+Firmware trotzdem an. Das Telefon muss also vor dem Veroeffentlichen der
+Firmware (ab b25) auf mindestens 0.50 stehen; release.sh prueft dazu, dass
+das App-Release v<Mindest-App> veroeffentlicht und kein Entwurf ist.
+
 - Die Zeile steht genau einmal da, allein, ohne Leerzeichen davor oder
   dahinter, und nicht in der ersten Zeile: die ist der Titel und kommt nicht
   in den Text des Releases (release.sh, tail -n +2).
-- Keine CR: mit Windows-Zeilenenden traefe das Muster der App nicht.
+- Keine CR: die App naehme die Zeile zwar auch so (ihr Muster gilt mit
+  MULTILINE, und auf der JVM passt $ auch vor \\r\\n), aber die Notizen
+  bleiben LF wie jede Datei im Repo - ein CR ist ein Versehen des Editors.
 - Die Fassung ist mindestens die aus <untergrenze-datei>. Dort steht, welche
   App die Firmware im Repo mindestens braucht; wer etwas einbaut, das eine
   neuere App verlangt, zieht sie dort nach.

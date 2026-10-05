@@ -505,13 +505,15 @@ void kieselsport_becken_setze(uint16_t meter) {
 }
 
 // Archiv, Zusammenfassung und Kurve liegen nur im Persist, und der hat seine
-// eigene Sperre - fuer einzelnes Lesen reicht sie. NICHT FUER PRUEFEN UND
-// DANN LOESCHEN: das Vergessen nach einer Bestaetigung prueft erst, ob noch
-// das bestaetigte Training dasteht, und loescht dann mehrere Schluessel.
-// Unterbricht die App (hoehere Prioritaet) dabei prv_speichern eines neuen
-// Trainings auf KernelBG, stehen dessen erste Schluessel schon da, der
-// gepruefte noch nicht - und das Loeschen nimmt sie mit. prv_speichern
-// schreibt unter der Sperre des Dienstes; dieselbe nehmen darum diese drei.
+// eigene Sperre - fuer das Lesen EINES Schluessels reicht sie. NICHT FUER
+// PRUEFEN UND DANN LOESCHEN: das Vergessen nach einer Bestaetigung prueft
+// erst, ob noch das bestaetigte Training dasteht, und loescht dann mehrere
+// Schluessel. Unterbricht die App (hoehere Prioritaet) dabei prv_speichern
+// eines neuen Trainings auf KernelBG, stehen dessen erste Schluessel schon
+// da, der gepruefte noch nicht - und das Loeschen nimmt sie mit. Ebenso
+// wenig fuer Schluessel, die zusammen gelten (kieselsport_kurve_lesen).
+// prv_speichern schreibt unter der Sperre des Dienstes; dieselbe nehmen
+// darum diese Aufrufe.
 
 int kieselsport_archiv_anzahl(void) {
   return training_archiv_anzahl();
@@ -565,6 +567,22 @@ uint16_t kieselsport_kurve_ab(void) {
 
 uint16_t kieselsport_kurve_stueck(uint8_t *aus, uint16_t max) {
   return kurve_stueck(aus, max);
+}
+
+// EIN STUECK SAMT KOPF UNTER EINER SPERRE. kurve_merken schreibt erst die
+// Werte, dann Anzahl, Beginn und Zeiger. Einzeln gelesen, mitten in
+// prv_speichern eines neuen Trainings, passten Beginn und Zeiger noch zum
+// alten, die Werte schon zum neuen - und das Telefon truege den Puls von B
+// in die Kurve von A ein.
+uint16_t kieselsport_kurve_lesen(uint32_t *beginn, uint16_t *ab, uint16_t *anzahl, uint8_t *aus,
+                                 uint16_t max) {
+  ks_sperren();
+  *beginn = kurve_beginn();
+  *ab = kurve_ab();
+  *anzahl = kurve_anzahl();
+  const uint16_t n = kurve_stueck(aus, max);
+  ks_entsperren();
+  return n;
 }
 
 bool kieselsport_kurve_bestaetigt(uint32_t beginn, uint16_t ab, uint16_t n) {

@@ -20,9 +20,27 @@ rm -rf "$AUS" && mkdir -p "$AUS"
 # Die Fassung aus git describe, wie sie auch im Paketnamen steht. Nur genau
 # diese Dateien kopieren: im Bauordner liegen sonst Pakete frueherer Staende.
 VERSION=$(git describe --tags)
+# NUR DIE VORGABEN DES BOARDS: eine menuconfig.conf im Bauordner ginge als
+# Fragment in Kconfig ein. Sie gehoert jemandem - nicht still loeschen.
+test ! -e build/menuconfig.conf \
+  || { echo "build/menuconfig.conf liegt im Bauordner - fuer den Release-Bau entfernen" >&2; exit 1; }
 for SLOT in 0 1; do
   rm -f build/*.pbz
-  pbl configure --board "$BOARD" -DCONFIG_FIRMWARE_SLOT=$SLOT -DCONFIG_RELEASE=y >/dev/null
+  # --fresh: OHNE DEN ALTEN CACHE. CMakeLists.txt reicht jede gecachte
+  # CONFIG_*-Variable als Kconfig-Override weiter; ein Probebau in build/ mit
+  # -DCONFIG_BOULDER_SCHLAF=n bliebe sonst still im Release.
+  pbl configure --board "$BOARD" -DCONFIG_FIRMWARE_SLOT=$SLOT -DCONFIG_RELEASE=y --fresh >/dev/null
+  # DIE UHR BEKOMMT ALLE VIER SCHALTER (BOULDER.md, Schalter). Fehlt einer im
+  # Ergebnis von Kconfig, gingen etwa keine Naechte mehr hinaus - und die
+  # Ausgabe oben sieht niemand.
+  case "$BOARD" in
+    obelix*)
+      for SCHALTER in SCHLAF HRV MESSSTUFE HEALTH_APP; do
+        grep -qx "CONFIG_BOULDER_$SCHALTER=y" build/.config \
+          || { echo "Release-Bau ohne CONFIG_BOULDER_$SCHALTER=y (build/.config) - abgebrochen" >&2; exit 1; }
+      done
+      ;;
+  esac
   pbl build >/dev/null
   pbl bundle >/dev/null
   cp "build/normal_${NAME}_${VERSION}_slot${SLOT}.pbz" "$AUS/"

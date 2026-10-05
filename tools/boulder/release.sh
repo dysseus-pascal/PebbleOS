@@ -35,10 +35,20 @@ OEFFENTLICH=tools/boulder/signatur.pub
 # Release zurueck.
 test -f "$NOTIZEN" || { echo "Es fehlen die Notizen $NOTIZEN" >&2; exit 1; }
 # DIE MINDEST-APP STEHT IN DEN NOTIZEN, als eigene Zeile "Mindest-App: X.Y.Z".
-# Boulder liest sie aus dem Text des Releases und bietet die Firmware einer
-# aelteren App nicht an - die verloere etwa Datalogging-Tags, die sie nicht
-# kennt. Mindestens die Fassung aus tools/boulder/mindest_app.txt.
+# Boulder ab 0.50 liest sie aus dem Text des Releases und bietet die Firmware
+# einer aelteren App nicht an - die verloere etwa Datalogging-Tags, die sie
+# nicht kennt. Mindestens die Fassung aus tools/boulder/mindest_app.txt.
 MINDEST_APP="$(python3 tools/boulder/mindest_app.py "$NOTIZEN" tools/boulder/mindest_app.txt)" || exit 1
+# EINE APP BIS 0.49 KENNT DIE ZEILE NICHT: sie bietet die Firmware trotzdem an
+# und quittiert, was sie nicht kennt, ohne es zu speichern (die Naechte auf
+# 0x4001/0x4002). Davor schuetzt nur die Reihenfolge: erst die App, und das
+# Telefon muss sie haben, bevor die Firmware erscheint. Hier wenigstens: das
+# App-Release v$MINDEST_APP ist veroeffentlicht und kein Entwurf.
+APP_REPO=dysseus-pascal/Boulder
+APP_ENTWURF="$(gh release view "v$MINDEST_APP" -R "$APP_REPO" --json isDraft --jq .isDraft)" \
+  || { echo "App-Release v$MINDEST_APP in $APP_REPO nicht gefunden - erst die App veroeffentlichen" >&2; exit 1; }
+test "$APP_ENTWURF" = false \
+  || { echo "App-Release v$MINDEST_APP in $APP_REPO ist ein Entwurf - erst die App veroeffentlichen" >&2; exit 1; }
 test -r "$SCHLUESSEL" || { echo "Signaturschluessel fehlt: $SCHLUESSEL (siehe tools/boulder/SIGNATUR.md)" >&2; exit 1; }
 test "$(openssl pkey -in "$SCHLUESSEL" -pubout)" = "$(cat "$OEFFENTLICH")" \
   || { echo "Der Schluessel $SCHLUESSEL passt nicht zu $OEFFENTLICH - die App kennt ihn nicht" >&2; exit 1; }
