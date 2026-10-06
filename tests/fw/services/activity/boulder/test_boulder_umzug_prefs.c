@@ -5,6 +5,7 @@
 
 #include "flash_region/flash_region.h"
 #include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/activity/boulder/umzug.h"
 #include "pbl/services/filesystem/pfs.h"
 #include "pbl/services/settings/settings_file.h"
 #include "shell/prefs_private.h"
@@ -94,6 +95,26 @@ static const Eintrag s_v2[] = {
 };
 #define N_V2 ((int)(sizeof(s_v2) / sizeof(s_v2[0])))
 
+// Gegenpruefung B1: zwei Prefs, die b25 nicht kannte, das Telefon unter V2 aber schreiben darf
+// (settings_blob_db.c:93-94, GColor 1 B) - im Bestand oben fehlen sie.
+static const Eintrag s_telefon[] = {{"settingsMenuHighlightColor", 1}, {"appsMenuHighlightColor", 1}};
+#define N_TELEFON ((int)(sizeof(s_telefon) / sizeof(s_telefon[0])))
+
+// b25-Prefs, die V2 nicht mehr liest und der Umzug loescht (umzug_prefs.c).
+static bool prv_geloescht(const char *key) {
+  return !strcmp(key, "tsBedrock") || !strcmp(key, "boulderTimeStyle");
+}
+
+// Die Prefs-Sperre (prefs.c): umzug_prefs.c muss sie halten und wieder freigeben.
+static int s_prefs_sperre;
+void prefs_private_lock(void) {
+  s_prefs_sperre++;
+}
+void prefs_private_unlock(void) {
+  cl_assert(s_prefs_sperre > 0);
+  s_prefs_sperre--;
+}
+
 static int s_runde[N_B25];  //< mit welcher Runde jeder b25-Pref zuletzt geschrieben wurde
 
 // Ein Wert, der von Pref und Runde abhaengt: so faellt jede Verwechslung auf.
@@ -170,8 +191,19 @@ void test_boulder_umzug_prefs__v2_oeffnet_und_schreibt_den_b25_bestand(void) {
   // DIE MESSSTUFE ist dieselbe Einstellung (Schluessel samt Null, 1 Byte, wie messstufe.c sie
   // liest und schreibt).
   cl_assert_equal_s(BOULDER_MESSSTUFE_SCHLUESSEL, "boulderMessstufe");
+  settings_file_close(&f);
 
-  // Und schreibt danach: jeder V2-Pref und die Messstufe zweimal neu.
+  // Der Umzug (B1): b25s eigene Prefs weg, einmal - beim naechsten Boot schreibt er nichts.
+  cl_assert_equal_i(boulder_umzug_prefs_aufraeumen(), 2);
+  cl_assert_equal_i(boulder_umzug_prefs_aufraeumen(), 0);
+  cl_assert_equal_i(s_prefs_sperre, 0);
+
+  // Das Telefon schreibt die beiden Farben, dann schreibt V2 jeden Pref und die Messstufe
+  // zweimal neu - jeder Satz muss passen (settings_file.c:513 zaehlt auch beim Ueberschreiben).
+  cl_must_pass(settings_file_open(&f, NAME, SHELL_PREFS_FILE_LEN));
+  for (int i = 0; i < N_TELEFON; i++) {
+    cl_must_pass(prv_setze(&f, s_telefon[i].key, s_telefon[i].len, 50));
+  }
   for (int r = 100; r < 102; r++) {
     for (int i = 0; i < N_V2; i++) {
       cl_must_pass(prv_setze(&f, s_v2[i].key, s_v2[i].len, r));
@@ -185,10 +217,28 @@ void test_boulder_umzug_prefs__v2_oeffnet_und_schreibt_den_b25_bestand(void) {
   cl_assert(f.used_space <= SHELL_PREFS_FILE_LEN);
   settings_file_close(&f);
 
-  // Nichts verloren - auch die toten b25-Prefs liegen weiter da (Spezifikation 8).
+  // Der groesste Pref muss noch passen, sonst scheiterte sein naechstes Ueberschreiben.
+  int groesster = 0;
+  for (int i = 0; i < N_V2; i++) {
+    const int satz = (int)sizeof(SettingsRecordHeader) + (int)strlen(s_v2[i].key) + 1 +
+                     s_v2[i].len;
+    groesster = satz > groesster ? satz : groesster;
+  }
+  cl_assert(f.used_space + groesster <= SHELL_PREFS_FILE_LEN);
+  settings_file_close(&f);
+
+  // Nichts verloren (Spezifikation 8): alle b25-Prefs, die V2 liest, und die Farben. Die zwei
+  // geloeschten sind weg.
   cl_must_pass(settings_file_open(&f, NAME, SHELL_PREFS_FILE_LEN));
   for (int i = 0; i < N_B25; i++) {
-    prv_pruefe(&f, s_b25[i].key, s_b25[i].len, s_runde[i]);
+    if (prv_geloescht(s_b25[i].key)) {
+      cl_assert(!settings_file_exists(&f, s_b25[i].key, strlen(s_b25[i].key) + 1));
+    } else {
+      prv_pruefe(&f, s_b25[i].key, s_b25[i].len, s_runde[i]);
+    }
+  }
+  for (int i = 0; i < N_TELEFON; i++) {
+    prv_pruefe(&f, s_telefon[i].key, s_telefon[i].len, 50);
   }
   settings_file_close(&f);
 }

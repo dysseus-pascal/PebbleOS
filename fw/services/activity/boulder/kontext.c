@@ -58,6 +58,21 @@ static volatile bool s_training;
 static void prv_antwort_cb(void *data);
 static BoulderAufgabe s_aufgabe_antwort = BOULDER_AUFGABE("Boulder Antwort", prv_antwort_cb);
 
+// DIE ACTIVITY-SPERRE um jeden Weg, der die Fahrt aendert (Gegenpruefung B3): Das Einstecken
+// beendet eine bestaetigte Fahrt auf KernelMain (activity.c prv_charger_event_cb ->
+// early_deinit -> boulder_kontext_sitzung_beenden), unter dieser Sperre, waehrend Minutenteil,
+// Takt und Antwort auf KernelBG laufen. Ohne gemeinsame Sperre koennte die Fahrt zweimal enden
+// (Schritte doppelt zurueck, Sitzung zweimal geschlossen). Die Sperre ist rekursiv. Reihenfolge
+// wie in early_deinit: Activity vor Kraepelin vor HRM - darum nie in den Lesern, die die Kopie
+// unter ihrer eigenen Sperre ruft (boulder_kontext_fahrt_minute, _ueberdeckt, _offen_seit).
+static void prv_sperren(void) {
+  pbl_mutex_lock(&activity_private_state()->mutex, PBL_FOREVER);
+}
+
+static void prv_entsperren(void) {
+  pbl_mutex_unlock(&activity_private_state()->mutex);
+}
+
 // ---------------------------------------------------------------------------------------
 // Merkmale
 
@@ -160,6 +175,7 @@ static void prv_sitzung(bool laufend) {
 }
 
 static void prv_fahrt_weg(void) {
+  pbl_mutex_assert_held(&activity_private_state()->mutex, true);
   if (s_k.zustand == FahrtBestaetigt) {
     s_k.vorige_von = s_k.beginn;
     s_k.vorige_bis = s_k.ende;
@@ -220,6 +236,7 @@ static void prv_kandidatin_verwerfen(const char *grund) {
 }
 
 static void prv_ende_setzen(const char *grund) {
+  pbl_mutex_assert_held(&activity_private_state()->mutex, true);
   if (s_k.zustand == FahrtKeine || s_k.ende) {
     return;
   }
@@ -284,11 +301,13 @@ static void prv_merker_abholen(void) {
     return;
   }
   s_merker = 0;
+  prv_sperren();
   prv_antwort_verarbeiten((uint8_t)((merker >> 8) & 0x7F), (BoulderNachfrageAntwort)(merker & 0xFF));
   // Gleich wirken, nicht erst in der naechsten Minute: das Abo "Aktiv" endet mit dem "Nein",
   // und nach dem Entscheid haelt die Kopie nichts mehr zurueck.
   prv_aktiv_setzen();
   prv_offen_berechnen();
+  prv_entsperren();
 }
 
 static void prv_antwort_cb(void *data) {
@@ -369,7 +388,7 @@ static void prv_offen_berechnen(void) {
   }
 }
 
-void boulder_kontext_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
+static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
   const uint8_t ruhe = prv_ruhepuls(ruhepuls);
   const time_t vorher = s_k.nach_laden ? s_k.letzte_artige : s_k.letzte_utc;
   // Nach dem Boot ist die gerettete letzte Minute bis zu einer Ablage (15 min) alt.
@@ -445,6 +464,12 @@ void boulder_kontext_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
   prv_offen_berechnen();
 }
 
+void boulder_kontext_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
+  prv_sperren();
+  prv_minute(minute, ruhepuls);
+  prv_entsperren();
+}
+
 void boulder_kontext_training(bool laeuft) {
   s_training = laeuft;
 }
@@ -454,12 +479,15 @@ bool boulder_kontext_training_laeuft(void) {
 }
 
 void boulder_kontext_sitzung_beenden(void) {
+  prv_sperren();  // haelt early_deinit schon; so gilt die Regel ohne Blick auf den Aufrufer
   if (s_k.zustand == FahrtBestaetigt && !s_k.ende) {
     prv_ende_setzen("Activity aus");
   }
+  prv_entsperren();
 }
 
 void boulder_kontext_tracking_aus(void) {
+  prv_sperren();
   // D13: ein offener Entscheid gilt als "Nein" - die Kopie schreibt ihre Minuten ungestrichen.
   prv_kandidatin_verwerfen("Tracking aus");
   prv_ende_setzen("Tracking aus");
@@ -477,6 +505,7 @@ void boulder_kontext_tracking_aus(void) {
       boulder_szene_aktiv(false);
     }
   }
+  prv_entsperren();
 }
 
 // ---------------------------------------------------------------------------------------
@@ -525,20 +554,26 @@ bool boulder_kontext_frage_offen(void) {
 
 void boulder_kontext_ablage(BoulderFahrtAblage *ablage) {
   memset(ablage, 0, sizeof(*ablage));
-  if (s_k.zustand != FahrtBestaetigt || s_k.ende) {
-    return;
+  prv_sperren();  // nicht halb vor und halb nach dem Ende vom Einstecken
+  if (s_k.zustand == FahrtBestaetigt && !s_k.ende) {
+    ablage->fassung = KONTEXT_ABLAGE_FASSUNG;
+    ablage->art = (uint8_t)s_k.art;
+    ablage->nr = s_k.nr;
+    ablage->beginn = (uint32_t)s_k.beginn;
+    ablage->letzte_artige = (uint32_t)s_k.letzte_artige;
   }
-  ablage->fassung = KONTEXT_ABLAGE_FASSUNG;
-  ablage->art = (uint8_t)s_k.art;
-  ablage->nr = s_k.nr;
-  ablage->beginn = (uint32_t)s_k.beginn;
-  ablage->letzte_artige = (uint32_t)s_k.letzte_artige;
+  prv_entsperren();
 }
 
 void boulder_kontext_laden(const BoulderFahrtAblage *ablage) {
   if (ablage->fassung != KONTEXT_ABLAGE_FASSUNG ||
       (ablage->art != FahrtArtVelo && ablage->art != FahrtArtAuto) ||
-      ablage->letzte_artige < ablage->beginn || s_k.zustand != FahrtKeine) {
+      ablage->letzte_artige < ablage->beginn) {
+    return;
+  }
+  prv_sperren();
+  if (s_k.zustand != FahrtKeine) {
+    prv_entsperren();
     return;
   }
   s_k.zustand = FahrtBestaetigt;
@@ -552,6 +587,7 @@ void boulder_kontext_laden(const BoulderFahrtAblage *ablage) {
   PBL_LOG_INFO("Boulder: Fahrt %u nach dem Boot fortgesetzt", s_k.nr);
   // Pebbles Liste kann sie aus ihrer Ablage schon haben; gleicher Start und Typ ersetzt.
   prv_sitzung(true);
+  prv_entsperren();
 }
 
 // ---------------------------------------------------------------------------------------

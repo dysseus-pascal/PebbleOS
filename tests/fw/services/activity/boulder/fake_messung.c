@@ -7,6 +7,7 @@
 
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/puls.h"
+#include "shell/prefs_private.h"
 
 void boulder_messstufe_minute(void) {
 }
@@ -39,4 +40,14 @@ void boulder_puls_aktiv(bool an) {
 
 void boulder_puls_aktiv_pausieren(bool pausiert) {
   g_fake_puls_aktiv_pausiert = pausiert;
+}
+
+// Die Prefs-Sperre (prefs.c) fuer umzug_prefs.c: diese Tests laufen auf einer Task.
+void prefs_private_lock(void) {
+}
+
+void prefs_private_unlock(void) {
+}
+
+void boulder_puls_takt(void) {
 }

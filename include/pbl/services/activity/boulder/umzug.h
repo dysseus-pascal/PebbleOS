@@ -45,4 +45,9 @@ bool boulder_umzug_kopf(time_t fenster, BoulderKopf *kopf);
 void boulder_umzug_anstossen(bool erster_start);
 
 // Tests: wie nach einem Boot.
+// Im Callback "Umzug", bei jedem Boot: b25s eigene Prefs (tsBedrock, boulderTimeStyle) aus
+// shellpref loeschen, damit V2s 2048 B Luft fuer Pebbles Prefs lassen (umzug_prefs.c).
+// Rueckgabe: wie viele geloescht wurden.
+int boulder_umzug_prefs_aufraeumen(void);
+
 void boulder_umzug_test_neustart(void);

@@ -26,6 +26,7 @@ pbl_library_sources(
   boulder/ausgabe.c
   boulder/speicher.c
   boulder/umzug.c
+  boulder/umzug_prefs.c
   boulder/diagnose.c
   boulder/shell.c
 )

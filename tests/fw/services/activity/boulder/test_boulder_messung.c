@@ -559,6 +559,31 @@ void test_boulder_messung__tracking_aus_laesst_das_abo_ruhen(void) {
   cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
 }
 
+// Gegenpruefung B2: Ist die Schlange beim "Tracking aus" knapp, scheitert das Abschalten des
+// Velo-Abos (1 Hz). Ohne Tracking kommt kein Minutenteil; der Takt holt es nach, sobald Platz
+// ist - und reiht danach nichts mehr ein.
+void test_boulder_messung__tracking_aus_bei_knapper_schlange_holt_der_takt_nach(void) {
+  prv_start(1);
+  s_nachtruhe = false;
+  prv_minuten(2);
+  boulder_puls_aktiv(true);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);
+  system_task_set_available_space(BOULDER_SCHLANGE_FREI - 1);
+  boulder_puls_tracking_aus();
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);  // der Sensor misst weiter
+  boulder_puls_takt();
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);  // noch knapp: wartet
+  system_task_set_available_space(100);
+  boulder_puls_takt();
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+  boulder_puls_takt();
+  cl_assert_equal_i(fake_system_task_count_callbacks(), 0);
+}
+
 // T5.4: das Velo-Abo "Aktiv" (3.7) ueber dasselbe eine Abo. Ab der Vorstufe BPM jede Sekunde -
 // auch auf Stufe 1 und tags, wie Kraepelins Walk/Run-Abo; SpO2 bei Aktivitaet pausiert es;
 // danach ruht es. Ohne Pebbles Pref "Puls bei Aktivitaet" bleibt es aus.

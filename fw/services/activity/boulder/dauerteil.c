@@ -146,6 +146,7 @@ static void prv_laden_cb(void *data) {
 
 void boulder_dauerteil_takt(time_t jetzt) {
   boulder_kontext_takt(jetzt);
+  boulder_puls_takt();
   if (s_laden_offen) {
     boulder_aufgabe_einreihen(&s_aufgabe_laden);
     return;

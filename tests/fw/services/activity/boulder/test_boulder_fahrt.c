@@ -55,7 +55,6 @@
 #include "stubs_hr_util.h"
 #include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
 #include "stubs_passert.h"
 #include "stubs_sleep.h"
 #include "stubs_task_wdt.h"
@@ -118,6 +117,34 @@ void __wrap_boulder_kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *
 static ActivityState s_state;
 ActivityState *activity_private_state(void) {
   return &s_state;
+}
+
+// Sperren: die Activity-Sperre zaehlt mit (Gegenpruefung B3). kontext.c prueft in jedem Weg,
+// der die Fahrt aendert, dass sie gehalten ist - so prueft jeder Test hier die Regel mit.
+static int s_activity_sperre;
+void pbl_mutex_init(struct pbl_mutex *m) {
+}
+void pbl_mutex_deinit(struct pbl_mutex *m) {
+}
+int pbl_mutex_lock_lr(struct pbl_mutex *m, pbl_timeout_t timeout, uintptr_t lr) {
+  if (m == &s_state.mutex) {
+    s_activity_sperre++;
+  }
+  return 0;
+}
+void pbl_mutex_unlock(struct pbl_mutex *m) {
+  if (m == &s_state.mutex) {
+    cl_assert(s_activity_sperre > 0);
+    s_activity_sperre--;
+  }
+}
+bool pbl_mutex_is_owner(const struct pbl_mutex *m) {
+  return true;
+}
+void pbl_mutex_assert_held(const struct pbl_mutex *m, bool held) {
+  if (m == &s_state.mutex) {
+    cl_assert_equal_b(s_activity_sperre > 0, held);
+  }
 }
 SettingsFile *activity_private_settings_open(void) {
   return NULL;
@@ -518,6 +545,7 @@ void test_boulder_fahrt__initialize(void) {
   pfs_init(false);
   pfs_format(false);
   memset(&s_state, 0, sizeof(s_state));
+  s_activity_sperre = 0;
   memset(&s_ui, 0, sizeof(s_ui));
   memset(&s_main, 0, sizeof(s_main));
   s_ruhezeit = false;
@@ -544,6 +572,7 @@ void test_boulder_fahrt__cleanup(void) {
   activity_algorithm_deinit();
   fake_system_task_callbacks_invoke_pending();
   pbl_cron_deinit();
+  cl_assert_equal_i(s_activity_sperre, 0);
 }
 
 // T5.1, T5.3 "Ja", T2.3, F5, F7: 14 min gehen, 25 min Velo, 30 min gehen. Die Fahrt beginnt
@@ -790,4 +819,33 @@ void test_boulder_fahrt__neustart_setzt_die_fahrt_fort(void) {
   cl_assert(!s->ongoing);
   cl_assert_equal_i(s->start_utc + s->length_min * PBL_SEC_PER_MIN,
                     ablage.letzte_artige + PBL_SEC_PER_MIN);
+}
+
+// Gegenpruefung B3: Das Einstecken beendet eine bestaetigte Fahrt auf KernelMain, unter der
+// Activity-Sperre (activity.c:1323 -> early_deinit -> D15), die der Minutenteil jetzt auch
+// nimmt. Einmal beendet: Sitzung zu, kein zweites Ende, wenn danach noch eine Minute laeuft.
+void test_boulder_fahrt__einstecken_beendet_die_fahrt_einmal(void) {
+  prv_gehen(16);
+  bool ja = true;
+  cl_assert(prv_velo_bis_kandidatin(12, true) > 0);
+  prv_velo(1, &ja);
+  prv_taste(BUTTON_ID_UP);
+  fake_system_task_callbacks_invoke_pending();
+  prv_velo(5, &ja);
+  cl_assert(boulder_kontext_fahrt_laeuft());
+  const time_t start = prv_sitzung(ActivitySessionType_Open)->start_utc;
+  pbl_mutex_lock(&s_state.mutex, PBL_FOREVER);
+  activity_algorithm_early_deinit();
+  pbl_mutex_unlock(&s_state.mutex);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  const ActivitySession *s = prv_sitzung(ActivitySessionType_Open);
+  cl_assert(!s->ongoing);
+  cl_assert_equal_i(s->start_utc, start);
+  const uint16_t laenge = s->length_min;
+  const uint32_t zaehler = prv_zaehler();
+  // Ein zweites Beenden (zweites Ereignis vom Ladegeraet) aendert nichts mehr.
+  boulder_kontext_sitzung_beenden();
+  cl_assert_equal_i(prv_sitzung(ActivitySessionType_Open)->length_min, laenge);
+  cl_assert_equal_i(prv_zaehler(), zaehler);
+  cl_assert_equal_i(s_activity_sperre, 0);
 }

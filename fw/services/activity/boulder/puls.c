@@ -237,6 +237,15 @@ void boulder_puls_tracking_aus(void) {
   }
 }
 
+// Gegenpruefung B2: Lief beim "Tracking aus" ein HRV-Fenster oder das Velo-Abo und war die
+// Schlange knapp, mass der Sensor sonst jede Sekunde weiter, bis das Tracking wieder angeht.
+// Mit Tracking holt der Minutenteil nach (boulder_puls_minute).
+void boulder_puls_takt(void) {
+  if (!s_tracking && s_abo != HRM_INVALID_SESSION_REF && !prv_soll_erreicht()) {
+    boulder_aufgabe_einreihen(&s_aufgabe);
+  }
+}
+
 void boulder_puls_aktiv(bool an) {
   s_aktiv = an;
   boulder_aufgabe_einreihen(&s_aufgabe);
@@ -286,6 +295,9 @@ void boulder_puls_stufe_neu(void) {
 }
 
 void boulder_puls_tracking_aus(void) {
+}
+
+void boulder_puls_takt(void) {
 }
 
 void boulder_puls_aktiv(bool an) {

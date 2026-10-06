@@ -172,6 +172,7 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/diagnose.c
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/umzug_prefs.c
     fw/services/activity/boulder/kontext.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
@@ -257,6 +258,7 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/diagnose.c
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/umzug_prefs.c
     fw/services/activity/boulder/kontext.c
     tests/fw/services/activity/boulder/fake_messung.c
     tests/fw/services/activity/boulder/fake_nachfrage.c)
@@ -297,6 +299,7 @@ pbl_clar_test(test_boulder_umzug_prefs
     fw/services/settings/settings_raw_iter.c
     fw/kernel/rand.c
     third_party/tinymt/TinyMT/tinymt/tinymt32.c
+    fw/services/activity/boulder/umzug_prefs.c
   DEFINES DUMA_DISABLED
   OVERRIDES dummy_board
 )
@@ -332,6 +335,7 @@ pbl_clar_test(test_boulder_fahrt
     fw/services/activity/boulder/diagnose.c
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/umzug_prefs.c
     fw/services/activity/boulder/kontext.c
     fw/services/activity/boulder/nachfrage.c
     subsys/cron/cron.c

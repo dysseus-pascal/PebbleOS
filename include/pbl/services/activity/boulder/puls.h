@@ -49,6 +49,10 @@ void boulder_puls_stufe_neu(void);
 // deinit: Das Tracking endet. Ein laufendes Fenster zaehlt nicht, das Abo ruht.
 void boulder_puls_tracking_aus(void);
 
+// Takt (dauerteil.c, jede Minute, auch ohne Tracking): holt ein Abschalten nach, das bei
+// "Tracking aus" an der knappen Schlange scheiterte - ohne Tracking kommt kein Minutenteil.
+void boulder_puls_takt(void);
+
 // Velo (Spezifikation 3.7, kontext.c): "Aktiv" = BPM jede Sekunde, unabhaengig von der
 // Messstufe, nur bei Pebbles Pref "Puls bei Aktivitaet" (wie Kraepelins Walk/Run-Abo).
 // Dasselbe eine Abo; der Minutenteil setzt nur den Wunsch, der Callback die Setter.
