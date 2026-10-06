@@ -21,6 +21,8 @@ static uint16_t s_min_schlaf;
 static uint16_t s_fest_bis;
 static uint16_t s_ende;   //< so weit reicht der letzte Lauf (letzte gueltige Minute + 1)
 static uint16_t s_jetzt;  //< die Minute des letzten Laufs
+static bool s_lauf_gefunden;     //< der letzte Lauf sah eine Nacht
+static uint16_t s_lauf_aufwachen;  //< ihr Aufwachen, ab Minute 0
 
 // Die Rechnung selbst: gross, aber fest (kein Heap im Minutenpfad, F8).
 static SchlafArbeit s_arbeit;
@@ -42,6 +44,7 @@ void boulder_nachlauf_neu(uint16_t ab, uint16_t min_schlaf) {
   s_fest_bis = s_ab;
   s_ende = s_ab;
   s_jetzt = s_ab;
+  s_lauf_gefunden = false;
   for (int i = s_ab; i < SCHLAF_MINUTEN_MAX; i++) {
     prv_buch_setzen(i, BUCH_LEER);
   }
@@ -132,6 +135,7 @@ void boulder_nachlauf_rechnen(uint16_t jetzt) {
     prv_buch_setzen(i, BUCH_LEER);
   }
   s_ende = (ende > s_ab) ? (uint16_t)ende : s_ab;
+  s_lauf_gefunden = false;
   if (ende <= s_ab) {
     return;
   }
@@ -142,6 +146,8 @@ void boulder_nachlauf_rechnen(uint16_t jetzt) {
   von = (von < s_ab) ? s_ab : von;
   // Vorlaeufig: alle noch offenen Minuten aus diesem Lauf.
   prv_rechnen(von, ende, (von > s_fest_bis) ? von : s_fest_bis);
+  s_lauf_gefunden = s_ergebnis.gefunden;
+  s_lauf_aufwachen = (uint16_t)(von + s_ergebnis.aufwachen);
 
   // Festschreiben, der Reihe nach. SOLANGE DAS FENSTER KEINE NACHT SIEHT, WARTET
   // ES (bis NACHLAUF_SPAETESTENS): eine Nacht gilt erst ab einer Stunde Schlaf
@@ -185,4 +191,14 @@ uint8_t boulder_nachlauf_phase(uint16_t minute) {
 
 uint16_t boulder_nachlauf_fest_bis(void) {
   return s_fest_bis;
+}
+
+bool boulder_nachlauf_lauf_aufwachen(uint16_t *aufwachen) {
+  *aufwachen = s_lauf_aufwachen;
+  return s_lauf_gefunden;
+}
+
+void boulder_nachlauf_rechenplatz(SchlafArbeit **arbeit, SchlafErgebnis **ergebnis) {
+  *arbeit = &s_arbeit;
+  *ergebnis = &s_ergebnis;
 }

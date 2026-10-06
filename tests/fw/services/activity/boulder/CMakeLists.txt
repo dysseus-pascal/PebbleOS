@@ -146,6 +146,27 @@ pbl_clar_test(test_boulder_schlafkern
     fw/services/activity/boulder/nachlauf.c
 )
 
+# Zyklen, Live-Zustand, Nickerchen (AP3): mit der echten activity_sessions.c und der
+# Glue-Kopie (get_last_sleep_utc, post_process), Minute fuer Minute wie auf der Uhr.
+pbl_clar_test(test_boulder_zyklen
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/szene.c
+    fw/services/activity/boulder/takt.c
+    fw/services/activity/boulder/dauerteil.c
+    fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/live.c
+    fw/services/activity/boulder/zyklen.c
+    fw/services/activity/boulder/eingang.c
+    fw/services/activity/boulder/nachlauf.c
+    fw/services/activity/boulder/schlafanalyse.c
+  DEFINES DUMA_DISABLED CONFIG_HRM
+  OVERRIDES dummy_board
+)
+
 # schlafanalyse.c/.h sind bytegleich zu b26 (main a7d8b16e1).
 add_test(NAME test_boulder_schlafanalyse_wie_b26
   COMMAND ${CMAKE_COMMAND}

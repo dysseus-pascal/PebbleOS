@@ -19,6 +19,7 @@
 
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // Takt: alle fuenf Minuten (der Aufrufer, Minute = 2 modulo 5).
@@ -63,3 +64,13 @@ uint8_t boulder_nachlauf_phase(uint16_t minute);
 
 // Die erste noch nicht feste Minute.
 uint16_t boulder_nachlauf_fest_bis(void);
+
+// Sah der letzte Lauf eine Nacht, und wann endet sie (Minute ab Minute 0)? Daran
+// erkennt der Lebenslauf das Aufwachen, ohne jeden Takt die ganze Nacht zu rechnen;
+// "fertig" entscheidet dann erst die Endfassung.
+bool boulder_nachlauf_lauf_aufwachen(uint16_t *aufwachen);
+
+// Der Rechenplatz (SchlafArbeit, SchlafErgebnis) fuer eine andere Rechnung derselben
+// Task (Nickerchen, AP3): er ist gross (rund 14 KB) und wird nur einmal angelegt.
+// Danach gilt ein frueherer Zeiger der Endfassung nicht mehr.
+void boulder_nachlauf_rechenplatz(SchlafArbeit **arbeit, SchlafErgebnis **ergebnis);

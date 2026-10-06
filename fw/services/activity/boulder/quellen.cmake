@@ -10,6 +10,9 @@ pbl_library_sources(
   boulder/schlafanalyse.c
   boulder/eingang.c
   boulder/nachlauf.c
+  boulder/live.c
+  boulder/zyklen.c
+  boulder/nacht.c
   boulder/dauerteil.c
   boulder/szene.c
   boulder/takt.c
