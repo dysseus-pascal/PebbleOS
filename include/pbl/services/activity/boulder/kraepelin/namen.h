@@ -24,4 +24,5 @@
 #define kalg_get_sleep_stats boulder_kalg_get_sleep_stats
 #define kalg_init boulder_kalg_init
 #define kalg_minute_stats boulder_kalg_minute_stats
+#define kalg_minute_stats_peek boulder_kalg_minute_stats_peek
 #define kalg_state_size boulder_kalg_state_size

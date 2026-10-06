@@ -50,6 +50,9 @@ Pebble App project.
 /* Boulder: D0 Includes auf die Kopie */
 #include "pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h"
 /* Boulder: Ende D0 */
+/* Boulder: D10 Szene ueber die Variante (variante.h) */
+#include "pbl/services/activity/boulder/variante.h"
+/* Boulder: Ende D10 */
 #include "pbl/util/units.h"
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
@@ -114,7 +117,11 @@ typedef struct {
   time_t start_time;         // potential start time of the activity
                              // default: KALG_START_TIME_NONE
   int inactive_minute_count; // how many inactive minutes in a row we have detected
-  uint16_t steps;            // summed steps
+  /* Boulder: D11 Sitzungsschritte als 32 bit
+   * 16 bit liefen bei langen Wanderungen ueber (65 536 Schritte sind gut 8 h Gehen) und
+   * meldeten dann einen kleinen Rest; gemeldet wird geklemmt (b25-Fix). */
+  uint32_t steps;            // summed steps
+  /* Boulder: Ende D11 */
   uint32_t resting_calories; // summed resting calories
   uint32_t active_calories;  // summed active calories
   uint32_t distance_mm;      // summed distance
@@ -1379,6 +1386,23 @@ void kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *orientation, bo
   memset(&state->summary_pim, 0, sizeof(state->summary_pim));
 }
 
+/* Boulder: D7 Minutenwerte lesen, ohne die Minute zurueckzusetzen
+ * Upstream liest die Historie mitten in der Minute mit kalg_minute_stats() und loescht
+ * damit die Summen der laufenden Minute: der naechste Minutensatz traegt dann nur noch
+ * den Rest der Minute. Hier wird dieselbe Rechnung gemacht und die Summen danach
+ * zurueckgelegt - so bleibt sie die des Originals. */
+void kalg_minute_stats_peek(KAlgState *state, uint16_t *vmc, uint8_t *orientation) {
+  PBL_ASSERTN(state != NULL);
+  int16_t mean[KALG_N_AXES];
+  uint32_t pim[KALG_N_AXES];
+  memcpy(mean, state->summary_mean, sizeof(mean));
+  memcpy(pim, state->summary_pim, sizeof(pim));
+  bool still;
+  kalg_minute_stats(state, vmc, orientation, &still);
+  memcpy(state->summary_mean, mean, sizeof(mean));
+  memcpy(state->summary_pim, pim, sizeof(pim));
+}
+/* Boulder: Ende D7 */
 // ------------------------------------------------------------------------------------
 uint32_t kalg_analyze_finish_epoch(KAlgState *state) {
   PBL_ASSERTN(state != NULL);
@@ -2001,7 +2025,10 @@ static void prv_update_activity_hrm_scene(KAlgState *alg_state) {
   } else if (walk_active) {
     scene = HRMActivityScene_Walk;
   }
-  hrm_manager_set_activity_scene(scene);
+  /* Boulder: D10 Die Szene ist global; die Variante setzt sie an einer Stelle (szene.c)
+   * und setzt nur ihre eigene zurueck, nie die eines Trainings. */
+  boulder_szene_kraepelin(scene);
+  /* Boulder: Ende D10 */
 }
 #endif
 
@@ -2067,15 +2094,17 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
 
     // If we've reached the minimum activity length, register/update it
     if (duration_secs >= k_min_activity_secs) {
-      PBL_LOG_DBG("Updating activity %d: steps: %" PRIu16 ", rest_cal: %" PRIu32
+      /* Boulder: D11 32 bit loggen, geklemmt melden (ActivitySession: uint16_t steps) */
+      PBL_LOG_DBG("Updating activity %d: steps: %" PRIu32 ", rest_cal: %" PRIu32
                   ", "
                   "active_cal: %" PRIu32 ", distance: %" PRIu32 " ",
                   (int)activity_type, state->steps, state->resting_calories, state->active_calories,
                   state->distance_mm);
 
       sessions_cb(context, activity_type, state->start_time, duration_secs, true /*ongoing*/,
-                  false /*delete*/, state->steps, state->resting_calories, state->active_calories,
-                  state->distance_mm);
+                  false /*delete*/, MIN(state->steps, UINT16_MAX), state->resting_calories,
+                  state->active_calories, state->distance_mm);
+      /* Boulder: Ende D11 */
     }
 
   } else {
@@ -2096,15 +2125,17 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
           utc_now - state->start_time - (state->inactive_minute_count * PBL_SEC_PER_MIN);
       duration_secs = MAX(0, duration_secs);
       if ((uint32_t)duration_secs >= k_min_activity_secs) {
-        PBL_LOG_DBG("Ending activity %d: steps: %" PRIu16 ", rest_cal: %" PRIu32
+        /* Boulder: D11 32 bit loggen, geklemmt melden */
+        PBL_LOG_DBG("Ending activity %d: steps: %" PRIu32 ", rest_cal: %" PRIu32
                     ", "
                     "active_cal: "
                     "%" PRIu32 ", distance: %" PRIu32 " ",
                     (int)activity_type, state->steps, state->resting_calories,
                     state->active_calories, state->distance_mm);
         sessions_cb(context, activity_type, state->start_time, duration_secs, false /*ongoing*/,
-                    false /*delete*/, state->steps, state->resting_calories, state->active_calories,
-                    state->distance_mm);
+                    false /*delete*/, MIN(state->steps, UINT16_MAX), state->resting_calories,
+                    state->active_calories, state->distance_mm);
+        /* Boulder: Ende D11 */
       }
       prv_reset_step_activity_state(state);
 #ifdef CONFIG_HRM

@@ -27,14 +27,19 @@ pbl_clar_test(test_boulder_kraepelin_algorithm
     tests/fw/services/activity/kraepelin_reference/helper_worker.c
     tests/fw/services/activity/kraepelin_reference/ProjectK_worker.c
     tests/fw/services/activity/kraepelin_reference/raw_stats.c
+    fw/services/activity/boulder/szene.c
   DEFINES DUMA_DISABLED CONFIG_HRM ${BOULDER_KALG_NAMEN}
   OVERRIDES dummy_board
 )
 
-# Pebbles Glue-Tests gegen den kopierten Glue.
+# Pebbles Glue-Tests gegen den kopierten Glue. Die KernelBG-Schlange laeuft nach jedem
+# Minutenlauf (glue_pebble_zusatz.c: D9, D12 schreiben in eigenen Callbacks).
 pbl_clar_test(test_boulder_activity_algorithm_kraepelin
   SOURCE ${boulder_pebble_tests}/test_activity_algorithm_kraepelin.c
   SOURCES
+    fw/services/activity/boulder/takt.c
+    tests/fw/services/activity/boulder/fake_dauerteil.c
+    tests/fw/services/activity/boulder/glue_pebble_zusatz.c
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
     fw/services/clock/time.c
@@ -52,6 +57,77 @@ pbl_clar_test(test_boulder_activity_algorithm_kraepelin
     tests/fakes/fake_spi_flash.c
   DEFINES DUMA_DISABLED ${BOULDER_KALG_NAMEN}
   OVERRIDES dummy_board
+  LIBS -Wl,--wrap=activity_algorithm_minute_handler
+)
+
+# Die Abweichungen D1-D14 der Glue-Kopie mit dem kopierten Kern (AP1).
+pbl_clar_test(test_boulder_glue
+  SOURCES
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    fw/services/clock/time.c
+    lib/c/time/gmtime.c
+    lib/c/time/mktime.c
+    fw/services/regular_timer/service.c
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/szene.c
+    fw/services/activity/boulder/takt.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    tests/fakes/fake_accel_service.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+    tests/fw/services/activity/boulder/fake_dauerteil.c
+  DEFINES DUMA_DISABLED CONFIG_HRM
+  OVERRIDES dummy_board
+  LIBS
+    -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
+    -Wl,--wrap=kernel_zalloc_check,--wrap=task_malloc,--wrap=task_zalloc
+    -Wl,--wrap=settings_file_open,--wrap=settings_file_each,--wrap=settings_file_set
+    -Wl,--wrap=boulder_kalg_analyze_samples,--wrap=boulder_kalg_minute_stats
+)
+
+# T2.2b: Glue-Differenztest, dieselbe Quelle mit Original und mit Kopie.
+set(boulder_glue_umfeld
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    fw/services/clock/time.c
+    lib/c/time/gmtime.c
+    lib/c/time/mktime.c
+    fw/services/regular_timer/service.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    tests/fakes/fake_accel_service.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c)
+pbl_clar_test(test_boulder_glue_differenz_original
+  SOURCE test_boulder_glue_differenz.c
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/kraepelin/kraepelin_algorithm.c
+  DEFINES DUMA_DISABLED
+  OVERRIDES dummy_board
+  LIBS -Wl,--wrap=kalg_analyze_samples,--wrap=kalg_minute_stats
+)
+pbl_clar_test(test_boulder_glue_differenz_kopie
+  SOURCE test_boulder_glue_differenz.c
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/takt.c
+    tests/fw/services/activity/boulder/fake_dauerteil.c
+  DEFINES DUMA_DISABLED BOULDER_KOPIE
+  OVERRIDES dummy_board
+  LIBS -Wl,--wrap=boulder_kalg_analyze_samples,--wrap=boulder_kalg_minute_stats
 )
 
 # Die geteilten Formate (Tag 84, Sitzungstypen, 0x4001/0x4002, NachtBild) und der
@@ -82,6 +158,12 @@ add_test(NAME test_boulder_kraepelin_gleich
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gleich_zaehlen.py
           $<TARGET_FILE:test_kraepelin_algorithm>
           $<TARGET_FILE:test_boulder_kraepelin_algorithm>)
+
+# T2.2b: Original und Kopie gleich ohne Historie-Lesen; mit Lesen die Wirkung von D7 (V2).
+add_test(NAME test_boulder_glue_differenz
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/glue_differenz.py
+          $<TARGET_FILE:test_boulder_glue_differenz_original>
+          $<TARGET_FILE:test_boulder_glue_differenz_kopie>)
 
 # Die Waechter: Kopie markiert, Kriterium 1, Vertraege, Gegenproben.
 add_test(NAME test_boulder_kopie_pruefen

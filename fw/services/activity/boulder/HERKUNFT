@@ -8,3 +8,17 @@ kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/a
 kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h c924ec7512fb84920b56ebfdc607c60f3266b4ca11d04842ee8f22e0700125a3
 kopie include/pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h include/pbl/services/activity/kraepelin/kraepelin_algorithm.h e27cb65208447d8101b44278d9849e3e07a4e858902153df664d639d30b14156
 abweichung D0 Herkunftsblock, Includes auf die Kopie, eigene Namen fuer kalg_* (namen.h)
+abweichung D1 Kraepelins Schlafsitzungen verworfen, Gehfilter fuer Walk/Run (Entscheid beim ersten Melden), Meldungen erst nach prv_unlock()
+abweichung D2 Activity-Sperre nur vor/nach der Kraepelin-Sperre (SpO2, nicht am Arm, reset_hr_stats); Minutensatz an den Dauerteil
+abweichung D3 Zurueckhalten = MAX(Kraepelin unsicher, Fahrt offen), Puffer 15+60+5, Fahrtminuten nullen, Health-Sync haelt ebenso zurueck
+abweichung D4 bei "Ja" Fahrtschritte am Kraepelin-Zaehler abziehen (boulder_kraepelin_fahrt_streichen)
+abweichung D5 waehrend bestaetigter Fahrt Schritte gestrichen, Minute und Rate 0
+abweichung D6 get_last_sleep_utc aus dem Dauerteil
+abweichung D7 Teilminute der Historie mit kalg_minute_stats_peek, ohne SpO2 und ohne Activity-Sperre
+abweichung D8 SettingsFile statisch statt kernel_malloc_check
+abweichung D9 DLS-Sitzung nur im Callback "Anlage", nach Fehlschlag 30 min Pause
+abweichung D10 Abo "Aktiv" in activity_hrm_is_active/_set_paused; Szene nur ueber szene.c
+abweichung D11 Sitzungsschritte 32 bit, gemeldet geklemmt auf 65535
+abweichung D12 Minutendatei und DLS 81 im Callback "Minutendatei", der Minutenteil puffert nur
+abweichung D13 deinit schreibt die nur wegen einer Fahrt zurueckgehaltenen Gruppen
+abweichung D14 init fuellt den Ring des Dauerteils im ohnehin noetigen Dateidurchlauf

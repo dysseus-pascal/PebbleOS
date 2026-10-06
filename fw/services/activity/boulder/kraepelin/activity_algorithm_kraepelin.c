@@ -32,6 +32,11 @@
 #include "pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h"
 #include "pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h"
 /* Boulder: Ende D0 */
+/* Boulder: D2 Naht zum Dauerteil (variante.h) und benannte Callbacks (takt.h), fuer D1-D14 */
+#include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/variante.h"
+#include "pbl/util/size.h"
+/* Boulder: Ende D2 */
 
 #include "pbl/services/light.h"
 
@@ -44,8 +49,13 @@ PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 // How many records we need to store in our circular buffer
 // +1 for mgmt overhead
-#define ALG_MINUTE_CBUF_NUM_RECORDS \
-  (MAX(ALG_MINUTES_PER_DLS_RECORD, ALG_MINUTES_PER_FILE_RECORD) + KALG_MAX_UNCERTAIN_SLEEP_M + 1)
+/* Boulder: D3 Puffer 15 + 60 + 5: eine offene Velo-/Autofahrt haelt bis zu
+ * BOULDER_FAHRT_ZURUECK_MAX Minuten zurueck (mehr als Kraepelins 19 unsichere), damit ihre
+ * Schritte vor dem Schreiben genullt werden koennen. */
+#define ALG_MINUTE_CBUF_NUM_RECORDS                                \
+  (MAX(ALG_MINUTES_PER_DLS_RECORD, ALG_MINUTES_PER_FILE_RECORD) + \
+   MAX(KALG_MAX_UNCERTAIN_SLEEP_M, BOULDER_FAHRT_ZURUECK_MAX) + 5)
+/* Boulder: Ende D3 */
 
 // ---------------------------------------------------------------------------------------------
 // Globals
@@ -88,8 +98,38 @@ typedef struct {
   struct pbl_shared_cbuf_client file_minute_data_client;
   struct pbl_shared_cbuf_client dls_minute_data_client;
   AlgMinuteRecord cbuf_record; // space for tmp record here to decrease stack requirements
+  /* Boulder: D1 Gehfilter: der Entscheid je Sitzung, beim ersten Melden gefaellt */
+  struct {
+    time_t start_utc;
+    uint8_t typ;
+    bool unterdrueckt;
+  } geh_entscheid[8];
+  uint8_t geh_naechster;
+  /* Boulder: Ende D1 */
+  /* Boulder: D5 Schritte, die waehrend einer bestaetigten Fahrt an der Summe vorbeigingen */
+  uint32_t gestrichen;
+  /* Boulder: Ende D5 */
+  /* Boulder: D12 Zeit des letzten Minutenlaufs: der Callback "Minutendatei" rechnet die
+   * unsicheren Minuten wie das Original zu dieser Zeit, nicht zur Zeit seines Laufs */
+  time_t letzte_minute_utc;
+  /* Boulder: Ende D12 */
 } AlgState;
 static AlgState *s_alg_state = NULL;
+/* Boulder: D12 Benannte Callbacks: "Minutendatei" (D12) schreibt Minutendatei und DLS 81,
+ * "Anlage" (D9) legt die DLS-Sitzung an. Beide laufen auf KernelBG wie deinit. */
+static void prv_minutendatei_cb(void *unused);
+static void prv_anlage_cb(void *unused);
+static BoulderAufgabe s_aufgabe_minutendatei =
+    BOULDER_AUFGABE("Boulder Minutendatei", prv_minutendatei_cb);
+static BoulderAufgabe s_aufgabe_anlage = BOULDER_AUFGABE("Boulder Anlage", prv_anlage_cb);
+/* Boulder: Ende D12 */
+/* Boulder: D14 das Fenster des Rings, nur waehrend init gesetzt */
+typedef struct {
+  time_t von_utc;
+  time_t bis_utc;
+} BoulderRing;
+static BoulderRing *s_ring;
+/* Boulder: Ende D14 */
 
 // ----------------------------------------------------------------------------------------------
 static bool prv_lock(void) {
@@ -109,24 +149,33 @@ static void prv_unlock(void) {
   pbl_mutex_unlock(&s_alg_state->mutex);
 }
 
-// ----------------------------------------------------------------------------------------------
-// Open the minute data settings file and malloc space for the file struct
-// We use PBL_NOINLINE to reduce the stack requirements during the minute handler (see PBL-38130)
+/* Boulder: D8 SettingsFile statisch statt kernel_malloc_check
+ * Die Datei ist nie zweimal offen (jeder Oeffner haelt die Kraepelin-Sperre und schliesst
+ * vor dem Entsperren). So holt das Oeffnen keinen Heap fuer die Dateistruktur, und ein
+ * fehlgeschlagenes Oeffnen verliert keinen Block mehr (das Original gibt ihn dann nicht
+ * frei). */
+static SettingsFile s_minutendatei;
+static bool s_minutendatei_offen;
+
 static PBL_NOINLINE SettingsFile *prv_minute_data_file_open(void) {
-  SettingsFile *file = kernel_malloc_check(sizeof(SettingsFile));
-  if (settings_file_open(file, ALG_MINUTE_DATA_FILE_NAME, ALG_MINUTE_DATA_FILE_LEN) != S_SUCCESS) {
+  if (s_minutendatei_offen) {
+    PBL_LOG_ERR("Boulder: Minutendatei schon offen");
+    return NULL;
+  }
+  if (settings_file_open(&s_minutendatei, ALG_MINUTE_DATA_FILE_NAME, ALG_MINUTE_DATA_FILE_LEN) !=
+      S_SUCCESS) {
     PBL_LOG_ERR("No minute data file");
     return NULL;
   }
-  return file;
+  s_minutendatei_offen = true;
+  return &s_minutendatei;
 }
 
-// ------------------------------------------------------------------------------------------------
-// Close the settings file and free the file struct
 static void prv_minute_data_file_close(SettingsFile *file) {
   settings_file_close(file);
-  kernel_free(file);
+  s_minutendatei_offen = false;
 }
+/* Boulder: Ende D8 */
 
 // --------------------------------------------------------------------------------------------
 // Return the settings file key associated with a particular UTC timestamp. Each entry
@@ -137,12 +186,86 @@ static uint32_t prv_minute_file_get_settings_key(time_t utc) {
   return utc / seconds_per_key;
 }
 
+/* Boulder: D1 Sitzungen: Schlaf verwerfen, Gehfilter, Meldungen puffern
+ * Puffer: activity_sessions_prv_add/delete nehmen die Activity-Sperre. Unter der
+ * Kraepelin-Sperre waere das die verkehrte Reihenfolge (KernelMain nimmt beim Einstecken
+ * erst die Activity-, dann die Kraepelin-Sperre: Verklemmung). Gemeldet wird deshalb erst
+ * nach prv_unlock(), in derselben Reihenfolge. Je Aufrufer ein eigener Puffer, denn
+ * Minutenlauf (KernelBG) und early_deinit (auch KernelMain) koennen sich ueberlappen. */
+#define BOULDER_MELDUNGEN_MAX 8
+typedef struct {
+  ActivitySession sitzung[BOULDER_MELDUNGEN_MAX];
+  bool loeschen[BOULDER_MELDUNGEN_MAX];
+  uint8_t anzahl;
+} BoulderMeldungen;
+static BoulderMeldungen s_meldungen_minute;
+static BoulderMeldungen s_meldungen_ende;
+
+static void prv_meldung_puffern(BoulderMeldungen *meldungen, const ActivitySession *sitzung,
+                                bool loeschen) {
+  if (meldungen->anzahl >= BOULDER_MELDUNGEN_MAX) {
+    PBL_LOG_ERR("Boulder: Sitzungsmeldung verworfen, Puffer voll (Typ %d)", (int)sitzung->type);
+    return;
+  }
+  meldungen->sitzung[meldungen->anzahl] = *sitzung;
+  meldungen->loeschen[meldungen->anzahl] = loeschen;
+  meldungen->anzahl++;
+}
+
+// Nach prv_unlock(): die gepufferten Meldungen an Pebbles Liste.
+static void prv_meldungen_abgeben(BoulderMeldungen *meldungen) {
+  for (uint8_t i = 0; i < meldungen->anzahl; i++) {
+    if (meldungen->loeschen[i]) {
+      activity_sessions_prv_delete_activity_session(&meldungen->sitzung[i]);
+    } else {
+      activity_sessions_prv_add_activity_session(&meldungen->sitzung[i]);
+    }
+  }
+  meldungen->anzahl = 0;
+}
+
+// Gehfilter (Spezifikation 3.2): Kraepelin meldet Walk/Run schon ab 40 Schritten in
+// einzelnen Minuten; mit ruhigen Minuten dazwischen wird daraus z. B. eine Velofahrt mit
+// Pedal-Schritten. Unterdrueckt wird, was im Mittel unter 40 Schritte/min liegt (b19)
+// oder von einer Velo-/Autokandidatin ueberdeckt ist. Entschieden wird EINMAL, beim
+// ersten Melden (Start der Sitzung); alle spaeteren Meldungen und Loeschungen folgen dem.
+#define BOULDER_GEHFILTER_SCHRITTE_MIN 40
+static bool prv_gehfilter_unterdrueckt(ActivitySessionType typ, time_t start_utc,
+                                       uint32_t len_sec, uint32_t steps) {
+  for (unsigned i = 0; i < ARRAY_LENGTH(s_alg_state->geh_entscheid); i++) {
+    if (s_alg_state->geh_entscheid[i].start_utc == start_utc &&
+        s_alg_state->geh_entscheid[i].typ == typ) {
+      return s_alg_state->geh_entscheid[i].unterdrueckt;
+    }
+  }
+  const uint32_t minuten = len_sec / PBL_SEC_PER_MIN;
+  const bool unterdrueckt = (steps < BOULDER_GEHFILTER_SCHRITTE_MIN * minuten) ||
+                            boulder_dauerteil_fahrt_ueberdeckt(start_utc, len_sec);
+  const unsigned i = s_alg_state->geh_naechster++ % ARRAY_LENGTH(s_alg_state->geh_entscheid);
+  s_alg_state->geh_entscheid[i].start_utc = start_utc;
+  s_alg_state->geh_entscheid[i].typ = typ;
+  s_alg_state->geh_entscheid[i].unterdrueckt = unterdrueckt;
+  if (unterdrueckt) {
+    PBL_LOG_INFO("Boulder: Gehfilter unterdrueckt Typ %d (%" PRIu32 " Schritte in %" PRIu32
+                 " min)",
+                 (int)typ, steps, minuten);
+  }
+  return unterdrueckt;
+}
+/* Boulder: Ende D1 */
 // ----------------------------------------------------------------------------------------------
 // Callback provided to kalg_activities_update to create activity sessions.
 static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_activity,
                                            time_t start_utc, uint32_t len_sec, bool ongoing,
                                            bool delete, uint32_t steps, uint32_t resting_calories,
                                            uint32_t active_calories, uint32_t distance_mm) {
+  /* Boulder: D1 Kraepelins Schlaf verwerfen: den Schlaf fuehrt die Variante (Zyklen, AP3).
+   * Kraepelins innerer Schlafdetektor bleibt und nullt weiter die Schritte im Schlaf. */
+  if ((kalg_activity == KAlgActivityType_Sleep) ||
+      (kalg_activity == KAlgActivityType_RestfulSleep)) {
+    return;
+  }
+  /* Boulder: Ende D1 */
   // Translate to one of the activity.h activity types
   ActivitySessionType activity = ActivitySessionTypeCount;
   switch (kalg_activity) {
@@ -176,11 +299,12 @@ static void prv_create_activity_session_cb(void *context, KAlgActivityType kalg_
       .distance_meters = ROUND(distance_mm, PBL_MM_PER_M),
     },
   };
-  if (delete) {
-    activity_sessions_prv_delete_activity_session(&session);
-  } else {
-    activity_sessions_prv_add_activity_session(&session);
+  /* Boulder: D1 Gehfilter, dann puffern statt unter der Kraepelin-Sperre melden */
+  if (prv_gehfilter_unterdrueckt(activity, start_utc, len_sec, steps)) {
+    return;
   }
+  prv_meldung_puffern((BoulderMeldungen *)context, &session, delete);
+  /* Boulder: Ende D1 */
 }
 
 // ------------------------------------------------------------------------------------------
@@ -496,6 +620,20 @@ static DataLoggingSession *prv_get_dls_minute_session(void) {
   return s_alg_state->dls_session;
 }
 
+/* Boulder: D9 DLS-Sitzung nur im Callback "Anlage" anlegen
+ * dls_create kann bis 4 s warten (dls_main.c:412-415) - nicht im Minutenlauf. Bis die
+ * Sitzung steht, bleiben die Minuten im Puffer. Scheitert das Anlegen (Pool voll), erst
+ * nach 30 min wieder (Spezifikation 7.4), damit nicht jede Minute ein Versuch laeuft. */
+#define BOULDER_ANLAGE_PAUSE_S (30 * PBL_SEC_PER_MIN)
+static time_t s_anlage_frueheste_utc;
+
+static void prv_anlage_anstossen(void) {
+  if (rtc_get_time() < s_anlage_frueheste_utc) {
+    return;
+  }
+  boulder_aufgabe_einreihen(&s_aufgabe_anlage);
+}
+/* Boulder: Ende D9 */
 // -------------------------------------------------------------------------------------
 // We use PBL_NOINLINE to reduce the stack requirements during the minute handler (see PBL-38130)
 static void PBL_NOINLINE prv_set_dls_minute_record_entry(AlgMinuteDLSRecord *dls_record,
@@ -571,6 +709,17 @@ static bool PBL_NOINLINE prv_prepare_minute_data(uint16_t uncertain_m, time_t sl
     bool was_sleeping =
         WITHIN(cbuf_record->utc_sec, sleep_start_utc, sleep_end_utc - PBL_SEC_PER_MIN);
 
+    /* Boulder: D3 Minuten einer bestaetigten Fahrt nullen wie Schlafminuten
+     * Ihre Schritte hat D4 beim "Ja" schon am Zaehler abgezogen; der Schlafpfad darf sie
+     * nicht noch einmal abziehen. */
+    if (boulder_dauerteil_fahrt_minute(cbuf_record->utc_sec)) {
+      cbuf_record->data.base.steps = 0;
+      cbuf_record->data.base.active = false;
+      cbuf_record->data.active_calories = 0;
+      cbuf_record->data.distance_cm = 0;
+      was_sleeping = false;
+    }
+    /* Boulder: Ende D3 */
     // Handle writing the record out to PFS
     if (file_record) {
       prv_set_file_minute_record_entry(file_record, &cbuf_record->data, i, cbuf_record->utc_sec,
@@ -600,11 +749,13 @@ static void prv_send_minute_data(uint16_t uncertain_m, time_t sleep_start_utc, u
   } else {
     dls_record = &s_alg_state->dls_record;
 
-    // Open up the data logging session if we don't already have one
-    dls_session = prv_get_dls_minute_session();
+    /* Boulder: D9 keine Anlage hier: das tut der Callback "Anlage" */
+    dls_session = s_alg_state->dls_session;
     if (!dls_session) {
+      prv_anlage_anstossen();
       return;
     }
+    /* Boulder: Ende D9 */
   }
 
   // While we have whole minute records available for sending, send them.
@@ -629,6 +780,104 @@ static void prv_send_minute_data(uint16_t uncertain_m, time_t sleep_start_utc, u
   }
 }
 
+/* Boulder: D3 Zurueckhalten = MAX(Kraepelin unsicher, Velo/Auto offen)
+ * Wie viele Minuten am Ende des Puffers noch nicht geschrieben werden: Kraepelins
+ * unsichere Schlafminuten wie im Original und, mit `mit_fahrt`, die Minuten einer offenen
+ * Fahrt - sonst schriebe Kraepelin die ersten Fahrtminuten ungenullt. */
+static int16_t prv_zurueckhalten(time_t utc_now, const KAlgOngoingSleepStats *sleep_stats,
+                                 bool mit_fahrt) {
+  int16_t uncertain_m = 0;
+  if (sleep_stats->uncertain_start_utc != 0) {
+    uncertain_m = (utc_now - sleep_stats->uncertain_start_utc) / PBL_SEC_PER_MIN;
+  }
+  if (uncertain_m > KALG_MAX_UNCERTAIN_SLEEP_M) {
+    PBL_LOG_ERR("Unexpectedly large number of uncertain minutes");
+    uncertain_m = KALG_MAX_UNCERTAIN_SLEEP_M;
+  }
+  const time_t offen_seit = mit_fahrt ? boulder_dauerteil_fahrt_offen_seit() : 0;
+  if (offen_seit != 0 && offen_seit < utc_now) {
+    int32_t fahrt_m = (utc_now - offen_seit) / PBL_SEC_PER_MIN;
+    if (fahrt_m > BOULDER_FAHRT_ZURUECK_MAX) {
+      // Der Puffer haelt nicht mehr: die aeltesten Fahrtminuten gehen ungestrichen hinaus.
+      PBL_LOG_WRN("Boulder: Fahrt %" PRIi32 " min offen, halte nur %d zurueck", fahrt_m,
+                  BOULDER_FAHRT_ZURUECK_MAX);
+      fahrt_m = BOULDER_FAHRT_ZURUECK_MAX;
+    }
+    uncertain_m = MAX(uncertain_m, (int16_t)fahrt_m);
+  }
+  return uncertain_m;
+}
+/* Boulder: Ende D3 */
+/* Boulder: D12 Minutendatei und DLS 81 im eigenen Callback schreiben
+ * Das Oeffnen der Minutendatei holt Heap (settings_file.c:54), eine Verdichtung Heap und
+ * bis 60 s Watchdog-Pause (settings_file.c:222-232) - beides gehoert nicht in den
+ * Minutenteil (K7). Der Minutenteil legt nur in den Puffer und stoesst an, wenn eine
+ * Gruppe voll ist; faellt der Callback weg, stoesst die naechste Minute wieder an. */
+static bool prv_gruppe_bereit(struct pbl_shared_cbuf_client *client, int16_t zurueck) {
+  const int16_t sicher =
+      (pbl_shared_cbuf_get_read_space_remaining(&s_alg_state->minute_data_cbuf, client) /
+       sizeof(AlgMinuteRecord)) -
+      zurueck;
+  return sicher >= ALG_MINUTES_PER_FILE_RECORD;
+}
+
+// Unter der Kraepelin-Sperre: alle vollen Gruppen schreiben, erst DLS, dann Datei (wie das
+// Original). Ohne `mit_fahrt` (deinit, D13) gilt eine offene Fahrt als "Nein".
+static void prv_minuten_schreiben(bool mit_fahrt) {
+  KAlgOngoingSleepStats sleep_stats;
+  kalg_get_sleep_stats(s_alg_state->k_state, &sleep_stats);
+  const int16_t zurueck =
+      prv_zurueckhalten(s_alg_state->letzte_minute_utc, &sleep_stats, mit_fahrt);
+  prv_send_minute_data(zurueck, sleep_stats.sleep_start_utc, sleep_stats.sleep_len_m,
+                       false /*to_file*/, false /*force_send*/);
+  prv_send_minute_data(zurueck, sleep_stats.sleep_start_utc, sleep_stats.sleep_len_m,
+                       true /*to_file*/, false /*force_send*/);
+}
+
+// Im Minutenteil: nur pruefen und einreihen, O(1).
+static void prv_schreiben_anstossen(void) {
+  KAlgOngoingSleepStats sleep_stats;
+  kalg_get_sleep_stats(s_alg_state->k_state, &sleep_stats);
+  const int16_t zurueck =
+      prv_zurueckhalten(s_alg_state->letzte_minute_utc, &sleep_stats, true /*mit_fahrt*/);
+  const bool datei = prv_gruppe_bereit(&s_alg_state->file_minute_data_client, zurueck);
+  const bool dls = prv_gruppe_bereit(&s_alg_state->dls_minute_data_client, zurueck);
+  if (datei || (dls && s_alg_state->dls_session)) {
+    boulder_aufgabe_einreihen(&s_aufgabe_minutendatei);
+  } else if (dls) {
+    prv_anlage_anstossen();
+  }
+}
+
+static void prv_minutendatei_cb(void *unused) {
+  boulder_aufgabe_laeuft(&s_aufgabe_minutendatei);
+  // Spezifikation 2.4, Regel 4: ohne Tracking-Teil nichts zu tun - deinit hat geschrieben,
+  // was zu schreiben war (D13), und der Puffer ist frei.
+  if (!s_alg_state) {
+    return;
+  }
+  if (!prv_lock()) {
+    return;
+  }
+  prv_minuten_schreiben(true /*mit_fahrt*/);
+  prv_unlock();
+}
+
+static void prv_anlage_cb(void *unused) {
+  boulder_aufgabe_laeuft(&s_aufgabe_anlage);
+  if (!s_alg_state || s_alg_state->dls_session) {
+    return;
+  }
+  // Ohne Kraepelin-Sperre: dls_create kann warten, und handle_accel/early_deinit sollen
+  // nicht so lange haengen. Die DLS-Sitzung lesen und setzen nur KernelBG-Callbacks
+  // (Minutenlauf, Health-Sync, deinit), also niemand dazwischen.
+  if (!prv_get_dls_minute_session()) {
+    s_anlage_frueheste_utc = rtc_get_time() + BOULDER_ANLAGE_PAUSE_S;
+    return;
+  }
+  boulder_aufgabe_einreihen(&s_aufgabe_minutendatei);
+}
+/* Boulder: Ende D12 */
 // -------------------------------------------------------------------------------------------
 // Handle storage and logging of the minute data
 static void prv_log_minute_data(time_t utc_now, AlgMinuteRecord *minute_rec) {
@@ -647,29 +896,11 @@ static void prv_log_minute_data(time_t utc_now, AlgMinuteRecord *minute_rec) {
   }
   PBL_ASSERTN(success);
 
-  // Find the number of "certain" minutes we have in the buffer. When we are asleep, the
-  // most recent N minutes in the buffer will be uncertain because we don't know that we woke
-  // until we see at least M minutes in a row of activity.
-  KAlgOngoingSleepStats sleep_stats;
-  kalg_get_sleep_stats(s_alg_state->k_state, &sleep_stats);
-
-  // If there are any uncertain minutes, they will always be at the end
-  int16_t uncertain_m = 0;
-  if (sleep_stats.uncertain_start_utc != 0) {
-    uncertain_m = (utc_now - sleep_stats.uncertain_start_utc) / PBL_SEC_PER_MIN;
-  }
-  if (uncertain_m > KALG_MAX_UNCERTAIN_SLEEP_M) {
-    PBL_LOG_ERR("Unexpectedly large number of uncertain minutes");
-    uncertain_m = KALG_MAX_UNCERTAIN_SLEEP_M;
-  }
-
-  // Send whatever complete DLS records we have
-  prv_send_minute_data(uncertain_m, sleep_stats.sleep_start_utc, sleep_stats.sleep_len_m,
-                       false /*to_file*/, false /*force_send*/);
-
-  // Send whatever complete minute file records we have
-  prv_send_minute_data(uncertain_m, sleep_stats.sleep_start_utc, sleep_stats.sleep_len_m,
-                       true /*to_file*/, false /*force_send*/);
+  /* Boulder: D12 nicht hier schreiben: der Callback "Minutendatei" rechnet die unsicheren
+   * Minuten (prv_zurueckhalten) zur Zeit dieses Laufs und schreibt die vollen Gruppen */
+  s_alg_state->letzte_minute_utc = utc_now;
+  prv_schreiben_anstossen();
+  /* Boulder: Ende D12 */
 }
 
 // ------------------------------------------------------------------------------------
@@ -680,7 +911,13 @@ void activity_algorithm_send_minutes(void) {
   KAlgOngoingSleepStats sleep_stats;
   kalg_get_sleep_stats(s_alg_state->k_state, &sleep_stats);
 
-  int16_t uncertain_m = 0;
+  /* Boulder: D3 der Health-Sync haelt eine offene Fahrt ebenso zurueck (Kraepelins
+   * unsichere Minuten sendet er wie im Original mit) - sonst leerte er ihre Minuten
+   * ungenullt (Glue :674-676) */
+  const KAlgOngoingSleepStats ohne_schlaf = {};
+  int16_t uncertain_m =
+      prv_zurueckhalten(s_alg_state->letzte_minute_utc, &ohne_schlaf, true /*mit_fahrt*/);
+  /* Boulder: Ende D3 */
   prv_send_minute_data(uncertain_m, sleep_stats.sleep_start_utc, sleep_stats.sleep_len_m,
                        false /*to_file*/, true /*force_send*/);
   prv_unlock();
@@ -688,12 +925,10 @@ void activity_algorithm_send_minutes(void) {
 
 // ------------------------------------------------------------------------------------
 time_t activity_algorithm_get_last_sleep_utc(void) {
-  if (!prv_lock()) {
-    return 0;
-  }
-  time_t rv = kalg_activity_last_processed_time(s_alg_state->k_state, KAlgActivityType_Sleep);
-  prv_unlock();
-  return rv;
+  /* Boulder: D6 Den Schlaf in Pebbles Liste fuehrt die Variante; ihr Live-Zustand sagt,
+   * bis wohin er verarbeitet ist (Spezifikation 4.5). */
+  return boulder_dauerteil_letzter_schlaf_utc();
+  /* Boulder: Ende D6 */
 }
 
 // ------------------------------------------------------------------------------------
@@ -809,12 +1044,23 @@ bool activity_algorithm_init(AccelSamplingRate *sampling_rate) {
   // Init the algorithm state
   kalg_init(k_state, NULL);
 
+  /* Boulder: D9 ein neuer Start darf sofort eine DLS-Sitzung anlegen */
+  s_anlage_frueheste_utc = 0;
+  /* Boulder: Ende D9 */
+  /* Boulder: D14 Ring nach dem Boot im Durchlauf, den init ohnehin macht
+   * Ein zweites Oeffnen pruefte die ganze Datei noch einmal (settings_file.c:99, :123). */
+  BoulderRing ring = {};
+  s_ring = boulder_dauerteil_ring_fenster(&ring.von_utc, &ring.bis_utc) ? &ring : NULL;
+  /* Boulder: Ende D14 */
   // Count # of records in minute file
   uint32_t num_records;
   uint32_t data_bytes;
   uint32_t minutes;
   activity_algorithm_minute_file_info(false /*compact_first*/, &num_records, &data_bytes, &minutes);
   s_alg_state->num_minute_records = num_records;
+  /* Boulder: D14 */
+  s_ring = NULL;
+  /* Boulder: Ende D14 */
 
   PBL_LOG_DBG("Found %" PRIu16 " records in minute file", s_alg_state->num_minute_records);
 
@@ -826,29 +1072,56 @@ bool activity_algorithm_init(AccelSamplingRate *sampling_rate) {
   return true;
 }
 
+/* Boulder: D2 Vorab-Werte und Meldungspuffer (D1) als Parameter */
 static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_out,
-                                       bool shutting_down);
+                                       bool shutting_down, bool hrm_offwrist,
+                                       BoulderMeldungen *meldungen);
+
+// Was die Activity-Sperre nimmt, VOR der Kraepelin-Sperre (Spezifikation 2.4, Regel 3):
+// die SpO2-Probe dieser Minute (wird dabei verbraucht) und "nicht am Arm". Beides laeuft
+// wie der HR-Rueckruf auf KernelBG, dazwischen kommt also kein neuer Wert.
+static bool prv_vor_der_sperre(time_t utc_sec, AlgMinuteRecord *record_out) {
+  activity_metrics_prv_get_spo2_sample(&record_out->data.spo2_percent,
+                                       &record_out->data.spo2_quality);
+  return activity_metrics_prv_is_hrm_offwrist(utc_sec - (utc_sec % PBL_SEC_PER_MIN));
+}
+/* Boulder: Ende D2 */
 
 // ------------------------------------------------------------------------------------
 // This is called when the activity services is doing down. This tells all of our state machines
 // that are are going to be shut down, and to save off any unsaved data/sleep/step sessions.
 void activity_algorithm_early_deinit(void) {
-  if (!prv_lock()) {
-    return;
-  }
-
+  /* Boulder: D2 Werte unter der Activity-Sperre vor der Kraepelin-Sperre holen, danach
+   * zuruecksetzen; die Sitzungsmeldungen (D1) erst nach dem Entsperren */
   time_t utc_sec = rtc_get_time();
   // AlgMinuteRecord data storage needed for underlying function
   AlgMinuteRecord record_out = {};
-  prv_activity_update_states(utc_sec, &record_out, true /* shutting_down */);
-
+  const bool hrm_offwrist = s_alg_state ? prv_vor_der_sperre(utc_sec, &record_out) : false;
+  if (!prv_lock()) {
+    return;
+  }
+  prv_activity_update_states(utc_sec, &record_out, true /* shutting_down */, hrm_offwrist,
+                             &s_meldungen_ende);
   prv_unlock();
+  activity_metrics_prv_reset_hr_stats();
+  prv_meldungen_abgeben(&s_meldungen_ende);
+  /* Boulder: Ende D2 */
 }
 
 // ------------------------------------------------------------------------------------
 bool activity_algorithm_deinit(void) {
   PBL_ASSERTN(s_alg_state);
   PBL_ASSERTN(s_alg_state->k_state);
+  /* Boulder: D13 vor dem Freigeben die Gruppen schreiben, die nur wegen einer offenen
+   * Fahrt (oder eines noch nicht gelaufenen Callbacks) im Puffer liegen. Kraepelins
+   * unsichere Minuten nicht, wie im Original; ein offener Entscheid gilt als "Nein".
+   * Sonst kostet Einstecken nach einer Fahrt bis 60 Minuten Minutendaten. */
+  if (prv_lock()) {
+    prv_minuten_schreiben(false /*mit_fahrt*/);
+    prv_unlock();
+  }
+  boulder_dauerteil_tracking_aus();
+  /* Boulder: Ende D13 */
 
   pbl_mutex_deinit(&s_alg_state->mutex);
   kalg_deinit(s_alg_state->k_state);
@@ -874,6 +1147,14 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
   uint32_t consumed_samples;
   uint16_t new_steps =
       kalg_analyze_samples(s_alg_state->k_state, data, num_samples, &consumed_samples);
+  /* Boulder: D5 waehrend einer bestaetigten Fahrt zaehlen Schritte nicht
+   * Sie gehen an Summe und Minute vorbei, die Rate ist 0 - ohne Rate bucht activity.c
+   * weder Strecke noch kcal (activity.c:1131-1141). */
+  if (boulder_dauerteil_fahrt_laeuft()) {
+    s_alg_state->gestrichen += new_steps;
+    new_steps = 0;
+  }
+  /* Boulder: Ende D5 */
   s_alg_state->steps += new_steps;
   s_alg_state->minute_steps += new_steps;
 
@@ -885,6 +1166,67 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
   }
   prv_unlock();
 }
+/* Boulder: D4 bei "Ja" die Fahrtschritte am Kraepelin-Zaehler abziehen
+ * Wie der Schlafpfad (prv_set_dls_minute_record_entry), aber sofort und ohne DLS-Sitzung:
+ * keine Pebble-Metrik-Funktion (activity_metrics_set_metric_exact ist fuer Tests und wirkt
+ * bei Tracking aus nicht), activity.c uebernimmt den Zaehler (activity.c:1124). Gezaehlt
+ * wird jede Minute einmal: die des Lesers mit dem meisten Ungeschriebenen, dazu die
+ * laufende Minute. Nur Minuten von heute - gestern ist in der Tagessumme schon zu (V7). */
+void boulder_kraepelin_fahrt_streichen(time_t von_utc, time_t bis_utc) {
+  if (!s_alg_state) {
+    // Ohne Tracking-Teil liegt nichts im Puffer; deinit hat geschrieben (D13).
+    return;
+  }
+  if (!prv_lock()) {
+    return;
+  }
+  const time_t jetzt = rtc_get_time();
+  von_utc = MAX(von_utc, time_util_get_midnight_of(jetzt));
+
+  struct pbl_shared_cbuf_client *datei = &s_alg_state->file_minute_data_client;
+  struct pbl_shared_cbuf_client *dls = &s_alg_state->dls_minute_data_client;
+  const uint16_t ungelesen_datei =
+      pbl_shared_cbuf_get_read_space_remaining(&s_alg_state->minute_data_cbuf, datei);
+  const uint16_t ungelesen_dls =
+      pbl_shared_cbuf_get_read_space_remaining(&s_alg_state->minute_data_cbuf, dls);
+  struct pbl_shared_cbuf_client *leser = (ungelesen_dls > ungelesen_datei) ? dls : datei;
+  // Lesen ohne zu verbrauchen: den Leser sichern und danach zuruecklegen.
+  const struct pbl_shared_cbuf_client gesichert = *leser;
+  int16_t minuten = MAX(ungelesen_datei, ungelesen_dls) / sizeof(AlgMinuteRecord);
+  uint32_t abzug = 0;
+  AlgMinuteRecord *satz = &s_alg_state->cbuf_record;
+  while (minuten--) {
+    uint16_t gelesen;
+    const bool ok = pbl_shared_cbuf_read_consume(&s_alg_state->minute_data_cbuf, leser,
+                                                 sizeof(*satz), (uint8_t *)satz, &gelesen);
+    PBL_ASSERTN(ok);
+    if (satz->utc_sec >= von_utc && satz->utc_sec < bis_utc) {
+      abzug += satz->data.base.steps;
+    }
+  }
+  *leser = gesichert;
+
+  const time_t laufende_minute = jetzt - (jetzt % PBL_SEC_PER_MIN);
+  if (laufende_minute >= von_utc && laufende_minute < bis_utc) {
+    abzug += s_alg_state->minute_steps;
+    s_alg_state->minute_steps = 0;
+  }
+  s_alg_state->steps = MAX(0, s_alg_state->steps - (int32_t)abzug);
+  s_alg_state->gestrichen += abzug;
+  PBL_LOG_INFO("Boulder: %" PRIu32 " Fahrtschritte gestrichen", abzug);
+  prv_unlock();
+}
+/* Boulder: Ende D4 */
+/* Boulder: D5 */
+uint32_t boulder_kraepelin_gestrichen(void) {
+  if (!prv_lock()) {
+    return 0;
+  }
+  const uint32_t rv = s_alg_state->gestrichen;
+  prv_unlock();
+  return rv;
+}
+/* Boulder: Ende D5 */
 
 // ------------------------------------------------------------------------------------
 // We use PBL_NOINLINE to reduce the stack requirements during the minute handler (see PBL-38130)
@@ -928,8 +1270,9 @@ static uint32_t PBL_NOINLINE prv_fill_minute_record(time_t utc_sec, AlgMinuteDLS
   m_rec->heart_rate_total_weight_x100 = (uint16_t)heart_rate_total_weight_x100;
   m_rec->heart_rate_zone = activity_metrics_prv_get_hr_zone();
 
-  // Fill in any SpO2 reading taken this minute (0 = none)
-  activity_metrics_prv_get_spo2_sample(&m_rec->spo2_percent, &m_rec->spo2_quality);
+  /* Boulder: D2 die SpO2-Probe nimmt die Activity-Sperre: der Aufrufer holt sie vor der
+   * Kraepelin-Sperre (prv_vor_der_sperre) */
+  /* Boulder: Ende D2 */
 
   return minute_distance_mm;
 }
@@ -938,11 +1281,15 @@ static void PBL_NOINLINE prv_reset_state_minute_handler(const AlgMinuteDLSSample
   s_alg_state->prev_resting_calories = activity_metrics_prv_get_resting_calories();
   s_alg_state->prev_active_calories = activity_metrics_prv_get_active_calories();
   s_alg_state->prev_distance_mm = activity_metrics_prv_get_distance_mm();
-  activity_metrics_prv_reset_hr_stats();
+  /* Boulder: D2 reset_hr_stats nimmt die Activity-Sperre: erst nach prv_unlock() */
+  /* Boulder: Ende D2 */
 }
 
+/* Boulder: D2 Vorab-Werte und Meldungspuffer (D1) als Parameter */
 static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_out,
-                                       bool shutting_down) {
+                                       bool shutting_down, bool hrm_offwrist,
+                                       BoulderMeldungen *meldungen) {
+  /* Boulder: Ende D2 */
   // Make sure each record gets time stamped exactly on a minute boundary.
   utc_sec -= (utc_sec % PBL_SEC_PER_MIN);
 
@@ -958,7 +1305,8 @@ static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_o
   // kraepelin, which can take 30+ minutes to fire and is easily defeated by ambient vibration
   // (see FIRM-1901, FIRM-1804, FIRM-1533). plugged_in keeps its original "charging" meaning
   // in the logged record.
-  const bool hrm_offwrist = activity_metrics_prv_is_hrm_offwrist(utc_sec);
+  /* Boulder: D2 hrm_offwrist kommt von vor der Sperre */
+  /* Boulder: Ende D2 */
   const bool not_worn = m_rec->base.plugged_in || hrm_offwrist;
 
   PBL_LOG_DBG("minute handler: steps: %" PRIu8 ", orientation: 0x%" PRIx8 ", vmc: %" PRIu16
@@ -971,16 +1319,22 @@ static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_o
   kalg_activities_update(s_alg_state->k_state, utc_sec, m_rec->base.steps, m_rec->base.vmc,
                          m_rec->base.orientation, not_worn, m_rec->resting_calories,
                          m_rec->active_calories, minute_distance_mm, shutting_down,
-                         prv_create_activity_session_cb, NULL);
+                         /* Boulder: D1 Meldungen in den Puffer des Aufrufers */
+                         prv_create_activity_session_cb, meldungen);
+                         /* Boulder: Ende D1 */
 }
 
 // ------------------------------------------------------------------------------------
 void activity_algorithm_minute_handler(time_t utc_sec, AlgMinuteRecord *record_out) {
+  /* Boulder: D2 Activity-Sperre nur vor und nach der Kraepelin-Sperre */
+  const bool hrm_offwrist = s_alg_state ? prv_vor_der_sperre(utc_sec, record_out) : false;
   if (!prv_lock()) {
     return;
   }
 
-  prv_activity_update_states(utc_sec, record_out, false /* shutting_down */);
+  prv_activity_update_states(utc_sec, record_out, false /* shutting_down */, hrm_offwrist,
+                             &s_meldungen_minute);
+  /* Boulder: Ende D2 */
 
   // Handle storage and logging of the minute data
   prv_log_minute_data(utc_sec, record_out);
@@ -988,6 +1342,23 @@ void activity_algorithm_minute_handler(time_t utc_sec, AlgMinuteRecord *record_o
   // Reset the minute stats
   s_alg_state->minute_steps = 0;
   prv_unlock();
+  /* Boulder: D2 nach dem Entsperren: Puls zuruecksetzen, Sitzungen melden (D1), den
+   * fertigen Satz an den Dauerteil (O(1), ohne Datei) */
+  activity_metrics_prv_reset_hr_stats();
+  prv_meldungen_abgeben(&s_meldungen_minute);
+  const AlgMinuteDLSSample *m = &record_out->data;
+  const BoulderMinute minute = {
+    .utc = record_out->utc_sec,
+    .vmc = m->base.vmc,
+    .lage = m->base.orientation,
+    .schritte = m->base.steps,
+    .puls = m->heart_rate_bpm,
+    .spo2 = m->spo2_percent,
+    .geladen = m->base.plugged_in,
+    .nicht_getragen = m->base.plugged_in || hrm_offwrist,
+  };
+  boulder_dauerteil_minute(&minute);
+  /* Boulder: Ende D2 */
 }
 
 // ------------------------------------------------------------------------------------
@@ -1041,18 +1412,25 @@ void activity_algorithm_enable_activity_tracking(bool enable) {
 }
 
 bool activity_algorithm_activity_hrm_is_active(void) {
+  /* Boulder: D10 das Abo "Aktiv" der Variante zaehlt mit: SpO2 bei Aktivitaet pausiert es
+   * wie Kraepelins Walk/Run-Abo (activity.c:466-609) */
+  const bool aktiv = boulder_dauerteil_aktiv_abo_laeuft();
   if (!s_alg_state || !s_alg_state->k_state) {
-    return false;
+    return aktiv;
   }
   if (!prv_lock()) {
-    return false;
+    return aktiv;
   }
-  const bool rv = kalg_activity_hrm_is_active(s_alg_state->k_state);
+  const bool rv = kalg_activity_hrm_is_active(s_alg_state->k_state) || aktiv;
+  /* Boulder: Ende D10 */
   prv_unlock();
   return rv;
 }
 
 void activity_algorithm_activity_hrm_set_paused(bool paused) {
+  /* Boulder: D10 */
+  boulder_dauerteil_aktiv_abo_pausieren(paused);
+  /* Boulder: Ende D10 */
   if (!s_alg_state || !s_alg_state->k_state) {
     return;
   }
@@ -1205,8 +1583,23 @@ static void prv_read_minute_history_buffer(AlgReadMinutesContext *context) {
   uint32_t seconds_into_minute = minute_utc % PBL_SEC_PER_MIN;
   if (seconds_into_minute > 0) {
     minute_utc -= seconds_into_minute;
-    AlgMinuteDLSSample current_minute;
-    prv_fill_minute_record(minute_utc, &current_minute);
+    /* Boulder: D7 die Teilminute nur lesen
+     * prv_fill_minute_record setzte die Minuten-VMC zurueck (kalg_minute_stats) und
+     * verbrauchte die SpO2-Probe der Minute; beides fehlte dann im Minutensatz. Hier ohne
+     * Zuruecksetzen und ohne Activity-Sperre (der Median nimmt keine). */
+    AlgMinuteDLSSample current_minute = {};
+    uint16_t vmc;
+    uint8_t lage;
+    kalg_minute_stats_peek(s_alg_state->k_state, &vmc, &lage);
+    current_minute.base.vmc = vmc;
+    current_minute.base.orientation = lage;
+    current_minute.base.steps = MIN(s_alg_state->minute_steps, UINT8_MAX);
+    current_minute.base.light =
+        MIN(ROUND(light_get_ambient_lux(), ALG_RAW_LIGHT_SENSOR_DIVIDE_BY), UINT8_MAX);
+    int32_t median;
+    activity_metrics_prv_get_median_hr_bpm(&median, NULL);
+    current_minute.heart_rate_bpm = (uint8_t)median;
+    /* Boulder: Ende D7 */
     prv_insert_health_minute_record(context, minute_utc, &current_minute.base,
                                     current_minute.heart_rate_bpm);
   }
@@ -1288,10 +1681,45 @@ typedef struct {
   uint32_t num_records;
 } AlgMinuteFileInfoContext;
 
+/* Boulder: D14 die Saetze des Nacht- und Tagfensters an den Dauerteil
+ * Nur waehrend init (s_ring gesetzt), im Durchlauf, der die Datei ohnehin zaehlt. */
+static void prv_ring_saetze(SettingsFile *file, SettingsRecordInfo *info) {
+  // Statisch statt auf dem Stapel: init laeuft auf KernelBG, ggf. unter der Activity-Sperre.
+  static AlgMinuteFileRecord s_gruppe;
+  const uint32_t erster = prv_minute_file_get_settings_key(s_ring->von_utc);
+  const uint32_t letzter = prv_minute_file_get_settings_key(s_ring->bis_utc);
+  if (!prv_read_minute_file_record(file, info, erster, letzter, &s_gruppe)) {
+    return;
+  }
+  const unsigned anzahl = MIN(s_gruppe.hdr.num_samples, ALG_MINUTES_PER_FILE_RECORD);
+  for (unsigned i = 0; i < anzahl; i++) {
+    const time_t utc = s_gruppe.hdr.time_utc + i * PBL_SEC_PER_MIN;
+    if (utc < s_ring->von_utc || utc >= s_ring->bis_utc) {
+      continue;
+    }
+    const AlgMinuteFileSample *probe = &s_gruppe.samples[i];
+    const BoulderMinute minute = {
+      .utc = utc,
+      .vmc = probe->v5_fields.vmc,
+      .lage = probe->v5_fields.orientation,
+      .schritte = probe->v5_fields.steps,
+      .puls = probe->heart_rate_bpm,
+      .geladen = probe->v5_fields.plugged_in,
+      .nicht_getragen = probe->v5_fields.plugged_in,
+    };
+    boulder_dauerteil_ring_minute(&minute);
+  }
+}
+/* Boulder: Ende D14 */
 static bool prv_read_minute_file_info_cb(SettingsFile *file, SettingsRecordInfo *info,
                                          void *context_arg) {
   AlgMinuteFileInfoContext *context = (AlgMinuteFileInfoContext *)context_arg;
   context->num_records++;
+  /* Boulder: D14 */
+  if (s_ring) {
+    prv_ring_saetze(file, info);
+  }
+  /* Boulder: Ende D14 */
   return true;
 }
 

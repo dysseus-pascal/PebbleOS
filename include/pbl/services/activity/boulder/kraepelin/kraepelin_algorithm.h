@@ -193,6 +193,11 @@ uint32_t kalg_analyze_samples(KAlgState *state, AccelRawData *samples, uint32_t 
  * always false).
  */
 void kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *orientation, bool *still);
+/* Boulder: D7 Minutenwerte lesen, ohne die Minute zurueckzusetzen
+ * Wie kalg_minute_stats(), aber die Summen der laufenden Minute bleiben stehen: Wer
+ * mitten in der Minute die Historie liest, soll den Minutensatz nicht verfaelschen. */
+void kalg_minute_stats_peek(KAlgState *state, uint16_t *vmc, uint8_t *orientation);
+/* Boulder: Ende D7 */
 
 /**
  * @brief Process the partial epoch not yet processed by kalg_analyze_samples() (unit tests).
