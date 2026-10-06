@@ -1106,6 +1106,10 @@ void activity_algorithm_early_deinit(void) {
   activity_metrics_prv_reset_hr_stats();
   prv_meldungen_abgeben(&s_meldungen_ende);
   /* Boulder: Ende D2 */
+  /* Boulder: D15 eine laufende Velo-Sitzung schliessen, wie Kraepelin seine mit
+   * shutting_down - activity.c speichert die Liste gleich danach (activity.c:1192) */
+  boulder_dauerteil_sitzungen_beenden();
+  /* Boulder: Ende D15 */
 }
 
 // ------------------------------------------------------------------------------------
@@ -1148,10 +1152,13 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
   uint16_t new_steps =
       kalg_analyze_samples(s_alg_state->k_state, data, num_samples, &consumed_samples);
   /* Boulder: D5 waehrend einer bestaetigten Fahrt zaehlen Schritte nicht
-   * Sie gehen an Summe und Minute vorbei, die Rate ist 0 - ohne Rate bucht activity.c
-   * weder Strecke noch kcal (activity.c:1131-1141). */
+   * Sie gehen an der Tagessumme vorbei, die Rate ist 0 - ohne Rate bucht activity.c weder
+   * Strecke noch kcal (activity.c:1131-1141). In der Minute bleiben sie: der Dauerteil
+   * erkennt an ihnen das Absteigen, und ein Satz der Fahrt wird ohnehin genullt (D3). Endet
+   * die Fahrt, gibt er die Schritte der Minuten danach zurueck (kontext.h). */
   if (boulder_dauerteil_fahrt_laeuft()) {
     s_alg_state->gestrichen += new_steps;
+    s_alg_state->minute_steps += new_steps;
     new_steps = 0;
   }
   /* Boulder: Ende D5 */
@@ -1171,7 +1178,8 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
  * keine Pebble-Metrik-Funktion (activity_metrics_set_metric_exact ist fuer Tests und wirkt
  * bei Tracking aus nicht), activity.c uebernimmt den Zaehler (activity.c:1124). Gezaehlt
  * wird jede Minute einmal: die des Lesers mit dem meisten Ungeschriebenen, dazu die
- * laufende Minute. Nur Minuten von heute - gestern ist in der Tagessumme schon zu (V7). */
+ * laufende Minute. Nur Minuten von heute - gestern ist in der Tagessumme schon zu (V7).
+ * Die Minute behaelt ihre Schritte (D5): genullt wird ihr Satz beim Schreiben (D3). */
 void boulder_kraepelin_fahrt_streichen(time_t von_utc, time_t bis_utc) {
   if (!s_alg_state) {
     // Ohne Tracking-Teil liegt nichts im Puffer; deinit hat geschrieben (D13).
@@ -1209,11 +1217,25 @@ void boulder_kraepelin_fahrt_streichen(time_t von_utc, time_t bis_utc) {
   const time_t laufende_minute = jetzt - (jetzt % PBL_SEC_PER_MIN);
   if (laufende_minute >= von_utc && laufende_minute < bis_utc) {
     abzug += s_alg_state->minute_steps;
-    s_alg_state->minute_steps = 0;
   }
   s_alg_state->steps = MAX(0, s_alg_state->steps - (int32_t)abzug);
   s_alg_state->gestrichen += abzug;
   PBL_LOG_INFO("Boulder: %" PRIu32 " Fahrtschritte gestrichen", abzug);
+  prv_unlock();
+}
+
+// Fahrtende: die Schritte der Minuten nach der letzten fahrtartigen gingen waehrend der Fahrt
+// an der Summe vorbei (D5); sie gehoeren nicht zur Fahrt und kommen zurueck.
+void boulder_kraepelin_fahrt_zurueckgeben(uint32_t schritte) {
+  if (!s_alg_state || !schritte) {
+    return;
+  }
+  if (!prv_lock()) {
+    return;
+  }
+  s_alg_state->steps += schritte;
+  s_alg_state->gestrichen -= MIN(s_alg_state->gestrichen, schritte);
+  PBL_LOG_INFO("Boulder: %" PRIu32 " Schritte nach dem Fahrtende zurueck", schritte);
   prv_unlock();
 }
 /* Boulder: Ende D4 */
@@ -1398,6 +1420,11 @@ bool activity_algorithm_metrics_changed_notification(void) {
 
 // ------------------------------------------------------------------------------------
 void activity_algorithm_enable_activity_tracking(bool enable) {
+  /* Boulder: D15 ein Training (workout_service.c:485, :584) beendet Kandidatin und
+   * Velo-Sitzung, seine Minuten zaehlen nicht fuer die Nacht; nur ein Merker, O(1) - der
+   * Aufruf kommt von der App-Task */
+  boulder_dauerteil_training(!enable);
+  /* Boulder: Ende D15 */
   if (!activity_tracking_on()) {
     return;
   }

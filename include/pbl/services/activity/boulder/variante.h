@@ -73,6 +73,11 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert);
 // deinit: Der Tracking-Teil geht; ein offener Fahrt-Entscheid gilt als "Nein" (D13).
 void boulder_dauerteil_tracking_aus(void);
 
+// D15: Ein Training laeuft (enable_activity_tracking(false), App-Task): nur ein Merker.
+void boulder_dauerteil_training(bool laeuft);
+// D15: early_deinit (unter der Activity-Sperre): eine laufende Velo-Sitzung schliessen.
+void boulder_dauerteil_sitzungen_beenden(void);
+
 // Tests: der Dauerteil wie nach einem Boot (alles Statische auf null; Dateien bleiben). Der
 // naechste init fuellt den Ring und reiht "Laden" ein (AP4).
 void boulder_dauerteil_test_neustart(void);
@@ -88,6 +93,10 @@ void boulder_dauerteil_test_ohne_cron(bool ohne);
 // gehoeren. activity.c uebernimmt den Zaehler beim naechsten Beschleunigungsblock.
 void boulder_kraepelin_fahrt_streichen(time_t von_utc, time_t bis_utc);
 
+// D5: Fahrtende - die Schritte der Minuten nach der letzten fahrtartigen gingen an der
+// Summe vorbei; sie kommen zurueck (nur Minuten von heute).
+void boulder_kraepelin_fahrt_zurueckgeben(uint32_t schritte);
+
 // D5: Schritte, die seit init an der Summe vorbeigingen (Diagnose, Tests).
 uint32_t boulder_kraepelin_gestrichen(void);
 
@@ -97,3 +106,5 @@ uint32_t boulder_kraepelin_gestrichen(void);
 void boulder_szene_kraepelin(HRMActivityScene szene);
 // Nur ohne Training aufrufen (das Training setzt seine eigene Szene).
 void boulder_szene_aktiv(bool an);
+// Ein Training hat seine Szene gesetzt: die eigene vergessen, ohne etwas zu setzen.
+void boulder_szene_vergessen(void);

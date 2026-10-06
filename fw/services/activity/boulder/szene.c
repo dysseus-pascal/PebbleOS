@@ -40,3 +40,8 @@ void boulder_szene_aktiv(bool an) {
   s_aktiv = an;
   prv_anwenden();
 }
+
+void boulder_szene_vergessen(void) {
+  s_aktiv = false;
+  s_eigene_gesetzt = false;
+}

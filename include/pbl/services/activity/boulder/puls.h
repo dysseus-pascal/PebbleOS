@@ -49,6 +49,13 @@ void boulder_puls_stufe_neu(void);
 // deinit: Das Tracking endet. Ein laufendes Fenster zaehlt nicht, das Abo ruht.
 void boulder_puls_tracking_aus(void);
 
+// Velo (Spezifikation 3.7, kontext.c): "Aktiv" = BPM jede Sekunde, unabhaengig von der
+// Messstufe, nur bei Pebbles Pref "Puls bei Aktivitaet" (wie Kraepelins Walk/Run-Abo).
+// Dasselbe eine Abo; der Minutenteil setzt nur den Wunsch, der Callback die Setter.
+void boulder_puls_aktiv(bool an);
+// activity.c pausiert es fuer eine SpO2-Messung bei Aktivitaet (D10).
+void boulder_puls_aktiv_pausieren(bool pausiert);
+
 // An den Dauerteil: ein fertiges HRV-Fenster ab `beginn_utc` (KernelBG, Callback).
 void boulder_dauerteil_hrv_fenster(time_t beginn_utc, uint16_t rmssd, uint8_t puls);
 

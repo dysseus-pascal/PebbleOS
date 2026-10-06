@@ -7,6 +7,7 @@
 
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/eingang.h"
+#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/nacht.h"
@@ -56,6 +57,8 @@ typedef struct PBL_PACKED {
 
 // Was in der Datei steht (fuer "nur bei Aenderung"); gilt fuer s_fenster.
 static time_t s_fenster;
+// AP6: eine bestaetigte, laufende Fahrt (7.3, 7.4), unabhaengig vom Nachtfenster.
+static BoulderFahrtAblage s_fahrt_datei;
 static BoulderKopf s_kopf_datei;
 static uint16_t s_buch_summe[BUCH_BLOECKE];
 static uint16_t s_buch_bis[BUCH_BLOECKE];
@@ -249,6 +252,12 @@ static void prv_ablage_cb(void *data) {
   prv_hrv_ablegen(&datei);
   prv_protokoll_ablegen(&datei);
   prv_rest_ablegen(&datei);
+  BoulderFahrtAblage f;
+  boulder_kontext_ablage(&f);
+  if (memcmp(&f, &s_fahrt_datei, sizeof(f)) != 0 &&
+      settings_file_set(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {
+    s_fahrt_datei = f;
+  }
   BoulderKopf k;
   prv_kopf(&k);
   if (memcmp(&k, &s_kopf_datei, sizeof(k)) != 0 &&
@@ -361,6 +370,12 @@ void boulder_speicher_laden(void) {
     boulder_nacht_laden(NULL, 0);
     return;
   }
+  BoulderFahrtAblage f;
+  if (settings_file_get_len(&datei, "fahrt", 5) == (int)sizeof(f) &&
+      settings_file_get(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {
+    s_fahrt_datei = f;
+    boulder_kontext_laden(&f);
+  }
   BoulderKopf k;
   bool kopf = settings_file_get_len(&datei, "kopf", 4) == (int)sizeof(k) &&
               settings_file_get(&datei, "kopf", 4, &k, sizeof(k)) == S_SUCCESS &&
@@ -400,6 +415,7 @@ void boulder_speicher_laden(void) {
 void boulder_speicher_test_neustart(void) {
   prv_neues_fenster(0);
   memset(&s_kopf_datei, 0, sizeof(s_kopf_datei));
+  memset(&s_fahrt_datei, 0, sizeof(s_fahrt_datei));
   s_alles = false;
   s_aufgabe_ablage.steht_an = false;
 }

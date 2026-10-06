@@ -27,3 +27,16 @@ void boulder_puls_minute(time_t jetzt_utc, bool nachtruhe) {
 
 void boulder_puls_tracking_aus(void) {
 }
+
+// Velo (kontext.c): der Wunsch "Aktiv" und die Pause; test_boulder_fahrt liest sie.
+bool g_fake_puls_aktiv;
+int g_fake_puls_aktiv_wechsel;
+bool g_fake_puls_aktiv_pausiert;
+void boulder_puls_aktiv(bool an) {
+  g_fake_puls_aktiv_wechsel += (an != g_fake_puls_aktiv);
+  g_fake_puls_aktiv = an;
+}
+
+void boulder_puls_aktiv_pausieren(bool pausiert) {
+  g_fake_puls_aktiv_pausiert = pausiert;
+}

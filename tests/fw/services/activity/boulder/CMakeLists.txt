@@ -170,8 +170,10 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
     fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/kontext.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
+    tests/fw/services/activity/boulder/fake_nachfrage.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
 )
@@ -251,7 +253,9 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
     fw/services/activity/boulder/umzug.c
-    tests/fw/services/activity/boulder/fake_messung.c)
+    fw/services/activity/boulder/kontext.c
+    tests/fw/services/activity/boulder/fake_messung.c
+    tests/fw/services/activity/boulder/fake_nachfrage.c)
 pbl_clar_test(test_boulder_wecker
   SOURCES ${boulder_wecker_quellen}
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
@@ -298,3 +302,38 @@ add_test(NAME test_boulder_umzug_aufbau
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE})
 add_test(NAME test_boulder_umzug_aufbau_gegenprobe
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE} --gegenprobe)
+
+# AP6: Velo und Auto (T5.1-T5.3, T2.3, V5-V8) mit der echten Glue-Kopie, dem echten
+# Dauerteil, der echten Nachfrage (nur Pebbles Dialog-Bibliothek als Attrappe im Test) und
+# der echten activity_sessions.c.
+pbl_clar_test(test_boulder_fahrt
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/szene.c
+    fw/services/activity/boulder/takt.c
+    fw/services/activity/boulder/dauerteil.c
+    fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/live.c
+    fw/services/activity/boulder/zyklen.c
+    fw/services/activity/boulder/eingang.c
+    fw/services/activity/boulder/nachlauf.c
+    fw/services/activity/boulder/schlafanalyse.c
+    fw/services/activity/boulder/spo2.c
+    fw/services/activity/boulder/wecker.c
+    fw/services/activity/boulder/ausgabe.c
+    fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/kontext.c
+    fw/services/activity/boulder/nachfrage.c
+    subsys/cron/cron.c
+    tests/fw/services/activity/boulder/fake_messung.c
+  DEFINES DUMA_DISABLED CONFIG_HRM
+  OVERRIDES dummy_board
+  LIBS
+    -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
+    -Wl,--wrap=kernel_zalloc_check
+    -Wl,--wrap=boulder_kalg_analyze_samples,--wrap=boulder_kalg_minute_stats
+)

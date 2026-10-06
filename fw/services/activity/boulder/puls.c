@@ -37,6 +37,10 @@ static uint32_t s_ist_takt_s;
 static time_t s_jetzt;
 static bool s_nachtruhe;
 static bool s_tracking;
+// Velo (3.7): ab der Vorstufe dicht, bis Fahrtende oder "Nein"; SpO2 bei Aktivitaet pausiert
+// es wie Kraepelins Walk/Run-Abo (activity.c:471, :630).
+static bool s_aktiv;
+static bool s_aktiv_pausiert;
 
 static struct {
   bool laeuft;
@@ -55,13 +59,23 @@ static bool prv_platz(void) {
 static void prv_soll(HRMFeature *merkmale, uint32_t *takt_s) {
   *merkmale = 0;
   *takt_s = s_ist_takt_s;
-  const uint8_t stufe = boulder_messstufe_geladen();
-  if (!stufe || !s_tracking) {
+  if (!s_tracking) {
     return;
   }
   if (s_hrv.laeuft) {
     *merkmale = HRMFeature_BPM | HRMFeature_HRV;
     *takt_s = 1;
+    return;
+  }
+  // Velo unabhaengig von der Messstufe, wie Kraepelins Walk/Run-Abo: gleiche Bedingung
+  // (kraepelin_algorithm.c:2037-2056), auch auf Stufe 1.
+  if (s_aktiv && !s_aktiv_pausiert && activity_prefs_hrm_activity_tracking_is_enabled()) {
+    *merkmale = HRMFeature_BPM;
+    *takt_s = 1;
+    return;
+  }
+  const uint8_t stufe = boulder_messstufe_geladen();
+  if (!stufe) {
     return;
   }
   // Nur dichter als Pebbles eigener Takt: seltener machen kann die Variante Pebbles
@@ -223,6 +237,21 @@ void boulder_puls_tracking_aus(void) {
   }
 }
 
+void boulder_puls_aktiv(bool an) {
+  s_aktiv = an;
+  boulder_aufgabe_einreihen(&s_aufgabe);
+}
+
+void boulder_puls_aktiv_pausieren(bool pausiert) {
+  if (s_aktiv_pausiert == pausiert) {
+    return;
+  }
+  s_aktiv_pausiert = pausiert;
+  if (s_aktiv) {
+    boulder_aufgabe_einreihen(&s_aufgabe);
+  }
+}
+
 bool boulder_puls_hrv_laeuft(void) {
   return s_hrv.laeuft;
 }
@@ -239,6 +268,8 @@ void boulder_puls_test_zuruecksetzen(void) {
   s_jetzt = 0;
   s_nachtruhe = false;
   s_tracking = false;
+  s_aktiv = false;
+  s_aktiv_pausiert = false;
   memset(&s_hrv, 0, sizeof(s_hrv));
   s_aufgabe.steht_an = false;
 }
@@ -255,6 +286,14 @@ void boulder_puls_stufe_neu(void) {
 }
 
 void boulder_puls_tracking_aus(void) {
+}
+
+void boulder_puls_aktiv(bool an) {
+  (void)an;
+}
+
+void boulder_puls_aktiv_pausieren(bool pausiert) {
+  (void)pausiert;
 }
 
 bool boulder_puls_hrv_laeuft(void) {

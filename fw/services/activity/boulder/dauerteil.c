@@ -21,6 +21,11 @@
 // den Eingang. Der eigene Takt (Cron, Sekunde 10) traegt fehlende Minuten als ungueltig ein -
 // auch am Kabel, wenn kein Minutenteil laeuft, wird die Nacht so fertig -, fuehrt das
 // Protokoll, stoesst die Ablage an und gibt den Schub ans Telefon.
+//
+// STAND AP6: Velo und Auto (kontext.c) - jede Minute geht an die Kandidatin, die Nachfrage
+// laeuft auf KernelMain (nachfrage.c), ihre Antwort holt der Takt ab, falls ihr Callback
+// wegfiel. Die Naht D3-D5, D10 und D15 fragt kontext.c. Waehrend eines Trainings sind die
+// Minuten fuer die Nacht ungueltig (2.6).
 
 #include "pbl/services/activity/boulder/variante.h"
 
@@ -28,6 +33,7 @@
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/eingang.h"
+#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/speicher.h"
@@ -124,6 +130,7 @@ static void prv_laden_cb(void *data) {
 }
 
 void boulder_dauerteil_takt(time_t jetzt) {
+  boulder_kontext_takt(jetzt);
   if (s_laden_offen) {
     boulder_aufgabe_einreihen(&s_aufgabe_laden);
     return;
@@ -162,10 +169,13 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   boulder_wecker_minute(minute->utc, minute->vmc);
   const time_t beginn = prv_fenster(minute->utc);
   const int index = (int)((minute->utc - beginn) / PBL_SEC_PER_MIN);
-  if (boulder_nacht_minute(beginn, index, minute->vmc, minute->puls, !minute->nicht_getragen)) {
+  // Ein Training ist kein Schlaf, auch wenn es ruhig ist (Yoga, Kraft).
+  const bool gueltig = !minute->nicht_getragen && !boulder_kontext_training_laeuft();
+  if (boulder_nacht_minute(beginn, index, minute->vmc, minute->puls, gueltig)) {
     boulder_aufgabe_einreihen(&s_aufgabe_nachlauf);
   }
   boulder_zyklen_abschluss_schritt(!boulder_live_schlaeft());
+  boulder_kontext_minute(minute, boulder_nacht_ruhepuls());
   // Messung (AP5): die laufende Minute beginnt jetzt. "Nachtruhe" (5.2): im Nachtfenster
   // und die eben fertige Minute ruhig - wer um sieben herumlaeuft, misst mit dem Tagestakt.
   const int naechste = index + 1;
@@ -211,22 +221,19 @@ void boulder_dauerteil_ring_minute(const BoulderMinute *minute) {
 }
 
 time_t boulder_dauerteil_fahrt_offen_seit(void) {
-  return 0;
+  return boulder_kontext_offen_seit();
 }
 
 bool boulder_dauerteil_fahrt_minute(time_t minute_utc) {
-  (void)minute_utc;
-  return false;
+  return boulder_kontext_fahrt_minute(minute_utc);
 }
 
 bool boulder_dauerteil_fahrt_laeuft(void) {
-  return false;
+  return boulder_kontext_fahrt_laeuft();
 }
 
 bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s) {
-  (void)start_utc;
-  (void)laenge_s;
-  return false;
+  return boulder_kontext_ueberdeckt(start_utc, laenge_s);
 }
 
 time_t boulder_dauerteil_letzter_schlaf_utc(void) {
@@ -241,16 +248,25 @@ time_t boulder_dauerteil_letzter_schlaf_utc(void) {
 }
 
 bool boulder_dauerteil_aktiv_abo_laeuft(void) {
-  return false;
+  return boulder_kontext_aktiv();
 }
 
 void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert) {
-  (void)pausiert;
+  boulder_puls_aktiv_pausieren(pausiert);
 }
 
 void boulder_dauerteil_tracking_aus(void) {
+  boulder_kontext_tracking_aus();
   boulder_wecker_vergessen();
   boulder_puls_tracking_aus();
+}
+
+void boulder_dauerteil_training(bool laeuft) {
+  boulder_kontext_training(laeuft);
+}
+
+void boulder_dauerteil_sitzungen_beenden(void) {
+  boulder_kontext_sitzung_beenden();
 }
 
 void boulder_dauerteil_test_neustart(void) {
@@ -261,6 +277,7 @@ void boulder_dauerteil_test_neustart(void) {
   s_aufgabe_laden.steht_an = false;
   s_aufgabe_takt.steht_an = false;
   boulder_nacht_zuruecksetzen();
+  boulder_kontext_test_zuruecksetzen();
   boulder_wecker_vergessen();
   boulder_ausgabe_test_neustart();
   boulder_speicher_test_neustart();

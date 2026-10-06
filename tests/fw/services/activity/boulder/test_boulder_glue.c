@@ -795,3 +795,38 @@ void test_boulder_glue__aktiv_abo_und_szene(void) {
   cl_assert_equal_i(s_szene_aufrufe, aufrufe + 1);
   cl_assert_equal_i(s_szene, HRMActivityScene_Run);
 }
+
+// ---------------------------------------------------------------------------------------------
+// T5.6, die b25-Faelle des Gehfilters (main 217428e90, test_boulder_gehfilter.c:459-497).
+// DIE VELOFAHRT VOM 1.10.2026: 22 min, nachgebaut aus ihren Zahlen - alle sechs Minuten gut 40
+// Stoesse am Lenker, die als Schritte zaehlen, dazwischen fast nichts; im Mittel neun je
+// Minute. Kraepelin meldet daraus Gehen, der Filter unterdrueckt es schon beim ersten Melden.
+// EIN SPAZIERGANG MIT AMPEL: 25 min um 95 Schritte, drei Minuten Stehen - er bleibt ganz.
+void test_boulder_glue__gehfilter_b25_faelle(void) {
+  static const uint8_t fahrt[22] = {
+    42, 3, 0, 5, 0, 2, 44, 0, 4, 0, 1, 0, 41, 2, 0, 3, 0, 0, 45, 1, 0, 2,
+  };
+  prv_minuten(15, 0);
+  const time_t velo = rtc_get_time();
+  for (size_t i = 0; i < ARRAY_LENGTH(fahrt); i++) {
+    prv_minute(fahrt[i], 3000, 0x52);
+  }
+  prv_minuten(15, 0);
+  cl_assert_equal_i(prv_sitzungen_vom_typ(ActivitySessionType_Walk), 0);
+  cl_assert_equal_i(prv_sitzungen_vom_typ(ActivitySessionType_Run), 0);
+  // Dass Kraepelin die Fahrt gemeldet hat, zeigt das Log ("Gehfilter unterdrueckt").
+  (void)velo;
+
+  const time_t ampel = rtc_get_time();
+  uint32_t summe = 0;
+  for (int i = 0; i < 25; i++) {
+    const uint8_t schritte = (i >= 11 && i < 14) ? 0 : 95;
+    prv_minute(schritte, 3000, 0x52);
+    summe += schritte;
+  }
+  prv_minuten(15, 0);
+  const ActivitySession *s = prv_sitzung(ActivitySessionType_Walk, ampel);
+  cl_assert(s);
+  cl_assert_equal_i(s->length_min, 25);
+  cl_assert_equal_i(s->step_data.steps, summe);
+}

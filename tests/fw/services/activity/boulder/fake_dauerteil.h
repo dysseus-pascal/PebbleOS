@@ -27,6 +27,8 @@ typedef struct {
   int pausiert_aufrufe;
   bool pausiert;
   int tracking_aus;
+  bool training;
+  int sitzungen_beendet;
 } FakeDauerteil;
 
 extern FakeDauerteil fake_dauerteil;

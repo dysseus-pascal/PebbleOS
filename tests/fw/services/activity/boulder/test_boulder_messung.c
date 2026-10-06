@@ -138,6 +138,11 @@ bool activity_prefs_blood_oxygen_is_enabled(void) {
 bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) {
   return false;
 }
+// AP6: Pebbles Pref "Puls bei Aktivitaet" (prefs.c:2110), Bedingung des Velo-Abos.
+static bool s_puls_bei_aktivitaet;
+bool activity_prefs_hrm_activity_tracking_is_enabled(void) {
+  return s_puls_bei_aktivitaet;
+}
 HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
   return s_puls_takt;
 }
@@ -340,6 +345,7 @@ void test_boulder_messung__initialize(void) {
   memset(&s_activity, 0, sizeof(s_activity));
   memset(&s_fenster, 0, sizeof(s_fenster));
   s_puls_an = true;
+  s_puls_bei_aktivitaet = true;
   s_spo2_an = false;
   s_puls_takt = HRMonitoringInterval_10Min;
   s_spo2_takt = HRMonitoringInterval_10Min;
@@ -551,6 +557,42 @@ void test_boulder_messung__tracking_aus_laesst_das_abo_ruhen(void) {
   boulder_puls_tracking_aus();
   prv_kernel_bg();
   cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+}
+
+// T5.4: das Velo-Abo "Aktiv" (3.7) ueber dasselbe eine Abo. Ab der Vorstufe BPM jede Sekunde -
+// auch auf Stufe 1 und tags, wie Kraepelins Walk/Run-Abo; SpO2 bei Aktivitaet pausiert es;
+// danach ruht es. Ohne Pebbles Pref "Puls bei Aktivitaet" bleibt es aus.
+void test_boulder_messung__aktiv_abo_velo(void) {
+  prv_start(1);
+  s_nachtruhe = false;
+  prv_minuten(2);
+  const uint32_t abo = boulder_puls_abo();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+  const int vorher = s_sensor.einschalten;
+  boulder_puls_aktiv(true);
+  prv_kernel_bg();
+  uint32_t takt = 0;
+  cl_assert_equal_i(prv_abo_merkmale(&takt), HRMFeature_BPM);
+  cl_assert_equal_i(takt, 1);
+  prv_minuten(10);
+  // Einmal an und durchgehend an: Werte jede Sekunde fuer den Minutenmedian.
+  cl_assert(s_sensor.an);
+  cl_assert_equal_i(s_sensor.einschalten, vorher + 1);
+  boulder_puls_aktiv_pausieren(true);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+  boulder_puls_aktiv_pausieren(false);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);
+  boulder_puls_aktiv(false);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+  s_puls_bei_aktivitaet = false;
+  boulder_puls_aktiv(true);
+  prv_kernel_bg();
+  prv_minuten(2);
+  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
+  cl_assert_equal_i(boulder_puls_abo(), abo);
 }
 
 // =============================================================================================

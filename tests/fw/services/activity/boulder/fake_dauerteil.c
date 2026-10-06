@@ -61,3 +61,11 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert) {
 void boulder_dauerteil_tracking_aus(void) {
   fake_dauerteil.tracking_aus++;
 }
+
+void boulder_dauerteil_training(bool laeuft) {
+  fake_dauerteil.training = laeuft;
+}
+
+void boulder_dauerteil_sitzungen_beenden(void) {
+  fake_dauerteil.sitzungen_beendet++;
+}

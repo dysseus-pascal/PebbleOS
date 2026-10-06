@@ -12,7 +12,7 @@ abweichung D1 Kraepelins Schlafsitzungen verworfen, Gehfilter fuer Walk/Run (Ent
 abweichung D2 Activity-Sperre nur vor/nach der Kraepelin-Sperre (SpO2, nicht am Arm, reset_hr_stats); Minutensatz an den Dauerteil
 abweichung D3 Zurueckhalten = MAX(Kraepelin unsicher, Fahrt offen), Puffer 15+60+5, Fahrtminuten nullen, Health-Sync haelt ebenso zurueck
 abweichung D4 bei "Ja" Fahrtschritte am Kraepelin-Zaehler abziehen (boulder_kraepelin_fahrt_streichen)
-abweichung D5 waehrend bestaetigter Fahrt Schritte gestrichen, Minute und Rate 0
+abweichung D5 waehrend bestaetigter Fahrt Schritte an der Tagessumme vorbei (in der Minute bleiben sie), Rate 0; Rueckgabe nach dem Fahrtende
 abweichung D6 get_last_sleep_utc aus dem Dauerteil
 abweichung D7 Teilminute der Historie mit kalg_minute_stats_peek, ohne SpO2 und ohne Activity-Sperre
 abweichung D8 SettingsFile statisch statt kernel_malloc_check
@@ -22,3 +22,4 @@ abweichung D11 Sitzungsschritte 32 bit, gemeldet geklemmt auf 65535
 abweichung D12 Minutendatei und DLS 81 im Callback "Minutendatei", der Minutenteil puffert nur
 abweichung D13 deinit schreibt die nur wegen einer Fahrt zurueckgehaltenen Gruppen
 abweichung D14 init fuellt den Ring des Dauerteils im ohnehin noetigen Dateidurchlauf
+abweichung D15 Training und early_deinit an den Dauerteil (Kandidatin und Velo-Sitzung enden)
