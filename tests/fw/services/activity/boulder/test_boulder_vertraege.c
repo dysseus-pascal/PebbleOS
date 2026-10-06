@@ -9,6 +9,8 @@
 #include "pbl/services/data_logging/data_logging_service.h"
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // DIE GETEILTEN FORMATE - wie Boulder (Brueckenfassung 0.50) sie liest. Der
@@ -125,4 +127,111 @@ void test_boulder_vertraege__nachtbild_wie_b24(void) {
   cl_assert_equal_i(offsetof(NachtBild, anzahl), 28);
   cl_assert_equal_i(offsetof(NachtBild, abschnitte), 29);
   cl_assert_equal_i(offsetof(NachtBild, version), 509);
+}
+
+// DIE REFERENZSAETZE AUS b26 (tests/fixtures/activity/boulder/referenz-b26, AP-G)
+// passen in V2s Formate: Kopf, Teile und Abschnitte lesbar, und die Phasen je
+// Minute ergeben sich aus dem letzten Satz der Nacht.
+static const char *s_referenzen[] = {
+  "nacht-2026-09-26", "nacht-2026-09-29", "nacht-2026-09-30",
+  "nacht-2026-10-03", "nacht-2026-10-05", "nacht-2026-10-05-morgen",
+};
+
+static void prv_hex(const char *hex, void *aus, size_t n) {
+  cl_assert_equal_i(strlen(hex), 2 * n);
+  uint8_t *b = aus;
+  for (size_t k = 0; k < n; k++) {
+    char z[3] = { hex[2 * k], hex[2 * k + 1], 0 };
+    b[k] = (uint8_t)strtoul(z, NULL, 16);
+  }
+}
+
+void test_boulder_vertraege__referenzsaetze_aus_b26_passen(void) {
+  static char zeile[4096];
+  for (size_t r = 0; r < sizeof(s_referenzen) / sizeof(s_referenzen[0]); r++) {
+    char pfad[512];
+    snprintf(pfad, sizeof(pfad), "%s/activity/boulder/referenz-b26/%s.txt", CLAR_FIXTURE_PATH,
+             s_referenzen[r]);
+    FILE *f = fopen(pfad, "r");
+    cl_assert(f);
+    long beginn = 0;
+    int minuten = 0, saetze = 0, hrv_saetze = 0, bilder = 0;
+    NachtDlsRecord letzte[4];
+    int teile = 0;
+    char phasen[1200] = { 0 };
+    while (fgets(zeile, sizeof(zeile), f)) {
+      zeile[strcspn(zeile, "\r\n")] = 0;
+      char *wert = strchr(zeile, ' ');
+      if (zeile[0] == '#' || !wert) {
+        continue;
+      }
+      *wert++ = 0;
+      if (!strcmp(zeile, "beginn_utc")) {
+        beginn = atol(wert);
+      } else if (!strcmp(zeile, "minuten")) {
+        minuten = atoi(wert);
+      } else if (!strcmp(zeile, "satz4001")) {
+        NachtDlsRecord s;
+        prv_hex(strchr(wert, ' ') + 1, &s, sizeof(s));
+        cl_assert_equal_i(s.version, NACHT_DLS_VERSION);
+        cl_assert_equal_i(s.size, sizeof(NachtDlsRecord));
+        cl_assert_equal_i(s.beginn_utc, beginn);
+        cl_assert_equal_i(s.utc_to_local, 2 * 60 * 60);
+        cl_assert(s.teil < s.teile && s.anzahl <= NACHT_DLS_ABSCHNITTE);
+        cl_assert(s.einschlafen < s.aufwachen && s.messstufe >= 1 && s.messstufe <= 5);
+        for (int a = 0; a < s.anzahl; a++) {
+          cl_assert(s.abschnitte[a].von < s.abschnitte[a].bis && s.abschnitte[a].phase < 5);
+          cl_assert(a == 0 || s.abschnitte[a].von == s.abschnitte[a - 1].bis);
+        }
+        if (s.teil == 0) {
+          teile = 0;
+        }
+        cl_assert(teile < 4);
+        letzte[teile++] = s;
+        saetze++;
+      } else if (!strcmp(zeile, "satz4002")) {
+        NachtHrvDlsRecord h;
+        prv_hex(strchr(wert, ' ') + 1, &h, sizeof(h));
+        cl_assert_equal_i(h.version, NACHT_HRV_DLS_VERSION);
+        cl_assert_equal_i(h.size, sizeof(NachtHrvDlsRecord));
+        cl_assert_equal_i(h.beginn_utc, beginn);
+        cl_assert(h.anzahl > 0 && h.anzahl <= NACHT_HRV_DLS_FENSTER);
+        hrv_saetze++;
+      } else if (!strcmp(zeile, "bild")) {
+        NachtBild b;
+        prv_hex(wert, &b, sizeof(b));
+        cl_assert_equal_i(b.version, NACHT_BILD_VERSION);
+        cl_assert(b.fertig);
+        cl_assert_equal_i(b.beginn_utc, beginn);
+        bilder++;
+      } else if (!strcmp(zeile, "phasen")) {
+        cl_assert(strlen(wert) < sizeof(phasen));
+        strcpy(phasen, wert);
+      }
+    }
+    fclose(f);
+    cl_assert(saetze > 0 && bilder == 1 && minuten > 0);
+    cl_assert_equal_i(strlen(phasen), minuten);
+    cl_assert_equal_i(teile, letzte[0].teile);
+    // Die Phasen je Minute folgen aus dem letzten Satz.
+    char soll[1200];
+    memset(soll, '.', minuten);
+    soll[minuten] = 0;
+    int schlaf = 0;
+    for (int t = 0; t < teile; t++) {
+      for (int a = 0; a < letzte[t].anzahl; a++) {
+        for (int m = letzte[t].abschnitte[a].von; m < letzte[t].abschnitte[a].bis; m++) {
+          const int i = (int)((letzte[t].beginn_utc - beginn) / 60) + m;
+          if (i >= 0 && i < minuten) {
+            soll[i] = '0' + letzte[t].abschnitte[a].phase;
+            schlaf += (letzte[t].abschnitte[a].phase != 0);
+          }
+        }
+      }
+    }
+    cl_assert_equal_s(phasen, soll);
+    cl_assert_equal_i(schlaf, letzte[0].schlaf_minuten);
+    printf("\n%s: %d Saetze 0x4001, %d Saetze 0x4002, Schlaf %d min", s_referenzen[r], saetze,
+           hrv_saetze, schlaf);
+  }
 }
