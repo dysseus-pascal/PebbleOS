@@ -55,7 +55,17 @@
 #include "stubs_irq.h"
 #include "stubs_logging.h"
 #include "stubs_mutex.h"
+// AP8 (T8.2): Pebbles WTF beim Laden einer Liste mit Typ 8 soll der Test sehen, nicht scheitern.
+#define wtf stubs_wtf
 #include "stubs_passert.h"
+#undef wtf
+void wtf(void) {
+  if (clar_expecting_passert) {
+    clar_passert_occurred = true;
+    longjmp(clar_passert_jmp_buf, 1);
+  }
+  stubs_wtf();
+}
 #include "stubs_sleep.h"
 #include "stubs_task_wdt.h"
 
@@ -725,11 +735,18 @@ static BoulderMinute prv_eingabe(int m, int ab_unterwegs) {
 // die laufenden Sitzungen (activity_sessions.c:632). Pebbles Minutendatei hat die Minuten bis
 // zur vorletzten vollen Viertelstunde (Kraepelin haelt zurueck, D3/D12); init liefert sie (D14,
 // hier vom Test, wie der Glue im Durchlauf). Der Boot verschluckt die Minute m + 1.
+static void prv_hochfahren(int m, int ab_unterwegs);
+static bool s_datei_wie_b25;
 static void prv_neustart(int m, int ab_unterwegs) {
   fake_system_task_callbacks_invoke_pending();
   activity_algorithm_deinit();
   fake_system_task_callbacks_invoke_pending();
   pbl_cron_deinit();
+  prv_hochfahren(m, ab_unterwegs);
+}
+
+// Der Boot selbst: Uhr, Pebbles Bereinigung, init mit dem Durchlauf der Minutendatei, "Laden".
+static void prv_hochfahren(int m, int ab_unterwegs) {
   const time_t jetzt = s_ref.beginn_utc + (time_t)(m + 2) * PBL_SEC_PER_MIN;
   rtc_set_time(jetzt);
   activity_sessions_prv_remove_out_of_range_activity_sessions(jetzt, true /*remove_ongoing*/);
@@ -737,7 +754,8 @@ static void prv_neustart(int m, int ab_unterwegs) {
   pbl_cron_init();
   boulder_dauerteil_test_neustart();
   cl_assert(activity_algorithm_init(&s_rate));
-  int datei_bis = (m + 1) - (m + 1) % 15 - 15;
+  // b25s Glue (Kraepelins Original) hielt keine Viertelstunde zurueck (AP8, erster Start).
+  int datei_bis = (m + 1) - (m + 1) % 15 - (s_datei_wie_b25 ? 0 : 15);
   datei_bis = (datei_bis > NACHT_MINUTEN) ? NACHT_MINUTEN : datei_bis;
   for (int i = 0; i < datei_bis; i++) {
     const BoulderMinute minute = prv_eingabe(i, ab_unterwegs);
@@ -948,4 +966,464 @@ void test_boulder_zyklen__am_kabel(void) {
   soll.akku_ende = s_nacht[0].akku_ende;
   soll.flags = NACHT_DLS_FLAG_GELADEN;
   cl_assert(!memcmp(&s_nacht[0], &soll, sizeof(soll)));
+}
+
+// =============================================================================================
+// AP8: der Wechsel von b25/b26 (Spezifikation 8, Kriterium 8, F1)
+//
+// Die Uhr, wie b25 sie hinterlaesst: die Dateien Byte fuer Byte nach M: geschrieben, nicht ueber
+// V2s eigene Strukturen - sonst fiele ein falscher Aufbau auf beiden Seiten gleich aus.
+
+static void prv_le(uint8_t *p, uint32_t v, int n) {
+  for (int i = 0; i < n; i++) {
+    p[i] = (uint8_t)(v >> (8 * i));
+  }
+}
+
+// boulder_nacht/"zustand" (M: nacht.c:180-189): Fassung 1, Fenster, erledigt_bis, fest,
+// gesendet_beginn, gesendet_aufwachen, gesendet_schlaf.
+static void prv_b25_zustand(uint32_t fenster, uint32_t erledigt_bis, uint32_t g_beginn,
+                            uint16_t g_auf, uint16_t g_schlaf) {
+  uint8_t z[18];
+  z[0] = 1;
+  prv_le(&z[1], fenster, 4);
+  prv_le(&z[5], erledigt_bis, 4);
+  z[9] = 2;
+  prv_le(&z[10], g_beginn, 4);
+  prv_le(&z[14], g_auf, 2);
+  prv_le(&z[16], g_schlaf, 2);
+  SettingsFile f;
+  cl_must_pass(settings_file_open(&f, "boulder_nacht", 2048));
+  cl_must_pass(settings_file_set(&f, "zustand", sizeof("zustand"), z, sizeof(z)));
+  settings_file_close(&f);
+}
+
+// boulder_nacht/"letzte" in Fassung 1 (b25/b26) oder 0 (b24: ein Fuellbyte).
+static void prv_b25_bild(const NachtBild *b, uint8_t fassung) {
+  NachtBild x = *b;
+  x.version = fassung;
+  SettingsFile f;
+  cl_must_pass(settings_file_open(&f, "boulder_nacht", 2048));
+  cl_must_pass(settings_file_set(&f, "letzte", sizeof("letzte"), &x, sizeof(x)));
+  settings_file_close(&f);
+}
+
+// boulder_hrv (M: hrv.c:32-39, :186-195): Schluessel = Platz im Ring, Wert 8 Byte wie auf der
+// Uhr (time_t 32 Bit): start, rmssd, puls, ein Fuellbyte.
+static void prv_b25_hrv(uint8_t platz, uint32_t start, uint16_t rmssd, uint8_t puls) {
+  uint8_t v[8] = { 0 };
+  prv_le(&v[0], start, 4);
+  prv_le(&v[4], rmssd, 2);
+  v[6] = puls;
+  SettingsFile f;
+  cl_must_pass(settings_file_open(&f, "boulder_hrv", 4096));
+  cl_must_pass(settings_file_set(&f, &platz, 1, v, sizeof(v)));
+  settings_file_close(&f);
+}
+
+static void prv_sitzung(time_t start, int laenge, int typ, uint16_t steps) {
+  ActivitySession s = {
+    .start_utc = start, .length_min = (uint16_t)laenge, .type = (ActivitySessionType)typ,
+  };
+  s.step_data.steps = steps;
+  cl_assert(s_state.activity_sessions_count < ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT);
+  s_state.activity_sessions[s_state.activity_sessions_count++] = s;
+}
+
+// Die Tief-Abschnitte des Bilds (aufeinanderfolgende als einer), hoechstens `max`.
+static int prv_tief_abschnitte(const NachtBild *b, SchlafAbschnitt *t, int max) {
+  int n = 0;
+  for (int k = 0; k < b->anzahl && n < max; k++) {
+    if (b->abschnitte[k].phase != SchlafPhaseTief) {
+      continue;
+    }
+    if (n > 0 && t[n - 1].bis == b->abschnitte[k].von) {
+      t[n - 1].bis = b->abschnitte[k].bis;
+      continue;
+    }
+    t[n++] = (SchlafAbschnitt){ .von = b->abschnitte[k].von, .bis = b->abschnitte[k].bis };
+  }
+  return n;
+}
+
+// b25s Sitzungen der endgueltigen Nacht (M: nacht.c:400-432): ein Block vom Einschlafen bis
+// zum Aufwachen mit dem Wachliegen in nicht_schlaf_min (wo U: step_data.steps liest), die
+// Tief-Abschnitte - mehr als 7 an der kleinsten Luecke zusammengelegt, die Luecke in
+// nicht_schlaf_min (M: nacht.c:345-365), beim Einschlafen eine Minute spaeter -, mit `typ8`
+// eine Bewegung danach. Pebble hat alles geloggt: die Merker stehen auf den Enden.
+static void prv_b25_liste(bool typ8) {
+  const NachtBild *b = &s_ref.bild;
+  const time_t beginn = b->beginn_utc;
+  const int laenge = b->aufwachen - b->einschlafen;
+  prv_sitzung(beginn + b->einschlafen * 60, laenge, ActivitySessionType_Sleep,
+              (uint16_t)(laenge - b->schlaf_minuten));
+  s_state.logged_sleep_activity_exit_at_utc = beginn + b->aufwachen * 60;
+  SchlafAbschnitt t[NACHT_BILD_ABSCHNITTE];
+  int n = prv_tief_abschnitte(b, t, NACHT_BILD_ABSCHNITTE);
+  while (n > 7) {
+    int k = 0;
+    for (int i = 1; i + 1 < n; i++) {
+      k = (t[i + 1].von - t[i].bis < t[k + 1].von - t[k].bis) ? i : k;
+    }
+    t[k].bis = t[k + 1].bis;
+    memmove(&t[k + 1], &t[k + 2], (n - k - 2) * sizeof(t[0]));
+    n--;
+  }
+  for (int k = 0; k < n; k++) {
+    const int von = t[k].von + (t[k].von == b->einschlafen);
+    // nicht_schlaf_min: die Minuten ohne Tiefschlaf im Block.
+    int tief = 0;
+    for (int m = von; m < t[k].bis; m++) {
+      tief += s_ref.phasen[m] == '2';
+    }
+    prv_sitzung(beginn + von * 60, t[k].bis - von, ActivitySessionType_RestfulSleep,
+                (uint16_t)(t[k].bis - von - tief));
+    s_state.logged_restful_sleep_activity_exit_at_utc = beginn + t[k].bis * 60;
+  }
+  if (typ8) {
+    // ActivitySessionType_Movement in b25 (M: activity.h:188).
+    prv_sitzung(beginn + (b->aufwachen + 30) * 60, 25, 8, 1500);
+    s_state.logged_step_activity_exit_at_utc = beginn + (b->aufwachen + 55) * 60;
+  }
+}
+
+// F1: Pebble laedt b25s Liste mit Typ 8 - ungueltig fuer U:, die Liste wird in der Datei
+// genullt und die Uhr startet neu (WTF). Der zweite Start ist sauber und leer. Echter Code:
+// activity_sessions_prv_init.
+static void prv_pebble_typ8_boot(void) {
+  SettingsFile f;
+  cl_must_pass(settings_file_open(&f, "activity_t8", 8192));
+  ActivitySettingsKey key = ActivitySettingsKeyStoredActivities;
+  cl_must_pass(settings_file_set(&f, &key, sizeof(key), s_state.activity_sessions,
+                                 sizeof(s_state.activity_sessions)));
+  memset(s_state.activity_sessions, 0, sizeof(s_state.activity_sessions));
+  s_state.activity_sessions_count = 0;
+  cl_assert_passert(activity_sessions_prv_init(&f, rtc_get_time()));
+  memset(s_state.activity_sessions, 0, sizeof(s_state.activity_sessions));
+  s_state.activity_sessions_count = 0;
+  activity_sessions_prv_init(&f, rtc_get_time());
+  cl_assert_equal_i(s_state.activity_sessions_count, 0);
+  settings_file_close(&f);
+}
+
+// Der erste Start von V2 nach Minute m: der Start aus initialize (vor der Nacht) gilt nicht.
+static void prv_v2_erster_start(int m) {
+  activity_algorithm_deinit();
+  fake_system_task_callbacks_cleanup();
+  pbl_cron_deinit();
+  s_datei_wie_b25 = true;
+  prv_hochfahren(m, MINUTEN);
+  s_datei_wie_b25 = false;
+}
+
+typedef struct {
+  int schlaf;
+  int zyklen;
+  int tief;
+  int sitzungen;
+} NachtListe;
+
+// Pebbles Liste: der Schlaf der Referenznacht, jede Sitzung abgeschlossen, Sleep nur auf
+// Schlafminuten, RestfulSleep nur auf Tiefschlaf der Referenz.
+static NachtListe prv_nacht_liste(void) {
+  NachtListe n = { 0 };
+  const time_t b = s_ref.beginn_utc;
+  // Keine Minute zweimal: nicht in zwei Zyklen, nicht in zwei Tief-Sitzungen (nichts doppelt).
+  static uint8_t s_mal[2][NACHT_MINUTEN];
+  memset(s_mal, 0, sizeof(s_mal));
+  for (int i = 0; i < s_state.activity_sessions_count; i++) {
+    const ActivitySession *s = &s_state.activity_sessions[i];
+    n.sitzungen++;
+    if (!activity_sessions_prv_is_sleep_activity(s->type) || s->start_utc < b ||
+        s->start_utc >= b + NACHT_MINUTEN * 60) {
+      continue;
+    }
+    cl_assert(!s->ongoing);
+    const int von = (int)(s->start_utc - b) / 60;
+    for (int m = von; m < von + s->length_min; m++) {
+      cl_assert(m < NACHT_MINUTEN);
+      if (s->type == ActivitySessionType_Sleep) {
+        cl_assert(prv_schlafphase(s_ref.phasen[m]));
+      } else {
+        cl_assert_equal_i(s_ref.phasen[m], '2');
+      }
+      cl_assert_equal_i(s_mal[s->type == ActivitySessionType_Sleep][m]++, 0);
+    }
+    if (s->type == ActivitySessionType_Sleep) {
+      cl_assert_equal_i(s->step_data.steps, 0);
+      n.schlaf += s->length_min;
+      n.zyklen++;
+    } else {
+      n.tief++;
+    }
+  }
+  return n;
+}
+
+static int prv_laeufe(void) {
+  int n = 0;
+  for (int m = 0; m < NACHT_MINUTEN; m++) {
+    n += prv_schlafphase(s_ref.phasen[m]) && (m == 0 || !prv_schlafphase(s_ref.phasen[m - 1]));
+  }
+  return n;
+}
+
+// Gestellt: die Nacht beginnt mit Tiefschlaf (keine Referenznacht tut das). Der erste Abschnitt
+// des Bilds wird Tief, in Bild und Phasen gleich.
+static bool s_tief_beim_einschlafen;
+static void prv_tief_beim_einschlafen(void) {
+  NachtBild *b = &s_ref.bild;
+  for (int k = 0; k < b->anzahl; k++) {
+    if (b->abschnitte[k].von == b->einschlafen) {
+      b->abschnitte[k].phase = SchlafPhaseTief;
+      for (int m = b->abschnitte[k].von; m < b->abschnitte[k].bis; m++) {
+        s_ref.phasen[m] = '2';
+      }
+      return;
+    }
+  }
+  cl_fail("kein Abschnitt beim Einschlafen");
+}
+
+// Die b25-Nacht ist endgueltig (zwei Stunden wach), das Update kommt eine halbe Stunde danach.
+// Zustand, Bild und Liste wie b25 sie hinterlaesst; `typ8`: mit einer Bewegung in der Liste.
+static void prv_umzug_nach_der_nacht(const char *name, bool typ8) {
+  test_boulder_zyklen__cleanup();
+  test_boulder_zyklen__initialize();
+  prv_lade(name);
+  if (s_tief_beim_einschlafen) {
+    s_tief_beim_einschlafen = false;  // nur fuer diesen Durchlauf, auch wenn er scheitert
+    prv_tief_beim_einschlafen();
+  }
+  const uint32_t b = s_ref.beginn_utc;
+  const int auf = s_ref.bild.aufwachen;
+  const int u = auf + 150;
+  // b25: erledigt bis zum Aufwachen, am Fensterende bis dahin (M: nacht.c:1006-1007).
+  const uint32_t erledigt = (auf + 120 < NACHT_MINUTEN) ? b + auf * 60 : b + NACHT_MINUTEN * 60;
+  prv_b25_zustand(b, erledigt, s_ref.satz.beginn_utc, s_ref.satz.aufwachen,
+                  s_ref.satz.schlaf_minuten);
+  prv_b25_bild(&s_ref.bild, NACHT_BILD_VERSION);
+  prv_b25_liste(typ8);
+  rtc_set_time(b + (u + 2) * 60);
+  if (typ8) {
+    prv_pebble_typ8_boot();
+  }
+  prv_v2_erster_start(u);
+  int hrv = s_ref.hrv_anzahl;
+  for (int m = u + 2; m < 20 * 60; m++) {
+    prv_schritt(m, MINUTEN, &hrv);
+  }
+  const NachtListe n = prv_nacht_liste();
+  SchlafAbschnitt t[NACHT_BILD_ABSCHNITTE];
+  const int tief_bild = prv_tief_abschnitte(&s_ref.bild, t, NACHT_BILD_ABSCHNITTE);
+  printf("\n%s %s Typ 8: %d Zyklen (%d min, Satz %d, Laeufe %d), %d Tief (Bild %d), "
+         "DLS 84 %d, 0x4001 %d", name, typ8 ? "mit" : "ohne", n.zyklen, n.schlaf,
+         s_ref.satz.schlaf_minuten, prv_laeufe(), n.tief, tief_bild, s_log_anzahl,
+         s_nacht_anzahl);
+  // Tiefschlaf je Abschnitt, ohne b25s Luecken, keiner doppelt (prv_nacht_liste): neu
+  // hoechstens ZYKLEN_R_MAX; ohne Typ 8 bleiben b25s eigene dahinter, genau auf ihrem Abschnitt.
+  const int tief_neu = (tief_bild < ZYKLEN_R_MAX) ? tief_bild : ZYKLEN_R_MAX;
+  if (typ8) {
+    cl_assert_equal_i(n.tief, tief_neu);
+  } else {
+    cl_assert(n.tief >= tief_neu && n.tief <= tief_bild);
+  }
+  // Die Nacht ist wieder da, ohne das Wachliegen; nichts geht noch einmal ans Telefon.
+  cl_assert_equal_i(n.schlaf, s_ref.satz.schlaf_minuten);
+  cl_assert(n.zyklen == prv_laeufe() || n.zyklen == ZYKLEN_C_MAX);
+  cl_assert_equal_i(s_log_anzahl, 0);
+  cl_assert_equal_i(s_nacht_anzahl, 0);
+  NachtBild bild;
+  cl_assert(boulder_nacht_letzte(&bild));
+  cl_assert(!memcmp(&bild, &s_ref.bild, sizeof(bild)));
+  // Ein weiterer Neustart am Abend: dieselben Sitzungen, keine dazu, nichts geloggt.
+  prv_neustart(20 * 60, MINUTEN);
+  const NachtListe n2 = prv_nacht_liste();
+  cl_assert_equal_i(n2.schlaf, n.schlaf);
+  cl_assert_equal_i(n2.sitzungen, n.sitzungen);
+  cl_assert_equal_i(s_log_anzahl, 0);
+}
+
+// T8.2: Liste mit Typ 8 - ein WTF, zweiter Start sauber, die Zyklen und der Tiefschlaf der
+// letzten b25-Nacht wieder da, nichts doppelt in DLS 84 (F1).
+void test_boulder_zyklen__umzug_typ8(void) {
+  for (size_t k = 0; k < ARRAY_LENGTH(s_naechte); k++) {
+    prv_umzug_nach_der_nacht(s_naechte[k], true);
+  }
+  printf("\n");
+}
+
+// T8.2b: Liste ohne Typ 8 mit b25s Nachtblock - der Block wird ueber denselben Start der erste
+// Zyklus, die Summe ohne Wachliegen; b25s Tiefschlaf wird je Abschnitt ersetzt, auch ueber
+// dieselben Starts: keiner doppelt, keine Luecke als Tiefschlaf (26.9.: 9 Abschnitte, b25 7).
+void test_boulder_zyklen__umzug_ohne_typ8(void) {
+  for (size_t k = 0; k < ARRAY_LENGTH(s_naechte); k++) {
+    prv_umzug_nach_der_nacht(s_naechte[k], false);
+    const time_t block = s_ref.bild.beginn_utc + s_ref.bild.einschlafen * 60;
+    int gefunden = 0;
+    for (int i = 0; i < s_state.activity_sessions_count; i++) {
+      const ActivitySession *s = &s_state.activity_sessions[i];
+      gefunden += s->start_utc == block && s->type == ActivitySessionType_Sleep;
+    }
+    cl_assert_equal_i(gefunden, 1);
+  }
+  printf("\n");
+}
+
+// T8.2/T8.2b gestellt: Tiefschlaf ab dem Einschlafen. Der Tief-Abschnitt beginnt eine Minute
+// spaeter (wie bei b25), sonst ersetzte er ueber denselben Start den ersten Zyklus - der Schlaf
+// fehlte in der Summe.
+void test_boulder_zyklen__umzug_tief_beim_einschlafen(void) {
+  for (int typ8 = 0; typ8 < 2; typ8++) {
+    s_tief_beim_einschlafen = true;
+    prv_umzug_nach_der_nacht(s_naechte[0], typ8);
+    const time_t start = s_ref.bild.beginn_utc + s_ref.bild.einschlafen * 60;
+    int c1 = 0, r = 0;
+    for (int i = 0; i < s_state.activity_sessions_count; i++) {
+      const ActivitySession *s = &s_state.activity_sessions[i];
+      c1 += s->start_utc == start && s->type == ActivitySessionType_Sleep;
+      r += s->start_utc == start + 60 && s->type == ActivitySessionType_RestfulSleep;
+    }
+    cl_assert_equal_i(c1, 1);
+    cl_assert_equal_i(r, 1);
+  }
+  printf("\n");
+}
+
+// T8.1: Bild von b24 ohne Zustand, und b26s Zustand nach "fertig", aber vor "endgueltig":
+// V2 rechnet die Nacht selbst (gleicher beginn_utc), schickt sie nicht noch einmal (das
+// Gesendete kommt aus dem Zustand bzw. dem Bild) und loggt ihre Zyklen genau einmal.
+void test_boulder_zyklen__umzug_zustand(void) {
+  for (int fall = 0; fall < 2; fall++) {
+    const char *name = s_naechte[fall];
+    test_boulder_zyklen__cleanup();
+    test_boulder_zyklen__initialize();
+    prv_lade(name);
+    const uint32_t b = s_ref.beginn_utc;
+    const int u = s_ref.bild.aufwachen + 40;
+    if (fall == 0) {
+      prv_b25_bild(&s_ref.bild, NACHT_BILD_VERSION_B24);
+    } else {
+      prv_b25_bild(&s_ref.bild, NACHT_BILD_VERSION);
+      prv_b25_zustand(b, 0, s_ref.satz.beginn_utc, s_ref.satz.aufwachen,
+                      s_ref.satz.schlaf_minuten);
+    }
+    rtc_set_time(b + (u + 2) * 60);
+    prv_v2_erster_start(u);
+    NachtBild bild;
+    cl_assert(boulder_nacht_letzte(&bild));
+    cl_assert_equal_i(bild.version, NACHT_BILD_VERSION);
+    cl_assert(!memcmp(&bild, &s_ref.bild, sizeof(bild)));
+    int hrv = s_ref.hrv_anzahl;
+    for (int m = u + 2; m < 20 * 60; m++) {
+      prv_schritt(m, MINUTEN, &hrv);
+    }
+    printf("\n%s, %s: 0x4001 %d, DLS 84 %d", name, fall ? "Zustand b26" : "Bild b24",
+           s_nacht_anzahl, s_log_anzahl);
+    cl_assert_equal_i(s_nacht_anzahl, 0);
+    prv_pruefe_log(name);
+    prv_pruefe_zyklen(name);
+  }
+  printf("\n");
+}
+
+// T8.3: Update mitten in der Nacht (100 min nach dem Einschlafen). Der Zustand kennt nur die
+// Nacht davor; b25s HRV-Fenster dieser Nacht gehen in die Rechnung, die der Nacht davor nicht.
+// Die Nacht kommt einmal, mit demselben beginn_utc, und ihre HRV-Saetze sind die von b26.
+void test_boulder_zyklen__umzug_mitten_in_der_nacht(void) {
+  int hrv_gleich = 0;
+  for (size_t k = 0; k < ARRAY_LENGTH(s_naechte); k++) {
+    test_boulder_zyklen__cleanup();
+    test_boulder_zyklen__initialize();
+    prv_lade(s_naechte[k]);
+    const uint32_t b = s_ref.beginn_utc;
+    const int u = s_ref.satz.einschlafen + 100;
+    NachtBild vorher = s_ref.bild;
+    vorher.beginn_utc -= PBL_SEC_PER_DAY;
+    prv_b25_bild(&vorher, NACHT_BILD_VERSION);
+    prv_b25_zustand(b - PBL_SEC_PER_DAY, b - PBL_SEC_PER_DAY + vorher.aufwachen * 60,
+                    vorher.beginn_utc, vorher.aufwachen, vorher.schlaf_minuten);
+    // b25 hat die Nacht davor geloggt; vor Mitternacht gehoert sie noch zu Pebbles Schlaftag,
+    // der Umzug legt sie wieder an (ohne sie noch einmal zu senden).
+    s_state.logged_sleep_activity_exit_at_utc = vorher.beginn_utc + vorher.aufwachen * 60;
+    for (int i = 0; i < vorher.anzahl; i++) {
+      if (vorher.abschnitte[i].phase == SchlafPhaseTief) {
+        s_state.logged_restful_sleep_activity_exit_at_utc =
+            vorher.beginn_utc + vorher.abschnitte[i].bis * 60;
+      }
+    }
+    // Der Ring: drei Fenster der Nacht davor, dann die fertigen dieser Nacht.
+    int platz = 0;
+    for (int i = 0; i < 3 && i < s_ref.hrv_anzahl; i++) {
+      prv_b25_hrv(platz++, b - PBL_SEC_PER_DAY + s_ref.hrv[i].minute * 60, s_ref.hrv[i].rmssd,
+                  s_ref.hrv[i].puls);
+    }
+    int hrv = 0;
+    while (hrv < s_ref.hrv_anzahl && s_ref.hrv[hrv].minute + 5 <= u) {
+      prv_b25_hrv(platz++, b + s_ref.hrv[hrv].minute * 60, s_ref.hrv[hrv].rmssd,
+                  s_ref.hrv[hrv].puls);
+      hrv++;
+    }
+    rtc_set_time(b + (u + 2) * 60);
+    prv_v2_erster_start(u);
+    for (int m = u + 2; m < 20 * 60; m++) {
+      prv_schritt(m, MINUTEN, &hrv);
+    }
+    prv_pruefe_log(s_naechte[k]);
+    cl_assert(s_nacht_anzahl > 0);
+    const NachtDlsRecord *letzter = &s_nacht[s_nacht_anzahl - 1];
+    cl_assert_equal_i(letzter->beginn_utc, s_ref.satz.beginn_utc);
+    int schlaf = 0;
+    for (int i = 0; i < s_log_anzahl; i++) {
+      cl_assert(s_log[i].start_utc >= b);  // von der Nacht davor nichts noch einmal
+      schlaf += prv_ist_schlaf(s_log[i].activity) ? s_log[i].elapsed_sec / 60 : 0;
+    }
+    cl_assert_equal_i(schlaf, letzter->schlaf_minuten);
+    // Die Saetze ohne das Protokoll (b25 hielt es nur im RAM: vor dem Update unbekannt).
+    NachtDlsRecord soll = s_ref.satz;
+    soll.akku_beginn = letzter->akku_beginn;
+    soll.akku_ende = letzter->akku_ende;
+    soll.flags = letzter->flags;
+    soll.messstufe = letzter->messstufe;
+    const bool satz_gleich = !memcmp(letzter, &soll, sizeof(soll));
+    // DIE UEBERNAHME: Jedes Fenster, das b25 vor dem Update fertig hatte, steht in der letzten
+    // Sendung wie bei b26 - die der Nacht davor nicht.
+    const int teile = s_hrv_saetze_anzahl ? s_hrv_saetze[s_hrv_saetze_anzahl - 1].teile : 0;
+    const int teile_ref = s_ref.hrv_saetze ? s_ref.hrv_satz[s_ref.hrv_saetze - 1].teile : 0;
+    cl_assert((teile > 0) == (teile_ref > 0));  // ohne Fenster kein HRV-Satz, wie b26
+    int vor_update = 0, gefunden = 0;
+    for (int t = 0; t < teile_ref; t++) {
+      const NachtHrvDlsRecord *r = &s_ref.hrv_satz[s_ref.hrv_saetze - 1 - t];
+      for (int i = 0; i < r->anzahl; i++) {
+        if (r->fenster[i].minute + 5 > u) {
+          continue;
+        }
+        vor_update++;
+        for (int v = 0; v < teile; v++) {
+          const NachtHrvDlsRecord *x = &s_hrv_saetze[s_hrv_saetze_anzahl - 1 - v];
+          for (int j = 0; j < x->anzahl; j++) {
+            gefunden += !memcmp(&x->fenster[j], &r->fenster[i], sizeof(NachtHrvDlsFenster));
+          }
+        }
+      }
+    }
+    bool hrv_saetze_gleich = teile_ref == teile;
+    for (int t = 0; hrv_saetze_gleich && t < teile; t++) {
+      hrv_saetze_gleich = !memcmp(&s_hrv_saetze[s_hrv_saetze_anzahl - teile + t],
+                                  &s_ref.hrv_satz[s_ref.hrv_saetze - teile + t],
+                                  sizeof(NachtHrvDlsRecord));
+    }
+    printf("\n%s, Update in Minute %d: %d Saetze, letzter %s b26 (Schlaf %d/%d), HRV %s b26, "
+           "von b25 %d/%d Fenster", s_naechte[k], u, s_nacht_anzahl, satz_gleich ? "=" : "!=",
+           letzter->schlaf_minuten, s_ref.satz.schlaf_minuten, hrv_saetze_gleich ? "=" : "!=",
+           gefunden, vor_update);
+    // Was der Boot verschluckt (b25s Minutendatei endet an der letzten Viertelstunde), wirkt
+    // wie ein Neustart unter b25; die Toleranz wie bei den Neustarts (AP4).
+    cl_assert(abs(letzter->schlaf_minuten - s_ref.satz.schlaf_minuten) <= 20);
+    cl_assert_equal_i(gefunden, vor_update);
+    hrv_gleich += vor_update;
+  }
+  printf("\n");
+  // Mindestens eine Nacht hatte vor dem Update HRV-Fenster (sonst prueft das nichts).
+  cl_assert(hrv_gleich > 0);
 }

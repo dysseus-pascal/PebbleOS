@@ -37,6 +37,7 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/activity/boulder/spo2.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/umzug.h"
 #include "pbl/services/activity/boulder/wecker.h"
 #include "pbl/services/activity/boulder/zyklen.h"
 #include "pbl/services/battery/battery_state.h"
@@ -263,6 +264,7 @@ void boulder_dauerteil_test_neustart(void) {
   boulder_wecker_vergessen();
   boulder_ausgabe_test_neustart();
   boulder_speicher_test_neustart();
+  boulder_umzug_test_neustart();
 }
 
 void boulder_dauerteil_test_ohne_cron(bool ohne) {

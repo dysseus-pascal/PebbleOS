@@ -347,10 +347,18 @@ static void prv_bild_laden(void) {
           (int)sizeof(s_bild) &&
       settings_file_get(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL), &s_bild,
                         sizeof(s_bild)) == S_SUCCESS) {
-    // Fassung 0 (b24) liest AP8 (umzug.c); hier nur die eigene.
     if (s_bild.version == NACHT_BILD_VERSION) {
       s_bild_da = true;
       s_bild_in_datei = true;
+    } else if (s_bild.version == NACHT_BILD_VERSION_B24) {
+      // AP8, Wechsel (Spezifikation 8): ein Bild von b24 hat denselben Aufbau, nur die Fassung
+      // stand in einem Fuellbyte. Ohne es fehlte der Health-App die letzte Nacht, und der
+      // Umzug faende nicht, was schon geschickt ist (wie b25, M: nacht.c:493-520). In der
+      // Datei bleibt es b24, bis die naechste fertige Nacht es in Fassung 1 schreibt.
+      s_bild.version = NACHT_BILD_VERSION;
+      s_bild_da = true;
+      s_bild_in_datei = false;
+      PBL_LOG_INFO("Boulder: NachtBild von b24 uebernommen");
     } else {
       PBL_LOG_WRN("Boulder: NachtBild Fassung %d nicht gelesen", (int)s_bild.version);
       memset(&s_bild, 0, sizeof(s_bild));

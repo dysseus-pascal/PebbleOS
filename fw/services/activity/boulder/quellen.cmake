@@ -23,4 +23,5 @@ pbl_library_sources(
   boulder/wecker.c
   boulder/ausgabe.c
   boulder/speicher.c
+  boulder/umzug.c
 )

@@ -169,6 +169,7 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/wecker.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/umzug.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM
@@ -249,6 +250,7 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/wecker.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/umzug.c
     tests/fw/services/activity/boulder/fake_messung.c)
 pbl_clar_test(test_boulder_wecker
   SOURCES ${boulder_wecker_quellen}
@@ -270,3 +272,29 @@ if(BOULDER_RELEASE)
     COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/kopie_pruefen.py ${PBL_BASE}
             --nachziehen upstream/main)
 endif()
+
+# AP8, Wechsel von b25 (Spezifikation 8): shellpref mit dem b25-Bestand unter V2 oeffnen und
+# danach schreiben (T8.5), mit dem echten settings_file und PFS.
+pbl_clar_test(test_boulder_umzug_prefs
+  SOURCES
+    fw/applib/dict.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    tests/fakes/fake_spi_flash.c
+    fw/flash_region/filesystem_regions.c
+    fw/flash_region/flash_region.c
+    tests/fakes/fake_rtc.c
+    fw/system/hexdump.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    fw/kernel/rand.c
+    third_party/tinymt/TinyMT/tinymt/tinymt32.c
+  DEFINES DUMA_DISABLED
+  OVERRIDES dummy_board
+)
+
+# T8.4: Spool-Koepfe, Activity-Datei und Sitzung wie in b25 (main 217428e90), mit Gegenprobe.
+add_test(NAME test_boulder_umzug_aufbau
+  COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE})
+add_test(NAME test_boulder_umzug_aufbau_gegenprobe
+  COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE} --gegenprobe)

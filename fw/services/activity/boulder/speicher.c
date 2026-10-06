@@ -11,6 +11,7 @@
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/umzug.h"
 #include "pbl/services/settings/settings_file.h"
 #include <pbl/logging/logging.h>
 
@@ -361,18 +362,24 @@ void boulder_speicher_laden(void) {
     return;
   }
   BoulderKopf k;
-  const bool kopf = settings_file_get_len(&datei, "kopf", 4) == (int)sizeof(k) &&
-                    settings_file_get(&datei, "kopf", 4, &k, sizeof(k)) == S_SUCCESS &&
-                    k.fassung == SPEICHER_FASSUNG;
+  bool kopf = settings_file_get_len(&datei, "kopf", 4) == (int)sizeof(k) &&
+              settings_file_get(&datei, "kopf", 4, &k, sizeof(k)) == S_SUCCESS &&
+              k.fassung == SPEICHER_FASSUNG;
+  const bool erster_start = !kopf;
+  if (kopf) {
+    s_kopf_datei = k;
+  } else {
+    // AP8: der erste Start nach b25 - der Kopf kommt aus b25s Zustand (umzug.c); in die Datei
+    // schreibt ihn erst die naechste Ablage.
+    PBL_LOG_INFO("Boulder: kein Kopf in %s", SPEICHER_DATEI);
+    kopf = boulder_umzug_kopf(s_fenster, &k);
+  }
   if (kopf) {
     // Was zuletzt geschickt wurde, gilt ueber das Fenster hinaus: dieselbe Nacht nie zweimal.
-    s_kopf_datei = k;
     *boulder_ausgabe_gesendet() = (BoulderGesendet){
       .beginn = k.gesendet_beginn, .aufwachen = k.gesendet_aufwachen,
       .schlaf = k.gesendet_schlaf,
     };
-  } else {
-    PBL_LOG_INFO("Boulder: kein Kopf in %s", SPEICHER_DATEI);
   }
   const bool gleich = kopf && k.fenster == (uint32_t)s_fenster;
   uint16_t fest = 0;
@@ -386,6 +393,8 @@ void boulder_speicher_laden(void) {
   settings_file_close(&datei);
   boulder_nacht_laden(gleich ? &k : NULL, fest);
   PBL_LOG_INFO("Boulder: geladen (%s, Buch fest bis %d)", gleich ? "Kopf" : "neu", fest);
+  // Danach, im eigenen Callback: die letzte b25-Nacht in Pebbles Liste (Spezifikation 8).
+  boulder_umzug_anstossen(erster_start);
 }
 
 void boulder_speicher_test_neustart(void) {
