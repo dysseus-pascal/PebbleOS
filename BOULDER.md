@@ -350,6 +350,15 @@ oder ein Entwurf ist (`gh release view`); Test
 braucht, zieht `mindest_app.txt` nach; seit den Tags `0x4001`/`0x4002` steht
 dort 0.50.0.
 
+**Vorabversion:** `BOULDER_VORAB=1 tools/boulder/release.sh <N>` macht aus dem
+Entwurf direkt ein Pre-release, ohne Zwischenstand als normales Release.
+Boulder überspringt Pre-releases (`GithubReleases.kt`) und bietet sie nicht an;
+der Nutzer lädt die `.pbz` und öffnet sie in Boulder (mit Rückfrage; dabei
+prüft Boulder 0.50 nur die Prüfsumme, nicht die Signatur). Nach dem Test auf
+der Uhr freigeben mit
+`gh release edit v4.38.4-bN -R dysseus-pascal/boulder-firmware --prerelease=false --latest`;
+erst dann bietet Boulder sie an.
+
 Upstream-Fassungen kommen per Merge des Tags. Nicht übernommen: `b97d3837e`
 (SpO2 aus dem Minutensatz, Version 14 → 13); Boulder liest Version 14. Die geerbten GitHub-Actions dieses Forks sind abgeschaltet;
 gebaut wird lokal.
