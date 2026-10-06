@@ -378,6 +378,10 @@ bool boulder_nacht_letzte(NachtBild *aus) {
   return da;
 }
 
+const NachtBild *boulder_nacht_letzte_leihen(void) {
+  return boulder_nacht_letzte(&s_puffer.bild) ? &s_puffer.bild : NULL;
+}
+
 bool boulder_ausgabe_bild(time_t beginn, const SchlafErgebnis *e, bool fertig) {
   if (!e->gefunden) {
     return false;

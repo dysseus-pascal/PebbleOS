@@ -81,6 +81,11 @@ void boulder_ausgabe_bild_ablegen(void);
 // Boot noch keine gerechnet hat). Jede Task.
 bool boulder_nacht_letzte(NachtBild *aus);
 
+// Dasselbe ohne Kopie auf dem Stapel (T7.3, AP9): das Bild im Satzpuffer der Ausgabe, oder NULL.
+// Gilt nur bis zum Ende des laufenden KernelBG-Callbacks - die Ausgabe baut und loggt jeden Satz
+// innerhalb eines Laufs, zwischen zwei Callbacks ist der Puffer frei.
+const NachtBild *boulder_nacht_letzte_leihen(void);
+
 // Jeder Takt: den Schub ans Telefon nach einer geschickten Nacht (dls_send_all_sessions),
 // nur bei Platz in der Schlange.
 void boulder_ausgabe_takt(time_t jetzt);

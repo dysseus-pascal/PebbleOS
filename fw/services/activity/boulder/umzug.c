@@ -90,9 +90,10 @@ bool boulder_umzug_kopf(time_t fenster, BoulderKopf *kopf) {
   s_v2_ab = fenster;
   B25Zustand z;
   const bool zustand = prv_zustand(&z);
-  NachtBild bild;
-  const bool bild_da = boulder_nacht_letzte(&bild);
-  if (!zustand && !(bild_da && bild.fertig)) {
+  // Das Bild geliehen, nicht auf dem Stapel: die Kette "Laden" lag sonst ueber 1 KB (T7.3).
+  const NachtBild *bild = boulder_nacht_letzte_leihen();
+  const bool bild_da = bild != NULL;
+  if (!zustand && !(bild_da && bild->fertig)) {
     return false;
   }
   memset(kopf, 0, sizeof(*kopf));
@@ -119,13 +120,13 @@ bool boulder_umzug_kopf(time_t fenster, BoulderKopf *kopf) {
   } else {
     // Ohne Zustand (b24): zuletzt geschickt ist die fertige Nacht im Bild (wie b25, M:
     // nacht.c:657-663) - sonst ginge sie noch einmal ans Telefon.
-    kopf->gesendet_beginn = bild.beginn_utc;
-    kopf->gesendet_aufwachen = bild.aufwachen;
-    kopf->gesendet_schlaf = bild.schlaf_minuten;
+    kopf->gesendet_beginn = bild->beginn_utc;
+    kopf->gesendet_aufwachen = bild->aufwachen;
+    kopf->gesendet_schlaf = bild->schlaf_minuten;
   }
   // Der Ruhepuls der letzten Nacht: ohne ihn erkennte V2 bis zur naechsten fertigen Nacht kein
   // Nickerchen (nacht.c).
-  kopf->ruhepuls = bild_da ? bild.ruhepuls : 0;
+  kopf->ruhepuls = bild_da ? bild->ruhepuls : 0;
   PBL_LOG_INFO("Boulder: Umzug von b25, Zustand %d, Stufe %d ab Minute %d", (int)zustand,
                (int)kopf->stufe, (int)kopf->ab);
   return true;
@@ -336,8 +337,8 @@ static bool prv_merker(SettingsFile *datei, UmzugMerker *m) {
 static void prv_umzug_cb(void *data) {
   BOULDER_AUFGABE_LAEUFT(&s_aufgabe);
   const time_t jetzt = rtc_get_time();
-  NachtBild bild;
-  const bool bild_da = boulder_nacht_letzte(&bild);
+  const NachtBild *bild = boulder_nacht_letzte_leihen();
+  const bool bild_da = bild != NULL;
   SettingsFile datei;
   if (settings_file_open(&datei, SPEICHER_DATEI, SPEICHER_DATEI_GROESSE) != S_SUCCESS) {
     PBL_LOG_WRN("Boulder: Umzug, %s nicht geoeffnet", SPEICHER_DATEI);
@@ -349,10 +350,10 @@ static void prv_umzug_cb(void *data) {
     // EINMAL ENTSCHEIDEN, WELCHE NACHT b25 GEHOERT: die fertige im Bild, wenn V2 sie nicht
     // selbst rechnet (sie endet vor dem Beginn der Rechnung, Laden). Rechnet V2 sie, kommt sie
     // mit demselben beginn_utc als V2-Nacht (Boulder ersetzt sie, 0.50).
-    const time_t ende = bild_da ? (time_t)bild.beginn_utc + (time_t)bild.aufwachen * 60 : 0;
+    const time_t ende = bild_da ? (time_t)bild->beginn_utc + (time_t)bild->aufwachen * 60 : 0;
     m = (UmzugMerker){
       .fassung = UMZUG_FASSUNG,
-      .beginn = (bild_da && bild.fertig && s_v2_ab && ende <= s_v2_ab) ? bild.beginn_utc : 0,
+      .beginn = (bild_da && bild->fertig && s_v2_ab && ende <= s_v2_ab) ? bild->beginn_utc : 0,
     };
     merker = settings_file_set(&datei, UMZUG_SCHLUESSEL, sizeof(UMZUG_SCHLUESSEL), &m,
                                sizeof(m)) == S_SUCCESS;
@@ -367,8 +368,8 @@ static void prv_umzug_cb(void *data) {
   }
   // Bei jedem Boot dieselbe Nacht, solange das Bild noch ihres ist (V2 schreibt "letzte" erst
   // mit einer eigenen, spaeteren Nacht neu).
-  if (merker && m.beginn && bild_da && bild.beginn_utc == m.beginn) {
-    prv_nacht_anlegen(&bild, jetzt);
+  if (merker && m.beginn && bild_da && bild->beginn_utc == m.beginn) {
+    prv_nacht_anlegen(bild, jetzt);
   }
 }
 
