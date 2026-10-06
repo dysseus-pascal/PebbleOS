@@ -18,7 +18,7 @@
 // zwischen den Regungen; eingeschlafen ist man erst, wenn das Herumwaelzen
 // aufhoert (keine zwei kraeftigen Regungen mehr in vierzig Minuten); wer nach
 // dem Aufwachen gegangen ist (VMC, nicht Schritte), schlaeft nur weiter, wenn
-// es eine halbe Stunde am Stueck haelt - der Kaffee danach ist keine Nacht. DIE
+// es haelt (30 Schlafminuten in 45) - der Kaffee danach ist keine Nacht. DIE
 // PHASEN: Tiefschlaf ist eine Viertelstunde ohne jede Regung bei ruhigem Herz,
 // REM ein unregelmaessiges Herz bei ruhendem Koerper (ohne dichten Puls: der
 // zuckende Koerper). Der Host-Test rechnet alle Naechte nach.

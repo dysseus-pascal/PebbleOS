@@ -858,7 +858,8 @@ void test_boulder_schlaf__aufstehen_0510_beide_exporte_bis_6_uhr(void) {
   cl_assert_equal_i(spaet_gleich, frueh_gleich);
 }
 
-// RUHE NACH DEM GEHEN ZAEHLT ERST AB EINER HALBEN STUNDE AM STUECK. Fuenf
+// RUHE NACH DEM GEHEN ZAEHLT ERST, WENN SIE EINE HALBE STUNDE HAELT (30
+// Schlafminuten in den 45 ab ihrem Beginn). Fuenf
 // Stunden Schlaf, zehn Minuten gehen, dann still. Die ersten sechs Minuten
 // danach sind noch wach (Cole-Kripke sieht das Gehen davor, Webster haengt
 // drei Minuten an): von 30 Minuten Ruhe bleiben 24 Minuten Schlaf - keine
@@ -930,19 +931,60 @@ void test_boulder_schlaf__aufgestanden_ab_sieben_gehminuten(void) {
   cl_assert_equal_i(prv_gehminuten_dann_doesen(7, 3), 422);
 }
 
-// EINE GEHMINUTE UNTERBRICHT DEN SCHLAF AM STUECK. Nach dem Gehen 50 Minuten
-// still - aber in der Mitte noch einmal eine Minute unterwegs, das Herz noch
-// beim Ruhepuls: zweimal rund 20 Minuten Ruhe sind keine halbe Stunde am
-// Stueck. Eigenen Code hat das nicht: eine Gehminute ist fuer Cole-Kripke
-// schon allein wach. Schritte sieht die Rechnung nicht (siehe GEHEN_FACH).
-void test_boulder_schlaf__gehminute_unterbricht_den_schlaf(void) {
+// EIN GANG UNTERBRICHT DIE HALBE STUNDE, EINE EINZELNE GEHMINUTE NICHT. Nach
+// dem Gehen 50 Minuten still, in der Mitte noch einmal unterwegs, das Herz beim
+// Ruhepuls. Eine einzelne Gehminute kommt im Bett jede Nacht vor (29.9. 05:20,
+// 5.10. 03:01) - sie ist wach, teilt die Ruhe aber nicht: die Nacht waechst
+// bis ans Ende der Ruhe. Zwei in drei Minuten sind ein Gang (GANG_LUECKE): die
+// Ruhe davor zaehlt allein, 19 Schlafminuten sind keine halbe Stunde, die
+// danach (23) auch nicht - die Nacht endet vor dem Gehen. Zwei mit drei
+// Minuten Abstand sind noch keiner.
+static int prv_ruhe_mit_gehminuten(int abstand) {
+  test_boulder_schlaf__initialize();
   const int b[][3] = {
-    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 25, RUHIG, 55 },
-    { 1, GEHEN, 55 }, { 24, RUHIG, 55 }, { 20, WACH, 80 },
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 50, RUHIG, 55 }, { 20, WACH, 80 },
   };
-  const SchlafEingabe e = prv_eingabe(prv_bloecke(b, 7), 0);
+  const SchlafEingabe e = prv_eingabe(prv_bloecke(b, 5), 0);
+  // 25 Minuten nach dem Gehen; die Ruhe danach allein ist keine halbe Stunde.
+  s_bewegung[415] = GEHEN * GEHEN;
+  if (abstand > 0) {
+    s_bewegung[415 + abstand] = GEHEN * GEHEN;
+  }
   cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
-  cl_assert_equal_i(s_ergebnis.aufwachen, 380);
+  // Aufgestanden ist man nur einmal, beim ersten Gehen: die Minuten in der
+  // Ruhe sind zu wenige fuer ein neues Aufstehen.
+  return s_ergebnis.aufwachen;
+}
+
+void test_boulder_schlaf__ein_gang_unterbricht_die_halbe_stunde_eine_gehminute_nicht(void) {
+  cl_assert_equal_i(prv_ruhe_mit_gehminuten(0), 440);
+  cl_assert_equal_i(prv_ruhe_mit_gehminuten(1), 380);
+  cl_assert_equal_i(prv_ruhe_mit_gehminuten(2), 380);
+  cl_assert_equal_i(prv_ruhe_mit_gehminuten(3), 440);
+}
+
+// WIE AUF DER UHR: die Rechnung Minute fuer Minute ueber die Minuten bis
+// `ende` (das Ende eines Gangs) und weiter bis `bis`, so wie nacht.c sie zu
+// jeder Zeit sehen kann. Sobald der Schlaf nach dem Gang zehn Minuten lang ist
+// (MIN_SCHLAFLAUF), reicht die Nacht in ihn hinein - spaetestens 18 Minuten
+// nach dem Gang, wie bis b25 - und faellt bis `bis` nicht mehr vor den Gang
+// zurueck. Am Datenende zaehlt, was da ist: haelt der Schlaf bisher, haelt er.
+static void prv_wie_auf_der_uhr(SchlafEingabe *e, int ende, int bis) {
+  int drin_ab = -1;
+  for (int a = ende; a <= bis; a++) {
+    e->anzahl = a;
+    cl_assert(schlafanalyse_werte(e, &s_arbeit, &s_ergebnis));
+    if (s_ergebnis.aufwachen > ende) {
+      drin_ab = (drin_ab < 0) ? a : drin_ab;
+    } else if (drin_ab >= 0) {
+      printf("Gang bis Minute %d: um Minute %d wieder Aufwachen %d\n", ende, a,
+             s_ergebnis.aufwachen);
+      cl_fail("Die Nacht fiel vor den Gang zurueck");
+    }
+  }
+  printf("Gang bis Minute %d: die Nacht reicht ab Minute %d in den Schlaf danach\n", ende,
+         drin_ab);
+  cl_assert(drin_ab >= 0 && drin_ab <= ende + 18);
 }
 
 // DER TOILETTENGANG NACHTS LAESST DIE NACHT WACHSEN, wie bisher. Die echte
@@ -981,27 +1023,121 @@ void test_boulder_schlaf__toilettengang_nachts_laesst_die_nacht_wachsen(void) {
     // die Viertelstunde danach.
     cl_assert(s_ergebnis.schlaf_minuten >= 451 - gaenge[g].laenge - 15);
 
-    // WIE AUF DER UHR, 25 MINUTEN NACH DEM GANG: nach drei oder sechs
-    // Minuten reicht die Nacht schon in den Schlaf danach, wie bisher.
-    const int ab = prv_minute_ab_20("03:00") + gaenge[g].laenge;
-    e.anzahl = ab + 25;
-    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
-    if (gaenge[g].laenge < 10) {
-      cl_assert(s_ergebnis.aufwachen > ab);
-      continue;
+    // WIE AUF DER UHR, MINUTE FUER MINUTE BIS ZUM WECKER: auch nach zehn
+    // Minuten Gang (aufgestanden). Dort sind es 03:18 bis 03:40 22 Minuten
+    // Schlaf, dann eine Regung; am Stueck gezaehlt endete die Nacht bis 04:13
+    // vor dem Gang, und auf der Uhr war sie so lange "fertig".
+    prv_wie_auf_der_uhr(&e, prv_minute_ab_20("03:00") + gaenge[g].laenge,
+                        prv_minute_ab_20("06:00"));
+  }
+}
+
+// DER GANG IN DER LETZTEN STUNDE (Gegenpruefung 1). Der echte Toilettengang
+// vom 30.9. (01:36 bis 01:53, VMC und Puls), eingefuegt in jede Fitbit-Nacht
+// (gestellt), 100 bis 35 Minuten vor ihrem Aufwachen:
+// - SO WIE ER WAR, IST ER KEIN AUFSTEHEN: sechs Gehminuten in 15 Minuten. Die
+//   Nacht endet wie ohne ihn. Mit dem Dreifachen der Schwelle als Gehminute
+//   (2400) hatte er sieben (01:48: 2637) und beendete sie.
+// - EINE MINUTE KRAEFTIGER (01:47: 4000 statt 2224) hat er sieben und ist
+//   Aufstehen. Bis 55 Minuten vor dem Aufwachen folgt trotzdem eine halbe
+//   Stunde Schlaf, die haelt - die Nacht endet wie ohne ihn. Am Stueck
+//   gezaehlt endete sie am 5.10. schon 60 und 55 Minuten vorher am Gang.
+// - BEKANNTE GRENZE, AUS DER REGEL SELBST: 45 Minuten vor dem Aufwachen bleibt
+//   keine halbe Stunde Schlaf mehr - die Nacht endet am Gang (bis b25 nicht).
+#define GANG_30_LAENGE 18
+static uint16_t s_gang_bewegung[GANG_30_LAENGE];
+static uint8_t s_gang_puls[GANG_30_LAENGE];
+
+static void prv_gang_30_holen(void) {
+  test_boulder_schlaf__initialize();
+  prv_lade_nacht("nacht-2026-09-30.csv", NULL);
+  const int von = prv_minute_ab_20("01:36");
+  int gehminuten = 0;
+  for (int k = 0; k < GANG_30_LAENGE; k++) {
+    s_gang_bewegung[k] = s_bewegung[von + k];
+    s_gang_puls[k] = s_puls[von + k];
+    gehminuten += (s_bewegung[von + k] >= 4 * SCHLAF_SCHWELLE_VMC) ? 1 : 0;
+  }
+  // Wie im Export: 3835 um 01:36 bis 4544 um 01:52, sieben Minuten ueber dem
+  // Vierfachen der Schwelle in 17 Minuten, hoechstens sechs in einer
+  // Viertelstunde.
+  cl_assert_equal_i(s_gang_bewegung[0], 3835);
+  cl_assert_equal_i(s_gang_bewegung[11], 2224);
+  cl_assert_equal_i(gehminuten, 7);
+}
+
+// Die Nacht `datei` als Eingabe, mit dem Gang ab Minute `ab` (-1: ohne).
+static SchlafEingabe prv_eingabe_mit_gang(const char *datei, bool mit_hrv, int ab,
+                                          bool kraeftiger) {
+  test_boulder_schlaf__initialize();
+  int hrv_n = 0;
+  const int n = prv_lade_nacht(datei, &hrv_n);
+  for (int k = 0; ab >= 0 && k < GANG_30_LAENGE; k++) {
+    s_bewegung[ab + k] = (kraeftiger && k == 11) ? 4000 : s_gang_bewegung[k];
+    s_puls[ab + k] = s_gang_puls[k];
+    s_gueltig[ab + k] = true;
+  }
+  return prv_echte_eingabe(n, mit_hrv ? hrv_n : 0);
+}
+
+// Das Aufwachen der Nacht `datei`, mit dem Gang ab Minute `ab` (-1: ohne).
+static int prv_nacht_mit_gang(const char *datei, bool mit_hrv, int ab, bool kraeftiger) {
+  const SchlafEingabe e = prv_eingabe_mit_gang(datei, mit_hrv, ab, kraeftiger);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  return s_ergebnis.aufwachen;
+}
+
+void test_boulder_schlaf__gang_in_der_letzten_stunde(void) {
+  static const struct {
+    const char *datei;
+    bool mit_hrv;   //< wie in den Tests der Naechte: nur der 5.10. mit HRV
+  } naechte[] = {
+    { "nacht-2026-09-29.csv", false }, { "nacht-2026-09-30.csv", false },
+    { "nacht-2026-10-03.csv", false }, { "nacht-2026-10-05.csv", true },
+  };
+  prv_gang_30_holen();
+  for (size_t k = 0; k < ARRAY_LENGTH(naechte); k++) {
+    const int auf = prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, -1, false);
+    for (int vorher = 100; vorher >= 35; vorher -= 5) {
+      const int ab = auf - vorher;
+      const int echt = prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, ab, false);
+      const int kraeftiger = prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, ab, true);
+      if (echt != auf || (vorher >= 55 && kraeftiger != auf)) {
+        printf("%s, Gang %d Minuten vor dem Aufwachen: echt %d, kraeftiger %d, ohne %d\n",
+               naechte[k].datei, vorher, echt, kraeftiger, auf);
+      }
+      cl_assert_equal_i(echt, auf);
+      if (vorher >= 55) {
+        cl_assert_equal_i(kraeftiger, auf);
+      }
     }
-    // Nach zehn Minuten (aufgestanden) endet sie vorerst vor dem Gang. Sie
-    // waechst erst mit einer halben Stunde Schlaf am Stueck: 03:18 bis 03:40
-    // sind 22 Minuten, dann kurz wach, ab 03:43 voll um 04:13. Bis dahin ist
-    // die Nacht auf der Uhr "fertig", aber nicht endgueltig (zwei Stunden
-    // wach, nacht.c) - keine Folgenacht.
-    cl_assert(s_ergebnis.aufwachen <= prv_minute_ab_20("03:00"));
-    e.anzahl = prv_minute_ab_20("04:12");
-    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
-    cl_assert(s_ergebnis.aufwachen <= prv_minute_ab_20("03:00"));
-    e.anzahl = prv_minute_ab_20("04:13");
-    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
-    cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("04:13"));
+    const int ab = auf - 45;
+    cl_assert_equal_i(prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, ab, true), ab);
+  }
+}
+
+// EIN GANG MITTEN IN DER NACHT, WIE AUF DER UHR: derselbe Gang, eine Minute
+// kraeftiger (Aufstehen), um 01:00 am 29.9., um 02:15 am 30.9. und um 04:27 am
+// 3.10. (gestellt). Dort teilt eine Regung den Schlaf danach frueh, und die 30
+// Schlafminuten kommen erst spaet zusammen: mit 39 Minuten Fenster fiele die
+// Nacht am 30.9. um 02:55 und am 3.10. um 05:08 wieder an den Gang zurueck,
+// mit 37 auch am 29.9. um 01:38. Die Nacht reicht wie bis b25 eine
+// Viertelstunde nach dem Gang in den Schlaf und bleibt dort bis zum Aufwachen.
+void test_boulder_schlaf__gang_mitten_in_der_nacht_wie_auf_der_uhr(void) {
+  static const struct {
+    const char *datei;
+    const char *um;
+  } gaenge[] = {
+    { "nacht-2026-09-29.csv", "01:00" }, { "nacht-2026-09-30.csv", "02:15" },
+    { "nacht-2026-10-03.csv", "04:27" },
+  };
+  prv_gang_30_holen();
+  for (size_t g = 0; g < ARRAY_LENGTH(gaenge); g++) {
+    const int auf = prv_nacht_mit_gang(gaenge[g].datei, false, -1, false);
+    const int ab = prv_minute_ab_20(gaenge[g].um);
+    cl_assert_equal_i(prv_nacht_mit_gang(gaenge[g].datei, false, ab, true), auf);
+    SchlafEingabe e = prv_eingabe_mit_gang(gaenge[g].datei, false, ab, true);
+    prv_wie_auf_der_uhr(&e, ab + GANG_30_LAENGE, auf);
   }
 }
 
