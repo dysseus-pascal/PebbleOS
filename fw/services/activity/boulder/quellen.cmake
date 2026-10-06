@@ -7,4 +7,7 @@ pbl_library_sources(
   boulder/kraepelin/activity_algorithm_kraepelin.c
   boulder/kraepelin/kraepelin_algorithm.c
   boulder/vertraege.c
+  boulder/schlafanalyse.c
+  boulder/eingang.c
+  boulder/nachlauf.c
 )

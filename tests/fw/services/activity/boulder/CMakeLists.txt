@@ -61,6 +61,22 @@ pbl_clar_test(test_boulder_vertraege
     fw/services/activity/boulder/vertraege.c
 )
 
+# Der Schlafkern (AP2): b26-Rechnung im Nachlauf, Satz 0x4001 wie b26 auf allen
+# Referenznaechten.
+pbl_clar_test(test_boulder_schlafkern
+  SOURCES
+    fw/services/activity/boulder/schlafanalyse.c
+    fw/services/activity/boulder/eingang.c
+    fw/services/activity/boulder/nachlauf.c
+)
+
+# schlafanalyse.c/.h sind bytegleich zu b26 (main a7d8b16e1).
+add_test(NAME test_boulder_schlafanalyse_wie_b26
+  COMMAND ${CMAKE_COMMAND}
+    -DDATEIEN=${PBL_BASE}/fw/services/activity/boulder/schlafanalyse.c|${PBL_BASE}/include/pbl/services/activity/boulder/schlafanalyse.h
+    -DSOLL=d75621f7510a147c2f7b3220172f8c94060fd2aeddcf3b290885e1c6035d61dd|6334fe6ae9de942379075a96344479bbf1228748c7ff867fa1db94853110f35a
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/bytegleich.cmake)
+
 # Kopie und Original zaehlen gleich: dieselben Pruefkorpus-Laeufe, Ausgabe Zeile fuer Zeile.
 add_test(NAME test_boulder_kraepelin_gleich
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gleich_zaehlen.py
