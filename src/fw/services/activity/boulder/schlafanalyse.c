@@ -7,8 +7,9 @@
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
-// eingestellt, das Einschlafen zuletzt an der Nacht 5./6.10. (der Host-Test
-// rechnet alle vier nach). Der Puls relativ zu seiner Umgebung traf Fitbits
+// eingestellt, das Einschlafen zuletzt an der Nacht 5./6.10., das Aufstehen an
+// ihrem zweiten Export bis 07:24 (der Host-Test rechnet alle Naechte nach).
+// Der Puls relativ zu seiner Umgebung traf Fitbits
 // Tiefschlaf nur zufaellig. Was traf, war der Koerper: im Tiefschlaf liegt er
 // lange ganz still. Beim REM traf das Herz: es schlaegt unregelmaessig,
 // waehrend der Koerper ruht.
@@ -63,6 +64,36 @@
 // KNAPP UNTER DER GRENZE. Hoeher setzen hiesse aber, unruhigen Schlaf weiter
 // wegzuschieben (Test unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit).
 #define EINSCHLAF_SCHIEBEN_MAX 30
+// WER AUFGESTANDEN IST, SCHLAEFT NUR NOCH WEITER, WENN ES HAELT (b26). Nach
+// dem Aufwachen bleibt die Nacht in nacht.c noch zwei Stunden offen, damit sie
+// nach dem Toilettengang weiterwaechst. Am 5.10. wuchs sie so auch nach dem
+// Aufstehen: um 06:00 auf, Kaffee gemacht, von 06:26 bis 06:43 still mit ihm
+// gesessen, beim Ruhepuls - b25 sah darin Schlaf und das Aufwachen um 06:44.
+// Nach dem Gehen verlaengert deshalb erst eine halbe Stunde Schlaf am Stueck
+// die Nacht; kuerzere Ruhe (Kaffee, Zeitung, Sofa) nicht. Nach dem
+// Toilettengang schlaeft man laenger weiter (30.9.: um 01:45 auf, dann 51
+// Minuten am Stueck), die Nacht waechst dort wie bisher.
+// GEHEN SIEHT DIE RECHNUNG AM VMC, NICHT AN DEN SCHRITTEN: die Eingabe hat
+// keine, nacht.c liest sie nicht aus der Minutendatei. Eine Gehminute traegt
+// das Vierfache der Wachschwelle (3200 beim VMC der Uhr). Cole-Kripke macht
+// sie in jedem Fall wach (allein reichen knapp drei Schwellen): sie
+// unterbricht den Schlaf am Stueck.
+// SCHRITTE ALLEIN WAEREN KEIN BELEG: in den vier Fitbit-Naechten zaehlte die
+// Uhr im Bett sieben einzelne Minuten mit 8 bis 20 Schritten, drei davon
+// mitten im Schlaf bei einem VMC unter 1000 (Arm, Kratzen). Und beim Gehen am Morgen
+// trugen nur 2 bis 8 von 10 bis 14 Gehminuten einer Viertelstunde Schritte.
+#define GEHEN_FACH 4
+// Aufgestanden: sieben Gehminuten in einer Viertelstunde, irgendwo zwischen
+// dem Aufwachen und dem naechsten Schlaf (wer erst liegen bleibt und dann
+// aufsteht, ist auch aufgestanden). Das Aufstehen am Morgen hatte in allen
+// Naechten 10 bis 14 davon, Wachliegen im Bett hoechstens 3 (3.10. um 02:10),
+// der Toilettengang am 30.9. sechs. MITTEN IM BEREICH: von 7 bis 10 Minuten
+// und vom 3,5- bis 6-Fachen der Schwelle gilt in allen Naechten dasselbe als
+// Aufstehen; von 4 bis 6 zaehlte der Toilettengang mit, was dort nichts
+// aendert (51 Minuten Schlaf danach).
+#define AUFSTEHEN_FENSTER 15
+#define AUFSTEHEN_GEHMINUTEN 7
+#define SCHLAF_NACH_DEM_AUFSTEHEN 30
 // AUFWACHEN MITTEN IN DER NACHT: mindestens drei Regungen, keine mehr als zehn
 // Minuten nach der vorigen, und das Herz schiesst dabei um dreizehn Schlaege
 // ueber den Schlafpuls ringsum. Dann ist der ganze Schub wach, auch die
@@ -163,6 +194,29 @@ static bool prv_regung(const SchlafEingabe *e, int i) {
 static bool prv_waelzen(const SchlafEingabe *e, int i) {
   return e->gueltig[i] &&
       16 * (uint32_t)e->bewegung[i] >= EINSCHLAF_REGUNG_SECHZEHNTEL * e->schwelle;
+}
+
+// Eine Minute mit Bewegung wie beim Gehen (GEHEN_FACH).
+static bool prv_gehen(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] && e->bewegung[i] >= GEHEN_FACH * e->schwelle;
+}
+
+// Ist man zwischen `von` und `bis` gegangen - AUFSTEHEN_GEHMINUTEN in
+// AUFSTEHEN_FENSTER Minuten?
+static bool prv_aufgestanden(const SchlafEingabe *e, int von, int bis) {
+  for (int s = von; s < bis; s++) {
+    if (!prv_gehen(e, s)) {
+      continue;
+    }
+    int zahl = 0;
+    for (int j = s; j < s + AUFSTEHEN_FENSTER && j < bis; j++) {
+      zahl += prv_gehen(e, j) ? 1 : 0;
+    }
+    if (zahl >= AUFSTEHEN_GEHMINUTEN) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -699,6 +753,16 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
         continue;
       }
       ein = l->von;
+    } else if ((l->bis - l->von) < SCHLAF_NACH_DEM_AUFSTEHEN &&
+               prv_aufgestanden(e, auf, l->von)) {
+      // RUHE NACH DEM AUFSTEHEN verlaengert die Nacht nicht. Sie bleibt aber
+      // Schlaf, falls spaeter ein langer Schlaf die Nacht doch noch verlaengert:
+      // nachts nach einem Gang ist der kurze Schlaf davor echter Schlaf (5.10.
+      // mit zehn Minuten Gang um 03:00: 22 Minuten, kurz wach, dann 58). Folgt
+      // ein langer Schlaf, rechnet die Nacht so Minute fuer Minute wie ohne die
+      // Regel. Der Preis: legt man sich nach dem Kaffee noch einmal lange hin,
+      // zaehlt die Ruhe dazwischen als Schlaf, wie bis b25.
+      continue;
     }
     auf = l->bis;
   }

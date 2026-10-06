@@ -86,6 +86,9 @@ static int prv_bloecke(const int (*bloecke)[3], int anzahl) {
 
 #define WACH 160
 #define RUHIG 4
+// Ueber dem Vierfachen der Schwelle (240*240 gegen 4*800*16): wie Gehen.
+// WACH ist nur das Doppelte - wach im Bett, nicht unterwegs.
+#define GEHEN 240
 
 // ---------------------------------------------------------------------------
 // Die Nacht vom 26./27.9.2026 (Pebble Time 2, Firmware 4.38.1)
@@ -807,6 +810,139 @@ void test_boulder_schlaf__morgenexport_0510_ist_dieselbe_nacht(void) {
   cl_assert(!memcmp(bewegung, s_bewegung, frueh * sizeof(bewegung[0])));
   cl_assert(!memcmp(puls, s_puls, frueh * sizeof(puls[0])));
   cl_assert(!memcmp(gueltig, s_gueltig, frueh * sizeof(gueltig[0])));
+}
+
+// AUFGEWACHT UM 06:00, IN BEIDEN EXPORTEN (Wecker, vom Nutzer bestaetigt).
+// Nach dem Aufstehen ging er (06:05 bis 06:25 fast jede Minute ueber dem
+// Vierfachen der Schwelle) und sass dann still mit dem Kaffee; b25 nahm 06:34
+// bis 06:44 als Schlaf und rechnete die Nacht bis 06:44 (auch die Minute
+// 06:41 mit 15 Schritten, VMC 626). Jetzt ist die Ruhe nach dem Gehen keine
+// halbe Stunde und zaehlt nicht: beide Exporte ergeben dieselbe Nacht bis 06:00
+// - dieselben Abschnitte, dieselben Schlafminuten, derselbe Ruhepuls.
+void test_boulder_schlaf__aufstehen_0510_beide_exporte_bis_6_uhr(void) {
+  int hrv_n = 0;
+  const int frueh = prv_lade_nacht("nacht-2026-10-05.csv", &hrv_n);
+  SchlafEingabe e = prv_echte_eingabe(frueh, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  static SchlafErgebnis frueh_ergebnis;
+  frueh_ergebnis = s_ergebnis;
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  static char ref[SCHLAF_MINUTEN_MAX];
+  prv_lauf(lauf, frueh);
+  prv_fitbit(ref, frueh, s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510));
+  const int frueh_gleich = prv_uebereinstimmung(lauf, ref, frueh);
+  prv_bericht("0510", lauf, frueh_gleich);
+
+  test_boulder_schlaf__initialize();
+  const int spaet = prv_lade_nacht("nacht-2026-10-05-morgen.csv", &hrv_n);
+  e = prv_echte_eingabe(spaet, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  prv_lauf(lauf, spaet);
+  prv_fitbit(ref, spaet, s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510));
+  const int spaet_gleich = prv_uebereinstimmung(lauf, ref, spaet);
+  prv_bericht("0510morgen", lauf, spaet_gleich);
+
+  cl_assert_equal_i(frueh_ergebnis.aufwachen, prv_minute_ab_20("06:00"));
+  cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("06:00"));
+  cl_assert_equal_i(s_ergebnis.einschlafen, frueh_ergebnis.einschlafen);
+  cl_assert_equal_i(s_ergebnis.schlaf_minuten, frueh_ergebnis.schlaf_minuten);
+  cl_assert_equal_i(s_ergebnis.ruhepuls, frueh_ergebnis.ruhepuls);
+  cl_assert_equal_i(s_ergebnis.hrv, frueh_ergebnis.hrv);
+  cl_assert_equal_i(s_ergebnis.abschnitt_anzahl, frueh_ergebnis.abschnitt_anzahl);
+  cl_assert(!memcmp(s_ergebnis.abschnitte, frueh_ergebnis.abschnitte,
+                    s_ergebnis.abschnitt_anzahl * sizeof(SchlafAbschnitt)));
+  // Je Minute neben Fitbit also auch gleich. Vorher lag der spaete Export
+  // HOEHER (473 Promille): ausserhalb der Nacht zaehlt als wach, und die 38
+  // Minuten "wach in der Nacht" ab 06:00 trafen so Fitbits Ende. Das Aufwachen
+  // misst diese Kennzahl nicht - das tun die Gleichheiten oben.
+  cl_assert_equal_i(spaet_gleich, frueh_gleich);
+}
+
+// RUHE NACH DEM GEHEN ZAEHLT ERST AB EINER HALBEN STUNDE AM STUECK. Fuenf
+// Stunden Schlaf, zehn Minuten gehen, dann still. Die ersten sechs Minuten
+// danach sind noch wach (Cole-Kripke sieht das Gehen davor, Webster haengt
+// drei Minuten an): von 30 Minuten Ruhe bleiben 24 Minuten Schlaf - keine
+// Nacht mehr, sie endet vor dem Gehen; von 50 bleiben 44 - die Nacht waechst.
+void test_boulder_schlaf__ruhe_nach_dem_gehen_verlaengert_die_nacht_nicht(void) {
+  const int kurz[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 30, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  SchlafEingabe e = prv_eingabe(prv_bloecke(kurz, 5), 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 380);
+  // BEKANNTE GRENZE, MIT ABSICHT: legt man sich danach noch eine Stunde hin,
+  // waechst die Nacht bis dahin - und die Ruhe davor zaehlt darin als Schlaf.
+  // Die Regel aendert nur, wo die Nacht endet; nachts nach einem Gang ist der
+  // kurze Schlaf vor dem langen echter Schlaf (schlafanalyse.c).
+  const int wieder_hin[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 30, RUHIG, 55 },
+    { 10, GEHEN, 90 }, { 60, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  test_boulder_schlaf__initialize();
+  e = prv_eingabe(prv_bloecke(wieder_hin, 7), 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 490);
+  cl_assert(prv_phase_bei(&s_ergebnis, 405) != SchlafPhaseWach);
+  cl_assert(prv_phase_bei(&s_ergebnis, 470) != SchlafPhaseWach);
+
+  const int lang[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 50, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  test_boulder_schlaf__initialize();
+  e = prv_eingabe(prv_bloecke(lang, 5), 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 440);
+}
+
+// WER NICHT GEHT, IST NICHT AUFGESTANDEN: eine Viertelstunde wach im Bett
+// (doppelte Schwelle, hoher Puls), dann 15 Minuten Doesen - das verlaengert die
+// Nacht wie bisher. Ohne das Gehen als Bedingung endete sie vor dem Wachliegen.
+void test_boulder_schlaf__wachliegen_ohne_gehen_laesst_die_nacht_wachsen(void) {
+  const int b[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 15, WACH, 80 }, { 15, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  const SchlafEingabe e = prv_eingabe(prv_bloecke(b, 5), 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 410);
+}
+
+// AUFGESTANDEN AB SIEBEN GEHMINUTEN IN EINER VIERTELSTUNDE. 22 Minuten wach
+// im Bett, darin einige Minuten wie Gehen, dann 20 Minuten Doesen (16 davon
+// Schlaf). Sechs Gehminuten sind noch Waelzen im Bett, sieben dicht
+// hintereinander sind Aufstehen; sieben ueber 19 Minuten verteilt nicht -
+// in keiner Viertelstunde liegen sieben.
+static int prv_gehminuten_dann_doesen(int zahl, int abstand) {
+  test_boulder_schlaf__initialize();
+  const int b[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 22, WACH, 80 }, { 20, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  const SchlafEingabe e = prv_eingabe(prv_bloecke(b, 5), 0);
+  for (int k = 0; k < zahl; k++) {
+    s_bewegung[380 + k * abstand] = GEHEN * GEHEN;
+  }
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  return s_ergebnis.aufwachen;
+}
+
+void test_boulder_schlaf__aufgestanden_ab_sieben_gehminuten(void) {
+  cl_assert_equal_i(prv_gehminuten_dann_doesen(6, 2), 422);
+  cl_assert_equal_i(prv_gehminuten_dann_doesen(7, 2), 380);
+  cl_assert_equal_i(prv_gehminuten_dann_doesen(7, 3), 422);
+}
+
+// EINE GEHMINUTE UNTERBRICHT DEN SCHLAF AM STUECK. Nach dem Gehen 50 Minuten
+// still - aber in der Mitte noch einmal eine Minute unterwegs, das Herz noch
+// beim Ruhepuls: zweimal rund 20 Minuten Ruhe sind keine halbe Stunde am
+// Stueck. Eigenen Code hat das nicht: eine Gehminute ist fuer Cole-Kripke
+// schon allein wach. Schritte sieht die Rechnung nicht (siehe GEHEN_FACH).
+void test_boulder_schlaf__gehminute_unterbricht_den_schlaf(void) {
+  const int b[][3] = {
+    { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 10, GEHEN, 90 }, { 25, RUHIG, 55 },
+    { 1, GEHEN, 55 }, { 24, RUHIG, 55 }, { 20, WACH, 80 },
+  };
+  const SchlafEingabe e = prv_eingabe(prv_bloecke(b, 7), 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 380);
 }
 
 // ---------------------------------------------------------------------------
