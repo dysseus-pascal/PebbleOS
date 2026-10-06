@@ -3,6 +3,7 @@
 
 #include "pbl/services/activity/boulder/nacht.h"
 
+#include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/eingang.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
@@ -22,6 +23,15 @@ static uint8_t s_ruhepuls;       //< der letzten fertigen Nacht, fuer die Nicker
 static uint16_t s_tag_ab;        //< Nickerchen ab dieser Minute des Tages suchen
 static uint16_t s_gemeldet;
 static uint16_t s_abgelehnt;
+// AP4: nach dem Boot bis "Laden" nur der Eingang (Ring); das Fenster des Rings.
+static bool s_wartet;
+static time_t s_ring_beginn;
+// AP4: die zuletzt endgueltige Nacht des Fensters, fuer den Kopf (Abschluss nach Neustart).
+static bool s_alt;
+static uint16_t s_alt_ab;
+static uint16_t s_alt_auf;
+static uint16_t s_alt_fest;
+static uint16_t s_aufgeben;  //< Takte am Fensterende mit einer nicht ganz geschickten Nacht
 
 void boulder_nacht_zuruecksetzen(void) {
   s_beginn = 0;
@@ -34,6 +44,15 @@ void boulder_nacht_zuruecksetzen(void) {
   s_tag_ab = 0;
   s_gemeldet = 0;
   s_abgelehnt = 0;
+  s_wartet = false;
+  s_ring_beginn = 0;
+  s_alt = false;
+  s_alt_ab = 0;
+  s_alt_auf = 0;
+  s_alt_fest = 0;
+  s_aufgeben = 0;
+  boulder_eingang_neu();
+  boulder_nachlauf_neu(0, 0);
   boulder_live_neu();
   boulder_zyklen_zuruecksetzen();
 }
@@ -45,6 +64,8 @@ static void prv_fenster_neu(time_t beginn) {
   s_stufe = NachtOffen;
   s_fertig_auf = 0;
   s_fensterende = false;
+  s_alt = false;
+  s_aufgeben = 0;
   boulder_eingang_neu();
   boulder_live_neu();
   boulder_nachlauf_neu(0, 0);
@@ -53,6 +74,10 @@ static void prv_fenster_neu(time_t beginn) {
 
 bool boulder_nacht_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t puls,
                           bool gueltig) {
+  if (s_wartet) {
+    boulder_nacht_ring_minute(beginn_utc, minute, vmc, puls, gueltig);
+    return false;
+  }
   if (beginn_utc != s_beginn) {
     if (s_beginn && beginn_utc < s_beginn) {
       return false;  // Uhr zurueck ueber den Fensterbeginn: nichts verlaengern
@@ -114,28 +139,58 @@ static void prv_nacht_takt(void) {
   const int vorhanden = boulder_eingang()->ende;  // an vorhandenen Minuten gemessen
   uint16_t auf = 0;
   const bool gesehen = boulder_nachlauf_lauf_aufwachen(&auf);
-  bool noetig = s_fensterende;
+  // Eine angefangene, nicht ganz geschickte Nacht geht ganz neu (ausgabe.h).
+  bool noetig = s_fensterende || boulder_ausgabe_offen();
   if (s_stufe == NachtOffen) {
     noetig |= gesehen && vorhanden - auf >= NACHT_WACH_FERTIG;
   } else {
     const bool waechst = gesehen && auf > s_fertig_auf;
     const int wach = vorhanden - (waechst ? auf : s_fertig_auf);
     noetig |= (waechst && wach >= NACHT_WACH_FERTIG) || wach >= NACHT_WACH_ENDGUELTIG;
+    // JEDE AENDERUNG BIS ENDGUELTIG (b26 rechnete alle 15 Minuten ganz): ein spaeteres
+    // Aufwachen erkennt schon der Nachlauf, ein anderer Schlaf erst die Endfassung.
+    noetig |= (jetzt % NACHT_NACHSEHEN) == 2;
   }
   if (!noetig) {
     boulder_zyklen_fest(boulder_nachlauf_fest_bis());
     return;
   }
   const SchlafErgebnis *e = boulder_nachlauf_endfassung();
+  const time_t satz_beginn = s_beginn + (time_t)s_ab * 60;
   const int wach = e->gefunden ? vorhanden - (s_ab + e->aufwachen) : 0;
   const bool fertig = e->gefunden && (s_fensterende || wach >= NACHT_WACH_FERTIG);
-  const bool endgueltig = s_fensterende || (e->gefunden && wach >= NACHT_WACH_ENDGUELTIG);
+  bool endgueltig = s_fensterende || (e->gefunden && wach >= NACHT_WACH_ENDGUELTIG);
+  // Das NachtBild bei jeder Endfassung (b26), die Datei nur "fertig" und bei Aenderung.
+  bool ablage = boulder_ausgabe_bild(satz_beginn, e, fertig);
   if (fertig) {
+    if (s_stufe != NachtFertig || s_fertig_auf != s_ab + e->aufwachen) {
+      PBL_LOG_INFO("Boulder: Nacht fertig, %d min Schlaf", e->schlaf_minuten);
+      ablage = true;
+    }
     s_stufe = NachtFertig;
     s_fertig_auf = s_ab + e->aufwachen;
     s_ruhepuls = e->ruhepuls ? e->ruhepuls : s_ruhepuls;
     boulder_zyklen_fertig(s_fertig_auf);
-    PBL_LOG_INFO("Boulder: Nacht fertig, %d min Schlaf", e->schlaf_minuten);
+    // Wie b26: nur wenn Beginn, Aufwachen oder Schlaf neu sind.
+    if (boulder_ausgabe_noetig(satz_beginn, e->aufwachen, e->schlaf_minuten)) {
+      boulder_ausgabe_nacht(satz_beginn, e);
+    }
+  } else if (boulder_ausgabe_offen()) {
+    // Nicht mehr fertig (die Nacht waechst): b26 schickte erst wieder, wenn sie es ist.
+    boulder_ausgabe_verwerfen();
+  }
+  // ENDGUELTIG ERST, WENN DIE NACHT GANZ IM DATALOGGING LIEGT (b26): danach rechnet der
+  // Nachlauf die Folgenacht oder den Tag, und die Endfassung dieser Nacht gibt es nicht mehr.
+  // Am Fensterende nicht ewig: nach NACHT_AUFGEBEN_TAKTE gibt der Lebenslauf sie auf.
+  if (endgueltig && boulder_ausgabe_offen()) {
+    if (!s_fensterende || ++s_aufgeben < NACHT_AUFGEBEN_TAKTE) {
+      endgueltig = false;
+    } else {
+      PBL_LOG_WRN("Boulder: Nacht nicht geschickt, aufgegeben");
+    }
+  }
+  if (ablage) {
+    boulder_speicher_anstossen(true);
   }
   const uint16_t aufwachen = s_ab + e->aufwachen;
   boulder_zyklen_fest(boulder_nachlauf_fest_bis());
@@ -143,6 +198,14 @@ static void prv_nacht_takt(void) {
     return;
   }
   boulder_zyklen_endgueltig();
+  boulder_ausgabe_endgueltig();
+  // Fuer den Kopf: ihr Abschluss laeuft noch ein paar Minuten, ein Neustart setzt ihn fort.
+  s_alt = e->gefunden;
+  s_alt_ab = s_ab;
+  s_alt_auf = aufwachen;
+  s_alt_fest = boulder_nachlauf_fest_bis();
+  s_aufgeben = 0;
+  boulder_speicher_anstossen(true);
   if (!s_fensterende && e->gefunden) {
     // Schlaf danach ist eine eigene Nacht - erst ab NACHT_FOLGENACHT Minuten (b25).
     s_ab = aufwachen;
@@ -250,4 +313,123 @@ uint16_t boulder_nacht_nickerchen_gemeldet(void) {
 
 uint16_t boulder_nacht_nickerchen_abgelehnt(void) {
   return s_abgelehnt;
+}
+
+// ---------------------------------------------------------------------------------------
+// Nach dem Boot (AP4)
+
+void boulder_nacht_ring_neu(time_t beginn) {
+  boulder_nacht_zuruecksetzen();
+  s_wartet = true;
+  s_ring_beginn = beginn;
+}
+
+void boulder_nacht_ring_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t puls,
+                               bool gueltig) {
+  if (!s_wartet) {
+    return;
+  }
+  if (beginn_utc != s_ring_beginn) {
+    // Ohne Minuten aus der Datei gilt das Fenster der ersten Minute (Boot kurz vor 20 Uhr,
+    // Uhr gestellt); sonst gehoert die Minute nicht zu dieser Nacht.
+    if (s_ring_beginn && boulder_eingang()->letzte >= 0) {
+      return;
+    }
+    s_ring_beginn = beginn_utc;
+    boulder_eingang_neu();
+  }
+  if (minute >= 0 && minute < NACHT_MINUTEN) {
+    boulder_eingang_minute(minute, vmc, puls, gueltig);
+  }
+}
+
+bool boulder_nacht_wartet(void) {
+  return s_wartet;
+}
+
+time_t boulder_nacht_fenster(void) {
+  return s_wartet ? s_ring_beginn : s_beginn;
+}
+
+bool boulder_nacht_rest_noetig(void) {
+  return !s_wartet && s_beginn && s_stufe != NachtErledigt && boulder_live_lauf_beginn() >= 0;
+}
+
+void boulder_nacht_kopf(BoulderKopf *k) {
+  k->fenster = (uint32_t)s_beginn;
+  k->stufe = (uint8_t)s_stufe;
+  k->ab = s_ab;
+  k->fertig_auf = s_fertig_auf;
+  k->ruhepuls = s_ruhepuls;
+  k->tag_ab = s_tag_ab;
+  k->alt_offen = s_alt && boulder_zyklen_abschluss_offen();
+  if (k->alt_offen) {
+    k->alt_ab = s_alt_ab;
+    k->alt_auf = s_alt_auf;
+    k->alt_fest = s_alt_fest;
+  }
+}
+
+// Die Naechte des Fensters noch einmal so, wie sie im Betrieb liefen - stumm, dann meldet
+// boulder_zyklen_nach_boot sie mit ihren Starts. Gleiches Buch, gleiche Starts: Pebble sieht
+// dieselben Sitzungen, nichts doppelt.
+void boulder_nacht_laden(const BoulderKopf *k, uint16_t fest) {
+  s_wartet = false;
+  const BoulderEingang *e = boulder_eingang();
+  if (!s_ring_beginn || (!k && e->letzte < 0)) {
+    // Nichts zu laden: die naechste Minute beginnt das Fenster wie sonst.
+    s_beginn = 0;
+    return;
+  }
+  s_beginn = s_ring_beginn;
+  s_letzte = e->letzte;
+  s_ab = 0;
+  s_stufe = NachtOffen;
+  s_fertig_auf = 0;
+  s_fensterende = false;
+  s_tag_ab = 0;
+  s_alt = false;
+  s_aufgeben = 0;
+  if (k) {
+    s_stufe = (k->stufe <= NachtErledigt) ? (NachtStufe)k->stufe : NachtOffen;
+    s_ab = (k->ab < NACHT_MINUTEN) ? k->ab : 0;
+    s_fertig_auf = k->fertig_auf;
+    s_ruhepuls = k->ruhepuls;
+    s_tag_ab = k->tag_ab;
+    s_alt = k->alt_offen;
+    s_alt_ab = k->alt_ab;
+    s_alt_auf = k->alt_auf;
+    s_alt_fest = k->alt_fest;
+    boulder_nachlauf_fortsetzen(s_ab, s_ab ? NACHT_FOLGENACHT : 0, fest);
+  } else {
+    boulder_nachlauf_neu(0, 0);
+  }
+  boulder_live_neu();
+  boulder_zyklen_zuruecksetzen();
+  boulder_zyklen_stumm(true);
+  if (s_alt) {
+    boulder_zyklen_nacht(s_beginn, s_alt_ab);
+    boulder_zyklen_fertig(s_alt_auf);
+    boulder_zyklen_fest(s_alt_fest);
+    boulder_zyklen_endgueltig();
+  }
+  if (s_stufe == NachtErledigt) {
+    boulder_eingang_neu();  // die Felder gehoeren dem Tag
+    s_letzte = NACHT_MINUTEN - 1;
+  } else {
+    for (int m = 0; m <= s_letzte; m++) {
+      boulder_live_minute(m);
+    }
+    boulder_zyklen_nacht(s_beginn, s_ab);
+    if (s_stufe == NachtFertig) {
+      boulder_zyklen_fertig(s_fertig_auf);
+    }
+    boulder_zyklen_fest(boulder_nachlauf_fest_bis());
+    if (s_letzte >= 0) {
+      boulder_zyklen_live(boulder_live_schlaeft(), boulder_live_lauf_beginn(),
+                          (uint16_t)(s_letzte + 1));
+    }
+  }
+  boulder_zyklen_nach_boot();
+  PBL_LOG_INFO("Boulder: Nacht geladen, Stufe %d, Minute %d", (int)s_stufe, (int)s_letzte);
 }

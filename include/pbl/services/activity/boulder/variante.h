@@ -73,9 +73,12 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert);
 // deinit: Der Tracking-Teil geht; ein offener Fahrt-Entscheid gilt als "Nein" (D13).
 void boulder_dauerteil_tracking_aus(void);
 
-// Tests: der Dauerteil wie nach einem Boot (alles Statische auf null). Das Laden nach dem
-// Boot (Ring, Nacht) kommt mit AP4.
+// Tests: der Dauerteil wie nach einem Boot (alles Statische auf null; Dateien bleiben). Der
+// naechste init fuellt den Ring und reiht "Laden" ein (AP4).
 void boulder_dauerteil_test_neustart(void);
+// Tests, die Pebbles Timer selbst der Reihe nach feuern: den eigenen Takt nicht als Cron planen
+// (sein Weck-Timer kaeme vor den eigenen des Tests). Der Test ruft boulder_dauerteil_takt.
+void boulder_dauerteil_test_ohne_cron(bool ohne);
 
 // ---------------------------------------------------------------------------------------
 // Kopie, vom Dauerteil gerufen (KernelBG, ohne die Sperre der Variante)

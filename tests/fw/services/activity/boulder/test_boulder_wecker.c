@@ -297,6 +297,8 @@ void test_boulder_wecker__initialize(void) {
   s_letzte_vmc = 0;
   s_geklingelt = 0;
   boulder_dauerteil_test_neustart();
+  // Der Test feuert den naechsten Timer selbst (Schlummer); der Takt-Cron (AP4) stuende davor.
+  boulder_dauerteil_test_ohne_cron(true);
   cl_assert(activity_algorithm_init(&s_rate));
   prv_wecker_boot();
 }

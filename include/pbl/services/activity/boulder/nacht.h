@@ -5,8 +5,9 @@
 
 // Boulder V2: der Lebenslauf einer Nacht und die Nickerchen des Tages (Spezifikation 4.4,
 // 4.7). Stand AP3: was die Zyklen brauchen - Fenster, Rechnen, fertig, waechst,
-// endgueltig, Folgenacht. Saetze 0x4001/0x4002, NachtBild, Protokoll und Persistenz kommen
-// mit AP4 (ausgabe.c, speicher.c) und haengen sich an "fertig".
+// endgueltig, Folgenacht. Stand AP4: bei "fertig" und bei jeder Aenderung bis "endgueltig"
+// gehen 0x4001/0x4002 und das NachtBild hinaus (ausgabe.c); der Lebenslauf uebersteht einen
+// Neustart (speicher.c, Laden).
 //
 // DAS FENSTER ist ein Tag ab 20 Uhr Ortszeit (beginn_utc, Versatz am Fensterbeginn), in
 // Minuten: 0..899 die Nacht (20-11 Uhr), 900..1439 der Tag (11-20 Uhr) fuer Nickerchen.
@@ -18,6 +19,8 @@
 // Verlaengern) und sagt, wann der Takt faellig ist. boulder_nacht_takt laeuft im eigenen
 // Callback "Nachlauf" (Fensterrechnung, Endfassung, Abgleich, Nickerchen). Beides auf
 // KernelBG, kein Heap, keine Datei.
+
+#include "pbl/services/activity/boulder/speicher.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,6 +41,12 @@
 #define NICKERCHEN_MIN_SCHLAF 30
 #define NICKERCHEN_PULSE_MIN 3
 #define NICKERCHEN_PULS_UEBER 10
+// AP4: Eine fertige Nacht rechnet der Lebenslauf alle 15 Minuten ganz (wie b26) - aendern
+// sich Aufwachen oder Schlaf, geht sie noch einmal hinaus.
+#define NACHT_NACHSEHEN 15
+// So viele Takte nach dem Fensterende wartet "endgueltig" auf eine nicht ganz geschickte
+// Nacht (b26: eine Stunde), dann gibt der Lebenslauf sie auf.
+#define NACHT_AUFGEBEN_TAKTE 60
 
 typedef enum {
   NachtOffen = 0,  //< Nacht laeuft (oder Folgenacht)
@@ -57,6 +66,24 @@ bool boulder_nacht_hrv(time_t beginn_utc, int minute, uint16_t rmssd, uint8_t pu
 void boulder_nacht_takt(void);
 
 void boulder_nacht_zuruecksetzen(void);
+
+// AP4, nach dem Boot (Spezifikation 7.3): Der erste init beginnt das Fenster ab `beginn` und
+// fuellt seinen Eingang aus Pebbles Minutendatei (D14, boulder_nacht_ring_minute). Bis
+// "Laden" lief, nehmen auch die Minuten des Minutenteils nur diesen Weg - kein Automat, keine
+// Sitzung, kein Takt.
+void boulder_nacht_ring_neu(time_t beginn);
+void boulder_nacht_ring_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t puls,
+                               bool gueltig);
+bool boulder_nacht_wartet(void);
+// "Laden": den Lebenslauf aus dem Kopf (NULL = keiner fuer dieses Fenster), das Buch ist bis
+// `fest` geladen. Rechnet den Automaten nach und legt die Sitzungen neu an.
+void boulder_nacht_laden(const BoulderKopf *kopf, uint16_t fest);
+// Der Lebenslauf fuer den Kopf (Ablage).
+void boulder_nacht_kopf(BoulderKopf *kopf);
+// Minute 0 des laufenden Fensters (vor dem Laden: des Rings), 0 = keins.
+time_t boulder_nacht_fenster(void);
+// Lohnt der Ringrest? Die Nacht laeuft und hat Schlaf.
+bool boulder_nacht_rest_noetig(void);
 NachtStufe boulder_nacht_stufe(void);
 uint8_t boulder_nacht_ruhepuls(void);
 

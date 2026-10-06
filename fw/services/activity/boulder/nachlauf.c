@@ -28,6 +28,8 @@ static uint16_t s_lauf_aufwachen;  //< ihr Aufwachen, ab Minute 0
 static SchlafArbeit s_arbeit;
 static SchlafErgebnis s_ergebnis;
 static SchlafHrv s_hrv[SCHLAF_HRV_MAX];
+static uint8_t s_hrv_anzahl;
+static uint32_t s_stand;  //< AP4: jede Rechnung ein neuer Stand (Zeiger von aussen ungueltig)
 
 static uint8_t prv_buch(int i) {
   return (s_buch[i / 2] >> ((i % 2) * 4)) & 0xF;
@@ -91,6 +93,7 @@ static bool prv_schub_offen(const BoulderEingang *e, int m, int ende) {
 // ein (Phase und Wach-Bit; was ausserhalb der Nacht liegt, ausserhalb).
 static void prv_rechnen(int von, int ende, int ab) {
   const BoulderEingang *e = boulder_eingang();
+  s_stand++;
   int hrv_anzahl = 0;
   for (int k = 0; k < e->hrv_anzahl; k++) {
     const SchlafHrv *f = &e->hrv[k];
@@ -111,6 +114,7 @@ static void prv_rechnen(int von, int ende, int ab) {
     .hrv_anzahl = (uint8_t)hrv_anzahl,
     .min_schlaf = s_min_schlaf,
   };
+  s_hrv_anzahl = (uint8_t)hrv_anzahl;
   schlafanalyse_werte(&eingabe, &s_arbeit, &s_ergebnis);
   for (int i = ab; i < ende; i++) {
     prv_buch_setzen(i, (s_arbeit.wach[i - von] ? BUCH_WACH : 0) | NACHLAUF_AUSSERHALB);
@@ -199,6 +203,34 @@ bool boulder_nachlauf_lauf_aufwachen(uint16_t *aufwachen) {
 }
 
 void boulder_nachlauf_rechenplatz(SchlafArbeit **arbeit, SchlafErgebnis **ergebnis) {
+  s_stand++;
   *arbeit = &s_arbeit;
   *ergebnis = &s_ergebnis;
+}
+
+uint32_t boulder_nachlauf_stand(void) {
+  return s_stand;
+}
+
+const SchlafHrv *boulder_nachlauf_hrv(uint8_t *anzahl) {
+  *anzahl = s_hrv_anzahl;
+  return s_hrv;
+}
+
+SchlafAbschnitt *boulder_nachlauf_ablage(void) {
+  return s_arbeit.liste;
+}
+
+uint8_t *boulder_nachlauf_buch(void) {
+  return s_buch;
+}
+
+void boulder_nachlauf_fortsetzen(uint16_t ab, uint16_t min_schlaf, uint16_t fest_bis) {
+  s_ab = (ab < SCHLAF_MINUTEN_MAX) ? ab : SCHLAF_MINUTEN_MAX;
+  s_min_schlaf = min_schlaf;
+  s_fest_bis = (fest_bis > s_ab) ? fest_bis : s_ab;
+  s_ende = s_fest_bis;
+  s_jetzt = s_fest_bis;
+  s_lauf_gefunden = false;
+  s_stand++;
 }

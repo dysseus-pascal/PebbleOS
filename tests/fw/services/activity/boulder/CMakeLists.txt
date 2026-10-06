@@ -148,6 +148,8 @@ pbl_clar_test(test_boulder_schlafkern
 
 # Zyklen, Live-Zustand, Nickerchen (AP3): mit der echten activity_sessions.c und der
 # Glue-Kopie (get_last_sleep_utc, post_process), Minute fuer Minute wie auf der Uhr.
+# AP4: Saetze 0x4001/0x4002 und NachtBild Byte fuer Byte wie b26, Ablage in der echten
+# settings_file.c, Neustarts und Zeitspruenge.
 pbl_clar_test(test_boulder_zyklen
   SOURCES
     ${boulder_glue_umfeld}
@@ -165,6 +167,9 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/schlafanalyse.c
     fw/services/activity/boulder/spo2.c
     fw/services/activity/boulder/wecker.c
+    fw/services/activity/boulder/ausgabe.c
+    fw/services/activity/boulder/speicher.c
+    subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
@@ -242,6 +247,8 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/schlafanalyse.c
     fw/services/activity/boulder/spo2.c
     fw/services/activity/boulder/wecker.c
+    fw/services/activity/boulder/ausgabe.c
+    fw/services/activity/boulder/speicher.c
     tests/fw/services/activity/boulder/fake_messung.c)
 pbl_clar_test(test_boulder_wecker
   SOURCES ${boulder_wecker_quellen}

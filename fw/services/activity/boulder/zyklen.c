@@ -43,11 +43,15 @@ static uint16_t s_schlaf_bis;  //< bis hier hat der Automat geschlafen (Minute, 
 static uint16_t s_fest_bis;
 static int8_t s_offen = -1;    //< Index der offenen Sitzung (P oder C)
 static BoulderZyklenDiagnose s_diagnose;
+static bool s_stumm;           //< AP4: Nachspielen nach dem Boot, nichts an Pebble
 
 // ---------------------------------------------------------------------------------------
 // Pebble
 
 static void prv_melden(const Eintrag *e) {
+  if (s_stumm) {
+    return;
+  }
   ActivitySession s = {
     .start_utc = e->start,
     .length_min = (e->art == ArtNeutral) ? 0 : e->laenge,
@@ -161,6 +165,7 @@ void boulder_zyklen_zuruecksetzen(void) {
   s_schlaf_bis = 0;
   s_fest_bis = 0;
   s_offen = -1;
+  s_stumm = false;
 }
 
 void boulder_zyklen_nacht(time_t beginn_utc, uint16_t ab) {
@@ -416,6 +421,56 @@ time_t boulder_zyklen_offen_ende(void) {
     return 0;
   }
   return prv_ende(&s_eintraege[s_offen]);
+}
+
+void boulder_zyklen_stumm(bool stumm) {
+  s_stumm = stumm;
+}
+
+// Hat Pebble eine abgeschlossene Schlafsitzung mit diesem Start? (unter der Activity-Sperre)
+static bool prv_pebble_zu(time_t start) {
+  ActivityState *state = activity_private_state();
+  bool zu = false;
+  pbl_mutex_lock(&state->mutex, PBL_FOREVER);
+  for (uint16_t i = 0; i < state->activity_sessions_count; i++) {
+    const ActivitySession *s = &state->activity_sessions[i];
+    if (s->start_utc == start && !s->ongoing &&
+        (s->type == ActivitySessionType_Sleep || s->type == ActivitySessionType_RestfulSleep)) {
+      zu = true;
+      break;
+    }
+  }
+  pbl_mutex_unlock(&state->mutex);
+  return zu;
+}
+
+void boulder_zyklen_nach_boot(void) {
+  s_stumm = false;
+  for (int i = 0; i < ZYKLEN_EINTRAEGE; i++) {
+    Eintrag *e = &s_eintraege[i];
+    if (e->art == ArtLeer || e->art == ArtNeutral) {
+      // P0 legt die Variante nach einem Neustart nicht neu an (Regel 6); der Platz wird frei.
+      if (e->art == ArtNeutral && s_offen == i) {
+        s_offen = -1;
+      }
+      *e = (Eintrag){ 0 };
+      continue;
+    }
+    if (prv_pebble_zu(e->start)) {
+      e->zu = true;
+      continue;
+    }
+    prv_melden(e);
+  }
+}
+
+bool boulder_zyklen_abschluss_offen(void) {
+  for (int i = 0; i < ZYKLEN_EINTRAEGE; i++) {
+    if (s_eintraege[i].schliessen && !s_eintraege[i].zu) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool boulder_zyklen_nickerchen(time_t start_utc, uint16_t laenge_min) {

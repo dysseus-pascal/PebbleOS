@@ -86,6 +86,19 @@ time_t boulder_zyklen_offen_ende(void);
 // daraus Nap). Rueckgabe: gemeldet.
 bool boulder_zyklen_nickerchen(time_t start_utc, uint16_t laenge_min);
 
+// AP4, Laden nach einem Neustart. Pebble hat beim Boot alle laufenden Sitzungen verworfen
+// (activity_sessions.c:632), die abgeschlossenen behalten. Erst `stumm` setzen und die Naechte
+// des Fensters mit denselben Aufrufen wie im Betrieb nachspielen (Buch und Lebenslauf sind
+// geladen) - dabei geht nichts an Pebble. Dann boulder_zyklen_nach_boot: Was Pebble schon
+// abgeschlossen hat, gilt als zu und bleibt unberuehrt (ein erneutes Melden mit gleichem Start
+// machte es wieder laufend, :171-176); alles andere wird mit seinem Start neu gemeldet.
+// Neutrale Eintraege nicht (P0, Spezifikation 4.5 Regel 6).
+void boulder_zyklen_stumm(bool stumm);
+void boulder_zyklen_nach_boot(void);
+
+// Steht noch eine Sitzung im gestaffelten Abschluss? (Kopf: nach einem Neustart fortsetzen)
+bool boulder_zyklen_abschluss_offen(void);
+
 // Diagnose: zaehlt, was das Budget oder die Tabelle verhindert hat.
 typedef struct {
   uint16_t c_ueberspannt;   //< kein Platz fuer ein C: der vorige ueberspannt die Wachzeit

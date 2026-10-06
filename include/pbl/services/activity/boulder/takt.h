@@ -11,11 +11,12 @@
 // ist idempotent: Faellt ein Einreihen aus, holt es der naechste Anlass nach. Eigene
 // Funktionen je Arbeit lassen einen Watchdog-Grund unter ihrem Namen erscheinen.
 //
-// Der eigene Cron (Takt) kommt mit AP4; hier nur das Einreihen.
+// Der eigene Takt (AP4) ist ein Cron zur Sekunde 10 (dauerteil.c); er reiht nur ein.
 
 #include "pbl/services/system_task.h"
 
 #include <stdbool.h>
+#include <time.h>
 
 // So viel Platz muss in der KernelBG-Schlange frei bleiben (system_task.h:124).
 #define BOULDER_SCHLANGE_FREI 8
@@ -33,3 +34,7 @@ bool boulder_aufgabe_einreihen(BoulderAufgabe *aufgabe);
 
 // Erste Zeile jedes Callbacks: ab hier darf die Arbeit wieder eingereiht werden.
 void boulder_aufgabe_laeuft(BoulderAufgabe *aufgabe);
+
+// Der Takt des Dauerteils (Callback "Boulder Takt", Tests direkt): Luecken, Protokoll,
+// Ablage, Schub ans Telefon, "Laden" nachholen.
+void boulder_dauerteil_takt(time_t jetzt);

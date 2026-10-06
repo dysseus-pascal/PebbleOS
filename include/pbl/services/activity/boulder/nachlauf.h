@@ -74,3 +74,25 @@ bool boulder_nachlauf_lauf_aufwachen(uint16_t *aufwachen);
 // Task (Nickerchen, AP3): er ist gross (rund 14 KB) und wird nur einmal angelegt.
 // Danach gilt ein frueherer Zeiger der Endfassung nicht mehr.
 void boulder_nachlauf_rechenplatz(SchlafArbeit **arbeit, SchlafErgebnis **ergebnis);
+
+// AP4: Stand der Rechnung - waechst mit jedem Lauf, jeder Endfassung und jeder Vergabe des
+// Rechenplatzes. Die Ausgabe (ausgabe.c) baut ihre Saetze aus der Endfassung in eigenen
+// Callbacks und erkennt daran, dass der Zeiger nicht mehr gilt.
+uint32_t boulder_nachlauf_stand(void);
+
+// AP4: die HRV-Fenster, mit denen der letzte Lauf rechnete (Minuten ab seinem Beginn - nach
+// der Endfassung ab `ab`, wie im Satz 0x4002). Gilt wie der Zeiger der Endfassung.
+const SchlafHrv *boulder_nachlauf_hrv(uint8_t *anzahl);
+
+// AP4: die Arbeitsliste der Rechnung (SCHLAF_MINUTEN_MAX Abschnitte) - nach einem Lauf frei,
+// bis zum naechsten. Ablage fuer das Verdichten des NachtBilds; der Stand bleibt.
+SchlafAbschnitt *boulder_nachlauf_ablage(void);
+
+// AP4: das Nachtbuch roh (zwei Minuten je Byte, Minute 0 im unteren Halbbyte), fuer die
+// Ablage in Bloecken und das Laden nach einem Neustart.
+#define NACHLAUF_BUCH_BYTES ((SCHLAF_MINUTEN_MAX + 1) / 2)
+uint8_t *boulder_nachlauf_buch(void);
+
+// AP4, Laden nach einem Neustart: dieselbe Nacht ab `ab`, das Buch (vorher ueber
+// boulder_nachlauf_buch gefuellt) ist bis `fest_bis` fest. Anders als _neu bleibt das Buch.
+void boulder_nachlauf_fortsetzen(uint16_t ab, uint16_t min_schlaf, uint16_t fest_bis);
