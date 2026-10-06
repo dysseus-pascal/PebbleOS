@@ -7,10 +7,12 @@
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
-// eingestellt (der Host-Test rechnet sie nach). Der Puls relativ zu seiner
-// Umgebung traf Fitbits Tiefschlaf nur zufaellig. Was traf, war der Koerper:
-// im Tiefschlaf liegt er lange ganz still. Beim REM traf das Herz: es schlaegt
-// unregelmaessig, waehrend der Koerper ruht.
+// eingestellt, das Einschlafen zuletzt an der Nacht 5./6.10., das Aufstehen an
+// ihrem zweiten Export bis 07:24 (der Host-Test rechnet alle Naechte nach).
+// Der Puls relativ zu seiner Umgebung traf Fitbits
+// Tiefschlaf nur zufaellig. Was traf, war der Koerper: im Tiefschlaf liegt er
+// lange ganz still. Beim REM traf das Herz: es schlaegt unregelmaessig,
+// waehrend der Koerper ruht.
 
 // Um so viel ueber dem Puls der ruhigen Minuten gilt man als wach, auch ohne
 // Bewegung: wer nachts gruebelt, liegt still, aber sein Herz nicht.
@@ -24,19 +26,115 @@
 #define HALTEN_SCHLAF 45
 // Eine Regung: fuenf Sechzehntel der Wachschwelle in einer Minute (250 beim
 // VMC der Uhr). Darunter zuckt nur ein Finger. MITTEN IM BEREICH, nicht an
-// seinem Rand: von 150 bis 300 aendert sich keine der vier Naechte um mehr als
-// zwei Minuten, ab 350 zerfallen die Wachphasen der 3.10.
+// seinem Rand: von 150 bis 300 aendert sich keine der vier Naechte bis 3.10. um
+// mehr als zwei Minuten, ab 350 zerfallen die Wachphasen der 3.10. Die Nacht
+// 5.10. kam spaeter dazu: bei 150 und 200 hat sie einen Aufwach-Schub mehr
+// (15 Minuten wach, Fitbit sah keine), ab 250 nicht.
 #define REGUNG_SECHZEHNTEL 5
-// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Regungen in den zwanzig Minuten
-// ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.: 22:11,
-// 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
-#define EINSCHLAF_RUHE 20
+// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Waelz-Regungen in den vierzig
+// Minuten ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.:
+// 22:11, 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
+// VIERZIG MINUTEN, NICHT MEHR ZWANZIG (b26): am 5.10. lag der Nutzer ab 21:46
+// still, waelzte sich aber noch um 21:54, 22:10 und 22:13 - Fitbit sah den
+// Schlaf erst um 22:15. In zwanzig Minuten ab 21:46 liegt davon nur eine
+// Regung, und die Nacht begann 29 Minuten zu frueh. Ab 25 Minuten traegt das
+// Fenster die Regung um 22:10; von 25 bis 60 rechnen alle vier Naechte
+// gleich, 40 liegt mitten darin. EINGESTELLT ALLEIN AM 5.10. - unabhaengig
+// prueft es erst die naechste Fitbit-Nacht.
+#define EINSCHLAF_RUHE 40
 #define EINSCHLAF_REGUNGEN 2
-// Hoechstens so weit schiebt das Herumwaelzen das Einschlafen. Zwei Regungen
-// in zwanzig Minuten kommen auch in festem Schlaf vor (in einem Drittel bis
-// mehr als der Haelfte der Fenster); ohne Grenze wanderte der Beginn dort um
-// mehr als eine Stunde. Die 3.10. brauchte 25 Minuten.
+// ALS WAELZEN ZAEHLT NUR EINE KRAEFTIGE REGUNG: neun Sechzehntel der
+// Wachschwelle (450 beim VMC der Uhr), nicht fuenf wie eine Regung sonst.
+// Schwache Regungen kommen auch im beginnenden Schlaf: am 30.9. (Fitbit 21:58)
+// schoben die um 22:03 (VMC 402) und 22:26 (256) den Beginn mit fuenf
+// Sechzehnteln auf 22:04, mit dem langen Fenster sogar auf 22:12; mit neun
+// beginnt er um 22:00. Die 9/16 standen schon vor der Nacht 5.10. als Vorschlag
+// im Test; der 5.10. haelt sie, ist dazu aber kein Beleg: von 6/16 bis 12/16
+// bleiben alle vier Naechte innerhalb von zehn Minuten um Fitbit, ab 13/16
+// zaehlen die Regungen vom 5.10. um 22:10 und 22:13 nicht mehr (21:46).
+// Den Aufwach-Schueben bleibt die gewoehnliche Regung: dort zaehlt jedes
+// Regen eines Wachliegenden (REGUNG_SECHZEHNTEL).
+#define EINSCHLAF_REGUNG_SECHZEHNTEL 9
+// Hoechstens so weit schiebt das Herumwaelzen das Einschlafen. Zwei Waelz-
+// Regungen in vierzig Minuten kommen auch in festem Schlaf vor: ab einer
+// Stunde nach dem Einschlafen in drei Vierteln bis neun Zehnteln der Fenster
+// (mit zwanzig Minuten und 5/16 bis b25: zwei Fuenftel bis knapp zwei
+// Drittel). Ohne Grenze wanderte der Beginn dort um mehr als eine Stunde - die
+// Grenze traegt die Regel mit. Die 3.10. brauchte 25 Minuten, die 5.10. 28,
+// KNAPP UNTER DER GRENZE. Hoeher setzen hiesse aber, unruhigen Schlaf weiter
+// wegzuschieben (Test unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit).
 #define EINSCHLAF_SCHIEBEN_MAX 30
+// WER AUFGESTANDEN IST, SCHLAEFT NUR NOCH WEITER, WENN ES HAELT (b26). Nach
+// dem Aufwachen bleibt die Nacht in nacht.c noch zwei Stunden offen, damit sie
+// nach dem Toilettengang weiterwaechst. Am 5.10. wuchs sie so auch nach dem
+// Aufstehen: um 06:00 auf, Kaffee gemacht, von 06:26 bis 06:43 still mit ihm
+// gesessen, beim Ruhepuls - b25 sah darin Schlaf und das Aufwachen um 06:44.
+// Nach dem Gehen verlaengert deshalb erst eine halbe Stunde Schlaf die Nacht
+// (NACH_DEM_AUFSTEHEN_FENSTER). GRENZE: am echten Kaffee-Morgen haelt das bis
+// etwa 38 Minuten stilles Sitzen; wer laenger ganz still sitzt, sieht am VMC
+// aus wie ein Nickerchen und verlaengert die Nacht wie in b25. So gelassen
+// (Nutzer 06.10.); V2 nimmt den Wecker und das Licht dazu.
+// Nach dem Toilettengang schlaeft man laenger weiter (30.9.: um 01:45 auf,
+// dann 51 Minuten), die Nacht waechst dort wie bisher.
+// GEHEN SIEHT DIE RECHNUNG AM VMC, NICHT AN DEN SCHRITTEN: die Eingabe hat
+// keine, nacht.c liest sie nicht aus der Minutendatei. Eine Gehminute traegt
+// das Vierfache der Wachschwelle (3200 beim VMC der Uhr). Cole-Kripke macht
+// sie in jedem Fall wach (allein reichen knapp drei Schwellen): eine Minute,
+// in der man geht, ist im Wach-Feld nie Schlaf. In den ausgegebenen Phasen
+// glaettet die Analyse einzelne Gehminuten im Bett weiter zu Schlaf (29.9.
+// 05:20, 30.9. 00:13, 3.10. 23:09) - gewollt, ein Umdrehen ist kein Aufwachen.
+// SCHRITTE WOERTLICH ("nie Schlaf") MACHTEN NACHTS FALSCHE WACHMINUTEN: in den
+// vier Fitbit-Naechten zaehlte die Uhr im Bett sieben einzelne Minuten mit 8
+// bis 20 Schritten, drei davon bei einem VMC unter 1000 (Arm, Kratzen), vier
+// davon rechnet die Analyse als Schlaf. Fuer das Aufstehen trennten Schritte
+// auch (nachts hoechstens eine Schrittminute in 15 Minuten, morgens 4 bis 8),
+// aber sie fehlen in der Eingabe.
+#define GEHEN_FACH 4
+// Aufgestanden: sieben Gehminuten in einer Viertelstunde, irgendwo zwischen
+// dem Aufwachen und dem naechsten Schlaf (wer erst liegen bleibt und dann
+// aufsteht, ist auch aufgestanden). Das Aufstehen am Morgen hatte in allen
+// Naechten 10 bis 14 davon, Wachliegen im Bett hoechstens 3 (3.10. um 02:10),
+// der Toilettengang am 30.9. sechs. MITTEN IM BEREICH: von 7 bis 10 Minuten
+// und vom 3,5- bis 6-Fachen der Schwelle gilt in allen Naechten dasselbe als
+// Aufstehen; von 4 bis 6 zaehlte der Toilettengang mit, was dort nichts
+// aendert (51 Minuten Schlaf danach).
+#define AUFSTEHEN_FENSTER 15
+#define AUFSTEHEN_GEHMINUTEN 7
+// DIE HALBE STUNDE MUSS HALTEN, NICHT AM STUECK LIEGEN: 30 Schlafminuten in
+// den 45 Minuten ab Laufbeginn, zwei Drittel. Am Stueck gezaehlt teilte schon
+// eine Regung den Schlaf: am 5.10. ist 05:49 (VMC 3190) fuer Cole-Kripke wach.
+// Mit dem Toilettengang vom 30.9. um 05:05 (eingefuegt, eine Minute
+// kraeftiger: Aufstehen) teilte sie die 30 Minuten Schlaf bis zum Wecker in 20
+// und 10 - die Nacht endete am Gang, 55 Minuten zu frueh.
+// - Echter Schlaf hatte in allen fuenf Naechten ab jedem Laufbeginn nach
+//   hoechstens 37 Minuten 30 Schlafminuten beisammen. Die Ruhe nach dem
+//   Aufstehen hatte in 45 Minuten hoechstens 18 (Kaffee am 5.10.: 16).
+// - MITTEN IM BEREICH: mit eingefuegten Gaengen in allen Fitbit-Naechten
+//   (alle fuenf Minuten einer) rechnen 40 bis 47 Minuten gleich, im Takt von
+//   nacht.c wie Minute fuer Minute. Darunter faellt die Nacht auf der Uhr
+//   nach einem Gang wieder an ihn zurueck, obwohl man schlaeft (39: an drei
+//   Stellen mehr, 36: an zwanzig); darueber zaehlt kuerzerer Schlaf vor dem
+//   Aufwachen mit. Nur die untere Seite schadet - 45 liegt weiter weg von ihr.
+// - EIN GANG BEENDET DIE HALBE STUNDE, EINE EINZELNE GEHMINUTE NICHT: im Bett
+//   kommt in jeder Nacht eine vor (29.9. 05:20, 5.10. 03:01 und 03:40), zwei
+//   in drei Minuten in keiner (am naechsten: 3.10. 02:08 und 02:12, wach
+//   gelegen). Wer aufsteht und herumgeht, hat zwei dicht hintereinander.
+//   GANG_LUECKE mitten im Bereich: von 1 bis 3 gilt in allen Naechten
+//   dasselbe als Gang.
+// - AM ENDE DER DATEN zaehlt, was da ist (wie prv_haelt): wer nach dem Gang
+//   gerade schlaeft, schlaeft. Sonst endete die Nacht auf der Uhr am Gang,
+//   bis die 45 Minuten voll sind: sie ging als fertig ans Telefon, und der
+//   Smart Alarm klingelte zu Beginn seines Fensters statt mit der ersten
+//   Regung (26.9., Gang um 05:10, Wecker 06:39: 06:09 statt 06:31).
+// - DER PREIS, AUS DER REGEL SELBST: ein Gang, der 35 bis 55 Minuten vor dem
+//   Aufwachen beginnt, laesst keine halbe Stunde Schlaf mehr zu - die Nacht
+//   endet an ihm (eingefuegt: bis 34 Minuten weniger Schlaf). Und am Morgen
+//   haelt die Ruhe kurz vorlaeufig, solange sie am Datenende liegt (5.10.:
+//   die Rechnungen von 06:44 bis 06:50); fertig ist die Nacht dann nicht,
+//   geschickt wird sie nicht.
+#define NACH_DEM_AUFSTEHEN_FENSTER 45
+#define SCHLAF_NACH_DEM_AUFSTEHEN 30
+#define GANG_LUECKE 2
 // AUFWACHEN MITTEN IN DER NACHT: mindestens drei Regungen, keine mehr als zehn
 // Minuten nach der vorigen, und das Herz schiesst dabei um dreizehn Schlaege
 // ueber den Schlafpuls ringsum. Dann ist der ganze Schub wach, auch die
@@ -132,6 +230,50 @@ static bool prv_regung(const SchlafEingabe *e, int i) {
   return e->gueltig[i] && 16 * (uint32_t)e->bewegung[i] >= REGUNG_SECHZEHNTEL * e->schwelle;
 }
 
+// Eine Regung, kraeftig genug fuer das Herumwaelzen vor dem Einschlafen
+// (EINSCHLAF_REGUNG_SECHZEHNTEL).
+static bool prv_waelzen(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] &&
+      16 * (uint32_t)e->bewegung[i] >= EINSCHLAF_REGUNG_SECHZEHNTEL * e->schwelle;
+}
+
+// Eine Minute mit Bewegung wie beim Gehen (GEHEN_FACH).
+static bool prv_gehen(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] && e->bewegung[i] >= GEHEN_FACH * e->schwelle;
+}
+
+// Ist man zwischen `von` und `bis` gegangen - AUFSTEHEN_GEHMINUTEN in
+// AUFSTEHEN_FENSTER Minuten?
+static bool prv_aufgestanden(const SchlafEingabe *e, int von, int bis) {
+  for (int s = von; s < bis; s++) {
+    if (!prv_gehen(e, s)) {
+      continue;
+    }
+    int zahl = 0;
+    for (int j = s; j < s + AUFSTEHEN_FENSTER && j < bis; j++) {
+      zahl += prv_gehen(e, j) ? 1 : 0;
+    }
+    if (zahl >= AUFSTEHEN_GEHMINUTEN) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Beginnt bei `i` ein Gang - eine Gehminute und noch eine in den GANG_LUECKE
+// Minuten danach?
+static bool prv_gang_ab(const SchlafEingabe *e, int i) {
+  if (!prv_gehen(e, i)) {
+    return false;
+  }
+  for (int j = i + 1; j <= i + GANG_LUECKE && j < e->anzahl; j++) {
+    if (prv_gehen(e, j)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Die Schritte der Rechnung
 
@@ -195,17 +337,31 @@ static bool prv_haelt(const bool *wach, int n, int von) {
   return HALTEN_FENSTER * schlaf >= HALTEN_SCHLAF * (bis - von);
 }
 
-// Das Einschlafen hinter das Herumwaelzen schieben: solange in den zwanzig
-// Minuten ab `ein` zwei Regungen liegen, beginnt der Schlaf erst nach der
-// ersten - hoechstens EINSCHLAF_SCHIEBEN_MAX nach `ein`. Dann bis zur naechsten
-// Schlafminute.
+// Ob der Schlaf ab `von` nach dem Aufstehen haelt: SCHLAF_NACH_DEM_AUFSTEHEN
+// Schlafminuten in den NACH_DEM_AUFSTEHEN_FENSTER Minuten ab `von`, am Ende
+// der Daten im selben Verhaeltnis (wie prv_haelt). EIN GANG BEENDET DIE
+// ZAEHLUNG: was nach ihm kommt, ist eine neue Ruhe (GANG_LUECKE).
+static bool prv_haelt_nach_dem_aufstehen(const SchlafEingabe *e, const bool *wach, int von) {
+  const int n = e->anzahl;
+  const int bis = (von + NACH_DEM_AUFSTEHEN_FENSTER < n) ? von + NACH_DEM_AUFSTEHEN_FENSTER : n;
+  int schlaf = 0;
+  for (int i = von; i < bis && !prv_gang_ab(e, i); i++) {
+    schlaf += wach[i] ? 0 : 1;
+  }
+  return NACH_DEM_AUFSTEHEN_FENSTER * schlaf >= SCHLAF_NACH_DEM_AUFSTEHEN * (bis - von);
+}
+
+// Das Einschlafen hinter das Herumwaelzen schieben: solange in den
+// EINSCHLAF_RUHE Minuten ab `ein` zwei Waelz-Regungen liegen, beginnt der
+// Schlaf erst nach der ersten - hoechstens EINSCHLAF_SCHIEBEN_MAX nach `ein`.
+// Dann bis zur naechsten Schlafminute.
 static int prv_zur_ruhe(const SchlafEingabe *e, const bool *wach, int ein, int auf) {
   int s = ein;
   while (s < auf) {
     int erste = -1;
     int zahl = 0;
     for (int j = s; j < s + EINSCHLAF_RUHE && j < e->anzahl; j++) {
-      if (prv_regung(e, j)) {
+      if (prv_waelzen(e, j)) {
         erste = (erste < 0) ? j : erste;
         zahl++;
       }
@@ -666,6 +822,16 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
         continue;
       }
       ein = l->von;
+    } else if (!prv_haelt_nach_dem_aufstehen(e, w->wach, l->von) &&
+               prv_aufgestanden(e, auf, l->von)) {
+      // RUHE NACH DEM AUFSTEHEN verlaengert die Nacht nicht. Sie bleibt aber
+      // Schlaf, falls spaeter ein langer Schlaf die Nacht doch noch verlaengert:
+      // nachts nach einem Gang und langem Wachliegen ist der kurze Schlaf
+      // dazwischen echter Schlaf. Folgt ein langer Schlaf, rechnet die Nacht so
+      // Minute fuer Minute wie ohne die Regel. Der Preis: legt man sich nach
+      // dem Kaffee noch einmal lange hin, zaehlt die Ruhe dazwischen als
+      // Schlaf, wie bis b25.
+      continue;
     }
     auf = l->bis;
   }

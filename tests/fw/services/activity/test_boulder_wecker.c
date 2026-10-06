@@ -346,3 +346,45 @@ void test_boulder_wecker__smart_alarm_um_halb_sieben(void) {
          (erwartet / 60 + 20) % 24, erwartet % 60, (geklingelt / 60 + 20) % 24, geklingelt % 60);
   cl_assert_equal_i(geklingelt, erwartet);
 }
+
+// DER SMART ALARM NACH EINEM GANG IN DER LETZTEN STUNDE (Gegenpruefung 1): um
+// 05:10 oder 05:20 der echte Toilettengang vom 30.9. (01:36 bis 01:53), eine
+// Minute kraeftiger - sieben Gehminuten, also Aufstehen. Danach schlaeft man
+// weiter. Der Wecker um 06:39 klingelt wie ohne den Gang mit der ersten Regung
+// in seinem Fenster (06:31). Als die halbe Stunde nach dem Aufstehen am Stueck
+// zaehlen musste, galt man zu Beginn des Fensters (06:09) noch als wach, und
+// er klingelte sofort.
+static void prv_smart_alarm_nach_dem_gang(int ab) {
+  // VMC und Puls aus nacht-2026-09-30.csv, 01:47 mit 4000 statt 2224.
+  static const uint16_t vmc[] = { 3835, 0, 0, 0, 4085, 19, 0, 0, 683, 1668, 4162, 4000, 2637,
+                                  4047, 7089, 4586, 4544, 0 };
+  static const uint8_t puls[] = { 0, 0, 64, 0, 0, 0, 59, 0, 0, 76, 87, 108, 78, 70, 0, 0, 0, 0 };
+  for (size_t k = 0; k < sizeof(vmc) / sizeof(vmc[0]); k++) {
+    s_minuten[ab + k] = (HealthMinuteData){ .vmc = vmc[k], .heart_rate_bpm = puls[k] };
+  }
+  int erwartet = 639;
+  for (int m = 609; m < 639; m++) {
+    if (prv_bewegt(m - 1)) {
+      erwartet = m;
+      break;
+    }
+  }
+  alarm_create(&(AlarmInfo){ .hour = 6, .minute = 39, .kind = ALARM_KIND_EVERYDAY,
+                             .is_smart = true });
+  prv_bis(640);
+  cl_assert(s_geklingelt_um != 0);
+  const int geklingelt = (s_geklingelt_um - s_beginn) / SECONDS_PER_MINUTE;
+  printf("\nSmart Alarm 06:39, Gang um %02d:%02d: erste Regung %02d:%02d, geklingelt %02d:%02d\n",
+         (ab / 60 + 20) % 24, ab % 60, (erwartet / 60 + 20) % 24, erwartet % 60,
+         (geklingelt / 60 + 20) % 24, geklingelt % 60);
+  cl_assert_equal_i(erwartet, 631);
+  cl_assert_equal_i(geklingelt, erwartet);
+}
+
+void test_boulder_wecker__smart_alarm_nach_dem_gang_um_0510(void) {
+  prv_smart_alarm_nach_dem_gang(550);
+}
+
+void test_boulder_wecker__smart_alarm_nach_dem_gang_um_0520(void) {
+  prv_smart_alarm_nach_dem_gang(560);
+}
