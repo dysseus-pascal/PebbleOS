@@ -15,8 +15,8 @@ config BOULDER_PRUEFLAUF
 config BOULDER_PRUEFLAUF_HEAP
     int "Boulder: Kernel-Heap von obelix fuer den Ballast (Byte)"
     depends on BOULDER_PRUEFLAUF
-    default 75168
+    default 75136
     help
-      _heap_end - _heap_start im Release-Bau obelix@pvt (AP9: 75168). Der Pruefbau haelt den
+      _heap_end - _heap_start im Release-Bau obelix@pvt (AP9: 75136). Der Pruefbau haelt den
       Rest des QEMU-Heaps als Ballast fest (Spezifikation 7.2). Der QEMU-Heap ist zur Laufzeit
       auf 131068 B gekappt (heap_init), nicht die 147264 B zwischen den Linker-Symbolen.
