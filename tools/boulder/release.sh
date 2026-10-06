@@ -17,6 +17,7 @@
 # die Signatur vor dem Einspielen und nimmt nichts Unsigniertes an.
 #
 # Aufruf: tools/boulder/release.sh <nummer>
+#         BOULDER_VORAB=1 tools/boulder/release.sh <nummer>   (als Vorabversion)
 # Voraussetzung: .github/release/v4.38.4-b<nummer>.md, erste Zeile der Titel
 # ohne Version, darunter die Notizen (Deutsch) mit einer Zeile
 # "Mindest-App: X.Y.Z" (siehe unten). Der private Schluessel liegt
@@ -93,5 +94,13 @@ for name in "$(basename "$PAKET")" "$(basename "$PAKET").sig"; do
   gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' | grep -qx "$name" \
     || { echo "Im Release fehlt $name - Entwurf bleibt stehen, nachreichen mit: gh release upload $TAG <datei> -R $REPO" >&2; exit 1; }
 done
-gh release edit "$TAG" -R "$REPO" --draft=false >/dev/null
+# VORABVERSION (BOULDER_VORAB=1): vom Entwurf direkt zum Pre-release, ohne
+# Zwischenstand als normales Release - Boulder ueberspringt Pre-releases und
+# bietet sie nicht an; der Nutzer installiert die .pbz bewusst von Hand.
+# Freigabe spaeter mit: gh release edit <tag> -R <repo> --prerelease=false --latest
+if [ -n "${BOULDER_VORAB:-}" ]; then
+  gh release edit "$TAG" -R "$REPO" --draft=false --prerelease >/dev/null
+else
+  gh release edit "$TAG" -R "$REPO" --draft=false >/dev/null
+fi
 echo "https://github.com/$REPO/releases/tag/$TAG"
