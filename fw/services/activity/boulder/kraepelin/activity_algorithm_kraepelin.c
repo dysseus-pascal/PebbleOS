@@ -850,7 +850,7 @@ static void prv_schreiben_anstossen(void) {
 }
 
 static void prv_minutendatei_cb(void *unused) {
-  boulder_aufgabe_laeuft(&s_aufgabe_minutendatei);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_minutendatei);
   // Spezifikation 2.4, Regel 4: ohne Tracking-Teil nichts zu tun - deinit hat geschrieben,
   // was zu schreiben war (D13), und der Puffer ist frei.
   if (!s_alg_state) {
@@ -864,7 +864,7 @@ static void prv_minutendatei_cb(void *unused) {
 }
 
 static void prv_anlage_cb(void *unused) {
-  boulder_aufgabe_laeuft(&s_aufgabe_anlage);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_anlage);
   if (!s_alg_state || s_alg_state->dls_session) {
     return;
   }
@@ -1348,6 +1348,9 @@ static void prv_activity_update_states(time_t utc_sec, AlgMinuteRecord *record_o
 
 // ------------------------------------------------------------------------------------
 void activity_algorithm_minute_handler(time_t utc_sec, AlgMinuteRecord *record_out) {
+  /* Boulder: D16 die Messung endet bei jedem Verlassen (cleanup, takt.h) */
+  BOULDER_AUFGABE_LAEUFT(boulder_messung_minutenteil());
+  /* Boulder: Ende D16 */
   /* Boulder: D2 Activity-Sperre nur vor und nach der Kraepelin-Sperre */
   const bool hrm_offwrist = s_alg_state ? prv_vor_der_sperre(utc_sec, record_out) : false;
   if (!prv_lock()) {

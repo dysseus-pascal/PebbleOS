@@ -169,6 +169,8 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/wecker.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/diagnose.c
+    tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/kontext.c
     subsys/cron/cron.c
@@ -252,6 +254,8 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/wecker.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/diagnose.c
+    tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/kontext.c
     tests/fw/services/activity/boulder/fake_messung.c
@@ -325,6 +329,8 @@ pbl_clar_test(test_boulder_fahrt
     fw/services/activity/boulder/wecker.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/diagnose.c
+    tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/kontext.c
     fw/services/activity/boulder/nachfrage.c
@@ -336,4 +342,16 @@ pbl_clar_test(test_boulder_fahrt
     -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
     -Wl,--wrap=kernel_zalloc_check
     -Wl,--wrap=boulder_kalg_analyze_samples,--wrap=boulder_kalg_minute_stats
+)
+
+# AP9: der taegliche Diagnosesatz - Laufzeit je Arbeit (auch bei fruehem Ruecksprung),
+# Heap-Niedrigstand aus dem echten Heap, Neustarts ueber die echte settings_file.c.
+pbl_clar_test(test_boulder_diagnose
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/boulder/takt.c
+    fw/services/activity/boulder/diagnose.c
+    tests/fw/services/activity/boulder/fake_heap.c
+  DEFINES DUMA_DISABLED
+  OVERRIDES dummy_board
 )

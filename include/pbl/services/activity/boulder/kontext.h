@@ -112,6 +112,8 @@ bool boulder_kontext_fahrt_minute(time_t minute_utc);
 bool boulder_kontext_fahrt_laeuft(void);
 bool boulder_kontext_ueberdeckt(time_t start_utc, uint32_t laenge_s);
 bool boulder_kontext_aktiv(void);
+// Eine Frage steht und ist noch nicht beantwortet (der QEMU-Pruefbau haelt dann an).
+bool boulder_kontext_frage_offen(void);
 
 // Speicher (speicher.c): ablegen und nach dem Boot laden.
 void boulder_kontext_ablage(BoulderFahrtAblage *ablage);

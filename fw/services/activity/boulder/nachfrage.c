@@ -13,6 +13,7 @@
 // ihn etwas vom Stapel nimmt. Dort geht die Antwort einmal als Merker an den Dauerteil.
 
 #include "pbl/services/activity/boulder/kontext.h"
+#include "pbl/services/activity/boulder/takt.h"
 
 #include "applib/graphics/gcolor_definitions.h"
 #include "applib/ui/dialogs/actionable_dialog.h"
@@ -67,7 +68,11 @@ static void prv_tasten(void *context) {
   window_single_click_subscribe(BUTTON_ID_BACK, prv_nein);
 }
 
+// Nur gemessen (Ziel 20 ms, Spezifikation 7.1): Aufbau des Dialogs auf KernelMain.
+static BoulderAufgabe s_messung_dialog = BOULDER_AUFGABE("Boulder Dialog", NULL);
+
 static void prv_zeigen(void *daten) {
+  BOULDER_AUFGABE_LAEUFT(&s_messung_dialog);
   const uintptr_t d = (uintptr_t)daten;
   const BoulderFahrtArt art = (BoulderFahrtArt)(d & 0xFF);
   const uint8_t nr = (uint8_t)(d >> 8);

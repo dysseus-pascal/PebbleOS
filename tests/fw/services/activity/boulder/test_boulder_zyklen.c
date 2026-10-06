@@ -551,6 +551,43 @@ static const char *s_naechte[] = {
   "nacht-2026-10-03", "nacht-2026-10-05", "nacht-2026-10-05-morgen",
 };
 
+// AP9: die schlimmste Nacht des QEMU-Pruefbaus (prueflauf.c) - Puls jede Minute, zehn Zyklen,
+// 84 HRV-Fenster, also zwei Saetze 0x4002. Sie muss ganz ins Datalogging kommen.
+static void prv_schlimmste_minute(int m, uint16_t *vmc, uint8_t *puls) {
+  const uint32_t zufall = (uint32_t)m * 2654435761u;
+  if (m < 60 || m >= 900) {
+    *vmc = 2400 + zufall % 900;
+    *puls = 80 + zufall % 12;
+    return;
+  }
+  const int p = (m - 60) % 84;
+  *vmc = (p < 10) ? 40 + zufall % 80 : (p < 38) ? zufall % 6 : (p < 62) ? 20 + zufall % 70
+       : (p < 79) ? 5 + zufall % 10 : 600 + zufall % 600;
+  *puls = 48 + (p / 4) + zufall % 6;
+}
+
+void test_boulder_zyklen__schlimmste_nacht_zwei_hrv_teile(void) {
+  prv_lade("nacht-2026-09-26");  // nur fuer das Fenster
+  for (int m = 0; m < 19 * 60; m++) {
+    uint16_t vmc;
+    uint8_t puls;
+    prv_schlimmste_minute(m, &vmc, &puls);
+    if (m >= 63 && m < 900 && (m - 63) % 10 == 0) {
+      boulder_dauerteil_hrv_fenster(s_ref.beginn_utc + (m - 3) * PBL_SEC_PER_MIN,
+                                    30 + (m % 50), puls);
+    }
+    prv_minute(s_ref.beginn_utc, m, vmc, puls, true);
+  }
+  printf("\nschlimmste Nacht: %d Saetze 0x4001, %d Saetze 0x4002, geschickt %u min",
+         s_nacht_anzahl, s_hrv_saetze_anzahl, boulder_ausgabe_gesendet()->schlaf);
+  cl_assert(s_nacht_anzahl >= 1);
+  cl_assert_equal_i(s_hrv_saetze_anzahl % 2, 0);
+  cl_assert(s_hrv_saetze_anzahl >= 2);
+  cl_assert_equal_i(s_hrv_saetze[s_hrv_saetze_anzahl - 1].teile, 2);
+  cl_assert_equal_i(boulder_ausgabe_gesendet()->schlaf,
+                    s_nacht[s_nacht_anzahl - 1].schlaf_minuten);
+}
+
 // T3.4 und T4.1 auf allen Referenznaechten: durch die Nacht bis 16 Uhr (Fensterende und
 // Abschluss liegen davor).
 void test_boulder_zyklen__naechte(void) {

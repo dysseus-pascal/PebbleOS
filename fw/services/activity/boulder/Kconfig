@@ -1,5 +1,22 @@
 # SPDX-FileCopyrightText: 2026 dysseus-pascal
 # SPDX-License-Identifier: Apache-2.0
 
-# Boulder-Kraepelin: die eigenen Schalter der Variante (bisher keine). Die Wahl
-# selbst steht in fw/services/activity/Kconfig.
+# Boulder-Kraepelin: die eigenen Schalter der Variante. Die Wahl selbst steht in
+# fw/services/activity/Kconfig.
+
+config BOULDER_PRUEFLAUF
+    bool "Boulder: QEMU-Pruefbau (Pruefnaechte im Zeitraffer)"
+    depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER && QEMU && SHELL
+    help
+      Nur fuer Testbauten von qemu_emery (Spezifikation 7.5): baut die Referenznaechte als
+      Felder ein und den Shell-Befehl "boulder prueflauf <n>". Schreibt in die echte
+      Sitzungsliste und ins Datalogging des QEMU-Abbilds.
+
+config BOULDER_PRUEFLAUF_HEAP
+    int "Boulder: Kernel-Heap von obelix fuer den Ballast (Byte)"
+    depends on BOULDER_PRUEFLAUF
+    default 75168
+    help
+      _heap_end - _heap_start im Release-Bau obelix@pvt (AP9: 75168). Der Pruefbau haelt den
+      Rest des QEMU-Heaps als Ballast fest (Spezifikation 7.2). Der QEMU-Heap ist zur Laufzeit
+      auf 131068 B gekappt (heap_init), nicht die 147264 B zwischen den Linker-Symbolen.

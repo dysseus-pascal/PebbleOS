@@ -171,7 +171,7 @@ static void prv_abo_anmelden(void *data) {
 }
 
 static void prv_messstufe_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe);
   if (!s_gestartet) {
     s_gestartet = true;
     s_lesen = true;

@@ -23,3 +23,4 @@ abweichung D12 Minutendatei und DLS 81 im Callback "Minutendatei", der Minutente
 abweichung D13 deinit schreibt die nur wegen einer Fahrt zurueckgehaltenen Gruppen
 abweichung D14 init fuellt den Ring des Dauerteils im ohnehin noetigen Dateidurchlauf
 abweichung D15 Training und early_deinit an den Dauerteil (Kandidatin und Velo-Sitzung enden)
+abweichung D16 Rechenzeit des ganzen Minutenteils fuer die Diagnose (AP9, Kriterium 7)

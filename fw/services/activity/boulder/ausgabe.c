@@ -247,7 +247,7 @@ static void prv_anlage_anstossen(void) {
 // "Anlage": NUR dls_create, ohne gehaltene Sperre. resume = false wie b26: eine liegende
 // Sitzung dieses Tags von vor dem Boot wird beendet und geht ans Telefon.
 static void prv_anlage_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_anlage);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_anlage);
   if (!s_auftrag.offen) {
     return;
   }
@@ -272,7 +272,7 @@ static void prv_anlage_cb(void *data) {
 
 // "Ausgabe": ein Teil je Lauf.
 static void prv_ausgabe_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_ausgabe);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_ausgabe);
   if (!s_auftrag.offen) {
     return;
   }

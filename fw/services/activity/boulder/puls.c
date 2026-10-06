@@ -181,7 +181,7 @@ static bool prv_soll_erreicht(void) {
 }
 
 static void prv_puls_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe);
   if (s_abo == HRM_INVALID_SESSION_REF) {
     if (!prv_platz()) {
       return;

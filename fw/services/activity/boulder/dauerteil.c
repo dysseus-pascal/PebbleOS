@@ -32,6 +32,7 @@
 #include "pbl/cron/cron.h"
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/boulder/ausgabe.h"
+#include "pbl/services/activity/boulder/diagnose.h"
 #include "pbl/services/activity/boulder/eingang.h"
 #include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/live.h"
@@ -55,6 +56,17 @@ PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 static time_t s_letzte_minute_utc;
 
+#if defined(CONFIG_BOULDER_PRUEFLAUF)
+// Pruefbau (prueflauf.h): waehrend eines Laufs zaehlen nur seine Minuten und sein Takt.
+static bool s_prueflauf;
+static bool s_aus_prueflauf;
+#define PRUEFLAUF_AKTIV() (s_prueflauf)
+#define PRUEFLAUF_SPERRT() (s_prueflauf && !s_aus_prueflauf)
+#else
+#define PRUEFLAUF_AKTIV() false
+#define PRUEFLAUF_SPERRT() false
+#endif
+
 // Das Nachtfenster, in dem `utc` liegt: ab 20 Uhr Ortszeit, mit dem Versatz AM
 // FENSTERBEGINN (b26, M: nacht.c:193-209) - sonst rutschte der Beginn in der Nacht der
 // Zeitumstellung um drei Uhr um eine Stunde, mitten in der Rechnung.
@@ -76,7 +88,7 @@ static void prv_nachlauf_cb(void *data);
 static BoulderAufgabe s_aufgabe_nachlauf = BOULDER_AUFGABE("Boulder Nachlauf", prv_nachlauf_cb);
 
 static void prv_nachlauf_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_nachlauf);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_nachlauf);
   boulder_nacht_takt();
 }
 
@@ -91,7 +103,10 @@ static void prv_takt_cb(void *data);
 static BoulderAufgabe s_aufgabe_takt = BOULDER_AUFGABE("Boulder Takt", prv_takt_cb);
 
 static void prv_takt_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_takt);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_takt);
+  if (PRUEFLAUF_SPERRT()) {
+    return;
+  }
   boulder_dauerteil_takt(rtc_get_time());
 }
 
@@ -118,7 +133,7 @@ static BoulderAufgabe s_aufgabe_laden = BOULDER_AUFGABE("Boulder Laden", prv_lad
 // "Laden", einmal je Boot nach dem ersten init. Plant auch den Takt: der Cron-Dienst laeuft
 // dann sicher, und init bleibt leicht.
 static void prv_laden_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_laden);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_laden);
   if (!s_laden_offen) {
     return;
   }
@@ -134,6 +149,10 @@ void boulder_dauerteil_takt(time_t jetzt) {
   if (s_laden_offen) {
     boulder_aufgabe_einreihen(&s_aufgabe_laden);
     return;
+  }
+  // Im Pruefbau ist `jetzt` die Zeit der Pruefnacht: der Tagessatz folgt nur der echten Uhr.
+  if (!PRUEFLAUF_AKTIV()) {
+    boulder_diagnose_takt(jetzt);
   }
   const time_t minute = jetzt - (jetzt % PBL_SEC_PER_MIN);
   // LUECKEN: Eine Minute, die zwei Minuten nach ihrem Ende keinen Satz hat (am Kabel, Activity
@@ -164,7 +183,14 @@ void boulder_dauerteil_takt(time_t jetzt) {
   }
 }
 
+// Nur gemessen: der Anteil der Variante am Minutenteil (Ziel 2 ms, Spezifikation 7.1).
+static BoulderAufgabe s_messung_minute = BOULDER_AUFGABE("Boulder Minute Variante", NULL);
+
 void boulder_dauerteil_minute(const BoulderMinute *minute) {
+  BOULDER_AUFGABE_LAEUFT(&s_messung_minute);
+  if (PRUEFLAUF_SPERRT()) {
+    return;
+  }
   s_letzte_minute_utc = minute->utc;
   boulder_wecker_minute(minute->utc, minute->vmc);
   const time_t beginn = prv_fenster(minute->utc);
@@ -287,3 +313,21 @@ void boulder_dauerteil_test_neustart(void) {
 void boulder_dauerteil_test_ohne_cron(bool ohne) {
   s_test_ohne_cron = ohne;
 }
+
+#if defined(CONFIG_BOULDER_PRUEFLAUF)
+#include "pbl/services/activity/boulder/prueflauf.h"
+
+void boulder_dauerteil_prueflauf(bool laeuft) {
+  s_prueflauf = laeuft;
+}
+
+void boulder_dauerteil_prueflauf_minute(const BoulderMinute *minute) {
+  s_aus_prueflauf = true;
+  boulder_dauerteil_minute(minute);
+  s_aus_prueflauf = false;
+}
+
+time_t boulder_dauerteil_fenster(time_t utc) {
+  return prv_fenster(utc);
+}
+#endif

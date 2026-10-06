@@ -292,7 +292,7 @@ static void prv_merker_abholen(void) {
 }
 
 static void prv_antwort_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_antwort);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_antwort);
   prv_merker_abholen();
 }
 
@@ -513,6 +513,10 @@ bool boulder_kontext_ueberdeckt(time_t start_utc, uint32_t laenge_s) {
 
 bool boulder_kontext_aktiv(void) {
   return s_k.aktiv;
+}
+
+bool boulder_kontext_frage_offen(void) {
+  return s_k.frage_um != 0;
 }
 
 // ---------------------------------------------------------------------------------------

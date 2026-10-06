@@ -334,7 +334,7 @@ static bool prv_merker(SettingsFile *datei, UmzugMerker *m) {
 }
 
 static void prv_umzug_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe);
   const time_t jetzt = rtc_get_time();
   NachtBild bild;
   const bool bild_da = boulder_nacht_letzte(&bild);

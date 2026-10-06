@@ -6,6 +6,7 @@
 #include "pbl/services/activity/boulder/speicher.h"
 
 #include "pbl/services/activity/boulder/ausgabe.h"
+#include "pbl/services/activity/boulder/diagnose.h"
 #include "pbl/services/activity/boulder/eingang.h"
 #include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/messstufe.h"
@@ -14,6 +15,7 @@
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/umzug.h"
 #include "pbl/services/settings/settings_file.h"
+#include <pbl/drivers/rtc.h>
 #include <pbl/logging/logging.h>
 
 #include <string.h>
@@ -226,7 +228,7 @@ static void prv_rest_ablegen(SettingsFile *datei) {
 }
 
 static void prv_ablage_cb(void *data) {
-  boulder_aufgabe_laeuft(&s_aufgabe_ablage);
+  BOULDER_AUFGABE_LAEUFT(&s_aufgabe_ablage);
   const bool alles = s_alles;
   s_alles = false;
   // AP5: die Messstufe in jeder Ablage nachlesen (ein ueberschriebener Wert kommt zurueck).
@@ -252,6 +254,7 @@ static void prv_ablage_cb(void *data) {
   prv_hrv_ablegen(&datei);
   prv_protokoll_ablegen(&datei);
   prv_rest_ablegen(&datei);
+  boulder_diagnose_ablegen(&datei);
   BoulderFahrtAblage f;
   boulder_kontext_ablage(&f);
   if (memcmp(&f, &s_fahrt_datei, sizeof(f)) != 0 &&
@@ -362,14 +365,17 @@ void boulder_speicher_laden(void) {
   prv_neues_fenster(boulder_nacht_fenster());
   SettingsFile datei;
   if (!s_fenster) {
+    boulder_diagnose_laden(NULL, rtc_get_time());
     boulder_nacht_laden(NULL, 0);
     return;
   }
   if (settings_file_open(&datei, SPEICHER_DATEI, SPEICHER_DATEI_GROESSE) != S_SUCCESS) {
     PBL_LOG_WRN("Boulder: %s nicht geoeffnet, Nacht neu", SPEICHER_DATEI);
+    boulder_diagnose_laden(NULL, rtc_get_time());
     boulder_nacht_laden(NULL, 0);
     return;
   }
+  boulder_diagnose_laden(&datei, rtc_get_time());
   BoulderFahrtAblage f;
   if (settings_file_get_len(&datei, "fahrt", 5) == (int)sizeof(f) &&
       settings_file_get(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {

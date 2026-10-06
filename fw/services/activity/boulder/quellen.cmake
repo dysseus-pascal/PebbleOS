@@ -26,4 +26,12 @@ pbl_library_sources(
   boulder/ausgabe.c
   boulder/speicher.c
   boulder/umzug.c
+  boulder/diagnose.c
+  boulder/shell.c
 )
+if(CONFIG_BOULDER_PRUEFLAUF)
+  pbl_library_sources(
+    boulder/prueflauf.c
+    boulder/prueflauf_daten.c
+  )
+endif()
