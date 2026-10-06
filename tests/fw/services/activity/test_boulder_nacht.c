@@ -965,6 +965,63 @@ void test_boulder_nacht__toilettengang_bleibt_eine_nacht(void) {
   }
 }
 
+// DER GANG IN DER LETZTEN STUNDE (Gegenpruefung 1): die echte Nacht, um 05:40,
+// 05:50 und 06:00 der echte Toilettengang vom 30.9. (01:36 bis 01:53), eine
+// Minute kraeftiger - sieben Gehminuten, also Aufstehen. Danach schlaeft man
+// bis 07:00 weiter, und das haelt eine halbe Stunde: EINE Nacht bis 07:00, wie
+// bis b25, keine Folgenacht. Als die halbe Stunde am Stueck zaehlen musste,
+// endete sie am Gang (um 05:40: 410 statt 455 Minuten Schlaf).
+// BEKANNTE GRENZE, AUS DER REGEL SELBST: um 06:10 bleibt keine halbe Stunde
+// Schlaf mehr - die Nacht endet am Gang.
+static void prv_gang_30_kraeftiger(int ab) {
+  // VMC und Puls aus nacht-2026-09-30.csv, 01:47 mit 4000 statt 2224.
+  static const uint16_t vmc[] = { 3835, 0, 0, 0, 4085, 19, 0, 0, 683, 1668, 4162, 4000, 2637,
+                                  4047, 7089, 4586, 4544, 0 };
+  static const uint8_t puls[] = { 0, 0, 64, 0, 0, 0, 59, 0, 0, 76, 87, 108, 78, 70, 0, 0, 0, 0 };
+  for (size_t k = 0; k < sizeof(vmc) / sizeof(vmc[0]); k++) {
+    s_minuten[ab + k] = (HealthMinuteData){ .vmc = vmc[k], .heart_rate_bpm = puls[k] };
+  }
+}
+
+void test_boulder_nacht__gang_in_der_letzten_stunde(void) {
+  prv_durch_die_nacht();
+  const NachtDlsRecord *ohne = prv_letzter_satz(s_beginn);
+  cl_assert(ohne);
+  const int schlaf_ohne = ohne->schlaf_minuten;
+  static const int gaenge[] = { 580, 590, 600 };
+  for (size_t g = 0; g < sizeof(gaenge) / sizeof(gaenge[0]); g++) {
+    test_boulder_nacht__initialize();
+    prv_gang_30_kraeftiger(gaenge[g]);
+    prv_durch_die_nacht();
+    cl_assert(s_saetze_anzahl >= 1);
+    for (int k = 0; k < s_saetze_anzahl; k++) {
+      cl_assert_equal_i(s_saetze[k].beginn_utc, s_beginn);
+    }
+    const NachtDlsRecord *s = prv_letzter_satz(s_beginn);
+    cl_assert(s);
+    printf("\nGang um Minute %d: %d Saetze, ein %d, auf %d, Schlaf %d (ohne Gang %d)\n",
+           gaenge[g], s_saetze_anzahl, s->einschlafen, s->aufwachen, s->schlaf_minuten,
+           schlaf_ohne);
+    cl_assert_equal_i(s->einschlafen, 120 + 17);
+    cl_assert_equal_i(s->aufwachen, 660);
+    // Der Gang kostet sich selbst und den Nachlauf danach, nicht den Schlaf
+    // bis 07:00.
+    cl_assert(s->schlaf_minuten >= schlaf_ohne - 25);
+    cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+    prv_pruefe_eine_nacht();
+  }
+
+  test_boulder_nacht__initialize();
+  prv_gang_30_kraeftiger(610);
+  prv_durch_die_nacht();
+  const NachtDlsRecord *s = prv_letzter_satz(s_beginn);
+  cl_assert(s);
+  printf("\nGang um 06:10 (bekannte Grenze): auf %d, Schlaf %d\n", s->aufwachen, s->schlaf_minuten);
+  cl_assert_equal_i(s->aufwachen, 610);
+  cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+  prv_pruefe_eine_nacht();
+}
+
 // ---------------------------------------------------------------------------
 // Audit 4.10.2026
 
