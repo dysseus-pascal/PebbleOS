@@ -70,14 +70,19 @@
 // Aufstehen: um 06:00 auf, Kaffee gemacht, von 06:26 bis 06:43 still mit ihm
 // gesessen, beim Ruhepuls - b25 sah darin Schlaf und das Aufwachen um 06:44.
 // Nach dem Gehen verlaengert deshalb erst eine halbe Stunde Schlaf die Nacht
-// (NACH_DEM_AUFSTEHEN_FENSTER); kuerzere Ruhe (Kaffee, Zeitung, Sofa) nicht.
+// (NACH_DEM_AUFSTEHEN_FENSTER). GRENZE: am echten Kaffee-Morgen haelt das bis
+// etwa 38 Minuten stilles Sitzen; wer laenger ganz still sitzt, sieht am VMC
+// aus wie ein Nickerchen und verlaengert die Nacht wie in b25. So gelassen
+// (Nutzer 06.10.); V2 nimmt den Wecker und das Licht dazu.
 // Nach dem Toilettengang schlaeft man laenger weiter (30.9.: um 01:45 auf,
 // dann 51 Minuten), die Nacht waechst dort wie bisher.
 // GEHEN SIEHT DIE RECHNUNG AM VMC, NICHT AN DEN SCHRITTEN: die Eingabe hat
 // keine, nacht.c liest sie nicht aus der Minutendatei. Eine Gehminute traegt
 // das Vierfache der Wachschwelle (3200 beim VMC der Uhr). Cole-Kripke macht
 // sie in jedem Fall wach (allein reichen knapp drei Schwellen): eine Minute,
-// in der man geht, ist nie Schlaf.
+// in der man geht, ist im Wach-Feld nie Schlaf. In den ausgegebenen Phasen
+// glaettet die Analyse einzelne Gehminuten im Bett weiter zu Schlaf (29.9.
+// 05:20, 30.9. 00:13, 3.10. 23:09) - gewollt, ein Umdrehen ist kein Aufwachen.
 // SCHRITTE WOERTLICH ("nie Schlaf") MACHTEN NACHTS FALSCHE WACHMINUTEN: in den
 // vier Fitbit-Naechten zaehlte die Uhr im Bett sieben einzelne Minuten mit 8
 // bis 20 Schritten, drei davon bei einem VMC unter 1000 (Arm, Kratzen), vier
