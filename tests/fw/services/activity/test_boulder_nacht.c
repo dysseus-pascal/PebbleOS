@@ -921,6 +921,50 @@ void test_boulder_nacht__langer_morgenschlaf_bleibt_eine_nacht(void) {
   cl_assert_equal_i(prv_ueberlappungen(), 0);
 }
 
+// DER TOILETTENGANG UM 03:00 BLEIBT IN DER NACHT (b26, Aufsteh-Regel): die
+// echte Nacht, um 03:00 ein Gang mit den echten Minuten vom Morgen des
+// 5.10. - drei Minuten (06:10 bis 06:12, die mit Schritten) und zehn (06:06
+// bis 06:15, neun davon wie Gehen: das ist fuer die Rechnung schon
+// Aufstehen). Danach schlaeft man weiter. Am Ende steht EINE Nacht mit dem
+// Einschlafen und dem Aufwachen wie ohne den Gang (22:17, 07:00), keine
+// Folgenacht, kein frueheres Ende; der Gang liegt als wach im Block.
+static void prv_pruefe_eine_nacht(void);
+
+static void prv_toilettengang_um_drei(int laenge) {
+  // VMC und Schritte vom 5.10. ab 06:06 (nacht-2026-10-05.csv), Puls fehlt dort.
+  static const uint16_t vmc[] = { 4413, 3931, 8774, 2117, 6952, 10870, 7472, 6518, 5417, 5386 };
+  static const uint16_t schritte[] = { 0, 0, 0, 0, 24, 16, 13, 0, 0, 0 };
+  const int ab = (laenge == 3) ? 4 : 0;
+  for (int k = 0; k < laenge; k++) {
+    s_minuten[420 + k] = (HealthMinuteData){ .vmc = vmc[ab + k], .steps = schritte[ab + k] };
+  }
+}
+
+void test_boulder_nacht__toilettengang_bleibt_eine_nacht(void) {
+  static const int laengen[] = { 3, 10 };
+  for (size_t g = 0; g < sizeof(laengen) / sizeof(laengen[0]); g++) {
+    test_boulder_nacht__initialize();
+    prv_toilettengang_um_drei(laengen[g]);
+    prv_durch_die_nacht();
+    cl_assert(s_saetze_anzahl >= 1);
+    for (int k = 0; k < s_saetze_anzahl; k++) {
+      cl_assert_equal_i(s_saetze[k].beginn_utc, s_beginn);
+    }
+    const NachtDlsRecord *s = prv_letzter_satz(s_beginn);
+    cl_assert(s);
+    printf("\nToilettengang %d min: %d Saetze, ein %d, auf %d, Schlaf %d\n", laengen[g],
+           s_saetze_anzahl, s->einschlafen, s->aufwachen, s->schlaf_minuten);
+    cl_assert_equal_i(s->einschlafen, 120 + 17);
+    cl_assert_equal_i(s->aufwachen, 660);
+    cl_assert_equal_i(prv_anzahl(ActivitySessionType_Sleep), 1);
+    prv_pruefe_eine_nacht();
+    const ActivitySession *block = prv_erste(ActivitySessionType_Sleep);
+    cl_assert_equal_i(block->start_utc, s_beginn + s->einschlafen * SECONDS_PER_MINUTE);
+    cl_assert_equal_i(block->length_min, s->aufwachen - s->einschlafen);
+    cl_assert(!block->ongoing);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Audit 4.10.2026
 

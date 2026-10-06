@@ -945,6 +945,66 @@ void test_boulder_schlaf__gehminute_unterbricht_den_schlaf(void) {
   cl_assert_equal_i(s_ergebnis.aufwachen, 380);
 }
 
+// DER TOILETTENGANG NACHTS LAESST DIE NACHT WACHSEN, wie bisher. Die echte
+// Nacht 5.10., um 03:00 ein Gang mit den echten Minuten vom Morgen derselben
+// Nacht: drei Minuten (06:10 bis 06:12, die mit Schritten), sechs (06:06 bis
+// 06:11) und zehn (06:06 bis 06:15, neun Gehminuten - das ist schon
+// Aufstehen). Danach schlaeft man weiter; die Nacht beginnt wie ohne den Gang
+// und endet um 06:00, der Schlaf danach liegt in ihr.
+static void prv_toilettengang(int von, int laenge) {
+  const int ab = prv_minute_ab_20("03:00");
+  for (int k = 0; k < laenge; k++) {
+    s_bewegung[ab + k] = s_bewegung[von + k];
+    s_puls[ab + k] = s_puls[von + k];
+  }
+}
+
+void test_boulder_schlaf__toilettengang_nachts_laesst_die_nacht_wachsen(void) {
+  static const struct {
+    const char *von;
+    int laenge;
+  } gaenge[] = { { "06:10", 3 }, { "06:06", 6 }, { "06:06", 10 } };
+  for (size_t g = 0; g < ARRAY_LENGTH(gaenge); g++) {
+    test_boulder_schlaf__initialize();
+    int hrv_n = 0;
+    const int n = prv_lade_nacht("nacht-2026-10-05.csv", &hrv_n);
+    prv_toilettengang(prv_minute_ab_20(gaenge[g].von), gaenge[g].laenge);
+    SchlafEingabe e = prv_echte_eingabe(n, hrv_n);
+    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+    printf("\nToilettengang %d min: ein=%d auf=%d schlaf=%d\n", gaenge[g].laenge,
+           s_ergebnis.einschlafen, s_ergebnis.aufwachen, s_ergebnis.schlaf_minuten);
+    cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("22:14"));
+    cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("06:00"));
+    cl_assert_equal_i(prv_phase_bei(&s_ergebnis, prv_minute_ab_20("03:01")), SchlafPhaseWach);
+    cl_assert(prv_phase_bei(&s_ergebnis, prv_minute_ab_20("03:30")) != SchlafPhaseWach);
+    // Ohne den Gang 451 Minuten Schlaf; er kostet hoechstens sich selbst und
+    // die Viertelstunde danach.
+    cl_assert(s_ergebnis.schlaf_minuten >= 451 - gaenge[g].laenge - 15);
+
+    // WIE AUF DER UHR, 25 MINUTEN NACH DEM GANG: nach drei oder sechs
+    // Minuten reicht die Nacht schon in den Schlaf danach, wie bisher.
+    const int ab = prv_minute_ab_20("03:00") + gaenge[g].laenge;
+    e.anzahl = ab + 25;
+    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+    if (gaenge[g].laenge < 10) {
+      cl_assert(s_ergebnis.aufwachen > ab);
+      continue;
+    }
+    // Nach zehn Minuten (aufgestanden) endet sie vorerst vor dem Gang. Sie
+    // waechst erst mit einer halben Stunde Schlaf am Stueck: 03:18 bis 03:40
+    // sind 22 Minuten, dann kurz wach, ab 03:43 voll um 04:13. Bis dahin ist
+    // die Nacht auf der Uhr "fertig", aber nicht endgueltig (zwei Stunden
+    // wach, nacht.c) - keine Folgenacht.
+    cl_assert(s_ergebnis.aufwachen <= prv_minute_ab_20("03:00"));
+    e.anzahl = prv_minute_ab_20("04:12");
+    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+    cl_assert(s_ergebnis.aufwachen <= prv_minute_ab_20("03:00"));
+    e.anzahl = prv_minute_ab_20("04:13");
+    cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+    cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("04:13"));
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Die neuen Regeln einzeln, an erfundenen Naechten
 
