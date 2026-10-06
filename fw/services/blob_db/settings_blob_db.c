@@ -111,6 +111,7 @@ static const char *s_syncable_settings[] = {
   "spo2Preferences",
   "bloodOxygenPreferences",
   "bloodOxygenActivityPreferences",
+  "boulderMessstufe",  // Boulder: E3 Messstufe (1 Byte, liest die Variante selbst)
 
   // Menu wrap around preferences
   "menuScrollWrapAround",

@@ -70,6 +70,10 @@ ACTIVITY_H = 'include/pbl/services/activity/activity.h'
 PRIVATE_H = 'include/pbl/services/activity/activity_private.h'
 DLS_H = 'include/pbl/services/data_logging/data_logging_service.h'
 NACHT_H = 'include/pbl/services/activity/boulder/nacht_satz.h'
+MESSSTUFE_H = 'include/pbl/services/activity/boulder/messstufe.h'
+SETTINGS_BLOB_DB_C = 'fw/services/blob_db/settings_blob_db.c'
+# Schluessel der Messstufe, wie Boulder 0.50 ihn schreibt (B: WatchPrefEntity.kt:571-583).
+SOLL_MESSSTUFE = '"boulderMessstufe"'
 
 
 def ohne_kommentare(text):
@@ -149,6 +153,16 @@ def pruefe(repo):
 
     boulder = defines(lies(NACHT_H), SOLL_BOULDER.keys())
     fehler += vergleiche('Boulder-Tags', boulder, SOLL_BOULDER)
+
+    # AP5/E3: Boulder 0.50 schreibt die Messstufe unter diesem Schluessel (WatchPrefEntity.kt).
+    # Fehlt er in der Whitelist, lehnt die Uhr ihn still ab ("Rejecting non-whitelisted").
+    # Hier statt im Host-Test: settings_blob_db.c braucht verschachtelte Funktionen (gcc).
+    m = re.search(r'^\s*#define\s+BOULDER_MESSSTUFE_SCHLUESSEL\s+("[^"]*")', lies(MESSSTUFE_H), re.M)
+    if not m or m.group(1) != SOLL_MESSSTUFE:
+        fehler.append(f'BOULDER_MESSSTUFE_SCHLUESSEL = {m and m.group(1)}, soll {SOLL_MESSSTUFE}')
+    liste = re.search(r's_syncable_settings\[\]\s*=\s*\{(.*?)\};', lies(SETTINGS_BLOB_DB_C), re.S)
+    if not liste or SOLL_MESSSTUFE not in re.findall(r'"[^"]*"', liste.group(1)):
+        fehler.append(f'settings_blob_db.c: {SOLL_MESSSTUFE} fehlt in s_syncable_settings (E3)')
     return fehler
 
 

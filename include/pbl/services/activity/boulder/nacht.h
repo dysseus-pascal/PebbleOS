@@ -49,6 +49,10 @@ typedef enum {
 bool boulder_nacht_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t puls,
                           bool gueltig);
 
+// Ein fertiges HRV-Fenster (puls.c, AP5), das bei Minute `minute` des Fensters ab
+// `beginn_utc` begann. Nur in die laufende Nacht, in zeitlicher Folge. Rueckgabe: genommen.
+bool boulder_nacht_hrv(time_t beginn_utc, int minute, uint16_t rmssd, uint8_t puls);
+
 // Der Takt (Callback "Nachlauf"): idempotent, ein ausgefallener holt der naechste nach.
 void boulder_nacht_takt(void);
 

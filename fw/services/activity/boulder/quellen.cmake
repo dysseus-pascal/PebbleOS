@@ -16,4 +16,8 @@ pbl_library_sources(
   boulder/dauerteil.c
   boulder/szene.c
   boulder/takt.c
+  boulder/messstufe.c
+  boulder/puls.c
+  boulder/hrv.c
+  boulder/spo2.c
 )

@@ -649,7 +649,14 @@ void hrm_manager_new_data_cb(const HRMData *data) {
   }
 
 #ifdef CONFIG_HRM_HRV
-  if (data->features & HRMFeature_HRV) {
+  // Boulder: F2 - nur, wenn eine App HRV bestellt hat; das Nacht-HRV der Variante (Kernel)
+  // braucht den Rundruf nicht, und er ging je Schlag an jede App mit Health-Abo.
+  bool app_will_hrv = false;
+  for (HRMSubscriberState *s = (HRMSubscriberState *)s_manager_state.subscribers; s;
+       s = (HRMSubscriberState *)s->list_node.next) {
+    app_will_hrv |= (s->app_id != INSTALL_ID_INVALID) && (s->features & HRMFeature_HRV);
+  }
+  if ((data->features & HRMFeature_HRV) && app_will_hrv) {
     // Broadcast HRV updates as a health service event so apps subscribed through health_service
     // receive them without needing to consume raw HRM events.
     PebbleEvent health_event = {

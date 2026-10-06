@@ -163,6 +163,8 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/eingang.c
     fw/services/activity/boulder/nachlauf.c
     fw/services/activity/boulder/schlafanalyse.c
+    fw/services/activity/boulder/spo2.c
+    tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
 )
@@ -197,6 +199,29 @@ add_test(NAME test_boulder_waechter_gegenproben
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_kopie_pruefen.py)
 
 # Release-Pruefung, nicht Teil der Baseline: hat upstream das Original oder einen
+# AP5: Messstufe, Puls-Abo, HRV-Fenster gegen den echten hrm_manager.c
+pbl_clar_test(test_boulder_messung
+  SOURCES
+    fw/services/hrm/hrm_manager.c
+    fw/services/activity/boulder/messstufe.c
+    fw/services/activity/boulder/puls.c
+    fw/services/activity/boulder/hrv.c
+    fw/services/activity/boulder/takt.c
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    kernel/tick.c
+    tests/fakes/fake_accel_service.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_HRM_HRV
+  OVERRIDES dummy_board
+)
+
 # Vertrag geaendert? (cmake -DBOULDER_RELEASE=ON)
 option(BOULDER_RELEASE "Boulder: Release-Pruefungen gegen upstream/main" OFF)
 if(BOULDER_RELEASE)

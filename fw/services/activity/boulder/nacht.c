@@ -94,6 +94,16 @@ bool boulder_nacht_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t p
   return t >= NACHT_RECHNEN_AB && (t % NACHLAUF_TAKT) == 2;
 }
 
+bool boulder_nacht_hrv(time_t beginn_utc, int minute, uint16_t rmssd, uint8_t puls) {
+  // Nur in die laufende Nacht: ein Fenster aus einer vergangenen (Uhr zurueck, Fensterende
+  // dazwischen) gehoert nicht in diese Felder.
+  if (beginn_utc != s_beginn || s_stufe == NachtErledigt || minute < 0 ||
+      minute >= NACHT_MINUTEN) {
+    return false;
+  }
+  return boulder_eingang_hrv(minute, rmssd, puls);
+}
+
 // Fertig, waechst, endgueltig (Spezifikation 4.4). Das Aufwachen kommt aus dem Fenster
 // des Nachlaufs; entschieden wird erst an der Endfassung (die ganze Nacht, wie b26), denn
 // nur sie gibt die Zahlen des Satzes.

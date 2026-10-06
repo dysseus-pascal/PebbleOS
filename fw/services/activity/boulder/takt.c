@@ -18,11 +18,15 @@ bool boulder_aufgabe_einreihen(BoulderAufgabe *aufgabe) {
     PBL_LOG_DBG("Boulder: %s wartet, Schlange knapp", aufgabe->name);
     return false;
   }
+  // DER MERKER VOR DEM EINREIHEN: Reiht eine andere Task ein (Menue auf der App-Task,
+  // BlobDB-Abo auf KernelMain), kann KernelBG den Callback laufen lassen, bevor der
+  // Merker danach gesetzt waere - er bliebe dann fuer immer stehen und nichts kaeme mehr.
+  aufgabe->steht_an = true;
   if (!system_task_add_callback_droppable(aufgabe->lauf, NULL)) {
+    aufgabe->steht_an = false;
     PBL_LOG_DBG("Boulder: %s verworfen, Schlange voll", aufgabe->name);
     return false;
   }
-  aufgabe->steht_an = true;
   return true;
 }
 

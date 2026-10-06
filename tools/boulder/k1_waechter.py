@@ -35,7 +35,7 @@ PEBBLE = {
     'fw/services/blob_db/settings_blob_db.c': (1, None),             # E3 Whitelist Messstufe
     'fw/services/alarms/alarm.c': (10, r'prv_should_smart_alarm_trigger'),  # E4 Weckregel
     'fw/services/hrm/hrm_manager.c': (10, None),                     # E5 HRV-Fix (F2)
-    'fw/apps/system/settings/health.c': (40, None),                  # F3 Menue (vorlaeufig)
+    'fw/apps/system/settings/health.c': (40, None),                  # F3 Menue Messstufe
 }
 
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
