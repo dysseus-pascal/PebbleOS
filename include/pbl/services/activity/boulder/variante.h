@@ -73,6 +73,10 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert);
 // deinit: Der Tracking-Teil geht; ein offener Fahrt-Entscheid gilt als "Nein" (D13).
 void boulder_dauerteil_tracking_aus(void);
 
+// Tests: der Dauerteil wie nach einem Boot (alles Statische auf null). Das Laden nach dem
+// Boot (Ring, Nacht) kommt mit AP4.
+void boulder_dauerteil_test_neustart(void);
+
 // ---------------------------------------------------------------------------------------
 // Kopie, vom Dauerteil gerufen (KernelBG, ohne die Sperre der Variante)
 

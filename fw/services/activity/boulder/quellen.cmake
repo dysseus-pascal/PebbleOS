@@ -20,4 +20,5 @@ pbl_library_sources(
   boulder/puls.c
   boulder/hrv.c
   boulder/spo2.c
+  boulder/wecker.c
 )

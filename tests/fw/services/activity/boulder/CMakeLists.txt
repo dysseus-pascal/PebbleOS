@@ -164,6 +164,7 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/nachlauf.c
     fw/services/activity/boulder/schlafanalyse.c
     fw/services/activity/boulder/spo2.c
+    fw/services/activity/boulder/wecker.c
     tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
@@ -198,7 +199,6 @@ add_test(NAME test_boulder_vertraege_liste
 add_test(NAME test_boulder_waechter_gegenproben
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_kopie_pruefen.py)
 
-# Release-Pruefung, nicht Teil der Baseline: hat upstream das Original oder einen
 # AP5: Messstufe, Puls-Abo, HRV-Fenster gegen den echten hrm_manager.c
 pbl_clar_test(test_boulder_messung
   SOURCES
@@ -222,6 +222,40 @@ pbl_clar_test(test_boulder_messung
   OVERRIDES dummy_board
 )
 
+# Die strenge Weckregel (AP7, T4.2): der echte alarm.c mit E4 und als Vergleich unveraendert,
+# mit der echten activity_sessions.c und dem Live-Zustand der Variante.
+set(boulder_wecker_quellen
+    ${boulder_glue_umfeld}
+    fw/services/alarms/alarm.c
+    subsys/cron/cron.c
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/szene.c
+    fw/services/activity/boulder/takt.c
+    fw/services/activity/boulder/dauerteil.c
+    fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/live.c
+    fw/services/activity/boulder/zyklen.c
+    fw/services/activity/boulder/eingang.c
+    fw/services/activity/boulder/nachlauf.c
+    fw/services/activity/boulder/schlafanalyse.c
+    fw/services/activity/boulder/spo2.c
+    fw/services/activity/boulder/wecker.c
+    tests/fw/services/activity/boulder/fake_messung.c)
+pbl_clar_test(test_boulder_wecker
+  SOURCES ${boulder_wecker_quellen}
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  OVERRIDES dummy_board
+)
+pbl_clar_test(test_boulder_wecker_vergleich
+  SOURCE test_boulder_wecker.c
+  SOURCES ${boulder_wecker_quellen}
+  DEFINES DUMA_DISABLED CONFIG_HRM
+  OVERRIDES dummy_board
+)
+
+# Release-Pruefung, nicht Teil der Baseline: hat upstream das Original oder einen
 # Vertrag geaendert? (cmake -DBOULDER_RELEASE=ON)
 option(BOULDER_RELEASE "Boulder: Release-Pruefungen gegen upstream/main" OFF)
 if(BOULDER_RELEASE)

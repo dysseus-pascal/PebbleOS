@@ -12,6 +12,9 @@
 // STAND AP5: Messstufe, das Puls-Abo (Nachtpuls, HRV-Fenster) und der SpO2-Ring haengen
 // am Minutenteil; ihre Arbeit (Lesen, Setter) laeuft in eigenen Callbacks. AP4 kann den
 // Anstoss in den eigenen Takt verlegen.
+//
+// STAND AP7: Jede Minute geht auch an die Weckregel (wecker.c); "Tracking aus" macht sie
+// "nicht bereit".
 
 #include "pbl/services/activity/boulder/variante.h"
 
@@ -22,6 +25,7 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/activity/boulder/spo2.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/wecker.h"
 #include "pbl/services/activity/boulder/zyklen.h"
 #include "pbl/services/time.h"
 #include "pbl/util/units.h"
@@ -58,6 +62,7 @@ static void prv_nachlauf_cb(void *data) {
 
 void boulder_dauerteil_minute(const BoulderMinute *minute) {
   s_letzte_minute_utc = minute->utc;
+  boulder_wecker_minute(minute->utc, minute->vmc);
   const time_t beginn = prv_fenster(minute->utc);
   const int index = (int)((minute->utc - beginn) / PBL_SEC_PER_MIN);
   if (boulder_nacht_minute(beginn, index, minute->vmc, minute->puls, !minute->nicht_getragen)) {
@@ -131,5 +136,12 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert) {
 }
 
 void boulder_dauerteil_tracking_aus(void) {
+  boulder_wecker_vergessen();
   boulder_puls_tracking_aus();
+}
+
+void boulder_dauerteil_test_neustart(void) {
+  s_letzte_minute_utc = 0;
+  boulder_nacht_zuruecksetzen();
+  boulder_wecker_vergessen();
 }

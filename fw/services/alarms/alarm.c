@@ -16,6 +16,7 @@
 #include "pbl/services/new_timer/new_timer.h"
 #include "pbl/services/system_task.h"
 #include "pbl/services/activity/activity.h"
+#include "pbl/services/activity/boulder/wecker.h"  // Boulder: strenge Weckregel (E4)
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/services/timeline/event.h"
 #include <pbl/logging/logging.h>
@@ -193,6 +194,11 @@ static bool prv_should_smart_alarm_trigger(const AlarmConfig *config) {
     // The smart alarm has reached the end of its time range
     return true;
   }
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  // Boulder: streng - die Variante entscheidet in jedem Zustand, nie im Tiefschlaf.
+  // Pebbles Weg darunter bleibt stehen, sonst waeren seine Helfer unbenutzt.
+  return boulder_kraepelin_wecken_erlaubt(config->hour, config->minute);
+#endif
   switch (prv_get_sleep_state()) {
     case ActivitySleepStateUnknown:
     case ActivitySleepStateAwake:
