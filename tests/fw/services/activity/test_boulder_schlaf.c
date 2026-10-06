@@ -681,6 +681,47 @@ void test_boulder_schlaf__hrv_verwirft_tiefschlaf_nicht_pauschal(void) {
   cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseTief) > 0);
 }
 
+// Die Nacht vom 5./6.10.2026, aus Boulders Nachtexport (Firmware b25,
+// Messstufe 4, mit HRV-Fenstern), neben einem Fitbit. EINGESCHLAFEN 22:15
+// (Fitbit). AUFGEWACHT 06:00, vom Wecker - so hat es der Nutzer bestaetigt.
+// Fitbits "aus dem Bett" um 05:42 ist hier falsch.
+// FITBITS SUMMEN (Bildschirmfoto des Nutzers vom 6.10., nicht im Repo), 22:15
+// bis 05:42: REM 2:14, leicht 4:29, tief 0:44 h, wach 0 (32 Minuten unruhig).
+// DIE PHASEN SIND VON HAND AUS DEM BILD ABGELESEN - ungefaehr, auf ein, zwei
+// Minuten. DIE TABELLE TRIFFT FITBITS SUMMEN NICHT: sie ergibt REM 147 (Fitbit
+// 134) und tief 57 (Fitbit 44) Minuten, wohl wegen der runden Balkenenden im
+// Bild. Von 05:42 bis 06:00 hat Fitbit keine Phase; dort steht leicht, weil der
+// Nutzer bis zum Wecker schlief. Sie bleibt so, bis jemand das Bild neu
+// abliest; was an ihr gemessen wird, gilt fuer genau sie.
+static const FitbitAbschnitt s_fitbit_0510[] = {
+  { "22:15", "06:00", 'l' },
+  { "22:15", "22:29", 't' }, { "23:53", "00:09", 't' }, { "01:14", "01:22", 't' },
+  { "03:22", "03:41", 't' },
+  { "22:52", "23:12", 'r' }, { "00:28", "00:49", 'r' }, { "02:08", "02:54", 'r' },
+  { "03:56", "04:30", 'r' }, { "05:16", "05:42", 'r' },
+};
+
+// Die Tabelle 5.10. ergibt, was ihr Kommentar sagt - nachgezaehlt, nicht
+// Fitbits Summen: im Bett 22:15 bis 06:00 (465 Minuten), wach 0, tief 57, REM
+// 147. Und sie ueberschneidet sich nicht.
+void test_boulder_schlaf__fitbit_tabelle_0510_wie_beschrieben(void) {
+  static char ref[SCHLAF_MINUTEN_MAX];
+  const int n = 700;
+  prv_fitbit(ref, n, s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510));
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'w'), 0);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 't'), 57);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'r'), 147);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'l'), 261);
+  cl_assert_equal_i(n - prv_ref_minuten(ref, n, '.'), 465);
+  // Im Bett genau von 22:15 bis zum Wecker um 06:00, ohne Luecke.
+  cl_assert(ref[prv_minute_ab_20("22:14")] == '.');
+  cl_assert(ref[prv_minute_ab_20("22:15")] != '.');
+  cl_assert(ref[prv_minute_ab_20("05:59")] != '.');
+  cl_assert(ref[prv_minute_ab_20("06:00")] == '.');
+  cl_assert_equal_i(prv_laengen_nach_dem_bett(s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510)),
+                    57 + 147);
+}
+
 // ---------------------------------------------------------------------------
 // Die neuen Regeln einzeln, an erfundenen Naechten
 
