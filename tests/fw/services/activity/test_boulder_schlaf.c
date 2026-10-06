@@ -779,6 +779,36 @@ void test_boulder_schlaf__echte_nacht_0510_neben_fitbit(void) {
   cl_assert(gleich >= 436 - UEBEREINSTIMMUNG_SPIEL);
 }
 
+// DIESELBE NACHT 5./6.10., SPAETER NOCH EINMAL EXPORTIERT (Minuten bis 07:24,
+// der erste Export um 06:18 reicht bis 06:24). Der Nutzer stand um 06:00 auf,
+// machte von 06:10 bis 06:24 Kaffee und sass von 06:26 bis 06:43 still mit
+// ihm. b25 rechnete daraus das Aufwachen 06:44 (so steht es im Kopf). Bis
+// 06:24 sind die Minuten und die HRV-Fenster beider Exporte gleich - nur der
+// Kopf und die Phasenspalte nicht, die Uhr hatte die Nacht neu gerechnet.
+void test_boulder_schlaf__morgenexport_0510_ist_dieselbe_nacht(void) {
+  static uint16_t bewegung[SCHLAF_MINUTEN_MAX];
+  static uint8_t puls[SCHLAF_MINUTEN_MAX];
+  static bool gueltig[SCHLAF_MINUTEN_MAX];
+  static SchlafHrv hrv[SCHLAF_HRV_MAX];
+  int hrv_frueh = 0;
+  const int frueh = prv_lade_nacht("nacht-2026-10-05.csv", &hrv_frueh);
+  memcpy(bewegung, s_bewegung, sizeof(bewegung));
+  memcpy(puls, s_puls, sizeof(puls));
+  memcpy(gueltig, s_gueltig, sizeof(gueltig));
+  memcpy(hrv, s_hrv, sizeof(hrv));
+  test_boulder_schlaf__initialize();
+  int hrv_spaet = 0;
+  const int spaet = prv_lade_nacht("nacht-2026-10-05-morgen.csv", &hrv_spaet);
+  // 20:00 bis 06:24 und bis 07:24, ohne Luecke; dieselben 33 HRV-Fenster.
+  cl_assert_equal_i(frueh, 625);
+  cl_assert_equal_i(spaet, 685);
+  cl_assert_equal_i(hrv_spaet, hrv_frueh);
+  cl_assert(!memcmp(hrv, s_hrv, sizeof(hrv)));
+  cl_assert(!memcmp(bewegung, s_bewegung, frueh * sizeof(bewegung[0])));
+  cl_assert(!memcmp(puls, s_puls, frueh * sizeof(puls[0])));
+  cl_assert(!memcmp(gueltig, s_gueltig, frueh * sizeof(gueltig[0])));
+}
+
 // ---------------------------------------------------------------------------
 // Die neuen Regeln einzeln, an erfundenen Naechten
 
