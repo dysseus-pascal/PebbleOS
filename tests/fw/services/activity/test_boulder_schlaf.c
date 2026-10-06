@@ -322,6 +322,20 @@ static int prv_minute_ab_20(const char *uhr) {
   return (m < 0) ? m + 24 * 60 : m;
 }
 
+// EINSCHLAFEN UND AUFWACHEN HOECHSTENS ZEHN MINUTEN NEBEN FITBIT, in jeder
+// Fitbit-Nacht (Entscheidung des Nutzers vom 6.10.2026). Liegt eine Nacht
+// weiter weg, werden die Regeln nachgestellt - an den anderen Naechten
+// eingestellt, an ihr geprueft. Die Abweichung steht in der Meldung.
+#define NEBEN_FITBIT_MIN 10
+
+static void prv_neben_fitbit(const char *was, int minute, const char *fitbit) {
+  const int abstand = minute - prv_minute_ab_20(fitbit);
+  if (abstand < -NEBEN_FITBIT_MIN || abstand > NEBEN_FITBIT_MIN) {
+    printf("%s: Minute %d, Fitbit %s, %+d Minuten\n", was, minute, fitbit, abstand);
+  }
+  cl_assert(abstand >= -NEBEN_FITBIT_MIN && abstand <= NEBEN_FITBIT_MIN);
+}
+
 static void prv_fitbit(char *ref, int n, const FitbitAbschnitt *a, int anzahl) {
   memset(ref, '.', n);
   for (int k = 0; k < anzahl; k++) {
@@ -436,9 +450,9 @@ void test_boulder_schlaf__echte_nacht_neben_fitbit(void) {
   prv_fitbit(ref, n, s_fitbit_29, ARRAY_LENGTH(s_fitbit_29));
   const int gleich = prv_uebereinstimmung(lauf, ref, n);
   prv_bericht("29", lauf, gleich);
-  // Fitbit: ins Bett 21:32 (Minute 92), auf 05:55 (Minute 595).
-  cl_assert(s_ergebnis.einschlafen >= 82 && s_ergebnis.einschlafen <= 102);
-  cl_assert(s_ergebnis.aufwachen >= 585 && s_ergebnis.aufwachen <= 605);
+  // Fitbit: ins Bett 21:32, auf 05:55. Seit b20 21:40 und 06:00.
+  prv_neben_fitbit("Einschlafen 29.9.", s_ergebnis.einschlafen, "21:32");
+  prv_neben_fitbit("Aufwachen 29.9.", s_ergebnis.aufwachen, "05:55");
   // Geschlafen rund 8:01 h, tief 1:10 h, REM 2:00 h - je mit Spiel.
   cl_assert(s_ergebnis.schlaf_minuten >= 450 && s_ergebnis.schlaf_minuten <= 520);
   cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseTief) >= 50 && prv_minuten(&s_ergebnis, SchlafPhaseTief) <= 100);
@@ -509,8 +523,11 @@ void test_boulder_schlaf__echte_nacht_30_neben_fitbit(void) {
   // Fitbit: eingeschlafen 21:58 (Minute 118), aufgewacht 05:58 (598). b20
   // bis b25 22:04 (124), seit b26 22:00 (120) - weiter weg von Fitbit als
   // b20 darf das Einschlafen nicht rutschen.
-  cl_assert(s_ergebnis.einschlafen >= 108 && s_ergebnis.einschlafen <= 124);
-  cl_assert(s_ergebnis.aufwachen >= 588 && s_ergebnis.aufwachen <= 615);
+  prv_neben_fitbit("Einschlafen 30.9.", s_ergebnis.einschlafen, "21:58");
+  cl_assert(s_ergebnis.einschlafen <= prv_minute_ab_20("22:04"));
+  // Aufgewacht 06:08 - GENAU AN DER GRENZE, seit b20. Keine Regel von b26
+  // aendert das Aufwachen; eine Minute spaeter waere es nachzustellen.
+  prv_neben_fitbit("Aufwachen 30.9.", s_ergebnis.aufwachen, "05:58");
   // Das Aufstehen um 01:45 ist wach.
   cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 350), SchlafPhaseWach);
   cl_assert(s_ergebnis.schlaf_minuten >= 400 && s_ergebnis.schlaf_minuten <= 480);
@@ -603,9 +620,10 @@ void test_boulder_schlaf__echte_nacht_3_10_neben_fitbit(void) {
   prv_fitbit(ref, n, s_fitbit_0310, ARRAY_LENGTH(s_fitbit_0310));
   const int gleich = prv_uebereinstimmung(lauf, ref, n);
   prv_bericht("0310", lauf, gleich);
-  // Eingeschlafen nach dem Herumwaelzen: Fitbit 22:29 (Minute 149).
-  cl_assert(s_ergebnis.einschlafen >= 135 && s_ergebnis.einschlafen <= 160);
-  cl_assert(s_ergebnis.aufwachen >= 615 && s_ergebnis.aufwachen <= 640);
+  // Eingeschlafen nach dem Herumwaelzen: Fitbit 22:29, seit b20 22:27.
+  // Aufgewacht: Fitbit 06:27, seit b20 06:30.
+  prv_neben_fitbit("Einschlafen 3.10.", s_ergebnis.einschlafen, "22:29");
+  prv_neben_fitbit("Aufwachen 3.10.", s_ergebnis.aufwachen, "06:27");
   // Fitbit: 2:11 h wach, 5:47 h Schlaf.
   cl_assert(prv_minuten(&s_ergebnis, SchlafPhaseWach) >= 90 &&
             prv_minuten(&s_ergebnis, SchlafPhaseWach) <= 170);
@@ -746,10 +764,10 @@ void test_boulder_schlaf__echte_nacht_0510_neben_fitbit(void) {
   prv_fitbit(ref, n, s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510));
   const int gleich = prv_uebereinstimmung(lauf, ref, n);
   prv_bericht("0510", lauf, gleich);
-  // Fitbit: eingeschlafen 22:15 (Minute 135). Aufgewacht 06:00 (600), vom
-  // Wecker - Fitbits 05:42 ist falsch.
-  cl_assert(s_ergebnis.einschlafen >= 125 && s_ergebnis.einschlafen <= 145);
-  cl_assert(s_ergebnis.aufwachen >= 590 && s_ergebnis.aufwachen <= 610);
+  // Fitbit: eingeschlafen 22:15. Aufgewacht 06:00 vom Wecker - Fitbits 05:42
+  // ist falsch.
+  prv_neben_fitbit("Einschlafen 5.10.", s_ergebnis.einschlafen, "22:15");
+  prv_neben_fitbit("Aufwachen 5.10.", s_ergebnis.aufwachen, "06:00");
   // Bis zum Wecker 7:45 h im Bett, Fitbit sah keine Minute wach.
   cl_assert(s_ergebnis.schlaf_minuten >= 420 && s_ergebnis.schlaf_minuten <= 480);
   // Je Minute: b25 42,5 %, seit b26 43,6 %. UNSCHARF: die Tabelle ist von Hand
