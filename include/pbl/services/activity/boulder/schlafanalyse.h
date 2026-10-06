@@ -12,13 +12,14 @@
 //
 // WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
 // auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
-// Bewegung. Dazu, eingestellt an drei Naechten neben einem Fitbit (29.9.,
-// 30.9., 2.10.2026): Aufwach-Schuebe - Regungen dicht hintereinander mit einem
-// Pulsstoss - sind ganz wach, auch zwischen den Regungen; eingeschlafen ist
-// man erst, wenn das Herumwaelzen aufhoert. DIE PHASEN: Tiefschlaf ist eine
-// Viertelstunde ohne jede Regung bei ruhigem Herz, REM ein unregelmaessiges
-// Herz bei ruhendem Koerper (ohne dichten Puls: der zuckende Koerper). Der
-// Host-Test rechnet alle Naechte nach.
+// Bewegung. Dazu, eingestellt an vier Naechten neben einem Fitbit (29.9.,
+// 30.9., 2.10. und - nur das Einschlafen - 5.10.2026): Aufwach-Schuebe -
+// Regungen dicht hintereinander mit einem Pulsstoss - sind ganz wach, auch
+// zwischen den Regungen; eingeschlafen ist man erst, wenn das Herumwaelzen
+// aufhoert (keine zwei kraeftigen Regungen mehr in vierzig Minuten). DIE
+// PHASEN: Tiefschlaf ist eine Viertelstunde ohne jede Regung bei ruhigem Herz,
+// REM ein unregelmaessiges Herz bei ruhendem Koerper (ohne dichten Puls: der
+// zuckende Koerper). Der Host-Test rechnet alle Naechte nach.
 //
 // KEIN BETRIEBSSYSTEM HIER. Eingabe sind Felder, Ausgabe ein Ergebnis; der
 // Aufrufer holt die Minuten aus der Datei und legt die Sitzungen an. So laesst

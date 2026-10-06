@@ -14,11 +14,11 @@
 // Kiesel-Helper.
 //
 // WAS BELEGT UND WAS NUR FESTHAELT. Richtig oder falsch zeigen allein die
-// Naechte neben einem Fitbit (29.9., 30.9., 3.10.) - mit einer Untergrenze fuer
-// die Minuten, die mit Fitbit uebereinstimmen. Die Nacht 26.9. ist ein
-// Snapshot: ihre Phasenspalte stammte anfangs aus der Kotlin-Fassung, seit den
-// neuen Regeln ist sie die eigene Ausgabe dieser Rechnung. Sie meldet nur
-// Aenderungen.
+// Naechte neben einem Fitbit (29.9., 30.9., 3.10., 5.10.) - mit einer
+// Untergrenze fuer die Minuten, die mit Fitbit uebereinstimmen. Die Nacht 26.9.
+// ist ein Snapshot: ihre Phasenspalte stammte anfangs aus der Kotlin-Fassung,
+// seit den neuen Regeln ist sie die eigene Ausgabe dieser Rechnung. Sie meldet
+// nur Aenderungen.
 //
 // DIE EINHEITEN WIE IM EXPORT. Dort steht das Bewegungsbyte b der Uhr; Kotlin
 // rechnet mit b*b/16 und der Schwelle 800. Hier geht b*b hinein und die
@@ -359,12 +359,12 @@ static int prv_uebereinstimmung(const char *lauf, const char *ref, int n) {
 }
 
 // DIE UNTERGRENZEN DER UEBEREINSTIMMUNG: der Stand vom 3.10.2026 minus zehn
-// Promille. Die Rechnung ist fest, die Fitbit-Tabellen auch - jede Abweichung
-// kommt aus einer Regelaenderung. Zehn Promille sind in diesen Naechten (rund
-// 480 bis 510 verglichene Minuten) etwa fuenf Minuten: so viel darf eine
-// Aenderung kosten, die anderswo hilft, etwa wenn das Glaetten einen kurzen
-// Abschnitt anders zuschlaegt. Wer mehr verliert, muss die Grenze bewusst
-// senken und es in die Notiz schreiben.
+// Promille (30.9. und 5.10.: der Stand von b26). Die Rechnung ist fest, die
+// Fitbit-Tabellen auch - jede Abweichung kommt aus einer Regelaenderung. Zehn
+// Promille sind in diesen Naechten (rund 470 bis 510 verglichene Minuten)
+// etwa fuenf Minuten: so viel darf eine Aenderung kosten, die anderswo hilft,
+// etwa wenn das Glaetten einen kurzen Abschnitt anders zuschlaegt. Wer mehr
+// verliert, muss die Grenze bewusst senken und es in die Notiz schreiben.
 #define UEBEREINSTIMMUNG_SPIEL 10
 
 static void prv_bericht(const char *name, const char *lauf, int promille) {
@@ -477,15 +477,15 @@ void test_boulder_schlaf__echte_nacht_neben_fitbit(void) {
 // Zusammen: Schlaf 7:49 -> 7:36 (Fitbit rund 6:54), je Minute 46,1 -> 47,3 %.
 // WEITER WEG VON FITBIT: Einschlafen (5 Minuten) und Tiefschlaf (14 Minuten).
 // NAEHER DRAN: Schlafdauer, REM und wach.
-// EINE BESSERE FASSUNG GAEBE ES WOHL, SIE IST ABER NICHT EINGEBAUT: zaehlt die
-// Einschlaf-Regel nur kraeftige Regungen als Waelzen (9/16 bis 12/16 der
-// Schwelle statt 5/16), schlaeft diese Nacht um 22:00 ein, je Minute 48,2 %;
-// 29.9. und 3.10. bleiben gleich, alle Tests gruen. Ab 13/16 werden die
-// erfundenen Naechte einschlafen_nach_dem_herumwaelzen und
-// unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit rot, bei 16/16 faellt
-// auch der 3.10. (56,1 %). Gefunden aber durch Absuchen (720 Fassungen)
-// genau dieser drei Naechte - danach bliebe keine Nacht, an der sie unabhaengig
-// geprueft waere. Erst gegen die naechste Fitbit-Nacht pruefen.
+// SEIT b26 EINGEBAUT, was hier bis b25 als bessere Fassung notiert stand: die
+// Einschlaf-Regel zaehlt nur kraeftige Regungen als Waelzen (9/16 der Schwelle
+// statt 5/16). Diese Nacht schlaeft damit um 22:00 ein, je Minute 48,2 %;
+// 29.9. und 3.10. bleiben gleich. GEFUNDEN durch Absuchen (720 Fassungen)
+// genau dieser drei Naechte, deshalb sollte die naechste Fitbit-Nacht sie
+// pruefen. Die Nacht 5.10. haelt sie, belegt sie aber nicht: dort bleiben
+// 6/16 bis 12/16 innerhalb von zehn Minuten um Fitbit. Mit fuenf
+// Sechzehnteln und dem Fenster von b26 (vierzig Minuten) schliefe diese Nacht
+// erst um 22:12 ein, je Minute 45,7 %.
 static const FitbitAbschnitt s_fitbit_30[] = {
   { "21:58", "05:58", 'l' },
   { "01:35", "02:16", 'w' }, { "02:19", "02:29", 'w' }, { "02:43", "02:58", 'w' },
@@ -506,15 +506,16 @@ void test_boulder_schlaf__echte_nacht_30_neben_fitbit(void) {
   prv_fitbit(ref, n, s_fitbit_30, ARRAY_LENGTH(s_fitbit_30));
   const int gleich = prv_uebereinstimmung(lauf, ref, n);
   prv_bericht("30", lauf, gleich);
-  // Fitbit: eingeschlafen 21:58 (Minute 118), aufgewacht 05:58 (598). Seit
-  // b20 22:04 (124) - weiter weg von Fitbit darf das Einschlafen nicht rutschen.
+  // Fitbit: eingeschlafen 21:58 (Minute 118), aufgewacht 05:58 (598). b20
+  // bis b25 22:04 (124), seit b26 22:00 (120) - weiter weg von Fitbit als
+  // b20 darf das Einschlafen nicht rutschen.
   cl_assert(s_ergebnis.einschlafen >= 108 && s_ergebnis.einschlafen <= 124);
   cl_assert(s_ergebnis.aufwachen >= 588 && s_ergebnis.aufwachen <= 615);
   // Das Aufstehen um 01:45 ist wach.
   cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 350), SchlafPhaseWach);
   cl_assert(s_ergebnis.schlaf_minuten >= 400 && s_ergebnis.schlaf_minuten <= 480);
-  // Je Minute: b19 46,1 %, seit b20 47,3 %.
-  cl_assert(gleich >= 473 - UEBEREINSTIMMUNG_SPIEL);
+  // Je Minute: b19 46,1 %, b20 bis b25 47,3 %, seit b26 48,2 %.
+  cl_assert(gleich >= 482 - UEBEREINSTIMMUNG_SPIEL);
 }
 
 // Die Nacht vom 2./3.10.2026, aus Boulders Nachtexport (Messstufe 4), neben
@@ -722,6 +723,44 @@ void test_boulder_schlaf__fitbit_tabelle_0510_wie_beschrieben(void) {
                     57 + 147);
 }
 
+// Die Nacht 5.10. gegen die Tabelle, mit ihren HRV-Fenstern wie auf der Uhr.
+// b25 rechnete 21:46 bis 06:00 (so steht es im Kopf des Exports) - 29 Minuten
+// vor Fitbits Einschlafen: vom Herumwaelzen bis 22:13 lag in zwanzig Minuten ab
+// 21:46 nur eine Regung. Seit b26 (vierzig Minuten, kraeftige Regungen) 22:14.
+// DIE PHASEN TREFFEN HIER SCHLECHT, und b26 aendert daran nichts: Boulder sieht
+// tief 85 und REM 62 Minuten, die Tabelle 57 und 147 (Fitbit selbst 44 und
+// 134). Fitbits erstes REM beginnt 37 Minuten nach dem Einschlafen, REM_LATENZ
+// laesst erst nach einer Stunde welches zu. Der Test prueft deshalb Beginn,
+// Ende und Schlafdauer, die Phasen nur ueber die Untergrenze.
+void test_boulder_schlaf__echte_nacht_0510_neben_fitbit(void) {
+  int hrv_n = 0;
+  const int n = prv_lade_nacht("nacht-2026-10-05.csv", &hrv_n);
+  // 20:00 bis 06:24 ohne Luecke, 33 HRV-Fenster.
+  cl_assert_equal_i(n, 625);
+  cl_assert_equal_i(hrv_n, 33);
+  const SchlafEingabe e = prv_echte_eingabe(n, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  static char ref[SCHLAF_MINUTEN_MAX];
+  prv_lauf(lauf, n);
+  prv_fitbit(ref, n, s_fitbit_0510, ARRAY_LENGTH(s_fitbit_0510));
+  const int gleich = prv_uebereinstimmung(lauf, ref, n);
+  prv_bericht("0510", lauf, gleich);
+  // Fitbit: eingeschlafen 22:15 (Minute 135). Aufgewacht 06:00 (600), vom
+  // Wecker - Fitbits 05:42 ist falsch.
+  cl_assert(s_ergebnis.einschlafen >= 125 && s_ergebnis.einschlafen <= 145);
+  cl_assert(s_ergebnis.aufwachen >= 590 && s_ergebnis.aufwachen <= 610);
+  // Bis zum Wecker 7:45 h im Bett, Fitbit sah keine Minute wach.
+  cl_assert(s_ergebnis.schlaf_minuten >= 420 && s_ergebnis.schlaf_minuten <= 480);
+  // Je Minute: b25 42,5 %, seit b26 43,6 %. UNSCHARF: die Tabelle ist von Hand
+  // aus dem Bild abgelesen, hat je 13 Minuten mehr REM und Tiefschlaf als
+  // Fitbits Summen, und die 18 Minuten bis zum Wecker sind als leicht
+  // angenommen. Die Ablesefehler sind groesser als die zehn Promille Spiel (in
+  // dieser Nacht rund fuenf Minuten): die Grenze faengt Rueckschritte der
+  // Rechnung, sie sagt nicht, wie nah sie an Fitbit ist.
+  cl_assert(gleich >= 436 - UEBEREINSTIMMUNG_SPIEL);
+}
+
 // ---------------------------------------------------------------------------
 // Die neuen Regeln einzeln, an erfundenen Naechten
 
@@ -757,8 +796,8 @@ void test_boulder_schlaf__aufwach_schub_ist_wach(void) {
 
 void test_boulder_schlaf__einschlafen_nach_dem_herumwaelzen(void) {
   // Ab Minute 24 ruhig (Webster haengt vier Minuten an das Wachsein), aber um
-  // 28, 31 und 35 noch Regungen: eingeschlafen erst, wenn in den zwanzig
-  // Minuten danach hoechstens eine kommt - nach der vorletzten.
+  // 28, 31 und 35 noch kraeftige Regungen: eingeschlafen erst, wenn in den
+  // vierzig Minuten danach hoechstens eine kommt - nach der vorletzten.
   const int b[][3] = { { 20, WACH, 80 }, { 360, RUHIG, 55 }, { 20, WACH, 80 } };
   const int n = prv_bloecke(b, 3);
   s_bewegung[28] = 100 * 100;

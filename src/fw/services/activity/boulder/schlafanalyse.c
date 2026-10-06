@@ -7,10 +7,11 @@
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
-// eingestellt (der Host-Test rechnet sie nach). Der Puls relativ zu seiner
-// Umgebung traf Fitbits Tiefschlaf nur zufaellig. Was traf, war der Koerper:
-// im Tiefschlaf liegt er lange ganz still. Beim REM traf das Herz: es schlaegt
-// unregelmaessig, waehrend der Koerper ruht.
+// eingestellt, das Einschlafen zuletzt an der Nacht 5./6.10. (der Host-Test
+// rechnet alle vier nach). Der Puls relativ zu seiner Umgebung traf Fitbits
+// Tiefschlaf nur zufaellig. Was traf, war der Koerper: im Tiefschlaf liegt er
+// lange ganz still. Beim REM traf das Herz: es schlaegt unregelmaessig,
+// waehrend der Koerper ruht.
 
 // Um so viel ueber dem Puls der ruhigen Minuten gilt man als wach, auch ohne
 // Bewegung: wer nachts gruebelt, liegt still, aber sein Herz nicht.
@@ -24,18 +25,43 @@
 #define HALTEN_SCHLAF 45
 // Eine Regung: fuenf Sechzehntel der Wachschwelle in einer Minute (250 beim
 // VMC der Uhr). Darunter zuckt nur ein Finger. MITTEN IM BEREICH, nicht an
-// seinem Rand: von 150 bis 300 aendert sich keine der vier Naechte um mehr als
-// zwei Minuten, ab 350 zerfallen die Wachphasen der 3.10.
+// seinem Rand: von 150 bis 300 aendert sich keine der vier Naechte bis 3.10. um
+// mehr als zwei Minuten, ab 350 zerfallen die Wachphasen der 3.10. Die Nacht
+// 5.10. kam spaeter dazu: bei 150 und 200 hat sie einen Aufwach-Schub mehr
+// (15 Minuten wach, Fitbit sah keine), ab 250 nicht.
 #define REGUNG_SECHZEHNTEL 5
-// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Regungen in den zwanzig Minuten
-// ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.: 22:11,
-// 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
-#define EINSCHLAF_RUHE 20
+// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Waelz-Regungen in den vierzig
+// Minuten ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.:
+// 22:11, 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
+// VIERZIG MINUTEN, NICHT MEHR ZWANZIG (b26): am 5.10. lag der Nutzer ab 21:46
+// still, waelzte sich aber noch um 21:54, 22:10 und 22:13 - Fitbit sah den
+// Schlaf erst um 22:15. In zwanzig Minuten ab 21:46 liegt davon nur eine
+// Regung, und die Nacht begann 29 Minuten zu frueh. Ab 25 Minuten traegt das
+// Fenster die Regung um 22:10; von 25 bis 60 rechnen alle vier Naechte
+// gleich, 40 liegt mitten darin. EINGESTELLT ALLEIN AM 5.10. - unabhaengig
+// prueft es erst die naechste Fitbit-Nacht.
+#define EINSCHLAF_RUHE 40
 #define EINSCHLAF_REGUNGEN 2
-// Hoechstens so weit schiebt das Herumwaelzen das Einschlafen. Zwei Regungen
-// in zwanzig Minuten kommen auch in festem Schlaf vor (in einem Drittel bis
-// mehr als der Haelfte der Fenster); ohne Grenze wanderte der Beginn dort um
-// mehr als eine Stunde. Die 3.10. brauchte 25 Minuten.
+// ALS WAELZEN ZAEHLT NUR EINE KRAEFTIGE REGUNG: neun Sechzehntel der
+// Wachschwelle (450 beim VMC der Uhr), nicht fuenf wie eine Regung sonst.
+// Schwache Regungen kommen auch im beginnenden Schlaf: am 30.9. (Fitbit 21:58)
+// schoben die um 22:03 (VMC 402) und 22:26 (256) den Beginn mit fuenf
+// Sechzehnteln auf 22:04, mit dem langen Fenster sogar auf 22:12; mit neun
+// beginnt er um 22:00. Die 9/16 standen schon vor der Nacht 5.10. als Vorschlag
+// im Test; der 5.10. haelt sie, ist dazu aber kein Beleg: von 6/16 bis 12/16
+// bleiben alle vier Naechte innerhalb von zehn Minuten um Fitbit, ab 13/16
+// zaehlen die Regungen vom 5.10. um 22:10 und 22:13 nicht mehr (21:46).
+// Den Aufwach-Schueben bleibt die gewoehnliche Regung: dort zaehlt jedes
+// Regen eines Wachliegenden (REGUNG_SECHZEHNTEL).
+#define EINSCHLAF_REGUNG_SECHZEHNTEL 9
+// Hoechstens so weit schiebt das Herumwaelzen das Einschlafen. Zwei Waelz-
+// Regungen in vierzig Minuten kommen auch in festem Schlaf vor: ab einer
+// Stunde nach dem Einschlafen in drei Vierteln bis neun Zehnteln der Fenster
+// (mit zwanzig Minuten und 5/16 bis b25: zwei Fuenftel bis knapp zwei
+// Drittel). Ohne Grenze wanderte der Beginn dort um mehr als eine Stunde - die
+// Grenze traegt die Regel mit. Die 3.10. brauchte 25 Minuten, die 5.10. 28,
+// KNAPP UNTER DER GRENZE. Hoeher setzen hiesse aber, unruhigen Schlaf weiter
+// wegzuschieben (Test unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit).
 #define EINSCHLAF_SCHIEBEN_MAX 30
 // AUFWACHEN MITTEN IN DER NACHT: mindestens drei Regungen, keine mehr als zehn
 // Minuten nach der vorigen, und das Herz schiesst dabei um dreizehn Schlaege
@@ -132,6 +158,13 @@ static bool prv_regung(const SchlafEingabe *e, int i) {
   return e->gueltig[i] && 16 * (uint32_t)e->bewegung[i] >= REGUNG_SECHZEHNTEL * e->schwelle;
 }
 
+// Eine Regung, kraeftig genug fuer das Herumwaelzen vor dem Einschlafen
+// (EINSCHLAF_REGUNG_SECHZEHNTEL).
+static bool prv_waelzen(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] &&
+      16 * (uint32_t)e->bewegung[i] >= EINSCHLAF_REGUNG_SECHZEHNTEL * e->schwelle;
+}
+
 // ---------------------------------------------------------------------------
 // Die Schritte der Rechnung
 
@@ -195,17 +228,17 @@ static bool prv_haelt(const bool *wach, int n, int von) {
   return HALTEN_FENSTER * schlaf >= HALTEN_SCHLAF * (bis - von);
 }
 
-// Das Einschlafen hinter das Herumwaelzen schieben: solange in den zwanzig
-// Minuten ab `ein` zwei Regungen liegen, beginnt der Schlaf erst nach der
-// ersten - hoechstens EINSCHLAF_SCHIEBEN_MAX nach `ein`. Dann bis zur naechsten
-// Schlafminute.
+// Das Einschlafen hinter das Herumwaelzen schieben: solange in den
+// EINSCHLAF_RUHE Minuten ab `ein` zwei Waelz-Regungen liegen, beginnt der
+// Schlaf erst nach der ersten - hoechstens EINSCHLAF_SCHIEBEN_MAX nach `ein`.
+// Dann bis zur naechsten Schlafminute.
 static int prv_zur_ruhe(const SchlafEingabe *e, const bool *wach, int ein, int auf) {
   int s = ein;
   while (s < auf) {
     int erste = -1;
     int zahl = 0;
     for (int j = s; j < s + EINSCHLAF_RUHE && j < e->anzahl; j++) {
-      if (prv_regung(e, j)) {
+      if (prv_waelzen(e, j)) {
         erste = (erste < 0) ? j : erste;
         zahl++;
       }
