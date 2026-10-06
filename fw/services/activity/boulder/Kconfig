@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2026 dysseus-pascal
+# SPDX-License-Identifier: Apache-2.0
+
+# Boulder-Kraepelin: die eigenen Schalter der Variante (bisher keine). Die Wahl
+# selbst steht in fw/services/activity/Kconfig.

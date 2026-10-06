@@ -8,6 +8,18 @@ config SERVICE_ACTIVITY
 
 if SERVICE_ACTIVITY
 
+# Boulder: Algorithmus-Wahl - die Variante nur auf obelix und qemu_emery
+choice SERVICE_ACTIVITY_ALGORITHM
+    prompt "Activity algorithm"
+    default SERVICE_ACTIVITY_ALGORITHM_BOULDER if BOARD_OBELIX || BOARD_QEMU_EMERY
+    default SERVICE_ACTIVITY_ALGORITHM_KRAEPELIN
+config SERVICE_ACTIVITY_ALGORITHM_KRAEPELIN
+    bool "Kraepelin (Pebble)"
+config SERVICE_ACTIVITY_ALGORITHM_BOULDER
+    bool "Boulder-Kraepelin"
+endchoice
+rsource "boulder/Kconfig"
+
 config SERVICE_ACTIVITY_BATCH_SAMPLES
     int "Accel samples batched per algorithm update"
     default SERVICE_ACCEL_MANAGER_BATCH_SAMPLES

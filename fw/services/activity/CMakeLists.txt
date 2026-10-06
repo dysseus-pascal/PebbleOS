@@ -10,9 +10,13 @@ set(sources
   health_util.c
   hr_util.c
   insights_settings.c
-  kraepelin/activity_algorithm_kraepelin.c
-  kraepelin/kraepelin_algorithm.c
   workout_service.c
 )
 pbl_library()
 pbl_library_sources(${sources})
+# Boulder: Algorithmus-Wahl (Kconfig), die Variante bringt ihre Quellen mit
+pbl_library_sources_ifdef(CONFIG_SERVICE_ACTIVITY_ALGORITHM_KRAEPELIN
+  kraepelin/activity_algorithm_kraepelin.c kraepelin/kraepelin_algorithm.c)
+if(CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER)
+  include(boulder/quellen.cmake)
+endif()

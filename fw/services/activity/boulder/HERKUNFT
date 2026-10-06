@@ -1,0 +1,10 @@
+# Boulder: Herkunft der Kraepelin-Kopie. tools/boulder/kopie_pruefen.py liest diese Datei.
+# commit <Upstream-Commit des Originals>
+# kopie <Kopie> <Original> <SHA-256 des Originals zum Commit>
+# abweichung <Dn> <Beschreibung>
+commit a2120e2aefd3b916df7cbb141d542db9ab04916d
+kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c b0058be1e7cfabc49cebb33202d4283fbe12a68994766b76e4e852a211c02920
+kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c bf45c3a148609a8dfa828576250c3b59f800c58775f36d3d32e9fc3017b31d5a
+kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h c924ec7512fb84920b56ebfdc607c60f3266b4ca11d04842ee8f22e0700125a3
+kopie include/pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h include/pbl/services/activity/kraepelin/kraepelin_algorithm.h e27cb65208447d8101b44278d9849e3e07a4e858902153df664d639d30b14156
+abweichung D0 Herkunftsblock, Includes auf die Kopie, eigene Namen fuer kalg_* (namen.h)
