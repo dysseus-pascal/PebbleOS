@@ -48,6 +48,9 @@
 #include "pbl/services/activity/boulder/wecker.h"
 #include "pbl/services/activity/boulder/wecklauf.h"
 #include "pbl/services/activity/boulder/zyklen.h"
+#ifdef CONFIG_BOULDER_KIESELSPORT
+#include "pbl/services/activity/boulder/sport/kieselsport.h"
+#endif
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/time.h"
 #include "pbl/util/units.h"
@@ -140,6 +143,11 @@ static void prv_laden_cb(void *data) {
   }
   s_laden_offen = false;
   boulder_speicher_laden();
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  // KIESELSPORT OHNE PEBBLE-HAKEN (Schritt 2, Regel 2.5.5): Der erste Takt der Variante startet
+  // den Dienst, damit Liegengebliebenes nach einem Neustart auch ohne App-Start ans Telefon geht.
+  kieselsport_init();
+#endif
   if (!s_test_ohne_cron) {
     pbl_cron_job_schedule(&s_takt_job);
   }

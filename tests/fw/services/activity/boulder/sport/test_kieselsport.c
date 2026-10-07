@@ -1,0 +1,2063 @@
+/* SPDX-FileCopyrightText: 2026 dysseus-pascal */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#include "clar.h"
+
+#include "pbl/services/activity/activity.h"
+#include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/kalorien.h"
+#include "pbl/services/activity/boulder/sport/kieselsport.h"
+#include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/workout_service.h"
+#include "pbl/services/hrm/hrm_manager.h"
+#include "pbl/services/hrm/hrm_manager_private.h"
+#include "pbl/services/new_timer/new_timer.h"
+#include "pbl/services/regular_timer.h"
+#include "pbl/util/trig.h"
+#include "services/activity/boulder/sport/schluessel.h"
+#include "services/activity/boulder/sport/wartend.h"
+
+#include "applib/accel_service_private.h"
+#include "applib/compass_service.h"
+#include "applib/ui/vibes.h"
+#include "kernel/events.h"
+#include "process_management/app_install_manager.h"
+#include "process_management/app_manager.h"
+
+#include "stubs_evented_timer.h"
+#include "stubs_hexdump.h"
+#include "stubs_logging.h"
+#include "stubs_passert.h"
+#include "stubs_pbl_malloc.h"
+#include "stubs_settings_file.h"
+
+#include "fake_events.h"
+#include "fake_pebble_tasks.h"
+#include "fake_rtc.h"
+#include "fake_system_task.h"
+
+#include <errno.h>
+#include <math.h>
+#include <setjmp.h>
+
+// KIESELSPORT AUF PEBBLES WORKOUT-DIENST (Schritt 2, AP2). Die Tests des b25-Dienstes
+// (main: tests/fw/services/kieselsport/test_kieselsport.c), portiert auf den Weg 2: Der Dienst
+// laeuft mit seiner echten Plattform (plattform.c) gegen Pebbles echten Workout-Dienst
+// (workout_service.c mit P1 und kalorien.c) und die echte Sitzungsliste (activity_sessions.c).
+// Nachgebaut ist nur das Umfeld, ohne Pebble-Logik: der HRM-Manager mit seiner Sperre (er gibt
+// jeden Messwert auf KernelBG unter seiner Sperre an das Abo), Activitys Rundruf an den
+// Workout-Dienst (activity.c:185-245: gueltige Werte und "nicht am Arm"), die Zeitgeber, die
+// KernelBG-Schlange, Sensoren, Akku, Persist und Profil.
+//
+// WAS SICH GEGENUEBER b25 AENDERT, steht am Test: Sitzung und Meldung kommen von Pebble, 30 s
+// nach dem Speichern (V4); die kcal aus dem Puls statt aus Pebbles Tageszaehler; das Archiv
+// entfaellt (V7); Kieselsport rueckt nicht im Startmenue nach oben (F6 = B).
+//
+// SPERRFOLGE (T7.2): Die Sperren-Attrappe zeichnet jede Sperre auf, die unter einer anderen
+// genommen wird. cleanup prueft in JEDEM Test die Regel 2.5.2.
+
+extern struct pbl_mutex s_kieselsport_sperre;
+extern void prv_workout_timer_cb(void *data);
+extern void workout_service_reset(void);
+extern void kieselsport_test_neustart(void);
+extern void fake_ruhepuls_setzen(uint8_t bpm);
+
+// =============================================================================================
+// Aufgaben und Sperren
+//
+// Der Test laeuft in einem Faden; die Task der Attrappe sagt, wer dran ist (App, KernelBG,
+// KernelMain, NewTimer). Die App hat die hoechste Prioritaet: Sie kann KernelBG mitten im
+// Speichern unterbrechen. Greift sie dann zu einer Sperre, die KernelBG haelt, muesste sie
+// warten: hier springt ihr Aufruf zurueck (longjmp, vor jeder Wirkung) und laeuft, sobald
+// KernelBG die Sperre freigibt, von vorn - wie nach dem Warten. Sperren sind rekursiv.
+
+typedef enum {
+  SperreAndere,
+  SperreDienst,    //< Kieselsport
+  SperreWorkout,   //< Pebbles Workout-Dienst
+  SperreActivity,  //< Pebbles Activity (Sitzungsliste)
+  SperreHrm,       //< der HRM-Manager (nachgebildet)
+  SperreArten,
+} SperrArt;
+
+typedef struct {
+  struct pbl_mutex *m;
+  PebbleTask halter;
+  int tiefe;
+} Sperre;
+
+static Sperre s_sperren[16];
+static int s_sperren_anzahl;
+static struct pbl_mutex *s_workout_sperre;  //< gelernt beim workout_service_init
+static struct pbl_mutex s_hrm_sperre;
+static ActivityState s_state;
+static int s_kanten[SperreArten][SperreArten];
+
+static jmp_buf s_warten;
+static Sperre *s_app_wartet_auf;
+static void (*s_app_aktion)(void);
+static uint32_t s_unterbrich_vor;
+
+static SperrArt prv_art(const struct pbl_mutex *m) {
+  if (m == &s_kieselsport_sperre) return SperreDienst;
+  if (m == s_workout_sperre) return SperreWorkout;
+  if (m == &s_state.mutex) return SperreActivity;
+  if (m == &s_hrm_sperre) return SperreHrm;
+  return SperreAndere;
+}
+
+static Sperre *prv_sperre(struct pbl_mutex *m) {
+  for (int i = 0; i < s_sperren_anzahl; i++) {
+    if (s_sperren[i].m == m) return &s_sperren[i];
+  }
+  cl_assert(s_sperren_anzahl < (int)ARRAY_LENGTH(s_sperren));
+  s_sperren[s_sperren_anzahl] = (Sperre){.m = m};
+  return &s_sperren[s_sperren_anzahl++];
+}
+
+static void prv_app_laeuft(void) {
+  const PebbleTask vorher = pebble_task_get_current();
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  if (setjmp(s_warten) == 0) {
+    s_app_aktion();
+    s_app_aktion = NULL;
+  }
+  stub_pebble_tasks_set_current(vorher);
+}
+
+void pbl_mutex_init(struct pbl_mutex *m) {
+  // workout_service_init legt die Sperre des Workout-Dienstes an - so kennt der Test sie.
+  s_workout_sperre = m;
+}
+void pbl_mutex_deinit(struct pbl_mutex *m) {}
+int pbl_mutex_lock_lr(struct pbl_mutex *m, pbl_timeout_t timeout, uintptr_t lr) {
+  Sperre *s = prv_sperre(m);
+  const PebbleTask task = pebble_task_get_current();
+  if (s->tiefe > 0 && s->halter != task) {
+    if (pbl_timeout_is_no_wait(timeout)) {
+      return -EBUSY;
+    }
+    cl_assert(task == PebbleTask_App && s_app_aktion);
+    s_app_wartet_auf = s;
+    longjmp(s_warten, 1);
+  }
+  if (s->tiefe == 0) {
+    for (int i = 0; i < s_sperren_anzahl; i++) {
+      if (&s_sperren[i] != s && s_sperren[i].tiefe > 0 && s_sperren[i].halter == task) {
+        s_kanten[prv_art(s_sperren[i].m)][prv_art(m)]++;
+      }
+    }
+    s->halter = task;
+  }
+  s->tiefe++;
+  return 0;
+}
+void pbl_mutex_unlock(struct pbl_mutex *m) {
+  Sperre *s = prv_sperre(m);
+  cl_assert(s->tiefe > 0 && s->halter == pebble_task_get_current());
+  if (--s->tiefe == 0 && s_app_wartet_auf == s) {
+    s_app_wartet_auf = NULL;
+    prv_app_laeuft();
+  }
+}
+bool pbl_mutex_is_owner(const struct pbl_mutex *m) {
+  for (int i = 0; i < s_sperren_anzahl; i++) {
+    if (s_sperren[i].m == m) {
+      return s_sperren[i].tiefe > 0 && s_sperren[i].halter == pebble_task_get_current();
+    }
+  }
+  return false;
+}
+void pbl_mutex_assert_held(const struct pbl_mutex *m, bool held) {}
+
+// =============================================================================================
+// Zeitgeber: Sekunden und Minuten (regular_timer), einmalige (new_timer)
+
+static RegularTimerInfo *s_sekunden_takte[4];
+static RegularTimerInfo *s_minuten_takte[4];
+
+static bool prv_eintragen(RegularTimerInfo **liste, RegularTimerInfo *cb) {
+  for (int i = 0; i < 4; i++) {
+    if (liste[i] == cb) return true;
+  }
+  for (int i = 0; i < 4; i++) {
+    if (!liste[i]) {
+      liste[i] = cb;
+      return true;
+    }
+  }
+  return false;
+}
+void regular_timer_add_seconds_callback(RegularTimerInfo *cb) {
+  cl_assert(prv_eintragen(s_sekunden_takte, cb));
+}
+void regular_timer_add_minutes_callback(RegularTimerInfo *cb) {
+  cl_assert(prv_eintragen(s_minuten_takte, cb));
+}
+bool regular_timer_is_scheduled(RegularTimerInfo *cb) {
+  for (int i = 0; i < 4; i++) {
+    if (s_sekunden_takte[i] == cb || s_minuten_takte[i] == cb) return true;
+  }
+  return false;
+}
+bool regular_timer_remove_callback(RegularTimerInfo *cb) {
+  bool weg = false;
+  for (int i = 0; i < 4; i++) {
+    if (s_sekunden_takte[i] == cb) s_sekunden_takte[i] = NULL, weg = true;
+    if (s_minuten_takte[i] == cb) s_minuten_takte[i] = NULL, weg = true;
+  }
+  return weg;
+}
+
+typedef struct {
+  bool laeuft;
+  time_t faellig;
+  NewTimerCallback cb;
+  void *daten;
+} Wecker;
+static Wecker s_wecker[4];
+static int s_wecker_anzahl;  //< nie zurueckgesetzt: Kennungen bleiben gueltig
+TimerID new_timer_create(void) {
+  cl_assert(s_wecker_anzahl < 4);
+  return (TimerID)(s_wecker_anzahl++ + 1);
+}
+bool new_timer_start(TimerID t, uint32_t ms, NewTimerCallback cb, void *daten, uint32_t flags) {
+  s_wecker[t - 1] = (Wecker){.laeuft = true, .faellig = rtc_get_time() + ms / 1000, .cb = cb,
+                             .daten = daten};
+  return true;
+}
+bool new_timer_stop(TimerID t) {
+  s_wecker[t - 1].laeuft = false;
+  return true;
+}
+void new_timer_delete(TimerID t) {}
+
+// =============================================================================================
+// Pebbles Umfeld: Profil, Tageszaehler, Sitzungsliste, Meldung, Auto-Erkennung
+
+ActivityState *activity_private_state(void) {
+  return &s_state;
+}
+
+// Activitys Getter ueber die Liste der echten activity_sessions.c (activity.c:1511-1529).
+bool activity_get_sessions(uint32_t *session_entries, ActivitySession *sessions) {
+  pbl_mutex_lock(&s_state.mutex, PBL_FOREVER);
+  const uint32_t n = MIN(*session_entries, s_state.activity_sessions_count);
+  memcpy(sessions, s_state.activity_sessions, n * sizeof(ActivitySession));
+  *session_entries = n;
+  pbl_mutex_unlock(&s_state.mutex);
+  return true;
+}
+
+static int32_t s_schritte_tag;
+bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *history) {
+  *history = s_schritte_tag;
+  return metric == ActivityMetricStepCount;
+}
+
+static char s_erkennung[64];
+void activity_algorithm_enable_activity_tracking(bool enable) {
+  const size_t n = strlen(s_erkennung);
+  cl_assert(n + 1 < sizeof(s_erkennung));
+  s_erkennung[n] = enable ? '1' : '0';
+}
+
+static int s_meldungen;
+static ActivitySession s_meldung;
+void activity_insights_push_activity_session_notification(time_t notif_time,
+                                                          ActivitySession *session, int32_t avg_hr,
+                                                          int32_t *hr_zone_time_s) {
+  s_meldungen++;
+  s_meldung = *session;
+}
+
+void workout_utils_send_abandoned_workout_notification(void) {}
+
+static uint8_t s_alter;
+static uint16_t s_gewicht_dag;
+uint8_t activity_prefs_get_age_years(void) { return s_alter; }
+ActivityGender activity_prefs_get_gender(void) { return ActivityGenderMale; }
+uint16_t activity_prefs_get_weight_dag(void) { return s_gewicht_dag; }
+uint16_t activity_prefs_get_height_mm(void) { return 1800; }
+uint8_t activity_prefs_heart_get_elevated_hr(void) { return 100; }
+uint8_t activity_prefs_heart_get_zone1_threshold(void) { return 130; }
+uint8_t activity_prefs_heart_get_zone2_threshold(void) { return 154; }
+uint8_t activity_prefs_heart_get_zone3_threshold(void) { return 172; }
+HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
+  return HRMonitoringInterval_10Min;
+}
+AppInstallId app_get_app_id(void) { return 0; }
+uint32_t time_get_uptime_seconds(void) { return PBL_SEC_PER_DAY + rtc_get_time(); }
+
+// activity_sessions.c fuer das, was hier nicht laeuft (Minutenlauf, Datalogging, Datei): Die
+// Tests rufen nur das Eintragen. Liefe etwas anderes, waere der Test falsch gebaut.
+time_t time_utc_to_local(time_t utc_time) {
+  cl_fail("activity_sessions: Datalogging im Test");
+  return 0;
+}
+time_t time_util_get_midnight_of(time_t ts) {
+  cl_fail("activity_sessions: Tagesgrenze im Test");
+  return 0;
+}
+int time_util_get_minute_of_day(time_t utc_sec) {
+  cl_fail("activity_sessions: Schlaf im Test");
+  return 0;
+}
+time_t activity_algorithm_get_last_sleep_utc(void) { return 0; }
+void activity_algorithm_post_process_sleep_sessions(uint16_t num_sessions,
+                                                    ActivitySession *sessions) {}
+SettingsFile *activity_private_settings_open(void) { return NULL; }
+void activity_private_settings_close(SettingsFile *file) {}
+DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint16_t item_size,
+                               bool buffered, bool resume, const Uuid *uuid) {
+  return NULL;
+}
+DataLoggingResult dls_log(DataLoggingSession *s, const void *data, uint32_t num_items) {
+  return DATA_LOGGING_SUCCESS;
+}
+static int s_dls_schub;
+void dls_send_all_sessions(void) { s_dls_schub++; }
+
+// Die Sitzungen der Uhr, die keine Nacht sind (Run/Walk/Open), ab [ab].
+static int prv_sitzungen(void) {
+  int n = 0;
+  for (int i = 0; i < s_state.activity_sessions_count; i++) {
+    n += !activity_sessions_prv_is_sleep_activity(s_state.activity_sessions[i].type);
+  }
+  return n;
+}
+
+static const ActivitySession *prv_sitzung(int i) {
+  cl_assert(i < s_state.activity_sessions_count);
+  return &s_state.activity_sessions[i];
+}
+
+// =============================================================================================
+// HRM-Manager (nachgebildet): ein KernelBG-Abo mit Rueckruf, unter der Sperre des Managers
+
+typedef struct {
+  bool belegt;
+  HRMSessionRef ref;
+  uint32_t takt;
+  uint16_t ablauf;
+  HRMFeature merkmale;
+  HRMSubscriberCallback cb;
+  void *ctx;
+} Abo;
+static Abo s_abo;
+static HRMSessionRef s_naechste_ref;
+static int s_abo_anmeldungen;
+static int s_app_abos;  //< Pebbles frontend_opened (F2 = A: nie)
+static HRMActivityScene s_szene;
+
+HRMSessionRef hrm_manager_subscribe_with_callback(AppInstallId app_id, uint32_t update_interval_s,
+                                                  uint16_t expire_s, HRMFeature features,
+                                                  bool low_latency, HRMSubscriberCallback callback,
+                                                  void *context) {
+  cl_assert(pebble_task_get_current() == PebbleTask_KernelBackground && callback);
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  cl_assert(!s_abo.belegt);
+  s_abo = (Abo){.belegt = true, .ref = ++s_naechste_ref, .takt = update_interval_s,
+                          .ablauf = expire_s, .merkmale = features, .cb = callback,
+                          .ctx = context};
+  s_abo_anmeldungen++;
+  pbl_mutex_unlock(&s_hrm_sperre);
+  return s_abo.ref;
+}
+bool sys_hrm_manager_unsubscribe(HRMSessionRef ref) {
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  const bool da = s_abo.belegt && s_abo.ref == ref;
+  if (da) s_abo.belegt = false;
+  pbl_mutex_unlock(&s_hrm_sperre);
+  return da;
+}
+bool sys_hrm_manager_set_update_interval(HRMSessionRef ref, uint32_t takt, uint16_t ablauf) {
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  const bool da = s_abo.belegt && s_abo.ref == ref;
+  if (da) s_abo.takt = takt, s_abo.ablauf = ablauf;
+  pbl_mutex_unlock(&s_hrm_sperre);
+  return da;
+}
+bool sys_hrm_manager_set_features(HRMSessionRef ref, HRMFeature features) {
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  const bool da = s_abo.belegt && s_abo.ref == ref;
+  if (da) s_abo.merkmale = features;
+  pbl_mutex_unlock(&s_hrm_sperre);
+  return da;
+}
+HRMSessionRef sys_hrm_manager_app_subscribe(AppInstallId app_id, uint32_t update_interval_s,
+                                            uint16_t expire_s, HRMFeature features) {
+  s_app_abos++;
+  return 99;
+}
+void hrm_manager_set_activity_scene(HRMActivityScene scene) {
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  s_szene = scene;
+  pbl_mutex_unlock(&s_hrm_sperre);
+}
+
+// Der Takt des Abos, 0 = keines.
+static uint32_t prv_sensor_takt(void) {
+  return s_abo.belegt ? s_abo.takt : 0;
+}
+static bool prv_sensor_hrv(void) {
+  return s_abo.belegt && (s_abo.merkmale & HRMFeature_HRV);
+}
+
+static void prv_hrm_ereignis(const PebbleHRMEvent *e, HRMFeature merkmal) {
+  if (!s_abo.belegt || !(s_abo.merkmale & merkmal)) return;
+  const PebbleTask vorher = pebble_task_get_current();
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  pbl_mutex_lock(&s_hrm_sperre, PBL_FOREVER);
+  s_abo.cb((PebbleHRMEvent *)e, s_abo.ctx);
+  pbl_mutex_unlock(&s_hrm_sperre);
+  stub_pebble_tasks_set_current(vorher);
+}
+
+// Ein Messwert des Sensors: an Kieselsports Abo (KernelBG) und ueber Activitys Rundruf als
+// Health-Ereignis an Pebbles Workout-Dienst (KernelMain), wie activity.c:207-232 ihn weiterreicht.
+static void prv_messwert(uint8_t bpm, HRMQuality q) {
+  const PebbleHRMEvent e = {.event_type = HRMEvent_BPM, .bpm = {.bpm = bpm, .quality = q}};
+  prv_hrm_ereignis(&e, HRMFeature_BPM);
+  const bool gueltig = bpm >= ACTIVITY_DEFAULT_MIN_HR && bpm <= ACTIVITY_DEFAULT_MAX_HR;
+  if (gueltig || q == HRMQuality_OffWrist) {
+    const PebbleTask vorher = pebble_task_get_current();
+    stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+    PebbleHealthEvent h = {
+      .type = HealthEventHeartRateUpdate,
+      .data.heart_rate_update = {.current_bpm = q == HRMQuality_OffWrist ? 0 : bpm,
+                                 .quality = q},
+    };
+    workout_service_health_event_handler(&h);
+    stub_pebble_tasks_set_current(vorher);
+  }
+}
+
+static void prv_abstand(uint16_t ppi_ms) {
+  const PebbleHRMEvent e = {.event_type = HRMEvent_HRV, .hrv = {.ppi_ms = ppi_ms}};
+  prv_hrm_ereignis(&e, HRMFeature_HRV);
+}
+
+// Activitys Schrittmeldung (activity.c:1146-1159) mit der Tagessumme.
+static void prv_schritte(int n) {
+  s_schritte_tag += n;
+  const PebbleTask vorher = pebble_task_get_current();
+  stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+  PebbleHealthEvent e = {
+    .type = HealthEventMovementUpdate,
+    .data.movement_update.steps = s_schritte_tag,
+  };
+  workout_service_health_event_handler(&e);
+  stub_pebble_tasks_set_current(vorher);
+}
+
+// =============================================================================================
+// Sensoren, Akku, Brummen, App
+
+static AccelDataHandler s_accel_handler;
+static AccelServiceState s_accel_sitzung;
+AccelServiceState *accel_session_create(void) { return &s_accel_sitzung; }
+void accel_session_delete(AccelServiceState *session) {}
+void accel_session_data_subscribe(AccelServiceState *session, uint32_t samples_per_update,
+                                  AccelDataHandler handler) {
+  cl_assert(pebble_task_get_current() == PebbleTask_KernelBackground);
+  s_accel_handler = handler;
+}
+void accel_session_data_unsubscribe(AccelServiceState *session) { s_accel_handler = NULL; }
+
+static CompassHeadingHandler s_kompass_handler;
+void compass_service_subscribe(CompassHeadingHandler handler) {
+  cl_assert(pebble_task_get_current() == PebbleTask_KernelMain);
+  s_kompass_handler = handler;
+}
+void compass_service_unsubscribe(void) { s_kompass_handler = NULL; }
+int compass_service_set_heading_filter(CompassHeading filter) { return 0; }
+void launcher_task_add_callback(CallbackEventCallback cb, void *daten) {
+  const PebbleTask vorher = pebble_task_get_current();
+  stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+  cb(daten);
+  stub_pebble_tasks_set_current(vorher);
+}
+
+static int s_brumm_zahl;
+static uint32_t s_brumm_letztes[4];
+static uint32_t s_brumm_laenge;
+void vibes_enqueue_custom_pattern(VibePattern muster) {
+  s_brumm_zahl++;
+  s_brumm_laenge = muster.num_segments;
+  memcpy(s_brumm_letztes, muster.durations, muster.num_segments * sizeof(uint32_t));
+}
+
+static uint8_t s_akku = 80;
+BatteryChargeState battery_get_charge_state(void) {
+  return (BatteryChargeState){.charge_percent = s_akku};
+}
+
+static int s_geholt;
+bool app_manager_is_watchface_running(void) { return true; }
+void app_manager_put_launch_app_event(const AppLaunchEventConfig *config) {
+  cl_assert_equal_i(config->id, 4242);
+  s_geholt++;
+}
+AppInstallId app_install_get_id_for_uuid(const Uuid *uuid) {
+  const Uuid kieselsport = KIESELSPORT_UUID;
+  return uuid_equal(uuid, &kieselsport) ? 4242 : INSTALL_ID_INVALID;
+}
+
+// =============================================================================================
+// Persist von Kieselsport (speicher.c hat seinen eigenen Test): im Speicher
+
+#define EINTRAEGE_MAX 64
+typedef struct {
+  bool belegt;
+  uint32_t key;
+  size_t laenge;
+  uint8_t daten[256];
+} Eintrag;
+static Eintrag s_persist[EINTRAEGE_MAX];
+static int s_offen;
+static bool s_jemals[256];  //< je Schluessel: je geschrieben?
+
+static Eintrag *prv_finde(uint32_t key) {
+  for (int i = 0; i < EINTRAEGE_MAX; i++) {
+    if (s_persist[i].belegt && s_persist[i].key == key) return &s_persist[i];
+  }
+  return NULL;
+}
+
+bool ks_persist_exists(uint32_t key) { return prv_finde(key) != NULL; }
+
+int ks_persist_read_data(uint32_t key, void *puffer, size_t groesse) {
+  Eintrag *e = prv_finde(key);
+  if (!e) return 0;
+  const size_t n = e->laenge < groesse ? e->laenge : groesse;
+  memcpy(puffer, e->daten, n);
+  return (int)n;
+}
+
+static int s_schreibvorgaenge;  //< jeder ist ein neuer Satz im Flash
+
+void ks_persist_write_data(uint32_t key, const void *daten, size_t groesse) {
+  if (s_app_aktion && !s_app_wartet_auf && key == s_unterbrich_vor) {
+    prv_app_laeuft();
+  }
+  s_schreibvorgaenge++;
+  if (key < ARRAY_LENGTH(s_jemals)) s_jemals[key] = true;
+  Eintrag *e = prv_finde(key);
+  for (int i = 0; !e && i < EINTRAEGE_MAX; i++) {
+    if (!s_persist[i].belegt) e = &s_persist[i];
+  }
+  cl_assert(e);
+  e->belegt = true;
+  e->key = key;
+  e->laenge = groesse > 256 ? 256 : groesse;
+  memcpy(e->daten, daten, e->laenge);
+}
+
+int32_t ks_persist_read_int(uint32_t key) {
+  int32_t wert = 0;
+  ks_persist_read_data(key, &wert, sizeof(wert));
+  return wert;
+}
+
+void ks_persist_write_int(uint32_t key, int32_t wert) {
+  ks_persist_write_data(key, &wert, sizeof(wert));
+}
+
+void ks_persist_delete(uint32_t key) {
+  Eintrag *e = prv_finde(key);
+  if (e) e->belegt = false;
+}
+
+void ks_persist_offen_halten(bool an) { s_offen += an ? 1 : -1; }
+
+// V7: Das Archiv (10, 11, 100-119) wird nie mehr geschrieben.
+static bool prv_archiv_beschrieben(void) {
+  bool ja = s_jemals[PERSIST_ARCHIV_ANZAHL] || s_jemals[PERSIST_ARCHIV_NAECHST];
+  for (int i = 0; i < PERSIST_ARCHIV_PLAETZE; i++) {
+    ja |= s_jemals[PERSIST_ARCHIV_BASIS + i];
+  }
+  return ja;
+}
+
+// =============================================================================================
+// Ablauf
+
+#define BEGINN 1790445600  // 26.9.2026, 18:00 UTC
+
+static void prv_kernel_bg(void) {
+  fake_system_task_callbacks_invoke_pending();
+}
+
+static void prv_als_newtimer(void (*cb)(void *), void *daten) {
+  const PebbleTask vorher = pebble_task_get_current();
+  stub_pebble_tasks_set_current(PebbleTask_NewTimers);
+  cb(daten);
+  stub_pebble_tasks_set_current(vorher);
+}
+
+// Eine Sekunde wie auf der Uhr: die RTC laeuft, die Sekunden-Zeitgeber (Pebbles Workout-Timer
+// und Kieselsports Takt, in der Reihenfolge ihrer Anmeldung) und faellige Wecker feuern auf dem
+// NewTimer, dann arbeitet KernelBG seine Schlange ab.
+static void prv_sekunde(void) {
+  fake_rtc_increment_time(1);
+  for (int i = 0; i < 4; i++) {
+    RegularTimerInfo *t = s_sekunden_takte[i];
+    if (t) prv_als_newtimer(t->cb, t->cb_data);
+  }
+  for (int i = 0; i < s_wecker_anzahl; i++) {
+    if (s_wecker[i].laeuft && rtc_get_time() >= s_wecker[i].faellig) {
+      s_wecker[i].laeuft = false;
+      prv_als_newtimer(s_wecker[i].cb, s_wecker[i].daten);
+    }
+  }
+  prv_kernel_bg();
+}
+
+static void prv_sekunden_leer(int n) {
+  for (int i = 0; i < n; i++) prv_sekunde();
+}
+
+// Eine Sekunde Training mit frischem Puls und zwei Schritten.
+static void prv_sekunde_mit_puls(uint8_t bpm) {
+  prv_schritte(2);
+  prv_messwert(bpm, HRMQuality_Excellent);
+  prv_sekunde();
+}
+
+// Der Minutentakt (Nachsenden), wie in b25s Test von Hand.
+static bool prv_minutentakt_an(void) {
+  for (int i = 0; i < 4; i++) {
+    if (s_minuten_takte[i]) return true;
+  }
+  return false;
+}
+static void prv_minute(void) {
+  for (int i = 0; i < 4; i++) {
+    RegularTimerInfo *t = s_minuten_takte[i];
+    if (t) prv_als_newtimer(t->cb, t->cb_data);
+  }
+  prv_kernel_bg();
+}
+
+static bool prv_takt_an(void) {
+  for (int i = 0; i < 4; i++) {
+    if (s_sekunden_takte[i]) return true;
+  }
+  return false;
+}
+
+// Die Befehle der App: eingereiht, KernelBG arbeitet sie ab.
+static void prv_starte(Sportart art, uint32_t beginn) {
+  kieselsport_starte(art, beginn);
+  prv_kernel_bg();
+}
+static void prv_pause(void) {
+  kieselsport_pause_umschalten();
+  prv_kernel_bg();
+}
+static void prv_speichern(void) {
+  kieselsport_speichern();
+  prv_kernel_bg();
+}
+static void prv_verwerfen(void) {
+  kieselsport_verwerfen();
+  prv_kernel_bg();
+}
+
+static KsStand prv_stand(void) {
+  KsStand s;
+  kieselsport_stand(&s);
+  return s;
+}
+
+static int32_t prv_pebble_dauer(void) {
+  int32_t dauer = -1;
+  workout_service_get_current_workout_info(NULL, &dauer, NULL, NULL, NULL);
+  return dauer;
+}
+
+static void prv_neustart(void) {
+  kieselsport_test_neustart();
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  kieselsport_init();
+  stub_pebble_tasks_set_current(PebbleTask_App);
+}
+
+void test_kieselsport__initialize(void) {
+  fake_rtc_init(0, BEGINN);
+  fake_event_init();
+  fake_system_task_callbacks_cleanup();
+  system_task_set_available_space(100);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  memset(s_sperren, 0, sizeof(s_sperren));
+  s_sperren_anzahl = 0;
+  memset(s_kanten, 0, sizeof(s_kanten));
+  s_app_wartet_auf = NULL;
+  s_app_aktion = NULL;
+  memset(s_sekunden_takte, 0, sizeof(s_sekunden_takte));
+  memset(s_minuten_takte, 0, sizeof(s_minuten_takte));
+  for (int i = 0; i < 4; i++) s_wecker[i].laeuft = false;
+  memset(&s_state, 0, sizeof(s_state));
+  workout_service_reset();
+  workout_service_init();
+  memset(s_persist, 0, sizeof(s_persist));
+  memset(s_jemals, 0, sizeof(s_jemals));
+  s_schreibvorgaenge = 0;
+  s_offen = 0;
+  s_schritte_tag = 5000;
+  memset(s_erkennung, 0, sizeof(s_erkennung));
+  s_meldungen = 0;
+  s_dls_schub = 0;
+  s_alter = 0;
+  s_gewicht_dag = 7000;
+  fake_ruhepuls_setzen(0);
+  memset(&s_abo, 0, sizeof(s_abo));
+  s_abo_anmeldungen = 0;
+  s_app_abos = 0;
+  s_szene = HRMActivityScene_Default;
+  s_accel_handler = NULL;
+  s_kompass_handler = NULL;
+  s_brumm_zahl = 0;
+  s_akku = 80;
+  s_geholt = 0;
+  prv_neustart();
+}
+
+void test_kieselsport__cleanup(void) {
+  if (kieselsport_laeuft()) {
+    prv_verwerfen();
+  }
+  prv_kernel_bg();
+  // F2 = A: Pebbles Workout-Dienst legt nie ein eigenes Puls-Abo an (frontend_opened).
+  cl_assert_equal_i(s_app_abos, 0);
+  // T7.2, Regel 2.5.2: Die Sperre des Dienstes ist ein Blatt - unter ihr weder Pebbles
+  // Workout-Dienst noch Activity (Variante) noch der HRM-Manager. Der Pulsrueckruf (unter der
+  // HRM-Sperre) ruft kein workout_service_*.
+  cl_assert_equal_i(s_kanten[SperreDienst][SperreWorkout], 0);
+  cl_assert_equal_i(s_kanten[SperreDienst][SperreActivity], 0);
+  cl_assert_equal_i(s_kanten[SperreDienst][SperreHrm], 0);
+  cl_assert_equal_i(s_kanten[SperreHrm][SperreWorkout], 0);
+  // Und keine Sperre ueber Kreuz: was unter A genommen wird, nimmt nie A unter sich.
+  for (int a = 1; a < SperreArten; a++) {
+    for (int b = 1; b < SperreArten; b++) {
+      cl_assert(!(s_kanten[a][b] && s_kanten[b][a]));
+    }
+  }
+  workout_service_reset();
+}
+
+// =============================================================================================
+// Die Tests aus b25 (main: tests/fw/services/kieselsport/test_kieselsport.c), portiert
+
+void test_kieselsport__zonen_am_maximalpuls(void) {
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  cl_assert_equal_i(kieselsport_zonengrenze(1), 95);
+  cl_assert_equal_i(kieselsport_zonengrenze(5), 171);
+  cl_assert_equal_i(kieselsport_zone(94), 0);
+  cl_assert_equal_i(kieselsport_zone(150), 3);
+  // Unsinnige Werte bleiben draussen, gueltige ueberleben den Neustart.
+  kieselsport_maxpuls_setze(90);
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  kieselsport_maxpuls_setze(200);
+  prv_neustart();
+  cl_assert_equal_i(kieselsport_maxpuls(), 200);
+  cl_assert_equal_i(kieselsport_zonengrenze(3), 140);
+}
+
+void test_kieselsport__laufen_von_start_bis_telefon(void) {
+  kieselsport_starte(ArtLaufen, BEGINN - 5);
+  prv_kernel_bg();
+  // Sensor im Sekundentakt (Kieselsports Abo, F2 = A), Laufmodell und keine Bewegungserkennung
+  // daneben (beides Pebble).
+  cl_assert_equal_i(prv_sensor_takt(), 1);
+  cl_assert_equal_i(s_szene, HRMActivityScene_Run);
+  cl_assert_equal_s(s_erkennung, "0");
+  cl_assert_equal_i(s_offen, 1);
+  cl_assert(!s_accel_handler);
+  cl_assert(workout_service_is_workout_ongoing());
+
+  for (int i = 0; i < 120; i++) {
+    prv_sekunde_mit_puls(i < 60 ? 130 : 150);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufLaeuft);
+  cl_assert_equal_i(s.t.beginn, BEGINN - 5);
+  cl_assert_equal_i(s.t.dauer_s, 120);
+  cl_assert_equal_i(s.t.dauer_s, prv_pebble_dauer());
+  cl_assert_equal_i(s.t.schritte, 240);
+  cl_assert(s.t.kcal > 0);
+  cl_assert_equal_i(s.t.puls_mittel, 140);
+  cl_assert_equal_i(s.t.puls_max, 150);
+  cl_assert(s.frisch);
+  cl_assert_equal_i(s.zone, 3);
+  cl_assert_equal_i(s.minute[120 % 60], 150);
+
+  prv_speichern();
+  s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeGespeichert);
+  cl_assert_equal_i(prv_sensor_takt(), 0);
+  cl_assert_equal_i(s_offen, 0);
+
+  // V4: Pebbles Stopp, Sitzung und Meldung kommen 30 s spaeter; bis dahin steht Pebbles Training
+  // in der Pause.
+  cl_assert(workout_service_is_paused());
+  prv_sekunden_leer(29);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  cl_assert_equal_i(s_meldungen, 0);
+  prv_sekunde();
+  cl_assert(!workout_service_is_workout_ongoing());
+  cl_assert_equal_s(s_erkennung, "01");
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  cl_assert(!prv_takt_an());
+
+  // Im Verlauf der Uhr (Pebbles Sitzung) und fuers Telefon; kein Archiv mehr (V7).
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->type, ActivitySessionType_Run);
+  cl_assert(prv_sitzung(0)->manual);
+  cl_assert_equal_i(prv_sitzung(0)->length_min, 2);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert(!prv_archiv_beschrieben());
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.schritte, 240);
+  cl_assert_equal_s(liste, "");
+  // Zusammenfassung (10005) und Pebbles Sitzung tragen dieselben kcal und Schritte.
+  cl_assert_equal_i(t.kcal, prv_sitzung(0)->step_data.active_kcalories);
+  cl_assert_equal_i(t.schritte, prv_sitzung(0)->step_data.steps);
+  cl_assert(t.meter > 0);
+  cl_assert_equal_i(t.meter, prv_sitzung(0)->step_data.distance_meters);
+
+  // Die Kurve: Sekunde 0 bis 120 in Zehnern, also 13 Werte; die erste ist leer, weil der Takt
+  // erst nach Sekunde eins zaehlt.
+  cl_assert(kieselsport_kurve_wartet());
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 13);
+  cl_assert_equal_i(kieselsport_kurve_beginn(), BEGINN - 5);
+  uint8_t stueck[8];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 8);
+  cl_assert_equal_i(stueck[0], 0);
+  cl_assert_equal_i(stueck[1], 130);
+  cl_assert_equal_i(stueck[7], 150);
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN - 5, 0, 8));
+  cl_assert_equal_i(kieselsport_kurve_ab(), 8);
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 5);
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN - 5, 8, 5));
+  cl_assert(!kieselsport_kurve_wartet());
+  // Zeiten je Zone aus der Kurve: 130 ist Zone 2, 150 Zone 3.
+  prv_starte(ArtLaufen, 0);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  prv_speichern();
+  uint32_t zeiten[KS_ZONEN + 1];
+  cl_assert(kieselsport_kurve_zeiten(zeiten));
+  cl_assert_equal_i(zeiten[2], 60);
+  cl_assert_equal_i(zeiten[3], 0);
+}
+
+void test_kieselsport__zonenwechsel_brummt(void) {
+  prv_starte(ArtBike, 0);
+  // Velo ist bei Pebble ein offenes Training mit dem Modell fuer hohe Belastung (V5).
+  cl_assert_equal_i(s_szene, HRMActivityScene_HighIntensity);
+  for (int i = 0; i < 10; i++) {
+    prv_sekunde_mit_puls(120);  // Zone 2
+  }
+  cl_assert_equal_i(s_brumm_zahl, 0);
+  prv_sekunde_mit_puls(140);  // Zone 3: hoch, zwei kurze
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  cl_assert_equal_i(s_brumm_laenge, 3);
+  prv_sekunde_mit_puls(141);
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  prv_sekunde_mit_puls(120);  // runter, einer
+  cl_assert_equal_i(s_brumm_zahl, 2);
+  cl_assert_equal_i(s_brumm_laenge, 1);
+
+  // Ein alter Wert wechselt keine Zone: nach 90 Sekunden ohne Meldung ist der Puls nicht mehr
+  // frisch.
+  prv_sekunden_leer(91);
+  KsStand s = prv_stand();
+  cl_assert(!s.frisch);
+  cl_assert_equal_i(s.zone, 0);
+  cl_assert_equal_i(s_brumm_zahl, 2);
+}
+
+void test_kieselsport__pause_haelt_die_zeit_an(void) {
+  prv_starte(ArtWandern, 0);
+  cl_assert_equal_i(s_szene, HRMActivityScene_Walk);
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  prv_pause();
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert(workout_service_is_paused());
+  // In der Pause misst der Sensor seltener.
+  cl_assert_equal_i(prv_sensor_takt(), 10);
+  prv_sekunden_leer(30);
+  prv_pause();
+  cl_assert(!workout_service_is_paused());
+  cl_assert_equal_i(prv_sensor_takt(), 1);
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  cl_assert_equal_i(prv_stand().t.dauer_s, 60);
+  cl_assert_equal_i(prv_pebble_dauer(), 60);
+}
+
+void test_kieselsport__unter_einer_minute_verworfen(void) {
+  prv_starte(ArtLaufen, 0);
+  for (int i = 0; i < 59; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  const uint8_t vorher = prv_stand().ende_nr;
+  prv_speichern();
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.ende, KsEndeVerworfen);
+  cl_assert_equal_i(s.ende_nr, (uint8_t)(vorher + 1));
+  // Pebble ist sofort gestoppt, ohne Sitzung und Meldung; kein Archiv (V7).
+  cl_assert(!workout_service_is_workout_ongoing());
+  prv_sekunden_leer(120);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  cl_assert_equal_i(s_meldungen, 0);
+  cl_assert_equal_i(s_dls_schub, 0);
+  cl_assert(!prv_archiv_beschrieben());
+  Trainingsstand t;
+  char liste[8];
+  cl_assert(!kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+}
+
+void test_kieselsport__schwacher_akku_misst_sparsam(void) {
+  s_akku = 15;
+  prv_starte(ArtLaufen, 0);
+  cl_assert_equal_i(prv_sensor_takt(), 5);
+  cl_assert(prv_stand().sparsam);
+}
+
+void test_kieselsport__puls_frisch_geglaettet_und_vom_handgelenk(void) {
+  prv_starte(ArtLaufen, 0);
+  // Misstraut der Sensor seiner Messung, gilt der Median der letzten drei: die Spitze 180 zieht
+  // nicht mit.
+  prv_messwert(100, HRMQuality_Poor);
+  prv_messwert(180, HRMQuality_Poor);
+  prv_messwert(102, HRMQuality_Poor);
+  prv_sekunde();
+  cl_assert_equal_i(prv_stand().puls, 102);
+  // Unsinn faellt weg.
+  prv_messwert(250, HRMQuality_Excellent);
+  prv_sekunde();
+  cl_assert_equal_i(prv_stand().puls, 102);
+  // Nicht am Handgelenk: sofort kein Puls.
+  prv_messwert(0, HRMQuality_OffWrist);
+  prv_sekunde();
+  cl_assert_equal_i(prv_stand().puls, 0);
+  cl_assert(!prv_stand().frisch);
+}
+
+// Ein Arm, der eine Hantel hebt: eine Wiederholung je Sekunde, 25 Messungen je Sekunde, in
+// Paketen zu zehn wie vom Beschleunigungsmesser - auf KernelBG, wo der Dienst sich anmeldete.
+static int s_messung;
+static void prv_accel(AccelData *paket, uint32_t n) {
+  cl_assert(s_accel_handler);
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  s_accel_handler(paket, n);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+}
+static void prv_arm(int sekunden, bool bewegt) {
+  for (int s = 0; s < sekunden; s++) {
+    AccelData paket[25];
+    for (int i = 0; i < 25; i++, s_messung++) {
+      const double phase = 2.0 * 3.14159265358979 * (double)s_messung / 25.0;
+      paket[i] = (AccelData){
+        .x = 0,
+        .y = 0,
+        .z = (int16_t)(1000 + (bewegt ? 450.0 * sin(phase) : 0.0)),
+      };
+    }
+    prv_accel(paket, 10);
+    prv_accel(paket + 10, 10);
+    prv_accel(paket + 20, 5);
+    prv_sekunde();
+  }
+}
+
+void test_kieselsport__kraft_zaehlt_saetze_und_brummt_nach_der_pause(void) {
+  kieselsport_pausenziel_setze(8);
+  prv_starte(ArtKraft, 0);
+  cl_assert(s_accel_handler);
+  s_messung = 0;
+  // Erst eine halbe Minute zur Bank: ein Training unter einer Minute gaebe es sonst am Ende
+  // nicht.
+  prv_arm(30, false);
+  prv_arm(12, true);
+  KsStand s = prv_stand();
+  cl_assert(!s.ruht);
+  cl_assert(s.reps_laufend >= 10 && s.reps_laufend <= 13);
+  // Ruhe: nach vier Sekunden ist der Satz zu Ende, nach acht weiteren brummt die Uhr - einmal.
+  const int vorher = s_brumm_zahl;
+  prv_arm(15, false);
+  s = prv_stand();
+  cl_assert(s.ruht);
+  cl_assert_equal_i(s.t.saetze, 1);
+  cl_assert_equal_i(s_brumm_zahl, vorher + 1);
+  cl_assert_equal_i(s_brumm_letztes[0], 80);
+
+  // Ein zweiter Satz, der mit Stop endet, zaehlt auch.
+  prv_arm(6, true);
+  prv_speichern();
+  cl_assert(!s_accel_handler);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.saetze, 2);
+  // Zwei Abschnitte "beginn:anzahl:dauer;".
+  int strichpunkte = 0;
+  for (const char *c = liste; *c; c++) {
+    strichpunkte += (*c == ';');
+  }
+  cl_assert_equal_i(strichpunkte, 2);
+  cl_assert(t.reps >= 14 && t.reps <= 20);
+}
+
+// Die Richtung vom Kompass, auf KernelMain wie dort angemeldet.
+static void prv_schwimmen(int sekunden, int32_t richtung) {
+  for (int s = 0; s < sekunden; s++) {
+    cl_assert(s_kompass_handler);
+    stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+    const CompassHeadingData d = {.magnetic_heading = richtung,
+                                  .compass_status = CompassStatusCalibrated};
+    s_kompass_handler(d);
+    s_kompass_handler(d);
+    stub_pebble_tasks_set_current(PebbleTask_App);
+    prv_sekunde();
+  }
+}
+
+void test_kieselsport__schwimmen_zaehlt_bahnen(void) {
+  kieselsport_becken_setze(25);
+  prv_starte(ArtSchwimmen, 0);
+  cl_assert(s_kompass_handler);
+  // V5: kein Modell fuer Schwimmen - das allgemeine statt Pebbles hoher Belastung.
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  prv_schwimmen(30, 0);
+  prv_schwimmen(30, TRIG_MAX_ANGLE / 2);
+  prv_schwimmen(30, 0);
+  KsStand s = prv_stand();
+  cl_assert(s.bahnen_bereit);
+  cl_assert_equal_i(s.t.bahnen, 2);
+  // Die letzte Bahn zaehlt beim Stop mit.
+  prv_speichern();
+  cl_assert(!s_kompass_handler);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.bahnen, 3);
+  cl_assert_equal_i(t.meter, 75);
+}
+
+void test_kieselsport__yoga_misst_hrv(void) {
+  prv_starte(ArtYoga, 0);
+  cl_assert(prv_sensor_hrv());
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  for (int i = 0; i < 40; i++) {
+    prv_abstand((i % 2) ? 1040 : 1000);
+  }
+  prv_sekunde();
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.t.hrv_ms, 40);
+  cl_assert_equal_i(s.hrv_anzahl, 39);
+  prv_verwerfen();
+  cl_assert(!prv_sensor_hrv());
+  cl_assert_equal_i(prv_sensor_takt(), 0);
+}
+
+// b25: archiv_haelt_die_letzten_zwanzig. Das Archiv entfaellt (V7); seine Schluessel bleiben
+// reserviert und werden nie mehr geschrieben, auch nicht nach 22 Trainings.
+void test_kieselsport__archiv_entfaellt(void) {
+  for (int n = 0; n < 22; n++) {
+    prv_starte(ArtLaufen, BEGINN + n * 1000);
+    for (int i = 0; i < 60; i++) {
+      prv_sekunde_mit_puls(100);
+    }
+    prv_speichern();
+  }
+  prv_sekunden_leer(30);
+  cl_assert(!prv_archiv_beschrieben());
+  // Jedes Training steht genau einmal in Pebbles Sitzungsliste.
+  cl_assert_equal_i(prv_sitzungen(), 22);
+}
+
+void test_kieselsport__lange_liste_in_zwei_haelften(void) {
+  char lang[KS_LISTE_MAX];
+  for (int i = 0; i < 250; i++) {
+    lang[i] = (char)('a' + i % 26);
+  }
+  lang[250] = 0;
+  const Trainingsstand t = {.art = ArtKraft, .beginn = BEGINN, .dauer_s = 600};
+  wartend_merken(&t, lang, NULL, 0, 0);
+  Trainingsstand gelesen;
+  char liste[KS_LISTE_MAX];
+  cl_assert(wartend_laden(&gelesen, liste, sizeof(liste)));
+  cl_assert_equal_s(liste, lang);
+  wartend_vergessen(BEGINN);
+  cl_assert(!wartend_laden(&gelesen, liste, sizeof(liste)));
+}
+
+void test_kieselsport__nachsenden_nach_2_10_30_minuten(void) {
+  prv_starte(ArtLaufen, 0);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  prv_speichern();
+  cl_assert(prv_minutentakt_an());
+  int geholt_bei[3] = {0};
+  for (int minute = 1; minute <= 45 && prv_minutentakt_an(); minute++) {
+    const int vorher = s_geholt;
+    prv_minute();
+    if (s_geholt > vorher) {
+      geholt_bei[s_geholt - 1] = minute;
+    }
+  }
+  cl_assert_equal_i(s_geholt, 3);
+  cl_assert_equal_i(geholt_bei[0], 2);
+  cl_assert_equal_i(geholt_bei[1], 10);
+  cl_assert_equal_i(geholt_bei[2], 30);
+}
+
+void test_kieselsport__nachsenden_hoert_auf_wenn_angekommen(void) {
+  prv_starte(ArtLaufen, 0);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  prv_speichern();
+  kieselsport_wartend_vergessen(0);
+  prv_minute();
+  cl_assert(!prv_minutentakt_an());
+  cl_assert_equal_i(s_geholt, 0);
+}
+
+// b25 summierte Pebbles Tageszaehler selbst ueber Mitternacht. Jetzt zaehlt Pebbles
+// Workout-Dienst; er setzt bei fallender Tagessumme neu an (workout_service.c:190-193).
+void test_kieselsport__training_ueber_mitternacht_verliert_nichts(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  // Mitternacht: die Tagessumme der Uhr beginnt bei null.
+  s_schritte_tag = 0;
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.t.schritte, 240);
+}
+
+void test_kieselsport__pause_zaehlt_keine_schritte(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  prv_pause();
+  // In der Pause laeuft man zum Kiosk: die Uhr zaehlt, das Training nicht.
+  prv_schritte(500);
+  prv_pause();
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  cl_assert_equal_i(prv_stand().t.schritte, 120);
+}
+
+// --- Maximalpuls: gesetzt oder nach Alter ---
+
+void test_kieselsport__ohne_einstellung_rechnet_die_uhr_nach_alter(void) {
+  // Ohne Alter die alte Vorgabe; mit Alter Tanaka, gerundet wie Boulder.
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  s_alter = 41;
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);  // 208 - 28,7 = 179,3
+  cl_assert_equal_i(kieselsport_zonengrenze(1), 89);
+  s_alter = 35;
+  cl_assert_equal_i(kieselsport_maxpuls(), 184);  // 183,5 rundet auf
+  // Das Alter aendert sich: die Zonen folgen, ohne dass jemand etwas schickt.
+  s_alter = 50;
+  cl_assert_equal_i(kieselsport_maxpuls(), 173);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+}
+
+void test_kieselsport__gemessene_190_ist_einstellbar(void) {
+  s_alter = 41;
+  kieselsport_maxpuls_setze(190);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  prv_neustart();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  // Zurueck auf "nach Alter": der Wert fliegt aus dem Persist, damit aeltere Firmware ihre
+  // Vorgabe liest.
+  kieselsport_maxpuls_nicht_setzen();
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS));
+  prv_neustart();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+}
+
+void test_kieselsport__alte_190_ohne_vermerk_heisst_nicht_gesetzt(void) {
+  s_alter = 41;
+  // So hinterliessen Store-App, Konfigseite und Boulder bis 0.42 den Persist.
+  ks_persist_write_int(PERSIST_MAXPULS, 190);
+  prv_neustart();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  // Jeder andere alte Wert war eingestellt.
+  ks_persist_write_int(PERSIST_MAXPULS, 185);
+  prv_neustart();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  // Schrieb eine aeltere Firmware nach "nicht gesetzt" einen Wert, gilt er.
+  kieselsport_maxpuls_nicht_setzen();
+  ks_persist_write_int(PERSIST_MAXPULS, 175);
+  prv_neustart();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 175);
+}
+
+void test_kieselsport__schaetzung_nach_alter_ohne_vermerk_bleibt_nach_alter(void) {
+  // So hinterliess Boulder 0.43 bis 0.45 den Persist bei "From age": seine Schaetzung nach
+  // Tanaka als Zahl.
+  ks_persist_write_int(PERSIST_MAXPULS, 179);
+  // Beim Start der Uhr sind die Gesundheitseinstellungen noch nicht geladen.
+  s_alter = 30;
+  prv_neustart();
+  // Bis zur Entscheidung gilt die alte Zahl - und noch nichts im Persist.
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS_GESETZT));
+  // Geladen; die App fragt beim Melden ans Telefon.
+  s_alter = 41;
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert(!ks_persist_exists(PERSIST_MAXPULS));
+  // Festgehalten: mit dem Alter folgt die Uhr, auch nach einem Neustart.
+  s_alter = 45;
+  prv_neustart();
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 177);  // 176,5
+}
+
+void test_kieselsport__eingestellte_zahl_ohne_vermerk_bleibt_eingestellt(void) {
+  ks_persist_write_int(PERSIST_MAXPULS, 185);
+  s_alter = 30;
+  prv_neustart();
+  s_alter = 41;
+  // Ein Training braucht die Zonen: sein Start entscheidet.
+  prv_starte(ArtLaufen, BEGINN);
+  cl_assert(ks_persist_exists(PERSIST_MAXPULS_GESETZT));
+  cl_assert_equal_i(ks_persist_read_int(PERSIST_MAXPULS_GESETZT), 1);
+  prv_verwerfen();
+  // Trifft Tanaka die Zahl spaeter zufaellig, bleibt sie eingestellt.
+  s_alter = 33;  // 184,9
+  prv_neustart();
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+}
+
+void test_kieselsport__zahl_ohne_vermerk_wie_bisher(void) {
+  s_alter = 41;
+  // Das Echo der eigenen Meldung aendert nichts: die Uhr bleibt beim Alter.
+  kieselsport_maxpuls_alt(179);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+  s_alter = 42;
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);  // 178,6
+  // Jede andere Zahl ist eingestellt - auch 190 von einem alten Boulder.
+  kieselsport_maxpuls_alt(190);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 190);
+  // Ist ein Wert gesetzt, bleibt auch eine gleiche Zahl gesetzt.
+  kieselsport_maxpuls_alt(179);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+  // Unsinn bleibt draussen.
+  kieselsport_maxpuls_alt(90);
+  cl_assert_equal_i(kieselsport_maxpuls(), 179);
+}
+
+// --- Pausen und Ende fuer das Telefon ---
+
+static void prv_sekunden(int n) {
+  for (int i = 0; i < n; i++) {
+    prv_sekunde_mit_puls(120);
+  }
+}
+
+static void prv_pause_fuer(int sekunden) {
+  prv_pause();
+  prv_sekunden_leer(sekunden);
+  prv_pause();
+}
+
+static uint16_t prv_u16(const uint8_t *b) { return (uint16_t)(b[0] | (b[1] << 8)); }
+
+void test_kieselsport__pausen_gehen_mit_der_zusammenfassung(void) {
+  prv_starte(ArtBike, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(120);  // Kaffee
+  prv_sekunden(40);
+  prv_pause_fuer(5);  // Ampel
+  prv_sekunden(20);
+  // Gespeichert wird aus der Pause: dort endet die aktive Zeit.
+  prv_pause();
+  const time_t letzte_pause = rtc_get_time();
+  prv_sekunden_leer(30);
+  prv_speichern();
+
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 90);
+  uint8_t b[KS_PAUSEN_BYTES];
+  const size_t n = kieselsport_wartend_pausen(b, sizeof(b));
+  cl_assert_equal_i(n, 2 + 2 * 4);
+  cl_assert_equal_i(b[0], KS_PAUSEN_FASSUNG);
+  cl_assert_equal_i(b[1], 2);
+  cl_assert_equal_i(prv_u16(b + 2), 30);
+  cl_assert_equal_i(prv_u16(b + 4), 120);
+  cl_assert_equal_i(prv_u16(b + 6), 70);
+  cl_assert_equal_i(prv_u16(b + 8), 5);
+  // Beginn + aktive Zeit + Pausen ist genau das Ende.
+  cl_assert_equal_i(kieselsport_wartend_ende(), (uint32_t)letzte_pause);
+  cl_assert_equal_i(kieselsport_wartend_ende(), BEGINN + 90 + 125);
+  // Pebbles Sitzung traegt dieselbe aktive Zeit (Regel 2.5.3), nur in ganzen Minuten.
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->length_min, 90 / 60);
+
+  // Bestaetigt: alles weg, auch Pausen und Ende.
+  kieselsport_wartend_vergessen(BEGINN);
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 0);
+  cl_assert_equal_i(kieselsport_wartend_ende(), 0);
+}
+
+void test_kieselsport__ohne_pausen_nur_kopf(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(60);
+  prv_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  // Der Kopf allein heisst: die Uhr kennt Pausen, es gab keine.
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+  cl_assert_equal_i(b[1], 0);
+  // Ohne Pause gespeichert endet die aktive Zeit beim Speichern.
+  cl_assert_equal_i(kieselsport_wartend_ende(), BEGINN + 60);
+}
+
+void test_kieselsport__mehr_pausen_als_platz(void) {
+  prv_starte(ArtKraft, BEGINN);
+  for (int i = 0; i < KS_PAUSEN_MAX + 1; i++) {
+    prv_sekunden(2);
+    prv_pause_fuer(3);
+  }
+  prv_sekunden(10);
+  prv_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  // Die Liste ist voll, die Zahl zaehlt weiter - das Telefon sieht die Luecke.
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), KS_PAUSEN_BYTES);
+  cl_assert_equal_i(b[1], KS_PAUSEN_MAX + 1);
+}
+
+void test_kieselsport__ein_neues_training_hat_keine_alten_pausen(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(10);
+  prv_sekunden(30);
+  prv_speichern();
+  prv_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(60);
+  prv_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+}
+
+void test_kieselsport__alte_pausen_gehen_nicht_mit_fremdem_stand(void) {
+  prv_starte(ArtBike, BEGINN);
+  prv_sekunden(30);
+  prv_pause_fuer(60);
+  prv_sekunden(30);
+  prv_speichern();
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2 + 4);
+  // Zurueckgespielte Firmware: sie schickt das Training, loescht nach der Bestaetigung nur 30-32
+  // und legt ihr naechstes ohne Pausen ab.
+  ks_persist_delete(PERSIST_WARTET);
+  ks_persist_delete(PERSIST_WARTET_LISTE_A);
+  ks_persist_delete(PERSIST_WARTET_LISTE_B);
+  const Trainingsstand fremd = {.art = ArtLaufen, .beginn = BEGINN + 5000, .dauer_s = 600};
+  ks_persist_write_data(PERSIST_WARTET, &fremd, sizeof(fremd));
+  // Wieder die neue Firmware: der fremde Stand geht ohne die alten Pausen.
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 5000);
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 0);
+  cl_assert_equal_i(kieselsport_wartend_ende(), 0);
+}
+
+// --- Der Stopp eines verworfenen Trainings ---
+
+void test_kieselsport__verworfen_merkt_den_stopp(void) {
+  prv_starte(ArtWandern, BEGINN);
+  prv_sekunden(100);
+  prv_pause();
+  prv_verwerfen();
+  uint32_t beginn = 0, zeit = 0;
+  uint8_t art = 0;
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  cl_assert_equal_i(beginn, BEGINN);
+  cl_assert_equal_i(zeit, (uint32_t)rtc_get_time());
+  cl_assert_equal_i(art, ArtWandern);
+  // Ein spaet bestaetigter fremder Stopp loescht ihn nicht, der eigene schon.
+  kieselsport_stopp_vergessen(BEGINN - 1);
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  kieselsport_stopp_vergessen(BEGINN);
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+
+  // Unter einer Minute gespeichert ist auch verworfen.
+  prv_starte(ArtLaufen, BEGINN + 500);
+  prv_sekunden(20);
+  prv_speichern();
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  cl_assert_equal_i(beginn, BEGINN + 500);
+  // Ein neues Training ersetzt ihn - sein Start sagt dem Telefon alles.
+  prv_starte(ArtLaufen, BEGINN + 900);
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+  // Ein gespeichertes Training traegt den Stopp in der Zusammenfassung.
+  prv_sekunden(60);
+  prv_speichern();
+  cl_assert(!kieselsport_stopp_laden(&beginn, &zeit, &art));
+}
+
+void test_kieselsport__nachsenden_auch_fuer_den_stopp(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(30);
+  prv_verwerfen();
+  cl_assert(prv_minutentakt_an());
+  prv_minute();
+  prv_minute();
+  cl_assert_equal_i(s_geholt, 1);
+  // Angekommen: der Takt hoert auf.
+  kieselsport_stopp_vergessen(BEGINN);
+  prv_minute();
+  cl_assert(!prv_minutentakt_an());
+  // Auch nach einem Neustart der Uhr.
+  prv_starte(ArtLaufen, BEGINN + 100);
+  prv_sekunden(10);
+  prv_verwerfen();
+  memset(s_minuten_takte, 0, sizeof(s_minuten_takte));
+  prv_neustart();
+  cl_assert(prv_minutentakt_an());
+}
+
+// --- Bestaetigungen gehoeren zu ihrem Training ---
+
+static void prv_training(uint32_t beginn, int sekunden) {
+  prv_starte(ArtLaufen, beginn);
+  prv_sekunden(sekunden);
+  prv_speichern();
+}
+
+void test_kieselsport__spaete_bestaetigung_loescht_kein_neueres_training(void) {
+  prv_training(BEGINN, 120);
+  // B kommt dazu, bevor das Telefon A bestaetigt hat - dann dessen ACK.
+  prv_training(BEGINN + 1000, 90);
+  kieselsport_wartend_vergessen(BEGINN);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 1000);
+  // Die Pausen und das Ende von B stehen auch noch.
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert_equal_i(kieselsport_wartend_pausen(b, sizeof(b)), 2);
+  // Die eigene Bestaetigung loescht B.
+  kieselsport_wartend_vergessen(BEGINN + 1000);
+  cl_assert(!kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+}
+
+void test_kieselsport__spaete_kurvenbestaetigung_trifft_keine_neue_kurve(void) {
+  prv_training(BEGINN, 410);
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 42);
+  // Das Stueck von A ist unterwegs, B wird gespeichert.
+  prv_training(BEGINN + 1000, 300);
+  cl_assert(!kieselsport_kurve_bestaetigt(BEGINN, 0, 42));
+  cl_assert(kieselsport_kurve_wartet());
+  cl_assert_equal_i(kieselsport_kurve_beginn(), BEGINN + 1000);
+  cl_assert_equal_i(kieselsport_kurve_ab(), 0);
+  // Auch ein Stueck von B an falscher Stelle zaehlt nicht.
+  cl_assert(!kieselsport_kurve_bestaetigt(BEGINN + 1000, 5, 10));
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN + 1000, 0, 10));
+  cl_assert_equal_i(kieselsport_kurve_ab(), 10);
+}
+
+// DAS SPAETE ACK MITTEN IM SPEICHERN. Die App bestaetigt die Zusammenfassung von A, waehrend
+// KernelBG gerade B speichert: Pausen und Ende von B stehen schon da, der wartende Stand noch
+// nicht - er sagt noch A. Ohne die Sperre passte die Pruefung, und das Loeschen naehme die Pausen
+// und das Ende von B mit; B ginge ohne sie ans Telefon.
+static void prv_ack_a(void) {
+  kieselsport_wartend_vergessen(BEGINN);
+}
+
+void test_kieselsport__spaetes_ack_mitten_im_speichern_loescht_nichts_von_b(void) {
+  prv_training(BEGINN, 120);
+  prv_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(60);
+  prv_pause_fuer(30);
+  prv_sekunden(60);
+  s_app_aktion = prv_ack_a;
+  s_unterbrich_vor = PERSIST_WARTET;
+  prv_speichern();
+  cl_assert(s_app_aktion == NULL);  // die App kam dran
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.beginn, BEGINN + 1000);
+  uint8_t b[KS_PAUSEN_BYTES];
+  cl_assert(kieselsport_wartend_pausen(b, sizeof(b)) > 2);
+  cl_assert(kieselsport_wartend_ende() != 0);
+}
+
+// Dasselbe fuer die Kurve: die App bestaetigt das letzte Stueck der Kurve von A, waehrend
+// KernelBG die Stuecke von B schon geschrieben hat, Anzahl und Beginn aber noch nicht. Ohne die
+// Sperre loeschte kurve_vergessen die Stuecke von B, und deren Kurve haette eine Luecke - sie
+// wuerde verworfen.
+static void prv_kurven_ack_a(void) {
+  kieselsport_kurve_bestaetigt(BEGINN, 0, 42);
+}
+
+void test_kieselsport__spaetes_kurven_ack_mitten_im_speichern_loescht_nichts_von_b(void) {
+  prv_training(BEGINN, 410);
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 42);
+  prv_starte(ArtLaufen, BEGINN + 1000);
+  prv_sekunden(300);
+  s_app_aktion = prv_kurven_ack_a;
+  s_unterbrich_vor = PERSIST_KURVE_ANZAHL;
+  prv_speichern();
+  cl_assert(s_app_aktion == NULL);
+  cl_assert(kieselsport_kurve_wartet());
+  cl_assert_equal_i(kieselsport_kurve_beginn(), BEGINN + 1000);
+  cl_assert(!kieselsport_kurve_luecke());
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), kieselsport_kurve_anzahl());
+}
+
+// DAS KURVENSTUECK MITTEN IM SPEICHERN. Die App liest das naechste Stueck der Kurve von A,
+// waehrend KernelBG B speichert: die Werte von B stehen schon da, Anzahl, Beginn und Zeiger noch
+// die von A. Einzeln gelesen ginge der Puls von B unter dem Beginn von A hinaus, und das Telefon
+// truege ihn dort ein.
+static uint32_t s_gelesen_beginn;
+static uint16_t s_gelesen_ab;
+static uint16_t s_gelesen_anzahl;
+static uint16_t s_gelesen_n;
+static uint8_t s_gelesen[300];
+static void prv_kurve_lesen(void) {
+  s_gelesen_n = kieselsport_kurve_lesen(&s_gelesen_beginn, &s_gelesen_ab, &s_gelesen_anzahl,
+                                        s_gelesen, sizeof(s_gelesen));
+}
+
+void test_kieselsport__kurvenstueck_mitten_im_speichern_gehoert_zu_einem_training(void) {
+  // A mit Puls 100, 42 Werte; B mit Puls 150, 31 Werte.
+  prv_starte(ArtLaufen, BEGINN);
+  for (int i = 0; i < 410; i++) {
+    prv_sekunde_mit_puls(100);
+  }
+  prv_speichern();
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 42);
+  prv_starte(ArtLaufen, BEGINN + 1000);
+  for (int i = 0; i < 300; i++) {
+    prv_sekunde_mit_puls(150);
+  }
+  s_app_aktion = prv_kurve_lesen;
+  s_unterbrich_vor = PERSIST_KURVE_ANZAHL;
+  prv_speichern();
+  cl_assert(s_app_aktion == NULL);
+  // Alles, was die App las, gehoert zu B.
+  cl_assert_equal_i(s_gelesen_beginn, BEGINN + 1000);
+  cl_assert_equal_i(s_gelesen_ab, 0);
+  cl_assert_equal_i(s_gelesen_anzahl, 31);
+  cl_assert_equal_i(s_gelesen_n, 31);
+  cl_assert_equal_i(s_gelesen[20], 150);
+}
+
+void test_kieselsport__kurve_mit_luecke(void) {
+  // 211 Werte in zwei Schluesseln.
+  prv_training(BEGINN, 2100);
+  cl_assert_equal_i(kieselsport_kurve_anzahl(), 211);
+  cl_assert(!kieselsport_kurve_luecke());
+  // Der zweite Schluessel fehlt (ein gescheitertes Schreiben): ab Wert 200 laesst sich nichts
+  // mehr schicken.
+  cl_assert(kieselsport_kurve_bestaetigt(BEGINN, 0, 200));
+  ks_persist_delete(PERSIST_KURVE_BASIS + 1);
+  uint8_t stueck[300];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 0);
+  cl_assert(kieselsport_kurve_luecke());
+  kieselsport_kurve_vergessen();
+  cl_assert(!kieselsport_kurve_luecke());
+}
+
+// --- Ein vergessenes Training ---
+
+void test_kieselsport__halbe_stunde_pause_beendet_das_training(void) {
+  prv_starte(ArtWandern, BEGINN);
+  prv_sekunden(600);
+  prv_pause();
+  const time_t pause = rtc_get_time();
+  prv_sekunden_leer(30 * 60 - 1);
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert(workout_service_is_workout_ongoing());
+  prv_sekunde();
+  // Gespeichert wie mit der Taste: Verlauf (Pebbles Sitzung, sofort), Telefon.
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeGespeichert);
+  cl_assert(!workout_service_is_workout_ongoing());
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->length_min, 10);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert(!prv_archiv_beschrieben());
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 600);
+  // Die aktive Zeit endete, als die Pause begann.
+  cl_assert_equal_i(kieselsport_wartend_ende(), (uint32_t)pause);
+  // Sensoren aus, der Takt steht, und der Dienst holt die App zum Senden.
+  cl_assert_equal_i(prv_sensor_takt(), 0);
+  cl_assert(!prv_takt_an());
+  cl_assert(prv_minutentakt_an());
+}
+
+void test_kieselsport__nur_eine_pause_am_stueck_zaehlt(void) {
+  prv_starte(ArtWandern, BEGINN);
+  prv_sekunden(120);
+  // Zwanzig Minuten Pause, kurz weiter, wieder zwanzig: kein Ende.
+  prv_pause();
+  prv_sekunden_leer(20 * 60);
+  prv_pause();
+  prv_sekunden(10);
+  prv_pause();
+  prv_sekunden_leer(20 * 60);
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  // Auch Pause-Weiter-Pause zwischen zwei Takten faengt neu an.
+  prv_pause();
+  prv_pause();
+  prv_sekunden_leer(29 * 60);
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  cl_assert_equal_i(s_meldungen, 0);
+}
+
+// --- Brummen nur bei eindeutigem Zonenwechsel ---
+
+void test_kieselsport__zonen_brummen_erst_drei_schlaege_jenseits(void) {
+  // Maximalpuls 190: Zone 3 beginnt bei 133.
+  cl_assert_equal_i(kieselsport_zonengrenze(3), 133);
+  prv_starte(ArtBike, 0);
+  for (int i = 0; i < 10; i++) prv_sekunde_mit_puls(120);
+  // Zehn Minuten lang pendelt der Puls um einen Schlag um die Grenze.
+  for (int i = 0; i < 600; i++) {
+    prv_sekunde_mit_puls((i / 5) % 2 ? 134 : 132);
+  }
+  cl_assert_equal_i(s_brumm_zahl, 0);
+  // Zwei Schlaege drueber reicht nicht, drei schon - einmal hoch.
+  prv_sekunde_mit_puls(135);
+  cl_assert_equal_i(s_brumm_zahl, 0);
+  prv_sekunde_mit_puls(136);
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  cl_assert_equal_i(s_brumm_laenge, 3);
+  // Zurueck an die Grenze: bleibt Zone 3, bis drei Schlaege darunter.
+  prv_sekunde_mit_puls(132);
+  prv_sekunde_mit_puls(130);
+  cl_assert_equal_i(s_brumm_zahl, 1);
+  prv_sekunde_mit_puls(129);
+  cl_assert_equal_i(s_brumm_zahl, 2);
+  cl_assert_equal_i(s_brumm_laenge, 1);
+}
+
+// --- Laenger als 18 Stunden ---
+
+void test_kieselsport__bahnen_nach_achtzehn_stunden_an_der_richtigen_stelle(void) {
+  kieselsport_becken_setze(25);
+  prv_starte(ArtSchwimmen, BEGINN);
+  // Gut 18 Stunden in eine Richtung (vergessen am Beckenrand), dann eine Bahn zurueck und wieder
+  // hin.
+  const int lang = 65536 + 100;
+  prv_schwimmen(lang, 0);
+  prv_schwimmen(30, TRIG_MAX_ANGLE / 2);
+  prv_schwimmen(30, 0);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.bahnen, 3);
+  // Die zweite Bahn begann bei der Wende nach der langen ersten - in vollen Sekunden, nicht
+  // 65536 weniger.
+  unsigned beginn[3] = {0}, anzahl = 0, dauer[3] = {0};
+  const char *c = liste;
+  for (int i = 0; i < 3; i++) {
+    cl_assert(sscanf(c, "%u:%u:%u;", &beginn[i], &anzahl, &dauer[i]) == 3);
+    c = strchr(c, ';') + 1;
+  }
+  cl_assert(beginn[1] > 65536);
+  cl_assert(dauer[0] > 65536);
+  cl_assert(dauer[1] >= 20 && dauer[1] <= 40);
+}
+
+// --- Gleiche Einstellungen schreiben nichts ---
+
+void test_kieselsport__gleiche_einstellung_schreibt_nichts(void) {
+  kieselsport_becken_setze(33);
+  kieselsport_empfindlichkeit_setze(3);
+  kieselsport_pausenziel_setze(60);
+  kieselsport_maxpuls_setze(185);
+  const int nach_erstem = s_schreibvorgaenge;
+  cl_assert(nach_erstem > 0);
+  // Boulder schickt beim Speichern alle Werte noch einmal mit.
+  kieselsport_becken_setze(33);
+  kieselsport_empfindlichkeit_setze(3);
+  kieselsport_pausenziel_setze(60);
+  kieselsport_maxpuls_setze(185);
+  cl_assert_equal_i(s_schreibvorgaenge, nach_erstem);
+  // "Nach Alter" ebenso: einmal geschrieben, dann nicht mehr.
+  kieselsport_maxpuls_nicht_setzen();
+  const int nach_alter = s_schreibvorgaenge;
+  cl_assert(nach_alter > nach_erstem);
+  kieselsport_maxpuls_nicht_setzen();
+  cl_assert_equal_i(s_schreibvorgaenge, nach_alter);
+  // Was sich aendert, kommt weiter an.
+  kieselsport_becken_setze(50);
+  cl_assert_equal_i(s_schreibvorgaenge, nach_alter + 1);
+  prv_neustart();
+  cl_assert_equal_i(kieselsport_becken(), 50);
+  cl_assert_equal_i(kieselsport_empfindlichkeit(), 3);
+  cl_assert_equal_i(kieselsport_pausenziel(), 60);
+  cl_assert(!kieselsport_maxpuls_gesetzt());
+}
+
+// =============================================================================================
+// Neu mit dem Weg 2 (Spezifikation Schritt 2, 2.5 und 6.1)
+
+// T2.1: Ein gespeichertes Training steht genau einmal in Pebbles Sitzungsliste, mit Typ, Beginn
+// der Uhr und manual; seine Meldung kommt einmal, 30 s nach dem Speichern (V4).
+void test_kieselsport__speichern_eine_sitzung_nach_30s(void) {
+  prv_starte(ArtBike, BEGINN);
+  const time_t pebble_start = rtc_get_time();
+  prv_sekunden(150);
+  prv_pause();
+  prv_sekunden_leer(20);
+  prv_speichern();
+  for (int i = 0; i < 29; i++) {
+    prv_sekunde();
+    cl_assert_equal_i(prv_sitzungen(), 0);
+  }
+  prv_sekunde();
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert_equal_i(prv_sitzung(0)->type, ActivitySessionType_Open);
+  cl_assert_equal_i(prv_sitzung(0)->start_utc, pebble_start);
+  cl_assert(prv_sitzung(0)->manual);
+  cl_assert(!prv_sitzung(0)->ongoing);
+  cl_assert_equal_i(prv_sitzung(0)->length_min, 2);
+  // Danach nichts mehr: kein zweiter Stopp, keine zweite Sitzung.
+  prv_sekunden_leer(120);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_meldungen, 1);
+  // V8: 90 s nach dem Stopp geht das Datalogging einmal hinaus.
+  cl_assert_equal_i(s_dls_schub, 1);
+}
+
+// V8 nur bei Platz (Schritt 1, Regel 2): Ist die KernelBG-Schlange knapp, faellt der Anstoss weg
+// (dls_send_all_sessions reiht nicht verwerfbar ein); die Sitzung geht mit Pebbles eigenem
+// Datalogging-Takt hinaus.
+void test_kieselsport__datalogging_nur_bei_platz(void) {
+  prv_training(BEGINN, 70);
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  system_task_set_available_space(BOULDER_SCHLANGE_FREI - 1);
+  prv_sekunden_leer(90);
+  cl_assert_equal_i(s_dls_schub, 0);
+  system_task_set_available_space(100);
+}
+
+// T2.1, Start im 30-s-Fenster (V4, Regel 2.5.7): Pebble lehnte den zweiten Start ab; Kieselsport
+// stoppt sein eigenes Training sofort - mit Sitzung - und startet neu. Jedes steht einmal da.
+void test_kieselsport__start_im_30s_fenster(void) {
+  prv_training(BEGINN, 90);
+  prv_sekunden_leer(10);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  prv_starte(ArtLaufen, BEGINN + 1000);
+  cl_assert_equal_i(prv_stand().zustand, LaufLaeuft);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert(workout_service_is_workout_ongoing());
+  prv_sekunden(70);
+  prv_speichern();
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(prv_sitzungen(), 2);
+  cl_assert(prv_sitzung(0)->start_utc != prv_sitzung(1)->start_utc);
+  cl_assert_equal_i(s_meldungen, 2);
+}
+
+// V4 bei einem Zeitsprung zurueck im 30-s-Fenster: Pebbles Stopp kommt im naechsten Takt, nicht
+// erst, wenn die Uhr die alte Zeit wieder erreicht.
+void test_kieselsport__zeitsprung_zurueck_im_30s_fenster(void) {
+  prv_training(BEGINN, 90);
+  prv_sekunden_leer(5);
+  fake_rtc_increment_time(-PBL_SEC_PER_HOUR);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  prv_sekunde();
+  cl_assert(!workout_service_is_workout_ongoing());
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert(!prv_takt_an());
+}
+
+// T3.1 (Persist-Teil zu AP1, F3 = A): Verwerfen nach mehr als 60 s - keine Sitzung, keine
+// Meldung, Pebble gestoppt, der Stopp im Persist (35).
+void test_kieselsport__verwerfen_ohne_sitzung_mit_stopp(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(200);
+  prv_pause();
+  prv_verwerfen();
+  cl_assert(!workout_service_is_workout_ongoing());
+  cl_assert_equal_s(s_erkennung, "01");
+  prv_sekunden_leer(120);
+  cl_assert_equal_i(prv_sitzungen(), 0);
+  cl_assert_equal_i(s_meldungen, 0);
+  cl_assert(ks_persist_exists(PERSIST_STOPP));
+  cl_assert(!ks_persist_exists(PERSIST_WARTET));
+  // Danach speichert ein Training wieder.
+  prv_training(BEGINN + 1000, 70);
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+}
+
+// Regel 2.5.7: Laeuft ein fremdes Training (Pebbles Workout-App), lehnt Pebble ab. Kieselsport
+// laeuft nicht an und legt einen Stopp fuers Telefon ab, das Zustand 1 schon bekommen hat.
+void test_kieselsport__fremdes_training_lehnt_ab(void) {
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  cl_assert(workout_service_start_workout(ActivitySessionType_Walk));
+  const uint8_t vorher = prv_stand().ende_nr;
+  prv_starte(ArtLaufen, BEGINN + 7);
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeVerworfen);
+  cl_assert_equal_i(s.ende_nr, (uint8_t)(vorher + 1));
+  uint32_t beginn = 0, zeit = 0;
+  uint8_t art = 9;
+  cl_assert(kieselsport_stopp_laden(&beginn, &zeit, &art));
+  cl_assert_equal_i(beginn, BEGINN + 7);
+  cl_assert_equal_i(art, ArtLaufen);
+  cl_assert(prv_minutentakt_an());
+  cl_assert_equal_i(prv_sensor_takt(), 0);
+  // Pebbles Training laeuft unberuehrt weiter.
+  ActivitySessionType typ;
+  cl_assert(workout_service_get_current_workout_type(&typ));
+  cl_assert_equal_i(typ, ActivitySessionType_Walk);
+  cl_assert(workout_service_stop_workout());
+}
+
+// Regel 2.5.4: Pebble pausiert beim Laden selbst. Kieselsports Takt traegt die Pause bei Pebbles
+// Sekunde ein; nach 30 min endet das Training von selbst, mit Pebbles Sitzung.
+void test_kieselsport__lade_pause_von_pebble(void) {
+  prv_starte(ArtBike, BEGINN);
+  prv_sekunden(300);
+  stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+  PebbleActivityEvent laden = {.type = PebbleActivityEvent_TrackingStopped};
+  workout_service_activity_event_handler(&laden);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  const time_t pause = rtc_get_time();
+  prv_sekunde();
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufPause);
+  cl_assert_equal_i(s.t.dauer_s, 300);
+  cl_assert_equal_i(prv_sensor_takt(), 10);
+  prv_sekunden_leer(30 * 60);
+  s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeGespeichert);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->length_min, 5);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 300);
+  // Die Pause beginnt bei Pebbles Sekunde 300, gesehen im naechsten Takt.
+  cl_assert(kieselsport_wartend_ende() >= (uint32_t)pause &&
+            kieselsport_wartend_ende() <= (uint32_t)pause + 1);
+}
+
+// Regel 2.5.3: Pebbles Timer laesst bei belegter Sperre einen Tick aus. Kieselsport verarbeitet
+// die Differenz: keine Sekunde geht verloren oder doppelt, Kurve und Dauer folgen Pebble.
+void test_kieselsport__ausgelassener_tick_von_pebble(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(9);
+  // Sekunde 10: Pebbles Timer (zuerst angemeldet) laesst den Tick aus (workout_service.c:
+  // 292-300), Kieselsports Takt laeuft.
+  RegularTimerInfo *pebble = s_sekunden_takte[0];
+  cl_assert(pebble && pebble->cb == prv_workout_timer_cb);
+  s_sekunden_takte[0] = NULL;
+  prv_sekunde_mit_puls(140);
+  s_sekunden_takte[0] = pebble;
+  cl_assert_equal_i(prv_pebble_dauer(), 9);
+  cl_assert_equal_i(prv_stand().t.dauer_s, 9);
+  prv_sekunde_mit_puls(140);
+  cl_assert_equal_i(prv_stand().t.dauer_s, 11);
+  cl_assert_equal_i(prv_pebble_dauer(), 11);
+  prv_sekunden(50);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 61);
+  // Der Kurvenwert bei Sekunde 10 fehlt nicht.
+  uint8_t stueck[8];
+  cl_assert_equal_i(kieselsport_kurve_stueck(stueck, sizeof(stueck)), 7);
+  cl_assert_equal_i(stueck[1], 140);
+}
+
+// Pebble beendet das Training selbst (Pebbles Workout-App, ihre Verlassen-Regel): Kieselsport
+// legt seine Zusammenfassung zu Pebbles Sitzung und stoppt nicht ein zweites Mal.
+void test_kieselsport__pebble_beendet_selbst(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  prv_sekunden(100);
+  cl_assert(workout_service_stop_workout());
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  prv_sekunde();
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.zustand, LaufAus);
+  cl_assert_equal_i(s.ende, KsEndeGespeichert);
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.dauer_s, 100);
+  prv_sekunden_leer(60);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_meldungen, 1);
+  cl_assert(!prv_takt_an());
+}
+
+// K5 bis in die Zusammenfassung (10005): Boulders Fahrt aus AP1 (test_kieselsport_kalorien,
+// fahrt_in_der_sitzung, B: 156,17 kcal) ueber Kieselsport gestartet, mit Kieselsports
+// Maximalpuls 190 (Alter 41: Tanaka 179, 190 liegt unter 179 + 25 und gilt).
+void test_kieselsport__kcal_der_fahrt_in_zusammenfassung_und_sitzung(void) {
+  static const uint8_t FAHRT[] = {
+    95, 94, 126, 121, 120, 122, 121, 128, 130, 132, 128, 122,
+    129, 125, 140, 139, 137, 140, 135, 125, 129, 125, 143, 145,
+  };
+  s_alter = 41;
+  fake_ruhepuls_setzen(54);
+  kieselsport_maxpuls_setze(190);
+  prv_starte(ArtBike, BEGINN);
+  for (unsigned i = 0; i < sizeof(FAHRT); i++) {
+    prv_messwert(FAHRT[i], HRMQuality_Good);
+    prv_sekunden_leer(i + 1 < sizeof(FAHRT) ? 60 : 10);
+  }
+  prv_pause();
+  prv_sekunden_leer(30);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.kcal, 156);
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->step_data.active_kcalories, 156);
+  cl_assert_equal_i(s_meldung.step_data.active_kcalories, 156);
+}
+
+// V2: Boulders Pruefung des Maximalpulses fuer Zonen und kcal. Gemeldet (ans Telefon) wird
+// weiter die Einstellung, gerechnet mit Tanaka, wenn sie nicht passt.
+void test_kieselsport__maxpuls_nach_boulders_pruefung(void) {
+  s_alter = 50;  // Tanaka 173, Spielraum bis 198
+  kieselsport_maxpuls_setze(198);
+  cl_assert_equal_i(kieselsport_zonengrenze(5), 178);  // 198 * 0,9
+  kieselsport_maxpuls_setze(199);
+  cl_assert_equal_i(kieselsport_maxpuls(), 199);
+  cl_assert(kieselsport_maxpuls_gesetzt());
+  cl_assert_equal_i(kieselsport_zonengrenze(5), 155);  // 173 * 0,9
+  cl_assert_equal_i(prv_stand().maxpuls, 173);
+  // Unten: hoechstens Ruhepuls + 20 laesst keine Reserve.
+  fake_ruhepuls_setzen(90);
+  prv_starte(ArtLaufen, BEGINN);  // der Start liest den Ruhepuls
+  prv_verwerfen();
+  kieselsport_maxpuls_setze(110);
+  cl_assert_equal_i(kieselsport_zonengrenze(1), 86);  // 173 * 0,5
+  kieselsport_maxpuls_setze(111);
+  cl_assert_equal_i(kieselsport_zonengrenze(1), 55);  // 111 * 0,5
+  // Ohne brauchbares Alter gibt es kein Tanaka: der eingestellte Wert gilt wie in Boulder.
+  s_alter = 0;
+  kieselsport_maxpuls_setze(230);
+  cl_assert_equal_i(kieselsport_zonengrenze(5), 207);
+}
+
+// V2 fuer die kcal: dasselbe Training mit 230 (nicht plausibel bei 41: Tanaka 179) und mit 179
+// eingestellt rechnet gleich.
+static int32_t prv_kcal_mit(uint16_t maxpuls) {
+  kieselsport_maxpuls_setze(maxpuls);
+  prv_starte(ArtBike, BEGINN);
+  for (int i = 0; i < 300; i++) {
+    prv_sekunde_mit_puls(150);
+  }
+  prv_pause();
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  kieselsport_wartend_vergessen(0);
+  prv_sekunden_leer(30);
+  return (int32_t)t.kcal;
+}
+
+void test_kieselsport__maxpuls_nach_boulders_pruefung_fuer_kcal(void) {
+  s_alter = 41;
+  fake_ruhepuls_setzen(54);
+  const int32_t tanaka = prv_kcal_mit(179);
+  const int32_t zu_hoch = prv_kcal_mit(230);
+  const int32_t gilt = prv_kcal_mit(200);
+  cl_assert(tanaka > 0);
+  cl_assert_equal_i(zu_hoch, tanaka);
+  cl_assert(gilt < tanaka);
+}
+
+// F2 = A: Kieselsports Abo - 1 s, in der Pause 10 s, sparsam 5 s, jede Minute erneuert mit 5 min
+// Ablauf. Pebble legt keines an (cleanup).
+void test_kieselsport__abo_takt_und_ablauf(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  cl_assert_equal_i(prv_sensor_takt(), 1);
+  cl_assert_equal_i(s_abo.ablauf, 5 * 60);
+  cl_assert_equal_i(s_abo_anmeldungen, 1);
+  // Nach Ablauf (der Manager hat es entfernt) meldet die naechste Minute neu an.
+  s_abo.belegt = false;
+  prv_sekunden(60);
+  cl_assert_equal_i(prv_sensor_takt(), 1);
+  cl_assert_equal_i(s_abo_anmeldungen, 2);
+  s_akku = 15;
+  prv_sekunden(60);
+  cl_assert_equal_i(prv_sensor_takt(), 5);
+  prv_pause();
+  cl_assert_equal_i(prv_sensor_takt(), 10);
+  prv_pause();
+  cl_assert_equal_i(prv_sensor_takt(), 5);
+  prv_verwerfen();
+  cl_assert_equal_i(prv_sensor_takt(), 0);
+}
+
+// Regel 2.5.5: Init ohne Pebble-Haken - beliebig oft, einmal wirksam. Von jeder Task anstossen.
+void test_kieselsport__init_einmal(void) {
+  kieselsport_maxpuls_setze(185);
+  ks_persist_write_int(PERSIST_MAXPULS, 175);
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  kieselsport_init();
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  kieselsport_test_neustart();
+  kieselsport_init_anstossen();
+  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  prv_kernel_bg();
+  cl_assert_equal_i(kieselsport_maxpuls(), 175);
+}
