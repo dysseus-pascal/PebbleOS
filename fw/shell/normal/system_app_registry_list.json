@@ -397,6 +397,16 @@
       "color_argb8": "GColorYellowARGB8"
     },
     {
+      "kommentar": "Boulder: P3, Kieselsport (Schritt 2) - nur mit der Variante; -102 traegt hier TOUCH_TOGGLE",
+      "id": -103,
+      "enum": "KIESELSPORT",
+      "md_fn": "kieselsport_app_get_info",
+      "color_argb8": "GColorOrangeARGB8",
+      "ifdefs": [
+        "CONFIG_BOULDER_KIESELSPORT"
+      ]
+    },
+    {
       "id": -61,
       "enum": "SWAP_LAYER",
       "md_fn": "swap_layer_demo_get_app_info",

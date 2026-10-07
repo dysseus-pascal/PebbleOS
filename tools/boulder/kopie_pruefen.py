@@ -27,7 +27,10 @@ import sys
 
 HERKUNFT = 'fw/services/activity/boulder/HERKUNFT'
 
-# Dateien, auf deren Verhalten sich die Variante stuetzt (Spezifikation 2.3).
+# Dateien, auf deren Verhalten sich die Variante stuetzt (Spezifikation 2.3), dazu Kieselsport
+# (Schritt 2): workout_service.c, activity_sessions.c. Nachziehen vergleicht Upstream mit
+# Upstream; Boulders eigene Hunks darin (E3-E5, P1, P4) erscheinen dort nie. Sie begrenzt
+# k1_waechter.py, und was Kieselsport vom Workout-Dienst erwartet, prueft test_kieselsport_vertrag.
 VERTRAGSDATEIEN = [
     'fw/services/activity/activity.c',
     'fw/services/activity/activity_sessions.c',

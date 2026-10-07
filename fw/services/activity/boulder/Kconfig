@@ -4,6 +4,16 @@
 # Boulder-Kraepelin: die eigenen Schalter der Variante. Die Wahl selbst steht in
 # fw/services/activity/Kconfig.
 
+config BOULDER_KIESELSPORT
+    bool "Boulder: Kieselsport (Training auf Pebbles Workout-Dienst)"
+    default y
+    depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER && HRM
+    help
+      Kieselsport als System-App mit Dienst auf KernelBG (Schritt 2). Haengt an der
+      Variante, weil Velo-Training und Pulskalorien deren Schnittstellen brauchen; deshalb
+      gibt es Kieselsport nur auf obelix und qemu_emery. Die anderen Boards behalten
+      Pebbles Workout-App. Ohne Pulssensor gaebe es weder Zonen noch Pulskalorien.
+
 config BOULDER_PRUEFLAUF
     bool "Boulder: QEMU-Pruefbau (Pruefnaechte im Zeitraffer)"
     depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER && QEMU && SHELL

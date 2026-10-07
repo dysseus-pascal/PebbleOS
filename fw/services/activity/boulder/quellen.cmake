@@ -31,6 +31,15 @@ pbl_library_sources(
   boulder/diagnose.c
   boulder/shell.c
 )
+# Kieselsport (Schritt 2): der Dienst unter sport/ ohne feste Liste, damit die Pakete
+# parallel Dateien anlegen, ohne sich hier zu treffen. Nur mit der Variante und Puls.
+if(CONFIG_BOULDER_KIESELSPORT)
+  file(GLOB boulder_sport_quellen CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+       ${CMAKE_CURRENT_SOURCE_DIR}/boulder/sport/*.c)
+  if(boulder_sport_quellen)
+    pbl_library_sources(${boulder_sport_quellen})
+  endif()
+endif()
 if(CONFIG_BOULDER_PRUEFLAUF)
   pbl_library_sources(
     boulder/prueflauf.c
