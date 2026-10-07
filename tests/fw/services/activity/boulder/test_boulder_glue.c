@@ -736,6 +736,42 @@ void test_boulder_glue__fahrt_streichen(void) {
   cl_assert_equal_i(prv_dls_minute(bis)->base.steps, 10);
 }
 
+// D17 (Schritt 2, V1): Im Training ohne Schritte gehen sie nirgends hin - nicht in die Summe, nicht
+// in die Minute (DLS 81, auch nicht aktiv), Rate 0, und auch nicht an "gestrichen" (keine Fahrt).
+// Danach zaehlt es wie vorher. Mit laufender Fahrt dazu (die Fahrt endet erst in der naechsten
+// Minute am Trainingsstart) geht D17 vor: die Minute hat die Schritte nicht.
+void test_boulder_glue__training_ohne_schritte(void) {
+  prv_minuten(20, 100);
+  cl_assert_equal_i(prv_schritte(), 2000);
+  const time_t von = rtc_get_time();
+  fake_dauerteil.training_ohne_schritte = true;
+  prv_minuten(10, 120);
+  fake_dauerteil.fahrt_laeuft = true;
+  prv_minuten(2, 120);
+  fake_dauerteil.fahrt_laeuft = false;
+  cl_assert_equal_i(prv_schritte(), 2000);
+  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 0);
+  uint16_t rate;
+  uint32_t ms;
+  time_t ende;
+  cl_assert(activity_algorithm_get_step_rate(&rate, &ms, &ende));
+  cl_assert_equal_i(rate, 0);
+  const time_t bis = rtc_get_time();
+  fake_dauerteil.training_ohne_schritte = false;
+  prv_minuten(20, 90);
+  cl_assert_equal_i(prv_schritte(), 2000 + 20 * 90);
+  cl_assert(activity_algorithm_get_step_rate(&rate, &ms, &ende));
+  cl_assert(rate > 0);
+  for (time_t t = von; t < bis; t += PBL_SEC_PER_MIN) {
+    const AlgMinuteDLSSample *m = prv_dls_minute(t);
+    cl_assert(m);
+    cl_assert_equal_i(m->base.steps, 0);
+    cl_assert_equal_i(m->base.active, 0);
+  }
+  cl_assert_equal_i(prv_dls_minute(von - PBL_SEC_PER_MIN)->base.steps, 100);
+  cl_assert_equal_i(prv_dls_minute(bis)->base.steps, 90);
+}
+
 // Ohne DLS-Sitzung (Pool voll) wird trotzdem abgezogen; die Anlage wartet 30 min.
 void test_boulder_glue__fahrt_streichen_ohne_dls(void) {
   s_dls_scheitert = true;

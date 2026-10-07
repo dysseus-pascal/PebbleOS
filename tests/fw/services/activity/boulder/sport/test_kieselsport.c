@@ -61,6 +61,9 @@ extern void prv_workout_timer_cb(void *data);
 extern void workout_service_reset(void);
 extern void kieselsport_test_neustart(void);
 extern void fake_ruhepuls_setzen(uint8_t bpm);
+extern int g_fake_ohne_schritte_aufrufe;
+extern bool g_fake_ohne_schritte;
+extern void (*g_fake_ohne_schritte_beim_aufruf)(bool ohne);
 
 // =============================================================================================
 // Aufgaben und Sperren
@@ -712,6 +715,9 @@ void test_kieselsport__initialize(void) {
   s_alter = 0;
   s_gewicht_dag = 7000;
   fake_ruhepuls_setzen(0);
+  g_fake_ohne_schritte_aufrufe = 0;
+  g_fake_ohne_schritte = false;
+  g_fake_ohne_schritte_beim_aufruf = NULL;
   memset(&s_abo, 0, sizeof(s_abo));
   s_abo_anmeldungen = 0;
   s_app_abos = 0;
@@ -1165,6 +1171,75 @@ void test_kieselsport__pause_zaehlt_keine_schritte(void) {
     prv_sekunde_mit_puls(130);
   }
   cl_assert_equal_i(prv_stand().t.schritte, 120);
+}
+
+// --- Schritt 2, AP4: Arten ohne Schritte (V1) und das Maximum fuer die Velofahrt (F7) ---
+
+// Was beim Setzen des Merkers galt: Task, Kieselsports Sperre, Pebbles Training.
+static struct {
+  PebbleTask task;
+  bool sperre;
+  bool training;
+  char erkennung[sizeof(s_erkennung)];
+} s_beim_merker;
+static void prv_beim_merker(bool ohne) {
+  s_beim_merker.task = pebble_task_get_current();
+  s_beim_merker.sperre = pbl_mutex_is_owner(&s_kieselsport_sperre);
+  s_beim_merker.training = workout_service_is_workout_ongoing();
+  memcpy(s_beim_merker.erkennung, s_erkennung, sizeof(s_erkennung));
+}
+
+// T4.1, Kieselsports Seite (V1, vom Nutzer geaendert): Schritte zaehlen nur Laufen und Wandern.
+// Fuer Velo, MTB, Kraft, Yoga und Schwimmen setzt Kieselsport nach Pebbles Start den Merker der
+// Variante (D17) - auf KernelBG, ohne seine Sperre (Regel 2.5.2). Die Wirkung (Tagessumme, Minute,
+// Rate) prueft test_boulder_fahrt an der echten Variante.
+void test_kieselsport__t4_1_arten_ohne_schritte(void) {
+  // Die Entscheidung des Nutzers (entscheidungen.md, V1), nicht art.c abgeschrieben.
+  static const bool ohne[ArtAnzahl] = {
+    [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
+    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true,
+  };
+  g_fake_ohne_schritte_beim_aufruf = prv_beim_merker;
+  for (int art = 0; art < ArtAnzahl; art++) {
+    g_fake_ohne_schritte_aufrufe = 0;
+    memset(s_erkennung, 0, sizeof(s_erkennung));
+    memset(&s_beim_merker, 0, sizeof(s_beim_merker));
+    prv_starte((Sportart)art, BEGINN + art * 600);
+    cl_assert_equal_i(g_fake_ohne_schritte_aufrufe, 1);
+    cl_assert_equal_b(g_fake_ohne_schritte, ohne[art]);
+    cl_assert_equal_i(s_beim_merker.task, PebbleTask_KernelBackground);
+    cl_assert(!s_beim_merker.sperre);
+    // Nach Pebbles Start: das Training laeuft, die Auto-Erkennung ist schon aus (D15).
+    cl_assert(s_beim_merker.training);
+    cl_assert_equal_s(s_beim_merker.erkennung, "0");
+    prv_sekunden_leer(5);
+    prv_verwerfen();
+    cl_assert(!kieselsport_laeuft());
+  }
+}
+
+// F7: Die bestaetigte Velofahrt rechnet mit Kieselsports geprueftem Maximum (V2) wie ein Training.
+// Sie hat keinen Start, darum meldet der Dienst es nach dem Laden und nach jeder Aenderung.
+void test_kieselsport__maximum_fuer_die_fahrt(void) {
+  s_alter = 40;  // Tanaka 180
+  fake_ruhepuls_setzen(55);
+  BoulderKalorienProfil p;
+  kieselsport_maxpuls_setze(175);
+  cl_assert(boulder_kalorien_profil_jetzt(&p));
+  cl_assert_equal_i(p.max_z, 1750);
+  // Ueber Tanaka + 25 gilt Tanaka (V2), auch fuer die Fahrt.
+  kieselsport_maxpuls_setze(214);
+  cl_assert(boulder_kalorien_profil_jetzt(&p));
+  cl_assert_equal_i(p.max_z, 1800);
+  kieselsport_maxpuls_nicht_setzen();
+  kieselsport_maxpuls_setze(178);
+  // Nach einem Neustart weiss kalorien.c nichts mehr; das Laden der Einstellungen meldet es.
+  boulder_kalorien_maxpuls(0);
+  prv_neustart();
+  cl_assert(boulder_kalorien_profil_jetzt(&p));
+  cl_assert_equal_i(p.max_z, 1780);
+  // Der Ruhepuls des Profils ist der der Variante (V3: Median der sieben Naechte).
+  cl_assert_equal_i(p.ruhe_z, 550);
 }
 
 // --- Maximalpuls: gesetzt oder nach Alter ---

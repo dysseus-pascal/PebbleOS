@@ -10,7 +10,7 @@ set(kieselsport_workout_dienst
   fw/services/activity/hr_util.c
   fw/services/activity/workout_service.c
   fw/services/activity/boulder/kalorien.c
-  tests/fw/services/activity/boulder/sport/fake_ruhepuls.c
+  tests/fw/services/activity/boulder/sport/fake_variante.c
   tests/fakes/fake_events.c
   tests/fakes/fake_rtc.c
 )
@@ -26,7 +26,7 @@ pbl_clar_test(test_kieselsport_vertrag
 pbl_clar_test(test_boulder_kalorien
   SOURCES
     fw/services/activity/boulder/kalorien.c
-    tests/fw/services/activity/boulder/sport/fake_ruhepuls.c
+    tests/fw/services/activity/boulder/sport/fake_variante.c
   OVERRIDES dummy_board
 )
 
@@ -90,7 +90,7 @@ pbl_clar_test(test_kieselsport_abo
     fw/services/activity/boulder/kalorien.c
     fw/services/hrm/hrm_manager.c
     kernel/tick.c
-    tests/fw/services/activity/boulder/sport/fake_ruhepuls.c
+    tests/fw/services/activity/boulder/sport/fake_variante.c
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
   DEFINES CONFIG_HRM CONFIG_BOULDER_KIESELSPORT

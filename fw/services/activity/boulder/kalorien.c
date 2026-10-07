@@ -180,13 +180,19 @@ void boulder_kalorien_maxpuls(uint8_t bpm) {
   s_maxpuls = bpm;
 }
 
+bool boulder_kalorien_profil_jetzt(BoulderKalorienProfil *profil) {
+  // DER RUHEPULS AUS SIEBEN NAECHTEN (V3), wie Boulder: Eine Nacht nach Alkohol oder mit Fieber
+  // liegt fuenf Schlaege hoeher und machte sonst jedes Training dieser Woche billiger.
+  return boulder_kalorien_profil(profil, activity_prefs_get_weight_dag(),
+                                 activity_prefs_get_age_years(), activity_prefs_get_gender(),
+                                 boulder_nacht_ruhepuls_median(), s_maxpuls);
+}
+
 void boulder_kalorien_start(void) {
   // Der Schnappschuss beim Start: Aendert der Nutzer das Profil im Training, rechnet das
   // laufende Training weiter mit dem alten, wie Boulder mit dem Profil vor dem Training.
-  // TODO(AP4, V3): Ruhepuls als Median der letzten 7 Naechte statt der letzten Nacht.
   BoulderKalorienProfil profil;
-  boulder_kalorien_profil(&profil, activity_prefs_get_weight_dag(), activity_prefs_get_age_years(),
-                          activity_prefs_get_gender(), boulder_nacht_ruhepuls(), s_maxpuls);
+  boulder_kalorien_profil_jetzt(&profil);
   boulder_kalorien_zaehler_neu(&s_training, &profil);
 }
 

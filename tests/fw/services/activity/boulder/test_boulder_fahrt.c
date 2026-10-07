@@ -14,6 +14,13 @@
 // Minutenwerte: --wrap ersetzt nur die beiden Messfunktionen des Kerns (Schritte, VMC/Lage);
 // Kraepelins Geh- und Schlafdetektor rechnen echt. Der Puls ist ausgeduennt wie auf Stufe 1
 // (ein Wert alle zehn Minuten) und erst dicht, wenn die Variante ihr Abo "Aktiv" will.
+//
+// SCHRITT 2, AP4 (Spezifikation 5, 6.1: T4.1-T4.4, T2.3 mit Training, T5.2 Fahrt): Trainings
+// laufen ueber Pebbles echten Workout-Dienst (workout_service.c mit P1 und kalorien.c, wie auf
+// obelix): Sein Start schliesst laufende Sitzungen und erreicht die Variante ueber D15, sein Stopp
+// speichert das Training in der echten Sitzungsliste. Den Merker "ohne Schritte" setzt der Test
+// dort, wo Kieselsport ihn setzt (nach dem Start); welche Art ihn bekommt, prueft
+// test_kieselsport mit Kieselsports echter Plattform.
 
 #include "applib/data_logging.h"
 #include "applib/ui/dialogs/actionable_dialog.h"
@@ -28,17 +35,20 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
 #include <pbl/cron/cron.h>
+#include "pbl/services/activity/boulder/kalorien.h"
 #include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h"
 #include "pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/variante.h"
+#include "pbl/services/activity/workout_service.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "pbl/services/filesystem/pfs.h"
 #include "pbl/services/hrm/hrm_manager_private.h"
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/services/time.h"
+#include "pbl/util/math.h"
 #include "pbl/util/size.h"
 #include "pbl/util/units.h"
 #include "resource/resource_ids.auto.h"
@@ -55,8 +65,9 @@
 void boulder_wecklauf_minute(void) {
 }
 #include "stubs_analytics.h"
+#include "stubs_evented_timer.h"
 #include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
+// hr_util.c laeuft echt (Pebbles Workout-Dienst, Zonen).
 #include "stubs_irq.h"
 #include "stubs_logging.h"
 #include "stubs_passert.h"
@@ -228,12 +239,80 @@ uint8_t activity_prefs_heart_get_resting_hr(void) {
   return 0;  // nicht eingestellt: die Variante nimmt 60
 }
 
+// =============================================================================================
+// Pebbles Workout-Dienst (echt) braucht sein Umfeld: Activitys Getter, Insights, Profil, HRM.
+
+extern void prv_workout_timer_cb(void *data);
+extern void workout_service_reset(void);
+
+// Activitys Getter ueber die Liste der echten activity_sessions.c (activity.c:1511-1529).
+bool activity_get_sessions(uint32_t *session_entries, ActivitySession *sessions) {
+  pbl_mutex_lock(&s_state.mutex, PBL_FOREVER);
+  const uint32_t n = MIN(*session_entries, s_state.activity_sessions_count);
+  memcpy(sessions, s_state.activity_sessions, n * sizeof(ActivitySession));
+  *session_entries = n;
+  pbl_mutex_unlock(&s_state.mutex);
+  return true;
+}
+bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *history) {
+  uint32_t schritte = 0;
+  activity_algorithm_get_steps(&schritte);
+  *history = (int32_t)schritte;
+  return metric == ActivityMetricStepCount;
+}
+void workout_utils_send_abandoned_workout_notification(void) {
+}
+// Das Profil fuer Pebbles Rechnungen und die Pulskalorien (F7): 70 kg, 41 Jahre, Mann - wie
+// Boulders Testfahrt (TrainingsanalyseTest.kt, Orakel unten).
+uint8_t activity_prefs_get_age_years(void) {
+  return 41;
+}
+ActivityGender activity_prefs_get_gender(void) {
+  return ActivityGenderMale;
+}
+uint16_t activity_prefs_get_weight_dag(void) {
+  return 7000;
+}
+uint16_t activity_prefs_get_height_mm(void) {
+  return 1800;
+}
+uint8_t activity_prefs_heart_get_elevated_hr(void) {
+  return 100;
+}
+uint8_t activity_prefs_heart_get_zone1_threshold(void) {
+  return 130;
+}
+uint8_t activity_prefs_heart_get_zone2_threshold(void) {
+  return 154;
+}
+uint8_t activity_prefs_heart_get_zone3_threshold(void) {
+  return 172;
+}
+HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
+  return HRMonitoringInterval_10Min;
+}
+AppInstallId app_get_app_id(void) {
+  return 0;
+}
+HRMSessionRef sys_hrm_manager_app_subscribe(AppInstallId app_id, uint32_t update_interval_s,
+                                            uint16_t expire_s, HRMFeature features) {
+  return 2;
+}
+bool sys_hrm_manager_set_features(HRMSessionRef session, HRMFeature features) {
+  return true;
+}
+// Kieselsport selbst laeuft hier nicht; der erste Lauf der Variante stoesst ihn nur an.
+void kieselsport_init(void) {
+}
+
 // DLS: 81 (Minuten der Kopie) und 84 (Sitzungen) werden mitgeschrieben.
 #define DLS_MAX 64
 static AlgMinuteDLSRecord s_dls[DLS_MAX];
 static int s_dls_anzahl;
 static bool s_dls_scheitert;
 static int s_dls_im_minutenteil;
+static ActivitySessionDataLoggingRecord s_dls84[DLS_MAX];
+static int s_dls84_anzahl;
 DataLoggingSession *dls_create(uint32_t tag, DataLoggingItemType item_type, uint16_t item_size,
                                bool buffered, bool resume, const Uuid *uuid) {
   s_dls_im_minutenteil += s_im_minutenteil;
@@ -247,6 +326,9 @@ DataLoggingResult dls_log(DataLoggingSession *logging_session, const void *data,
   if ((uintptr_t)logging_session == DlsSystemTagActivityMinuteData) {
     cl_assert(s_dls_anzahl < DLS_MAX);
     s_dls[s_dls_anzahl++] = *(const AlgMinuteDLSRecord *)data;
+  } else if ((uintptr_t)logging_session == DlsSystemTagActivitySession) {
+    cl_assert(s_dls84_anzahl < DLS_MAX);
+    s_dls84[s_dls84_anzahl++] = *(const ActivitySessionDataLoggingRecord *)data;
   }
   return DATA_LOGGING_SUCCESS;
 }
@@ -379,19 +461,55 @@ static int s_minute_nr;
 static time_t s_t0;
 static AccelSamplingRate s_rate;
 
-static void prv_minute(uint8_t schritte, uint16_t vmc, uint8_t lage, uint8_t puls) {
+// Ein Beschleunigungsblock mit so vielen Schritten (Kraepelin zaehlt sie, die Kopie bucht sie).
+static void prv_schritte(uint8_t schritte) {
   s_vorgabe_schritte = schritte;
-  s_vorgabe_vmc = vmc;
-  s_vorgabe_lage = lage;
   AccelRawData leer[KALG_SAMPLE_HZ] = {};
   activity_algorithm_handle_accel(leer, ARRAY_LENGTH(leer), 0);
+}
+
+// Schritt 2: Der Test erwartet, dass die Variante Schritte gerade nirgends bucht (Training ohne
+// Schritte). Eine Erwartung des Tests, nicht aus dem Code gelesen.
+static bool s_erwartet_ohne_schritte;
+// F7: Sekundenwerte des Abos "Aktiv" (NULL = keine, 0 = diese Sekunde keiner): der Test gibt
+// sie der Variante, wie puls.c es im HRM-Rueckruf tut.
+static uint8_t (*s_sekundenpuls)(time_t utc);
+static bool s_ohne[MINUTEN_MAX];  //< ganze Minute im Training ohne Schritte
+
+// Eine Minute wie auf der Uhr. Mit `mitte` laeuft nach 30 s etwas (Start, Stopp), danach kommen
+// `nach` weitere Schritte; `gezaehlt` = was die Minute in Tagessumme und DLS 81 haben soll.
+static void prv_minute_geteilt(uint8_t vor, void (*mitte)(void), uint8_t nach, uint8_t gezaehlt,
+                               uint16_t vmc, uint8_t lage, uint8_t puls) {
+  const time_t beginn = rtc_get_time();
+  s_vorgabe_vmc = vmc;
+  s_vorgabe_lage = lage;
+  prv_schritte(vor);
+  if (mitte) {
+    fake_rtc_increment_time(PBL_SEC_PER_MIN / 2);
+    mitte();
+    prv_schritte(nach);
+    fake_rtc_increment_time(PBL_SEC_PER_MIN / 2);
+  } else {
+    fake_rtc_increment_time(PBL_SEC_PER_MIN);
+  }
+  if (s_sekundenpuls) {
+    for (int i = 0; i < PBL_SEC_PER_MIN; i++) {
+      const uint8_t bpm = s_sekundenpuls(beginn + i);
+      if (bpm) {
+        boulder_kontext_puls(bpm, beginn + i);
+      }
+    }
+  }
+  if (workout_service_is_workout_ongoing()) {
+    prv_workout_timer_cb(NULL);  // Pebbles Sekundentakt: die Dauer aus der RTC
+  }
   s_puls = puls;
   cl_assert(s_n < MINUTEN_MAX);
-  s_utc[s_n] = rtc_get_time();
-  s_roh[s_n] = schritte;  // s_fahrt[s_n] setzt der Aufrufer vorher (sonst false)
+  s_utc[s_n] = beginn;
+  s_roh[s_n] = gezaehlt;  // s_fahrt[s_n] setzt der Aufrufer vorher (sonst false)
+  s_ohne[s_n] = s_erwartet_ohne_schritte && !mitte;
   s_n++;
   s_minute_nr++;
-  fake_rtc_increment_time(PBL_SEC_PER_MIN);
   const time_t jetzt = rtc_get_time();
   AlgMinuteRecord satz = {};
   s_im_minutenteil = true;
@@ -403,6 +521,10 @@ static void prv_minute(uint8_t schritte, uint16_t vmc, uint8_t lage, uint8_t pul
   fake_system_task_callbacks_invoke_pending();
   prv_kernel_main();
   fake_system_task_callbacks_invoke_pending();
+}
+
+static void prv_minute(uint8_t schritte, uint16_t vmc, uint8_t lage, uint8_t puls) {
+  prv_minute_geteilt(schritte, NULL, 0, s_erwartet_ohne_schritte ? 0 : schritte, vmc, lage, puls);
 }
 
 // Puls wie auf Stufe 1 (alle zehn Minuten ein Wert), ab dem Abo "Aktiv" jede Minute.
@@ -481,7 +603,7 @@ static int prv_pruefe_minuten(void) {
         printf("Minute %d: DLS %d, soll %d (roh %d)\n", i, m->base.steps, soll, s_roh[i]);
       }
       cl_assert_equal_i(m->base.steps, soll);
-      if (s_fahrt[i]) {
+      if (s_fahrt[i] || s_ohne[i]) {
         cl_assert(!m->base.active);
         cl_assert_equal_i(m->distance_cm, 0);
         cl_assert_equal_i(m->active_calories, 0);
@@ -564,6 +686,14 @@ void test_boulder_fahrt__initialize(void) {
   s_szene = HRMActivityScene_Default;
   s_szene_aufrufe = 0;
   g_fake_puls_aktiv = false;
+  memset(s_ohne, 0, sizeof(s_ohne));
+  s_erwartet_ohne_schritte = false;
+  s_sekundenpuls = NULL;
+  s_dls84_anzahl = 0;
+  workout_service_reset();
+  workout_service_init();
+  // Kieselsports geprueftes Maximum (V2), wie der Dienst es nach dem Laden meldet (F7).
+  boulder_kalorien_maxpuls(190);
   pbl_cron_init();
   boulder_dauerteil_test_neustart();
   boulder_szene_vergessen();
@@ -572,7 +702,12 @@ void test_boulder_fahrt__initialize(void) {
 }
 
 void test_boulder_fahrt__cleanup(void) {
+  // Ein offener Dialog (die Nachfrage haelt ihn statisch) gehoert nicht in den naechsten Test.
+  if (s_ui.offen) {
+    actionable_dialog_pop(&s_dialog);
+  }
   fake_system_task_callbacks_invoke_pending();
+  workout_service_reset();
   activity_algorithm_deinit();
   fake_system_task_callbacks_invoke_pending();
   pbl_cron_deinit();
@@ -621,7 +756,9 @@ void test_boulder_fahrt__velo_ja_streicht_genau_die_fahrt(void) {
   cl_assert(!s->ongoing);
   cl_assert_equal_i(s->length_min, 25);
   cl_assert_equal_i(s->step_data.steps, 0);
-  cl_assert_equal_i(s->step_data.active_kcalories, 0);
+  // F7 (Schritt 2): die Pulskalorien der Fahrt; die Werte prueft t5_2_* gegen Boulder.
+  cl_assert(s->step_data.active_kcalories > 0);
+  cl_assert_equal_i(s->step_data.active_kcalories, ROUND(boulder_kontext_kcal(), 1000));
   cl_assert(!prv_gehen_in(beginn, beginn + 25 * PBL_SEC_PER_MIN));
   cl_assert(!g_fake_puls_aktiv);
   // Die eigene Szene ist zurueckgenommen; beim Gehen setzt Kraepelin seine (Walk).
@@ -805,12 +942,19 @@ void test_boulder_fahrt__neustart_setzt_die_fahrt_fort(void) {
   BoulderFahrtAblage ablage;
   boulder_kontext_ablage(&ablage);
   const time_t beginn = boulder_kontext_beginn();
+  // F7: Die Kalorien bis zur Ablage gehen mit; nach dem Boot zaehlt der Zaehler weiter.
+  cl_assert(ablage.kcal_cal > 0);
+  cl_assert_equal_i(ablage.kcal_cal, boulder_kontext_kcal());
   boulder_kontext_test_zuruecksetzen();
   cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
   boulder_kontext_laden(&ablage);
   cl_assert_equal_i(boulder_kontext_zustand(), FahrtBestaetigt);
+  cl_assert_equal_i(boulder_kontext_kcal(), ablage.kcal_cal);
   fake_rtc_increment_time(2 * PBL_SEC_PER_MIN);  // der Neustart
   prv_velo(10, &ja);
+  cl_assert(boulder_kontext_kcal() > ablage.kcal_cal);
+  cl_assert_equal_i(prv_sitzung(ActivitySessionType_Open)->step_data.active_kcalories,
+                    ROUND(boulder_kontext_kcal(), 1000));
   cl_assert_equal_i(prv_sitzung(ActivitySessionType_Open)->start_utc, beginn);
   cl_assert(prv_sitzung(ActivitySessionType_Open)->ongoing);
   boulder_kontext_ablage(&ablage);
@@ -852,4 +996,380 @@ void test_boulder_fahrt__einstecken_beendet_die_fahrt_einmal(void) {
   cl_assert_equal_i(prv_sitzung(ActivitySessionType_Open)->length_min, laenge);
   cl_assert_equal_i(prv_zaehler(), zaehler);
   cl_assert_equal_i(s_activity_sperre, 0);
+}
+
+// =============================================================================================
+// Schritt 2, AP4: Training ohne Schritte (D17, V1), Fahrt und Training, Pulskalorien (F7)
+
+// Ein Training ueber Pebbles echten Workout-Dienst, wie Kieselsport es startet (plattform.c,
+// ks_workout_starten): erst Pebbles Start, dann - ohne Sperre - der Merker der Variante.
+static ActivitySessionType s_start_typ;
+static bool s_start_ohne_schritte;
+static bool s_loggen_nach_start;  //< T4.3: Pebbles Logging laeuft zwischen den Schliessungen
+static time_t s_start_um;
+static void prv_training_start(void) {
+  s_start_um = rtc_get_time();
+  cl_assert(workout_service_start_workout(s_start_typ));
+  boulder_variante_training_ohne_schritte(s_start_ohne_schritte);
+  cl_assert_equal_i(s_activity_sperre, 0);
+  if (s_loggen_nach_start) {
+    activity_sessions_prv_minute_handler(rtc_get_time());
+  }
+}
+static time_t s_stopp_um;
+static void prv_training_stopp(void) {
+  s_stopp_um = rtc_get_time();
+  prv_workout_timer_cb(NULL);  // Pebbles Sekundentakt lief bis jetzt
+  cl_assert(workout_service_stop_workout());
+}
+
+static uint16_t prv_rate(void) {
+  uint16_t schritte;
+  uint32_t ms;
+  time_t ende;
+  cl_assert(activity_algorithm_get_step_rate(&schritte, &ms, &ende));
+  return schritte;
+}
+
+// Pebbles Sitzungen eines Typs: die erkannte (manual = 0) und die des Trainings (manual = 1).
+static const ActivitySession *prv_sitzung_manuell(ActivitySessionType typ, bool manuell) {
+  const ActivitySession *gefunden = NULL;
+  for (int i = 0; i < s_state.activity_sessions_count; i++) {
+    const ActivitySession *a = &s_state.activity_sessions[i];
+    if (a->type == typ && a->manual == manuell) {
+      cl_assert(!gefunden);  // hoechstens eine
+      gefunden = a;
+    }
+  }
+  return gefunden;
+}
+
+static time_t prv_ende(const ActivitySession *a) {
+  return a->start_utc + (time_t)a->length_min * PBL_SEC_PER_MIN;
+}
+
+// T4.1 (Kriterium 4, V1 vom Nutzer geaendert): Ein Training ohne Schritte (Velo, MTB, Kraft, Yoga,
+// Schwimmen) zaehlt vom Start bis zum Stopp keine Schritte - nicht in der Tagessumme, nicht in der
+// Minute (DLS 81, Minutendatei), Rate 0. Auch viele Schritte (Kraft, Schwimmen: Kraepelin sieht
+// Gehen) nicht. Was vor dem Start und nach dem Stopp in derselben Minute kommt, zaehlt.
+void test_boulder_fahrt__t4_1_training_ohne_schritte_zaehlt_nichts(void) {
+  // Der Merker ohne Training wirkt nicht.
+  boulder_variante_training_ohne_schritte(true);
+  prv_gehen(10);
+  cl_assert(prv_rate() > 0);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_minute_geteilt(60, prv_training_start, 35, 60, 2600, 0x41, 0);
+  const uint32_t summe = prv_zaehler();
+  s_erwartet_ohne_schritte = true;
+  for (int i = 0; i < 20; i++) {
+    prv_minute((i % 3) ? 14 : 118, (uint16_t)(700 + i * 40), 0x37, prv_puls(120));
+    cl_assert_equal_i(prv_zaehler(), summe);
+    cl_assert_equal_i(prv_rate(), 0);
+  }
+  s_erwartet_ohne_schritte = false;
+  prv_minute_geteilt(50, prv_training_stopp, 45, 45, 2600, 0x41, 0);
+  cl_assert(prv_rate() > 0);
+  // Pebble hat das Training gespeichert, die Variante zaehlt wieder.
+  const ActivitySession *t = prv_sitzung_manuell(ActivitySessionType_Open, true);
+  cl_assert(t);
+  cl_assert_equal_i(t->start_utc, s_start_um);
+  cl_assert_equal_i(t->length_min, 21);
+  prv_gehen(40);
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+  cl_assert(prv_pruefe_minuten() >= 10 + 22);
+  // Kein Schritt der Trainingsminuten ging an der Summe vorbei: es sind keine Fahrtschritte.
+  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 0);
+}
+
+// T4.1, die andere Seite: Laufen und Wandern (Run, Walk) zaehlen Schritte wie Pebble. Ein Training
+// ohne Schritte davor laesst nichts zurueck: Der Merker endet mit seinem Training - auch fuer ein
+// Training aus Pebbles eigener Workout-App, die den Merker nie anfasst (das erste unten).
+void test_boulder_fahrt__t4_1_laufen_zaehlt_schritte(void) {
+  prv_gehen(5);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  s_erwartet_ohne_schritte = true;
+  prv_velo(5, NULL);
+  s_erwartet_ohne_schritte = false;
+  prv_training_stopp();
+  const ActivitySessionType arten[] = {ActivitySessionType_Run, ActivitySessionType_Walk};
+  for (size_t k = 0; k < ARRAY_LENGTH(arten); k++) {
+    if (k == 0) {
+      cl_assert(workout_service_start_workout(arten[k]));  // Pebbles Workout-App
+    } else {
+      s_start_typ = arten[k];
+      s_start_ohne_schritte = false;
+      prv_training_start();  // Kieselsport (Wandern)
+    }
+    const uint32_t vorher = prv_zaehler();
+    for (int i = 0; i < 12; i++) {
+      prv_minute(150, 3200, 0x42, prv_puls(140));
+      cl_assert(prv_rate() > 0);
+    }
+    cl_assert_equal_i(prv_zaehler(), vorher + 12 * 150);
+    prv_training_stopp();
+  }
+  prv_gehen(40);
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+  cl_assert(prv_pruefe_minuten() >= 5 + 5 + 24);
+}
+
+// T4.2, T2.3 mit Training (Kriterium 4): Eine bestaetigte Fahrt laeuft, zwei Minuten an der Ampel
+// (weder velo- noch auto-artig), dann startet ein Velo-Training mitten in der Minute. Die Fahrt
+// endet am Trainingsstart (auf die Minute), mit der Ampel, und ueberdeckt das Training nicht. Auf
+// der Uhr je ein Eintrag; Tagessumme, DLS 81 und Minutendatei um genau die Fahrt- und
+// Trainingsschritte kleiner. T4.3 laesst Pebbles Logging zwischen den beiden Schliessungen der
+// Fahrt laufen (Pebbles beim Start, die der Variante in der naechsten Minute).
+static void prv_fahrt_dann_training(bool loggen_dazwischen) {
+  prv_gehen(14);
+  const time_t beginn = rtc_get_time();
+  bool ja = true;
+  cl_assert(prv_velo_bis_kandidatin(12, true) > 0);
+  prv_velo(1, &ja);
+  prv_taste(BUTTON_ID_UP);
+  fake_system_task_callbacks_invoke_pending();
+  prv_velo(8, &ja);
+  const int32_t kcal_bis_ampel = boulder_kontext_kcal();
+  // Die Ampel: kaum Bewegung, gehoert zur Fahrt, solange sie nicht zu Ende ist.
+  s_fahrt[s_n] = true;
+  prv_minute(4, 12, 0x37, prv_puls(98));
+  s_fahrt[s_n] = true;
+  prv_minute(3, 9, 0x37, prv_puls(97));
+  const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  cl_assert(f->ongoing);
+  const uint16_t vorher_min = f->length_min;  // bis zur letzten fahrtartigen Minute
+  const time_t start_minute = rtc_get_time();
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  s_loggen_nach_start = loggen_dazwischen;
+  // Vor dem Start 6 Schritte (noch Fahrt, zaehlen am Ende wieder), danach 9 (Training: keine).
+  prv_minute_geteilt(6, prv_training_start, 9, 6, 800, 0x37, prv_puls(104));
+  s_loggen_nach_start = false;
+  // Pebbles Start hat die Fahrt geschlossen, die Variante in dieser Minute auf den Start gesetzt.
+  f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  cl_assert(!f->ongoing);
+  cl_assert_equal_i(f->start_utc, beginn);
+  cl_assert_equal_i(prv_ende(f), start_minute);
+  cl_assert_equal_i(f->length_min, vorher_min + 2);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  s_erwartet_ohne_schritte = true;
+  prv_velo(15, NULL);
+  s_erwartet_ohne_schritte = false;
+  prv_minute_geteilt(5, prv_training_stopp, 20, 20, 2600, 0x41, prv_puls(92));
+  prv_gehen(40);
+  f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  const ActivitySession *t = prv_sitzung_manuell(ActivitySessionType_Open, true);
+  cl_assert(f && t);
+  cl_assert_equal_i(t->start_utc, s_start_um);
+  cl_assert(prv_ende(f) <= t->start_utc);
+  cl_assert(prv_ende(f) > t->start_utc - PBL_SEC_PER_MIN);
+  cl_assert_equal_i(t->length_min, 16);
+  cl_assert(!prv_gehen_in(beginn, prv_ende(t)));
+  // F7: Die Fahrt traegt ihre Pulskalorien bis zum Trainingsstart, mit der Ampel.
+  cl_assert(boulder_kontext_kcal() > kcal_bis_ampel);
+  cl_assert(f->step_data.active_kcalories > 0);
+  cl_assert_equal_i(f->step_data.active_kcalories, ROUND(boulder_kontext_kcal(), 1000));
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+  cl_assert(prv_pruefe_minuten() >= 14 + 25);
+  cl_assert_equal_i(boulder_kraepelin_gestrichen(), prv_fahrt_summe());
+  cl_assert_equal_i(s_heap_im_minutenteil, 0);
+}
+
+void test_boulder_fahrt__t4_2_fahrt_endet_am_trainingsstart(void) {
+  prv_fahrt_dann_training(false);
+  // Ohne Logging dazwischen geht jede Sitzung genau einmal ins Datalogging (DLS 84).
+  int fahrt = 0, training = 0;
+  const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  for (int i = 0; i < s_dls84_anzahl; i++) {
+    fahrt += s_dls84[i].start_utc == (uint32_t)f->start_utc;
+    training += s_dls84[i].start_utc == (uint32_t)s_start_um;
+  }
+  cl_assert_equal_i(fahrt, 1);
+  cl_assert_equal_i(training, 1);
+}
+
+// T4.3: Mit Logging zwischen den beiden Schliessungen gehen von der Fahrt zwei Saetze hinaus,
+// gleicher Start und Typ, der spaetere laenger (bis zum Trainingsstart). Boulder speichert unter
+// (Start, Typ) und behaelt den laengeren (B: HealthDaoExt.kt:45-57): ein Eintrag je Sitzung. Das
+// prueft Boulders eigener Code mit diesen Saetzen (Scratchpad, AP4-Bericht); mit
+// BOULDER_DLS84_AUSGABE schreibt der Test sie dafuer als Hex in eine Datei.
+void test_boulder_fahrt__t4_3_dls84_mit_logging_zwischen_den_schliessungen(void) {
+  prv_fahrt_dann_training(true);
+  const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  int fahrt = 0, training = 0;
+  uint32_t erste = 0, letzte = 0;
+  for (int i = 0; i < s_dls84_anzahl; i++) {
+    const ActivitySessionDataLoggingRecord *r = &s_dls84[i];
+    if (r->activity != ActivitySessionType_Open) {
+      continue;  // Kraepelins Spaziergaenge davor und danach
+    }
+    if (r->start_utc == (uint32_t)f->start_utc) {
+      erste = fahrt++ ? erste : r->elapsed_sec;
+      letzte = r->elapsed_sec;
+    }
+    training += r->start_utc == (uint32_t)s_start_um;
+  }
+  cl_assert_equal_i(fahrt, 2);
+  cl_assert(erste < letzte);
+  cl_assert_equal_i(letzte, f->length_min * PBL_SEC_PER_MIN);
+  cl_assert_equal_i(training, 1);
+  const char *ausgabe = getenv("BOULDER_DLS84_AUSGABE");
+  if (ausgabe) {
+    FILE *d = fopen(ausgabe, "w");
+    cl_assert(d);
+    for (int i = 0; i < s_dls84_anzahl; i++) {
+      for (size_t b = 0; b < sizeof(s_dls84[i]); b++) {
+        fprintf(d, "%02x", ((const uint8_t *)&s_dls84[i])[b]);
+      }
+      fprintf(d, "\n");
+    }
+    fclose(d);
+  }
+}
+
+// T4.4 (Kriterium 4, Spezifikation G10): Ein Velo-Training von 30 Minuten endet mitten in der
+// Minute, der Nutzer faehrt weiter. Die Kandidatin danach beginnt nicht vor dem Trainingsende -
+// auch nicht in der Minute des Stopps, die bis dahin Training war.
+void test_boulder_fahrt__t4_4_nach_dem_training_keine_kandidatin_davor(void) {
+  prv_gehen(14);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  s_erwartet_ohne_schritte = true;
+  prv_velo(30, NULL);
+  s_erwartet_ohne_schritte = false;
+  cl_assert_equal_i(s_ui.dialoge, 0);
+  // Stopp nach 30 s, dann weiter im Sattel: velo-artig.
+  prv_minute_geteilt(9, prv_training_stopp, 6, 6, 820, 0x37, prv_puls(104));
+  const int nach = prv_velo_bis_kandidatin(15, false);
+  printf("\nNach dem Training: Kandidatin nach %d min, ab %+d s nach dem Stopp\n", nach,
+         (int)(boulder_kontext_beginn() - s_stopp_um));
+  cl_assert(nach > 0);
+  cl_assert(boulder_kontext_beginn() >= s_stopp_um);
+}
+
+// T4.4, der Ring: Neun Velo-Minuten (noch keine Kandidatin: Mindestdauer 10 min), ein kurzes
+// Training, weiter velo-artig. Die Minuten vor dem Training zaehlen nicht mehr mit - sonst
+// begaenne die Kandidatin vor ihm und ueberdeckte es.
+void test_boulder_fahrt__t4_4_kurzes_training_leert_den_ring(void) {
+  prv_gehen(14);
+  prv_velo(9, NULL);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  s_erwartet_ohne_schritte = true;
+  prv_velo(2, NULL);
+  s_erwartet_ohne_schritte = false;
+  prv_training_stopp();
+  const int nach = prv_velo_bis_kandidatin(15, false);
+  cl_assert(nach >= 10);
+  cl_assert(boulder_kontext_beginn() >= s_stopp_um);
+}
+
+// =============================================================================================
+// T5.2 (Kriterium 5, F7): Pulskalorien der bestaetigten Velofahrt - derselbe Zaehler wie im
+// Training, gegen Boulders eigenen Code. Die Sollwerte stammen aus Trainingsanalyse.kt (Boulder
+// 34fc13cb), ausgefuehrt mit dem Orakel aus AP1 (Scratchpad a4-orakel/Main.kt): Profil 70 kg,
+// 41 Jahre, Mann, Maximum 190, kein Ruhepuls (keine Nacht: 60). Boulder zaehlt den letzten Punkt
+// 10 s; ein Punkt am Fahrtende unter dem Ruhepuls zaehlt dort 0, so endet der letzte echte Punkt
+// wie auf der Uhr am Fahrtende.
+
+// Boulders Testfahrt vom 29.9.2026 (TrainingsanalyseTest.kt:65-68), je Minute.
+static const uint8_t FAHRT_PULS[] = {
+  95, 94, 126, 121, 120, 122, 121, 128, 130, 132, 128, 122,
+  129, 125, 140, 139, 137, 140, 135, 125, 129, 125, 143, 145,
+};
+
+static void prv_velo_mit_puls(const uint8_t *puls, int minuten, bool gestrichen) {
+  for (int i = 0; i < minuten; i++) {
+    const int k = s_minute_nr;
+    s_fahrt[s_n] = gestrichen;
+    prv_minute((uint8_t)(3 + (k * 7) % 16), (uint16_t)(700 + (k * 37) % 600),
+               (k % 5 == 4) ? 0x38 : 0x37, puls[i]);
+  }
+}
+
+static void prv_wie_boulder(int32_t cal, double boulder_kcal) {
+  const double soll = boulder_kcal * 1000.0;
+  printf("\n  %d cal, Boulder %.3f cal\n", (int)cal, soll);
+  cl_assert(cal >= (int32_t)soll - 2 && cal <= (int32_t)soll + 3);
+}
+
+// Nur Minutenpulse (Pebbles Messung jede Minute, kein Sekundenwert): jede Minute gilt 60 s, von
+// der ersten fahrtartigen Minute an - auch die vor der Kandidatin (Orakel A1: 156,750300 kcal).
+void test_boulder_fahrt__t5_2_fahrt_mit_minutenpuls_wie_boulder(void) {
+  prv_gehen(14);
+  const time_t beginn = rtc_get_time();
+  int i = 0;
+  for (; i < 12 && boulder_kontext_zustand() != FahrtKandidatin; i++) {
+    prv_velo_mit_puls(&FAHRT_PULS[i], 1, true);
+  }
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKandidatin);
+  prv_taste(BUTTON_ID_UP);
+  fake_system_task_callbacks_invoke_pending();
+  prv_velo_mit_puls(&FAHRT_PULS[i], (int)ARRAY_LENGTH(FAHRT_PULS) - i, true);
+  prv_gehen(10);
+  const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  cl_assert_equal_i(f->start_utc, beginn);
+  cl_assert_equal_i(f->length_min, 24);
+  prv_wie_boulder(boulder_kontext_kcal(), 156.750300);
+  cl_assert_equal_i(f->step_data.active_kcalories, 157);
+}
+
+// Fahrtbeginn: Sekunde 0 der ersten Velominute (Orakel A2).
+static time_t s_fahrt_beginn;
+static uint8_t prv_sekundenpuls_a2(time_t utc) {
+  const int s = (int)(utc - s_fahrt_beginn);
+  return (s % 89 == 7) ? 0 : (uint8_t)(110 + (s / 20) % 40 + (((s / 120) % 2) ? 15 : 0));
+}
+
+// Ab Minute 13 Sekundenwerte des Abos "Aktiv" (einzelne fehlen); ihr Minutenpuls (100) zaehlt dann
+// nicht. Bis dahin der Minutenpuls, auch nach der Kandidatin. Nach der Fahrt kommen weiter
+// Sekundenwerte, bis das Ende feststeht: Sie gehoeren nicht zur Fahrt (Orakel A2: 199,074178).
+void test_boulder_fahrt__t5_2_fahrt_mit_sekundenpuls_wie_boulder(void) {
+  prv_gehen(14);
+  s_fahrt_beginn = rtc_get_time();
+  int i = 0;
+  for (; i < 12 && boulder_kontext_zustand() != FahrtKandidatin; i++) {
+    prv_velo_mit_puls(&FAHRT_PULS[i], 1, true);
+  }
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKandidatin);
+  prv_taste(BUTTON_ID_UP);
+  fake_system_task_callbacks_invoke_pending();
+  prv_velo_mit_puls(&FAHRT_PULS[i], 13 - i, true);
+  cl_assert_equal_i(rtc_get_time(), s_fahrt_beginn + 13 * PBL_SEC_PER_MIN);
+  s_sekundenpuls = prv_sekundenpuls_a2;
+  uint8_t hundert[17];
+  memset(hundert, 100, sizeof(hundert));
+  prv_velo_mit_puls(hundert, 17, true);
+  prv_gehen(10);
+  s_sekundenpuls = NULL;
+  const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
+  cl_assert_equal_i(f->length_min, 30);
+  prv_wie_boulder(boulder_kontext_kcal(), 199.074178);
+  cl_assert_equal_i(f->step_data.active_kcalories, 199);
+}
+
+// T5.2, "Nein": Der Zaehler faellt weg - weder Minuten- noch Sekundenwerte zaehlen danach, und es
+// gibt keine Sitzung.
+void test_boulder_fahrt__t5_2_nein_ohne_kalorien(void) {
+  prv_gehen(14);
+  int i = 0;
+  for (; i < 12 && boulder_kontext_zustand() != FahrtKandidatin; i++) {
+    prv_velo_mit_puls(&FAHRT_PULS[i], 1, false);
+  }
+  cl_assert(boulder_kontext_kcal() > 0);  // der Zaehler lief ab der Kandidatin
+  prv_taste(BUTTON_ID_DOWN);
+  fake_system_task_callbacks_invoke_pending();
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtAbgelehnt);
+  s_fahrt_beginn = rtc_get_time();
+  s_sekundenpuls = prv_sekundenpuls_a2;
+  prv_velo_mit_puls(&FAHRT_PULS[i], 6, false);
+  s_sekundenpuls = NULL;
+  cl_assert_equal_i(boulder_kontext_kcal(), 0);
+  prv_gehen(10);
+  cl_assert(prv_sitzung(ActivitySessionType_Open) == NULL);
 }

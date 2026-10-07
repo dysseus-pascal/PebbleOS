@@ -28,6 +28,15 @@
 // TASKS: Zustand aendern nur der Minutenteil und die Callbacks auf KernelBG. Die Antwort
 // des Dialogs (KernelMain) ist nur ein Merker. Die Abfragen der Kopie (auch vom Health-Sync)
 // lesen einzelne Worte, O(1), ohne Sperre, ohne Heap.
+//
+// TRAINING (Schritt 2, AP4): Start und Stopp setzen nur Merker und Zeit (D15). Die Minute, in
+// der ein Training beginnt, beendet eine laufende Fahrt am Trainingsstart; eine Minute, die ein
+// Training beruehrt, ist nie fahrtartig, und nach dem Training beginnt der Ring neu. So beginnt
+// keine Kandidatin vor dem Ende eines Trainings und keine Fahrt ueberdeckt es (Kriterium 4).
+//
+// PULSKALORIEN DER VELOFAHRT (F7): derselbe Zaehler wie im Training (kalorien.c), ab der
+// Kandidatin, mit dem Minutenpuls der Minuten davor und danach jedem Sekundenwert des Abos
+// "Aktiv" (boulder_kontext_puls). Die Sitzung traegt sie in step_data.active_kcalories.
 
 #include "pbl/kernel/compiler.h"
 #include "pbl/services/activity/boulder/variante.h"
@@ -86,8 +95,9 @@ typedef struct PBL_PACKED {
   uint8_t nr;
   uint32_t beginn;
   uint32_t letzte_artige;
+  int32_t kcal_cal;   //< Fassung 2 (F7): Pulskalorien bis letzte_artige + 1 min, in Kalorien
 } BoulderFahrtAblage;
-#define KONTEXT_ABLAGE_FASSUNG 1
+#define KONTEXT_ABLAGE_FASSUNG 2
 
 // Minutenteil (Dauerteil), nach dem Satz der Minute. `ruhepuls` = der der letzten Nacht.
 void boulder_kontext_minute(const BoulderMinute *minute, uint8_t ruhepuls);
@@ -98,9 +108,24 @@ void boulder_kontext_takt(time_t jetzt);
 // KernelMain (nachfrage.c): der Dialog fuer Fahrt `nr` ist zu.
 void boulder_kontext_antwort(uint8_t nr, BoulderNachfrageAntwort antwort);
 
-// Training an/aus (enable_activity_tracking): keine Kandidatin, die Velo-Sitzung endet.
+// Training an/aus (D15, enable_activity_tracking unter Pebbles Workout-Sperre; App-Task oder
+// KernelBG): nur Merker und Zeit. Die naechste Minute beendet eine laufende Fahrt am
+// Trainingsstart; im Training keine Kandidatin.
 void boulder_kontext_training(bool laeuft);
 bool boulder_kontext_training_laeuft(void);
+// V1 (Schritt 2): Das laufende Training zaehlt keine Schritte. Kieselsport setzt es nach dem
+// Start (KernelBG, ohne Sperre); jeder Start und Stopp loescht es, so trifft es nie ein anderes
+// Training.
+void boulder_kontext_training_ohne_schritte(bool ohne);
+// D17: ein laufendes Training ohne Schritte.
+bool boulder_kontext_training_ohne_schritte_laeuft(void);
+
+// F7: ein Pulswert des Abos "Aktiv" (puls.c: KernelBG, im HRM-Rueckruf unter der Sperre des
+// Managers, gueltig und mindestens "Acceptable"). O(1), ohne Sperre.
+void boulder_kontext_puls(uint8_t bpm, time_t utc);
+// F7: die Pulskalorien der laufenden oder zuletzt beendeten Velofahrt bis zum Ende ihrer
+// Sitzung, in Kalorien (Diagnose, Tests).
+int32_t boulder_kontext_kcal(void);
 // early_deinit: eine laufende Velo-Sitzung abschliessen (vor dem Speichern der Liste).
 void boulder_kontext_sitzung_beenden(void);
 // deinit (D13): ein offener Entscheid gilt als "Nein", die Fahrt endet.

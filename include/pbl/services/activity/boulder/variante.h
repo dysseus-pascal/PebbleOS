@@ -60,6 +60,10 @@ bool boulder_dauerteil_fahrt_minute(time_t minute_utc);
 // D5: Laeuft gerade eine bestaetigte Fahrt? Dann zaehlen neue Schritte nicht.
 bool boulder_dauerteil_fahrt_laeuft(void);
 
+// D17 (Schritt 2, V1): Laeuft ein Training ohne Schritte? Dann zaehlen neue Schritte weder in
+// der Tagessumme noch in der Minute, und die Rate ist 0.
+bool boulder_dauerteil_training_ohne_schritte(void);
+
 // D1: Ueberdeckt eine Velo-/Autokandidatin diese Zeit? Dann ist es kein Spaziergang.
 bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s);
 
@@ -73,7 +77,8 @@ void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert);
 // deinit: Der Tracking-Teil geht; ein offener Fahrt-Entscheid gilt als "Nein" (D13).
 void boulder_dauerteil_tracking_aus(void);
 
-// D15: Ein Training laeuft (enable_activity_tracking(false), App-Task): nur ein Merker.
+// D15: Ein Training laeuft (enable_activity_tracking(false) unter Pebbles Workout-Sperre; von
+// der App-Task mit Pebbles Workout-App, von KernelBG mit Kieselsport): nur Merker und Zeit.
 void boulder_dauerteil_training(bool laeuft);
 // D15: early_deinit (unter der Activity-Sperre): eine laufende Velo-Sitzung schliessen.
 void boulder_dauerteil_sitzungen_beenden(void);
@@ -84,6 +89,15 @@ void boulder_dauerteil_test_neustart(void);
 // Tests, die Pebbles Timer selbst der Reihe nach feuern: den eigenen Takt nicht als Cron planen
 // (sein Weck-Timer kaeme vor den eigenen des Tests). Der Test ruft boulder_dauerteil_takt.
 void boulder_dauerteil_test_ohne_cron(bool ohne);
+
+// ---------------------------------------------------------------------------------------
+// Kieselsport an die Variante (Schritt 2, Spezifikation 2.6)
+
+// V1, vom Nutzer geaendert: Das eben gestartete Training zaehlt keine Schritte (alle Arten ausser
+// Laufen und Wandern). Kieselsport ruft es nach workout_service_start_workout, ohne Sperre
+// (Regel 2.5.2). Es gilt bis zum Ende genau dieses Trainings; ohne laufendes Training wirkt es
+// nicht.
+void boulder_variante_training_ohne_schritte(bool ohne);
 
 // ---------------------------------------------------------------------------------------
 // Kopie, vom Dauerteil gerufen (KernelBG, ohne die Sperre der Variante)

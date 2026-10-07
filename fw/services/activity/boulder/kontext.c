@@ -10,8 +10,13 @@
 #include "pbl/services/activity/boulder/puls.h"
 #include "pbl/services/activity/boulder/speicher.h"
 #include "pbl/services/activity/boulder/takt.h"
+#ifdef CONFIG_BOULDER_KIESELSPORT
+#include "pbl/services/activity/boulder/kalorien.h"
+#endif
 #include "pbl/services/time.h"
+#include "pbl/util/math.h"
 #include "pbl/util/units.h"
+#include <pbl/drivers/rtc.h>
 #include <pbl/logging/logging.h>
 
 #include <inttypes.h>
@@ -49,11 +54,28 @@ static struct {
   // Die vorige bestaetigte Fahrt: ihre Minuten koennen noch im Puffer liegen.
   time_t vorige_von;
   time_t vorige_bis;
+  // Eine Minute, die ein Training beruehrte, liegt im Ring: die naechste andere leert ihn.
+  bool training_im_ring;
+  // F7: Pulskalorien der Velofahrt, in Kalorien
+  int32_t kcal_vorher;      //< aus der Ablage vor einem Neustart
+  int32_t kcal_cal;         //< bis zum Ende der Sitzung (letzte fahrtartige Minute oder Ende)
+  int32_t kcal_minute;      //< bis zum Ende der zuletzt verbuchten Fahrtminute ...
+  time_t kcal_minute_ende;  //< ... die hier endet
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  bool kcal_laeuft;
+  BoulderKalorienZaehler kcal;  //< Zeit in Sekunden ab dem Fahrtbeginn
+#endif
 } s_k;
 
 // Von KernelMain (Dialog zu) an KernelBG: Bit 15 = gesetzt, 8-14 = Fahrt, 0-7 = Antwort.
 static volatile uint16_t s_merker;
+// Vom Workout-Dienst (D15: unter seiner Sperre, App-Task oder KernelBG) und von Kieselsport
+// (KernelBG): nur Merker und Zeiten. Gelesen im Minutenteil, in der Kopie (D17) und im
+// HRM-Rueckruf; jedes ist ein Wort.
 static volatile bool s_training;
+static volatile bool s_ohne_schritte;
+static volatile time_t s_training_ab;   //< Start des laufenden oder letzten Trainings
+static volatile time_t s_training_bis;  //< Ende des letzten Trainings
 
 static void prv_antwort_cb(void *data);
 static BoulderAufgabe s_aufgabe_antwort = BOULDER_AUFGABE("Boulder Antwort", prv_antwort_cb);
@@ -84,8 +106,8 @@ static uint8_t prv_ruhepuls(uint8_t nacht) {
   return pref ? pref : KONTEXT_RUHEPULS_SONST;
 }
 
-static BoulderFahrtArt prv_art(const BoulderMinute *m, uint8_t ruhe) {
-  if (m->geladen || m->nicht_getragen || s_training) {
+static BoulderFahrtArt prv_art(const BoulderMinute *m, uint8_t ruhe, bool im_training) {
+  if (m->geladen || m->nicht_getragen || im_training) {
     return FahrtArtKeine;
   }
   // Der Puls zaehlt nur, wenn die Minute einen hat (Stufe 1: alle 10 min; ab der Vorstufe
@@ -159,7 +181,8 @@ static BoulderFahrtArt prv_kandidatin(uint8_t ruhe) {
 // ---------------------------------------------------------------------------------------
 // Sitzung (F5) und Ende
 
-// Velo als Pebbles "Open", nicht manuell; Schrittdaten 0 (F7: 0 aktive kcal in Schritt 1).
+// Velo als Pebbles "Open", nicht manuell. Schritte und Strecke 0 (gestrichen), die aktiven kcal
+// aus dem Puls (F7, Schritt 2) bis zum Ende der Sitzung.
 static void prv_sitzung(bool laufend) {
   if (s_k.art != FahrtArtVelo || s_k.zustand != FahrtBestaetigt) {
     return;
@@ -170,8 +193,68 @@ static void prv_sitzung(bool laufend) {
     .start_utc = s_k.beginn,
     .length_min = (uint16_t)((bis - s_k.beginn) / PBL_SEC_PER_MIN),
     .ongoing = laufend,
+    .step_data.active_kcalories =
+        (uint16_t)MIN(ROUND(MAX(s_k.kcal_cal, 0), ACTIVITY_CALORIES_PER_KCAL), UINT16_MAX),
   };
   activity_sessions_prv_add_activity_session(&s);
+}
+
+// ---------------------------------------------------------------------------------------
+// Pulskalorien der Velofahrt (F7, Spezifikation 3): derselbe Zaehler und dasselbe Profil wie im
+// Training (kalorien.c), Zeit in Sekunden ab dem Fahrtbeginn.
+//
+// AB DER KANDIDATIN, MIT DEM MINUTENPULS DAVOR: Der Fahrtbeginn liegt bis zu zehn Minuten vor der
+// Kandidatin, und das Abo "Aktiv" misst erst ab der Vorstufe jede Sekunde. Fuer die Minuten bis
+// zur Kandidatin zaehlt darum ihr Minutenpuls aus dem Ring, danach jeder Sekundenwert. Eine
+// Minute ganz ohne Sekundenwert (Abo fuer SpO2 pausiert, Pebbles "Puls bei Aktivitaet" aus)
+// bekommt ebenfalls ihren Minutenpuls. Bei "Nein" faellt der Zaehler weg.
+//
+// DIE SITZUNG ENDET MIT IHRER LETZTEN FAHRTARTIGEN MINUTE, und erst drei Minuten spaeter steht
+// das fest. Was der Zaehler in diesen Minuten noch bekam, gehoert nicht dazu: Die Sitzung traegt
+// die Summe bis zu ihrem Ende (kcal_cal), festgehalten in der Minute, in der es lag. Ein Wort -
+// KernelMain liest es beim Einstecken (boulder_kontext_sitzung_beenden), ohne den Zaehler.
+
+static int32_t prv_kcal_t(time_t utc) {
+  return (int32_t)(utc - s_k.beginn);
+}
+
+static void prv_kcal_neu(void) {
+  s_k.kcal_vorher = 0;
+  s_k.kcal_cal = 0;
+  s_k.kcal_minute = 0;
+  s_k.kcal_minute_ende = 0;
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  BoulderKalorienProfil profil;
+  // Ohne brauchbares Profil (kein Gewicht, kein Alter) bleibt es bei 0 kcal wie in Schritt 1.
+  s_k.kcal_laeuft = (s_k.art == FahrtArtVelo) && boulder_kalorien_profil_jetzt(&profil);
+  boulder_kalorien_zaehler_neu(&s_k.kcal, &profil);
+#endif
+}
+
+// Die Summe bis `utc`, mit dem Stand vor einem Neustart.
+static int32_t prv_kcal_bis(time_t utc) {
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  if (s_k.kcal_laeuft) {
+    return s_k.kcal_vorher + boulder_kalorien_zaehler_summe(&s_k.kcal, prv_kcal_t(utc));
+  }
+#endif
+  return s_k.kcal_vorher;
+}
+
+// Eine Fahrtminute verbuchen: ihr Minutenpuls, wenn kein Sekundenwert in ihr lag.
+static void prv_kcal_minute(const KontextMinute *m) {
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  const int32_t t = prv_kcal_t(m->utc);
+  BoulderKalorienZaehler *z = &s_k.kcal;
+  if (s_k.kcal_laeuft && m->puls && t >= z->stand_s && (!z->bpm || z->puls_s < t)) {
+    boulder_kalorien_zaehler_puls(z, m->puls, t);
+  }
+#endif
+  s_k.kcal_minute_ende = m->utc + PBL_SEC_PER_MIN;
+  s_k.kcal_minute = prv_kcal_bis(s_k.kcal_minute_ende);
+  if (m->art != FahrtArtKeine) {
+    s_k.kcal_cal = s_k.kcal_minute;
+  }
 }
 
 static void prv_fahrt_weg(void) {
@@ -188,6 +271,9 @@ static void prv_fahrt_weg(void) {
   s_k.fragen = 0;
   s_k.keine_folge = 0;
   s_k.nach_laden = false;
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  s_k.kcal_laeuft = false;
+#endif
 }
 
 // Die Schritte der Minuten ab `ab` (Schwanz nach der letzten fahrtartigen): waehrend der Fahrt
@@ -235,13 +321,22 @@ static void prv_kandidatin_verwerfen(const char *grund) {
   prv_fahrt_weg();
 }
 
-static void prv_ende_setzen(const char *grund) {
+static void prv_ende_bei(time_t ende, const char *grund) {
   pbl_mutex_assert_held(&activity_private_state()->mutex, true);
   if (s_k.zustand == FahrtKeine || s_k.ende) {
     return;
   }
-  s_k.ende = s_k.letzte_artige + PBL_SEC_PER_MIN;
+  s_k.ende = ende;
+  // Endet sie spaeter als mit ihrer letzten fahrtartigen Minute (am Trainingsstart), gehoeren
+  // die Minuten dazwischen zur Fahrt - auch ihre Kalorien. Nur der Minutenteil kommt hierher.
+  if (ende != s_k.letzte_artige + PBL_SEC_PER_MIN) {
+    s_k.kcal_cal = (ende == s_k.kcal_minute_ende) ? s_k.kcal_minute : prv_kcal_bis(ende);
+  }
   prv_beendet(grund);
+}
+
+static void prv_ende_setzen(const char *grund) {
+  prv_ende_bei(s_k.letzte_artige + PBL_SEC_PER_MIN, grund);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -289,6 +384,9 @@ static void prv_antwort_verarbeiten(uint8_t nr, BoulderNachfrageAntwort antwort)
     PBL_LOG_INFO("Boulder: Fahrt %u nicht bestaetigt (%s)", s_k.nr,
                  antwort == NachfrageNein ? "Nein" : "keine Antwort");
     s_k.zustand = FahrtAbgelehnt;
+#ifdef CONFIG_BOULDER_KIESELSPORT
+    s_k.kcal_laeuft = false;  // F7: der Zaehler faellt weg
+#endif
     if (s_k.ende) {
       prv_fahrt_weg();
     }
@@ -390,6 +488,10 @@ static void prv_offen_berechnen(void) {
 
 static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
   const uint8_t ruhe = prv_ruhepuls(ruhepuls);
+  // EINE MINUTE, DIE EIN TRAINING BERUEHRT, gehoert keiner Fahrt: auch die, in der es begann
+  // oder endete. Laege die Minute des Stopps als velo-artig im Ring, begaenne eine Kandidatin
+  // nach einem Velo-Training noch in ihm (T4.4).
+  const bool im_training = s_training || s_training_bis > minute->utc;
   const time_t vorher = s_k.nach_laden ? s_k.letzte_artige : s_k.letzte_utc;
   // Nach dem Boot ist die gerettete letzte Minute bis zu einer Ablage (15 min) alt.
   const time_t sprung_s = (KONTEXT_SPRUNG_MIN + (s_k.nach_laden ? 15 : 0)) * PBL_SEC_PER_MIN;
@@ -406,8 +508,17 @@ static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
     s_k.anzahl = 0;
     s_k.velo_folge = 0;
   }
+  // NACH DEM TRAINING BEGINNT DER RING NEU (Spezifikation G10): Velo-Minuten vor einem kurzen
+  // Training zaehlten sonst mit, und die Kandidatin danach begaenne vor dem Training. Die Fahrt
+  // ist hier schon zu - sie endete in der ersten Trainingsminute -, ihr Schwanz braucht den
+  // Ring nicht mehr.
+  if (!im_training && s_k.training_im_ring) {
+    s_k.anzahl = 0;
+    s_k.velo_folge = 0;
+  }
+  s_k.training_im_ring = im_training;
 
-  const BoulderFahrtArt art = prv_art(minute, ruhe);
+  const BoulderFahrtArt art = prv_art(minute, ruhe, im_training);
   s_k.ring[s_k.kopf] = (KontextMinute){
     .utc = minute->utc, .schritte = minute->schritte, .lage = minute->lage,
     .puls = minute->puls, .art = (uint8_t)art,
@@ -417,7 +528,7 @@ static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
   s_k.velo_folge = (art == FahrtArtVelo) ? s_k.velo_folge + 1 : 0;
 
   if (s_k.zustand == FahrtKeine) {
-    BoulderFahrtArt kandidatin = s_training ? FahrtArtKeine : prv_kandidatin(ruhe);
+    BoulderFahrtArt kandidatin = im_training ? FahrtArtKeine : prv_kandidatin(ruhe);
     // Mindestdauer 10 min (Move IQ): acht artige Minuten reichen erst, wenn die erste davon
     // zehn Minuten zurueckliegt - sonst fragte die Uhr schon nach acht Minuten Stop-and-go.
     if (kandidatin != FahrtArtKeine &&
@@ -436,6 +547,15 @@ static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
       s_k.frage_um = 0;
       PBL_LOG_INFO("Boulder: Fahrt %u Kandidatin (%s) ab %" PRIu32, s_k.nr,
                    kandidatin == FahrtArtVelo ? "Velo" : "Auto", (uint32_t)s_k.beginn);
+      // F7: der Zaehler ab jetzt, die Minuten seit dem Fahrtbeginn mit ihrem Minutenpuls. Die
+      // Sitzung reicht bis zu dieser Minute (letzte_artige), auch wenn sie selbst keine war.
+      prv_kcal_neu();
+      for (int i = 0; i < s_k.anzahl; i++) {
+        if (prv_ring(i)->utc >= s_k.beginn) {
+          prv_kcal_minute(prv_ring(i));
+        }
+      }
+      s_k.kcal_cal = s_k.kcal_minute;
     }
   } else if (!s_k.ende) {
     if (art != FahrtArtKeine) {
@@ -444,8 +564,18 @@ static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
     } else {
       s_k.keine_folge++;
     }
-    if (s_training) {
-      prv_ende_setzen("Training");
+    if (!im_training) {
+      prv_kcal_minute(prv_ring(s_k.anzahl - 1));
+    }
+    if (im_training) {
+      // DIE FAHRT ENDET AM TRAININGSSTART (Kriterium 4), nicht schon mit ihrer letzten
+      // fahrtartigen Minute: Was dazwischen lag (Ampel, Absteigen), gehoert zur Fahrt. Auf die
+      // Minute genau, und die Minute des Starts gehoert schon dem Training - so ueberdeckt die
+      // Fahrt es nie. Pebble hat ihre Sitzung beim Start schon geschlossen
+      // (workout_service.c:453-465); prv_beendet schreibt sie mit diesem Ende neu.
+      const time_t ab = s_training_ab;
+      const time_t start = ab - (ab % PBL_SEC_PER_MIN);
+      prv_ende_bei(MAX(start, s_k.letzte_artige + PBL_SEC_PER_MIN), "Training");
     } else if (s_k.keine_folge >= KONTEXT_ENDE) {
       prv_ende_setzen("Ende");
     } else if (minute->utc + PBL_SEC_PER_MIN - s_k.beginn >=
@@ -455,7 +585,7 @@ static void prv_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
       prv_sitzung(true);
     }
   }
-  if (s_training) {
+  if (im_training) {
     // Nicht im Training fragen.
     prv_kandidatin_verwerfen("Training");
   }
@@ -471,11 +601,55 @@ void boulder_kontext_minute(const BoulderMinute *minute, uint8_t ruhepuls) {
 }
 
 void boulder_kontext_training(bool laeuft) {
+  // NUR MERKER UND ZEIT (D15): Der Aufruf kommt unter Pebbles Workout-Sperre, mit Pebbles
+  // Workout-App von der App-Task, mit Kieselsport von KernelBG. Die Fahrt beendet der naechste
+  // Minutenteil unter der Activity-Sperre - hier keine Sperre und nichts aus Pebble.
+  const time_t jetzt = rtc_get_time();
+  // Jeder Start und Stopp loescht "ohne Schritte": Kieselsport setzt es nach seinem Start neu,
+  // ein anderes Training (Pebbles Workout-App) zaehlt Schritte wie Pebble.
+  s_ohne_schritte = false;
+  if (laeuft) {
+    s_training_ab = jetzt;
+  } else if (s_training) {
+    s_training_bis = jetzt;
+  }
   s_training = laeuft;
 }
 
 bool boulder_kontext_training_laeuft(void) {
   return s_training;
+}
+
+void boulder_kontext_training_ohne_schritte(bool ohne) {
+  s_ohne_schritte = ohne;
+}
+
+bool boulder_kontext_training_ohne_schritte_laeuft(void) {
+  // Ohne Training gilt der Merker nie: Kam Kieselsports Aufruf erst, als das Training schon
+  // wieder zu war, wirkt er nicht, und der naechste Start loescht ihn.
+  return s_training && s_ohne_schritte;
+}
+
+void boulder_kontext_puls(uint8_t bpm, time_t utc) {
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  // KernelBG im HRM-Rueckruf: ohne die Activity-Sperre (die Reihenfolge Activity -> HRM bleibt).
+  // Den Zaehler aendern sonst nur der Minutenteil und die Callbacks, auch alle auf KernelBG.
+  if (!s_k.kcal_laeuft || s_training || s_k.ende ||
+      (s_k.zustand != FahrtKandidatin && s_k.zustand != FahrtBestaetigt)) {
+    return;
+  }
+  const int32_t t = prv_kcal_t(utc);
+  if (t >= s_k.kcal.stand_s) {
+    boulder_kalorien_zaehler_puls(&s_k.kcal, bpm, t);
+  }
+#else
+  (void)bpm;
+  (void)utc;
+#endif
+}
+
+int32_t boulder_kontext_kcal(void) {
+  return s_k.kcal_cal;
 }
 
 void boulder_kontext_sitzung_beenden(void) {
@@ -561,6 +735,7 @@ void boulder_kontext_ablage(BoulderFahrtAblage *ablage) {
     ablage->nr = s_k.nr;
     ablage->beginn = (uint32_t)s_k.beginn;
     ablage->letzte_artige = (uint32_t)s_k.letzte_artige;
+    ablage->kcal_cal = s_k.kcal_cal;
   }
   prv_entsperren();
 }
@@ -584,6 +759,11 @@ void boulder_kontext_laden(const BoulderFahrtAblage *ablage) {
   s_k.ende = 0;
   s_k.keine_folge = 0;
   s_k.nach_laden = true;
+  // F7: Der Zaehler beginnt neu, die Kalorien bis zur letzten Ablage bleiben. Die Zeit ohne Uhr
+  // zaehlt nicht.
+  prv_kcal_neu();
+  s_k.kcal_vorher = MAX(ablage->kcal_cal, 0);
+  s_k.kcal_cal = s_k.kcal_vorher;
   PBL_LOG_INFO("Boulder: Fahrt %u nach dem Boot fortgesetzt", s_k.nr);
   // Pebbles Liste kann sie aus ihrer Ablage schon haben; gleicher Start und Typ ersetzt.
   prv_sitzung(true);
@@ -613,5 +793,8 @@ void boulder_kontext_test_zuruecksetzen(void) {
   memset(&s_k, 0, sizeof(s_k));
   s_merker = 0;
   s_training = false;
+  s_ohne_schritte = false;
+  s_training_ab = 0;
+  s_training_bis = 0;
   s_aufgabe_antwort.steht_an = false;
 }

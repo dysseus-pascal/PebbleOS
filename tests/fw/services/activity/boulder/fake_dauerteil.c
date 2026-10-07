@@ -41,6 +41,10 @@ bool boulder_dauerteil_fahrt_laeuft(void) {
   return fake_dauerteil.fahrt_laeuft;
 }
 
+bool boulder_dauerteil_training_ohne_schritte(void) {
+  return fake_dauerteil.training_ohne_schritte;
+}
+
 bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s) {
   return fake_dauerteil.ueberdeckt;
 }

@@ -67,8 +67,12 @@ typedef struct {
 } KsWorkout;
 
 // Startet Pebbles Training fuer diese Art (Laufen -> Run, Wandern -> Walk, sonst Open) mit
-// [maxpuls] fuer die Pulskalorien. false: Pebble lehnt ab (es laeuft schon eines).
+// [maxpuls] fuer die Pulskalorien. Arten ohne Schritte (V1: alle ausser Laufen und Wandern)
+// zaehlen bis zum Stopp keine Schritte. false: Pebble lehnt ab (es laeuft schon eines).
 bool ks_workout_starten(Sportart art, uint16_t maxpuls);
+// Boulders geprueftes Maximum (V2) fuer die Pulskalorien der naechsten bestaetigten Velofahrt
+// (F7) und des naechsten Trainings.
+void ks_kalorien_maxpuls(uint16_t maxpuls);
 // false: Pebble hat kein Training (mehr).
 bool ks_workout_pause(bool an);
 // false (und laeuft = false): Pebble hat kein Training.

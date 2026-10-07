@@ -28,7 +28,10 @@
 //
 // BLATT UNTER DER WORKOUT-SPERRE: Die Haken laufen unter Pebbles Sperre (KernelMain fuer Puls
 // und Schritte, die Task des Aufrufers fuer Start und Stopp). Sie nehmen keine Sperre und rufen
-// nur Getter, die statischen Speicher lesen (activity_prefs_*, boulder_nacht_ruhepuls).
+// nur Getter, die statischen Speicher lesen (activity_prefs_*, boulder_nacht_ruhepuls_median).
+//
+// DIE BESTAETIGTE VELOFAHRT (F7, AP4) rechnet mit demselben Zaehler und demselben Profil
+// (boulder_kalorien_profil_jetzt), gefuehrt von kontext.c.
 
 #include "pbl/services/activity/activity.h"
 
@@ -80,8 +83,14 @@ int32_t boulder_kalorien_zaehler_summe(const BoulderKalorienZaehler *z, int32_t 
 // ---------------------------------------------------------------------------------------
 // Das Training (P1 in workout_service.c). Zeit = aktive Sekunden seit dem Start.
 
-// Kieselsports Maximalpuls (V2, AP2), gilt ab dem naechsten Start. 0 = Tanaka.
+// Kieselsports Maximalpuls (V2, AP2), gilt ab dem naechsten Start und der naechsten Fahrt.
+// 0 = Tanaka.
 void boulder_kalorien_maxpuls(uint8_t bpm);
+
+// Das Profil, mit dem ein Training oder eine Fahrt jetzt beginnt: Gewicht, Alter und Geschlecht
+// der Uhr, der Ruhepuls als Median der letzten sieben Naechte (V3), Kieselsports Maximalpuls.
+// false (und ein leeres Profil) ohne brauchbare Eingaben.
+bool boulder_kalorien_profil_jetzt(BoulderKalorienProfil *profil);
 
 // P1: Start. Profil festhalten, Zaehler auf 0.
 void boulder_kalorien_start(void);

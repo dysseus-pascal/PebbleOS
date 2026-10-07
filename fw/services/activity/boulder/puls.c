@@ -6,6 +6,7 @@
 #include "pbl/services/activity/boulder/puls.h"
 
 #include "pbl/services/activity/boulder/hrv.h"
+#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/util/units.h"
@@ -120,6 +121,16 @@ static bool prv_spo2_misst(void) {
 // ein Abstand nicht, und auch der danach nicht gegen den davor. O(1): das laeuft im
 // HRM-Rueckruf, unter der Sperre des Managers - hier wird nichts an- oder abgemeldet.
 static void prv_rueckruf(PebbleHRMEvent *e, void *context) {
+  if (e->event_type == HRMEvent_BPM) {
+    // F7 (Schritt 2): Jeder Sekundenwert des Abos "Aktiv" geht in die Pulskalorien der
+    // Velofahrt - gueltig wie in activity.c und mindestens "Acceptable" wie im Training
+    // (workout_service.c, prv_handle_heart_rate_update).
+    if (s_aktiv && e->bpm.quality >= HRMQuality_Acceptable &&
+        e->bpm.bpm >= ACTIVITY_DEFAULT_MIN_HR && e->bpm.bpm <= ACTIVITY_DEFAULT_MAX_HR) {
+      boulder_kontext_puls(e->bpm.bpm, rtc_get_time());
+    }
+    return;
+  }
   if (!s_hrv.laeuft || e->event_type != HRMEvent_HRV) {
     return;
   }

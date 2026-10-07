@@ -3,6 +3,7 @@
 
 #include "plattform.h"
 
+#include "art.h"
 #include "bahnen.h"
 #include "dienst.h"
 #include "puls.h"
@@ -18,6 +19,7 @@
 #include "pbl/services/activity/boulder/kalorien.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/variante.h"
 #include "pbl/services/activity/workout_service.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/data_logging/data_logging_service.h"
@@ -49,9 +51,9 @@ uint8_t ks_alter(void) {
 }
 
 uint8_t ks_ruhepuls(void) {
-  // Derselbe Ruhepuls wie fuer die Pulskalorien (boulder_kalorien_start).
-  // TODO(AP4, V3): der Median der letzten 7 Naechte, an beiden Stellen.
-  return boulder_nacht_ruhepuls();
+  // Derselbe Ruhepuls wie fuer die Pulskalorien (boulder_kalorien_profil_jetzt): der Median der
+  // letzten sieben Naechte (V3), wie Boulder ihn fuer Maximalpuls und Zonen nimmt.
+  return boulder_nacht_ruhepuls_median();
 }
 
 // --- Pebbles Workout-Dienst ---
@@ -72,7 +74,7 @@ static ActivitySessionType prv_typ(Sportart art) {
 bool ks_workout_starten(Sportart art, uint16_t maxpuls) {
   // Die Pulskalorien rechnen mit Boulders geprueftem Maximum (V2); boulder_kalorien_start liest
   // es beim Start unter Pebbles Sperre.
-  boulder_kalorien_maxpuls((uint8_t)MIN(maxpuls, UINT8_MAX));
+  ks_kalorien_maxpuls(maxpuls);
   if (!workout_service_start_workout(prv_typ(art))) {
     return false;
   }
@@ -82,8 +84,16 @@ bool ks_workout_starten(Sportart art, uint16_t maxpuls) {
   if (art == ArtYoga || art == ArtSchwimmen) {
     hrm_manager_set_activity_scene(HRMActivityScene_Default);
   }
-  // TODO(AP4): hier, ohne Sperre, der Velo-Merker der Variante (Spezifikation 2.5, Regel 2).
+  // SCHRITTE NUR BEIM LAUFEN UND WANDERN (V1, vom Nutzer geaendert): Am Lenker, an der Hantel, auf
+  // der Matte und im Wasser zaehlt der Schrittzaehler Bewegung, die keine Schritte sind. Die
+  // Variante laesst sie bis zum Stopp weg - aus Tagessumme, Minute und Rate (D17). Erst nach dem
+  // Start, ohne Sperre (Regel 2.5.2): der Start hat den Merker der Variante frisch gesetzt.
+  boulder_variante_training_ohne_schritte(!art_info(art)->schritte);
   return true;
+}
+
+void ks_kalorien_maxpuls(uint16_t maxpuls) {
+  boulder_kalorien_maxpuls((uint8_t)MIN(maxpuls, UINT8_MAX));
 }
 
 bool ks_workout_pause(bool an) {

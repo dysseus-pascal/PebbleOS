@@ -48,6 +48,18 @@
 // Nacht (b26: eine Stunde), dann gibt der Lebenslauf sie auf.
 #define NACHT_AUFGEBEN_TAKTE 60
 
+// V3 (Schritt 2): Ruhepuls fuer Kalorien und Maximalpuls aus so vielen Naechten.
+#define NACHT_RUHE_NAECHTE 7
+
+// Die Ruhepulse der letzten Naechte, in der Datei "boulder_v2" (Schluessel "ruhe"). Sieben
+// Byte und dazu, welche Nacht die juengste ist: Eine Nacht wird bis "endgueltig" mehrmals
+// fertig, und jede Endfassung ersetzt ihren Wert, statt einen zweiten anzuhaengen.
+typedef struct PBL_PACKED {
+  uint8_t puls[NACHT_RUHE_NAECHTE];  //< 0 = leer
+  uint8_t neu;                       //< Platz der juengsten Nacht
+  uint32_t nacht;                    //< Beginn der juengsten (Fenster + Folgenacht), 0 = keine
+} BoulderRuheRing;
+
 typedef enum {
   NachtOffen = 0,  //< Nacht laeuft (oder Folgenacht)
   NachtFertig,     //< gemeldet, kann noch wachsen
@@ -85,7 +97,17 @@ time_t boulder_nacht_fenster(void);
 // Lohnt der Ringrest? Die Nacht laeuft und hat Schlaf.
 bool boulder_nacht_rest_noetig(void);
 NachtStufe boulder_nacht_stufe(void);
+// Der Ruhepuls der letzten fertigen Nacht (Nickerchen, Kandidatin fuer Velo und Auto).
 uint8_t boulder_nacht_ruhepuls(void);
+// V3: der Median der letzten sieben Naechte wie in Boulder (Trainingsanalyse.kt
+// ruhepulsAusNaechten), abgeschnitten wie dort (52,5 -> 52); 0 = keine Nacht. Die Grenzen
+// 30..110 und den Ersatz 60 setzt, wer rechnet (kalorien.c, Kieselsports Maximalpuls).
+// ANDERS ALS BOULDER zaehlen die letzten sieben Naechte der Uhr, auch wenn eine davon mehr als
+// 14 Tage zurueckliegt (wer die Uhr eine Woche nicht traegt): Die Uhr fuehrt keine Daten dazu.
+uint8_t boulder_nacht_ruhepuls_median(void);
+// Ablage (speicher.c) und Laden nach dem Boot.
+void boulder_nacht_ruhe_ablage(BoulderRuheRing *ring);
+void boulder_nacht_ruhe_laden(const BoulderRuheRing *ring);
 
 // Diagnose: abgelehnte und gemeldete Nickerchen.
 uint16_t boulder_nacht_nickerchen_gemeldet(void);

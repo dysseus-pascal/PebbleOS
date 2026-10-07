@@ -149,10 +149,12 @@ pbl_clar_test(test_boulder_schlafkern
 # Zyklen, Live-Zustand, Nickerchen (AP3): mit der echten activity_sessions.c und der
 # Glue-Kopie (get_last_sleep_utc, post_process), Minute fuer Minute wie auf der Uhr.
 # AP4: Saetze 0x4001/0x4002 und NachtBild Byte fuer Byte wie b26, Ablage in der echten
-# settings_file.c, Neustarts und Zeitspruenge.
+# settings_file.c, Neustarts und Zeitspruenge. Schritt 2, AP4 (V3): der Ruhepuls aus sieben
+# Naechten, bis in das Profil der Pulskalorien (kalorien.c).
 pbl_clar_test(test_boulder_zyklen
   SOURCES
     ${boulder_glue_umfeld}
+    fw/services/activity/boulder/kalorien.c
     fw/services/activity/activity_sessions.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
@@ -313,11 +315,17 @@ add_test(NAME test_boulder_umzug_aufbau_gegenprobe
 
 # AP6: Velo und Auto (T5.1-T5.3, T2.3, V5-V8) mit der echten Glue-Kopie, dem echten
 # Dauerteil, der echten Nachfrage (nur Pebbles Dialog-Bibliothek als Attrappe im Test) und
-# der echten activity_sessions.c.
+# der echten activity_sessions.c. Schritt 2, AP4 (T4.1-T4.4, T5.2 Fahrt): dazu Pebbles echter
+# Workout-Dienst, wie er auf obelix und qemu_emery gebaut wird (P1 und kalorien.c), damit Start
+# und Stopp die Variante ueber D15 erreichen und Pebble die Sitzungen schliesst und speichert.
 pbl_clar_test(test_boulder_fahrt
   SOURCES
     ${boulder_glue_umfeld}
     fw/services/activity/activity_sessions.c
+    fw/services/activity/activity_calculators.c
+    fw/services/activity/hr_util.c
+    fw/services/activity/workout_service.c
+    fw/services/activity/boulder/kalorien.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
     fw/services/activity/boulder/szene.c
@@ -341,7 +349,7 @@ pbl_clar_test(test_boulder_fahrt
     fw/services/activity/boulder/nachfrage.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
-  DEFINES DUMA_DISABLED CONFIG_HRM
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT
   OVERRIDES dummy_board
   LIBS
     -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check

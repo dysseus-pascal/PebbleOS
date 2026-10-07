@@ -61,6 +61,8 @@ typedef struct PBL_PACKED {
 static time_t s_fenster;
 // AP6: eine bestaetigte, laufende Fahrt (7.3, 7.4), unabhaengig vom Nachtfenster.
 static BoulderFahrtAblage s_fahrt_datei;
+// V3 (Schritt 2): die Ruhepulse der letzten sieben Naechte, auch unabhaengig vom Nachtfenster.
+static BoulderRuheRing s_ruhe_datei;
 static BoulderKopf s_kopf_datei;
 static uint16_t s_buch_summe[BUCH_BLOECKE];
 static uint16_t s_buch_bis[BUCH_BLOECKE];
@@ -261,6 +263,12 @@ static void prv_ablage_cb(void *data) {
       settings_file_set(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {
     s_fahrt_datei = f;
   }
+  BoulderRuheRing r;
+  boulder_nacht_ruhe_ablage(&r);
+  if (memcmp(&r, &s_ruhe_datei, sizeof(r)) != 0 &&
+      settings_file_set(&datei, "ruhe", 4, &r, sizeof(r)) == S_SUCCESS) {
+    s_ruhe_datei = r;
+  }
   BoulderKopf k;
   prv_kopf(&k);
   if (memcmp(&k, &s_kopf_datei, sizeof(k)) != 0 &&
@@ -382,6 +390,13 @@ void boulder_speicher_laden(void) {
     s_fahrt_datei = f;
     boulder_kontext_laden(&f);
   }
+  // DIE RUHEPULSE GELTEN UEBER DAS FENSTER HINAUS (V3): Laden vor der Nacht, die sie fuellt.
+  BoulderRuheRing r;
+  if (settings_file_get_len(&datei, "ruhe", 4) == (int)sizeof(r) &&
+      settings_file_get(&datei, "ruhe", 4, &r, sizeof(r)) == S_SUCCESS) {
+    boulder_nacht_ruhe_laden(&r);
+    boulder_nacht_ruhe_ablage(&s_ruhe_datei);
+  }
   BoulderKopf k;
   bool kopf = settings_file_get_len(&datei, "kopf", 4) == (int)sizeof(k) &&
               settings_file_get(&datei, "kopf", 4, &k, sizeof(k)) == S_SUCCESS &&
@@ -422,6 +437,7 @@ void boulder_speicher_test_neustart(void) {
   prv_neues_fenster(0);
   memset(&s_kopf_datei, 0, sizeof(s_kopf_datei));
   memset(&s_fahrt_datei, 0, sizeof(s_fahrt_datei));
+  memset(&s_ruhe_datei, 0, sizeof(s_ruhe_datei));
   s_alles = false;
   s_aufgabe_ablage.steht_an = false;
 }

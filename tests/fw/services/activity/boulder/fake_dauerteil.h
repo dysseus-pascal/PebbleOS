@@ -15,6 +15,7 @@ typedef struct {
   time_t fahrt_offen_seit;      //< D3
   time_t fahrt_von, fahrt_bis;  //< bestaetigte Fahrt [von, bis), D3
   bool fahrt_laeuft;            //< D5
+  bool training_ohne_schritte;  //< D17
   bool ueberdeckt;              //< D1
   bool ring_an;                 //< D14
   time_t ring_von, ring_bis;

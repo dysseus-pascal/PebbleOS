@@ -21,6 +21,7 @@
 #include <pbl/cron/cron.h>
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/eingang.h"
+#include "pbl/services/activity/boulder/kalorien.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/nacht_satz.h"
 #include "pbl/services/activity/boulder/puls.h"
@@ -171,6 +172,19 @@ void hrm_manager_set_activity_scene(HRMActivityScene scene) {
 }
 bool activity_prefs_hrm_activity_tracking_is_enabled(void) {
   return true;
+}
+// Das Profil der Pulskalorien (kalorien.c, V3): nur der Ruhepuls kommt aus der Variante.
+uint16_t activity_prefs_get_weight_dag(void) {
+  return 7000;
+}
+uint8_t activity_prefs_get_age_years(void) {
+  return 41;
+}
+ActivityGender activity_prefs_get_gender(void) {
+  return ActivityGenderMale;
+}
+bool workout_service_stop_workout(void) {
+  return false;
 }
 
 // DLS: Tag 84 (Sitzungen), 0x4001 und 0x4002 werden mitgeschrieben; die Minutensaetze der Kopie
@@ -615,6 +629,66 @@ void test_boulder_zyklen__naechte(void) {
   }
   printf("\n");
   cl_assert_equal_i(unter_95, 0);
+}
+
+// V3 (Schritt 2): Der Ruhepuls fuer Kalorien und Maximalpuls ist der Median der letzten sieben
+// Naechte wie in Boulder (Trainingsanalyse.kt ruhepulsAusNaechten), nicht die letzte Nacht. Fuenf
+// Referenznaechte hintereinander, nach der dritten ein Neustart. Ihre Ruhepulse (Satz 0x4001 von
+// b26, Byte 18): 52, 55, 54, 51, 55. Der Median nach jeder Nacht, von Hand: 52; 53,5 -> 53
+// (abgeschnitten wie Boulders toInt); 54; 53; 54. Das Profil der Pulskalorien rechnet damit.
+static void prv_neustart(int m, int ab_unterwegs);
+void test_boulder_zyklen__ruhepuls_aus_sieben_naechten(void) {
+  static const uint8_t soll[] = {52, 53, 54, 53, 54};
+  cl_assert_equal_i(boulder_nacht_ruhepuls_median(), 0);
+  for (int k = 0; k < 5; k++) {
+    prv_lade(s_naechte[k]);
+    prv_durch(20 * 60, MINUTEN);
+    printf("\n%s: Ruhepuls %d, Median %d", s_naechte[k], boulder_nacht_ruhepuls(),
+           boulder_nacht_ruhepuls_median());
+    cl_assert_equal_i(boulder_nacht_ruhepuls(), s_ref.satz.ruhepuls);
+    cl_assert_equal_i(boulder_nacht_ruhepuls_median(), soll[k]);
+    BoulderKalorienProfil profil;
+    cl_assert(boulder_kalorien_profil_jetzt(&profil));
+    cl_assert_equal_i(profil.ruhe_z, 10 * soll[k]);
+    if (k == 2) {
+      // Die Naechte stehen in boulder_v2 ("ruhe") und kommen mit "Laden" zurueck.
+      prv_neustart(20 * 60 - 1, MINUTEN);
+      cl_assert_equal_i(boulder_nacht_ruhepuls_median(), soll[k]);
+    }
+  }
+  // Die fuenfte Nacht noch einmal fertig (spaetere Endfassung derselben Nacht): ihr Wert wird
+  // ersetzt, nicht ein sechster angehaengt.
+  BoulderRuheRing ring;
+  boulder_nacht_ruhe_ablage(&ring);
+  int naechte = 0;
+  for (int i = 0; i < NACHT_RUHE_NAECHTE; i++) {
+    naechte += ring.puls[i] != 0;
+  }
+  cl_assert_equal_i(naechte, 5);
+  printf("\n");
+}
+
+// V3: Sieben Naechte, nicht mehr - die achte verdraengt die aelteste. Vorher lagen sieben Naechte
+// mit 70 in der Datei; nach jeder neuen faellt eine 70 weg. Median von Hand: 70, 70, 70, dann
+// (51 52 54 55 70 70 70) 55 und (51 52 54 55 55 70 70) 55.
+void test_boulder_zyklen__ruhepuls_achte_nacht_verdraengt_die_aelteste(void) {
+  static const uint8_t soll[] = {70, 70, 70, 55, 55};
+  BoulderRuheRing alt = { .neu = 6, .nacht = 1790000000 };
+  memset(alt.puls, 70, sizeof(alt.puls));
+  boulder_nacht_ruhe_laden(&alt);
+  cl_assert_equal_i(boulder_nacht_ruhepuls_median(), 70);
+  for (int k = 0; k < 5; k++) {
+    prv_lade(s_naechte[k]);
+    prv_durch(20 * 60, MINUTEN);
+    cl_assert_equal_i(boulder_nacht_ruhepuls_median(), soll[k]);
+  }
+  BoulderRuheRing ring;
+  boulder_nacht_ruhe_ablage(&ring);
+  int siebziger = 0;
+  for (int i = 0; i < NACHT_RUHE_NAECHTE; i++) {
+    siebziger += ring.puls[i] == 70;
+  }
+  cl_assert_equal_i(siebziger, 2);
 }
 
 // T3.5 (ohne Neustarts): 40 Morgen mit zufaelligem Aufstehen zwischen 04:00 und 09:00 -

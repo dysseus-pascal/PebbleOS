@@ -26,6 +26,10 @@
 // laeuft auf KernelMain (nachfrage.c), ihre Antwort holt der Takt ab, falls ihr Callback
 // wegfiel. Die Naht D3-D5, D10 und D15 fragt kontext.c. Waehrend eines Trainings sind die
 // Minuten fuer die Nacht ungueltig (2.6).
+//
+// STAND SCHRITT 2, AP4: Training ohne Schritte (D17, V1), die Fahrt endet am Trainingsstart,
+// nach dem Training beginnt der Ring der Kandidatin neu, Pulskalorien der Velofahrt (F7) - alles
+// in kontext.c.
 
 #include "pbl/services/activity/boulder/variante.h"
 
@@ -268,6 +272,14 @@ bool boulder_dauerteil_fahrt_minute(time_t minute_utc) {
 
 bool boulder_dauerteil_fahrt_laeuft(void) {
   return boulder_kontext_fahrt_laeuft();
+}
+
+bool boulder_dauerteil_training_ohne_schritte(void) {
+  return boulder_kontext_training_ohne_schritte_laeuft();
+}
+
+void boulder_variante_training_ohne_schritte(bool ohne) {
+  boulder_kontext_training_ohne_schritte(ohne);
 }
 
 bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s) {

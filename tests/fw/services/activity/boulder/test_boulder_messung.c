@@ -64,6 +64,7 @@ static struct {
   HRMFeature merkmale;
   int einschalten;     //< aus -> an
   RtcTicks an_seit;
+  uint8_t bpm;         //< 0 = 55
 } s_sensor;
 
 bool hrm_enable(HRMDevice *dev, HRMFeature features, bool low_latency) {
@@ -238,6 +239,22 @@ void boulder_dauerteil_hrv_fenster(time_t beginn_utc, uint16_t rmssd, uint8_t pu
 
 extern HRMSubscriberState *prv_get_subscriber_state_from_ref(HRMSessionRef session);
 
+// F7 (Schritt 2): die Sekundenwerte an die Pulskalorien der Velofahrt (kontext.c).
+static struct {
+  int anzahl;
+  uint8_t bpm;
+  time_t erste;
+  time_t letzte;
+} s_fahrt_puls;
+void boulder_kontext_puls(uint8_t bpm, time_t utc) {
+  if (!s_fahrt_puls.anzahl) {
+    s_fahrt_puls.erste = utc;
+  }
+  s_fahrt_puls.anzahl++;
+  s_fahrt_puls.bpm = bpm;
+  s_fahrt_puls.letzte = utc;
+}
+
 // =============================================================================================
 // Ablauf
 
@@ -287,7 +304,7 @@ static void prv_sekunde(uint16_t ppi_ms) {
     const bool eingeschwungen = (rtc_get_ticks() - s_sensor.an_seit) >= 15 * RTC_TICKS_HZ;
     HRMData d = {
       .features = s_sensor.merkmale & (HRMFeature_BPM | HRMFeature_HRV),
-      .hrm_bpm = 55,
+      .hrm_bpm = s_sensor.bpm ? s_sensor.bpm : 55,
       .hrm_quality = eingeschwungen ? HRMQuality_Good : HRMQuality_Poor,
       .hrv_ppi_ms = ppi_ms,
       .hrv_quality = HRMQuality_Good,
@@ -344,6 +361,7 @@ void test_boulder_messung__initialize(void) {
   memset(&s_wecker, 0, sizeof(s_wecker));
   memset(&s_activity, 0, sizeof(s_activity));
   memset(&s_fenster, 0, sizeof(s_fenster));
+  memset(&s_fahrt_puls, 0, sizeof(s_fahrt_puls));
   s_puls_an = true;
   s_puls_bei_aktivitaet = true;
   s_spo2_an = false;
@@ -618,6 +636,42 @@ void test_boulder_messung__aktiv_abo_velo(void) {
   prv_minuten(2);
   cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
   cl_assert_equal_i(boulder_puls_abo(), abo);
+}
+
+// F7 (Schritt 2, T5.2): Jeder gute Sekundenwert des Abos "Aktiv" geht an die Pulskalorien der
+// Velofahrt, ueber den echten Manager. Werte unter "Acceptable" (der Sensor schwingt 15 s ein)
+// und ausserhalb 40..200 nicht, und ohne "Aktiv" (Nachtpuls, HRV-Fenster) keiner.
+void test_boulder_messung__aktiv_abo_gibt_die_sekunden_an_die_fahrt(void) {
+  prv_start(5);
+  prv_minuten(20);  // Stufe 5: Nachtpuls jede Minute, zwei HRV-Fenster - BPM ohne "Aktiv"
+  cl_assert(s_sensor.einschalten > 0);
+  cl_assert_equal_i(s_fahrt_puls.anzahl, 0);
+  s_nachtruhe = false;
+  prv_minuten(1);
+  cl_assert(!s_sensor.an);
+  boulder_puls_aktiv(true);
+  prv_kernel_bg();
+  const time_t an = rtc_get_time();
+  s_sensor.bpm = 131;
+  prv_minuten(5);
+  // 300 Sekunden; die ersten 14 nach dem Einschalten im Anlauf (Poor), ab der 15. gut: 286
+  // Werte, jeder mit seiner Zeit.
+  cl_assert_equal_i(s_fahrt_puls.anzahl, 5 * 60 - 14);
+  cl_assert_equal_i(s_fahrt_puls.bpm, 131);
+  cl_assert_equal_i(s_fahrt_puls.erste, an + 15);
+  cl_assert_equal_i(s_fahrt_puls.letzte, rtc_get_time());
+  // Ausserhalb von Pebbles Grenzen (activity.c): keiner.
+  const int bisher = s_fahrt_puls.anzahl;
+  s_sensor.bpm = 201;
+  prv_minuten(1);
+  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher);
+  s_sensor.bpm = 200;
+  prv_minuten(1);
+  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher + 60);
+  boulder_puls_aktiv(false);
+  prv_kernel_bg();
+  prv_minuten(2);
+  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher + 60);
 }
 
 // =============================================================================================

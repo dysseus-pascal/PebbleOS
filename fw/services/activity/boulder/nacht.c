@@ -11,6 +11,8 @@
 #include "pbl/services/activity/boulder/zyklen.h"
 #include <pbl/logging/logging.h>
 
+#include <string.h>
+
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 static time_t s_beginn;          //< Minute 0 des Fensters, 0 = keins
@@ -32,6 +34,8 @@ static uint16_t s_alt_ab;
 static uint16_t s_alt_auf;
 static uint16_t s_alt_fest;
 static uint16_t s_aufgeben;  //< Takte am Fensterende mit einer nicht ganz geschickten Nacht
+// V3: die Ruhepulse der letzten sieben Naechte (Kalorien, Maximalpuls).
+static BoulderRuheRing s_ruhe;
 
 void boulder_nacht_zuruecksetzen(void) {
   s_beginn = 0;
@@ -51,10 +55,21 @@ void boulder_nacht_zuruecksetzen(void) {
   s_alt_auf = 0;
   s_alt_fest = 0;
   s_aufgeben = 0;
+  memset(&s_ruhe, 0, sizeof(s_ruhe));
   boulder_eingang_neu();
   boulder_nachlauf_neu(0, 0);
   boulder_live_neu();
   boulder_zyklen_zuruecksetzen();
+}
+
+// V3: der Ruhepuls der Nacht ab `nacht`. Dieselbe Nacht ersetzt ihren Wert (jede Endfassung bis
+// "endgueltig"), eine neue verdraengt die aelteste.
+static void prv_ruhe_merken(time_t nacht, uint8_t puls) {
+  if (s_ruhe.nacht != (uint32_t)nacht) {
+    s_ruhe.neu = (uint8_t)((s_ruhe.neu + 1) % NACHT_RUHE_NAECHTE);
+    s_ruhe.nacht = (uint32_t)nacht;
+  }
+  s_ruhe.puls[s_ruhe.neu] = puls;
 }
 
 static void prv_fenster_neu(time_t beginn) {
@@ -170,6 +185,9 @@ static void prv_nacht_takt(void) {
     s_stufe = NachtFertig;
     s_fertig_auf = s_ab + e->aufwachen;
     s_ruhepuls = e->ruhepuls ? e->ruhepuls : s_ruhepuls;
+    if (e->ruhepuls) {
+      prv_ruhe_merken(satz_beginn, e->ruhepuls);
+    }
     boulder_zyklen_fertig(s_fertig_auf);
     // Wie b26: nur wenn Beginn, Aufwachen oder Schlaf neu sind.
     if (boulder_ausgabe_noetig(satz_beginn, e->aufwachen, e->schlaf_minuten)) {
@@ -305,6 +323,40 @@ NachtStufe boulder_nacht_stufe(void) {
 
 uint8_t boulder_nacht_ruhepuls(void) {
   return s_ruhepuls;
+}
+
+uint8_t boulder_nacht_ruhepuls_median(void) {
+  uint8_t werte[NACHT_RUHE_NAECHTE];
+  int n = 0;
+  for (int i = 0; i < NACHT_RUHE_NAECHTE; i++) {
+    const uint8_t p = s_ruhe.puls[i];
+    if (!p) {
+      continue;
+    }
+    // Einfuegen sortiert: hoechstens sieben Werte.
+    int k = n++;
+    while (k > 0 && werte[k - 1] > p) {
+      werte[k] = werte[k - 1];
+      k--;
+    }
+    werte[k] = p;
+  }
+  if (!n) {
+    return 0;
+  }
+  // Bei gerader Zahl das Mittel der beiden mittleren, abgeschnitten wie Boulders toInt().
+  return (n % 2) ? werte[n / 2] : (uint8_t)((werte[n / 2 - 1] + werte[n / 2]) / 2);
+}
+
+void boulder_nacht_ruhe_ablage(BoulderRuheRing *ring) {
+  *ring = s_ruhe;
+}
+
+void boulder_nacht_ruhe_laden(const BoulderRuheRing *ring) {
+  if (ring->neu >= NACHT_RUHE_NAECHTE) {
+    return;
+  }
+  s_ruhe = *ring;
 }
 
 uint16_t boulder_nacht_nickerchen_gemeldet(void) {

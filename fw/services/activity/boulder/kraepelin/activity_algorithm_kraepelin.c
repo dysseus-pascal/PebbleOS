@@ -1151,6 +1151,15 @@ void activity_algorithm_handle_accel(AccelRawData *data, uint32_t num_samples,
   uint32_t consumed_samples;
   uint16_t new_steps =
       kalg_analyze_samples(s_alg_state->k_state, data, num_samples, &consumed_samples);
+  /* Boulder: D17 Training ohne Schritte (Schritt 2, V1: alle Arten ausser Laufen und Wandern)
+   * Am Lenker, an der Hantel, auf der Matte und im Wasser zaehlt Kraepelin Bewegung, die keine
+   * Schritte sind. Sie gehen nirgends hin: nicht in die Tagessumme, nicht in die Minute (DLS
+   * 81, Minutendatei), die Rate ist 0 - ohne Rate bucht activity.c weder Strecke noch kcal.
+   * Anders als D5 braucht die Minute sie nicht: Im Training gibt es keine Fahrt zu erkennen. */
+  if (boulder_dauerteil_training_ohne_schritte()) {
+    new_steps = 0;
+  }
+  /* Boulder: Ende D17 */
   /* Boulder: D5 waehrend einer bestaetigten Fahrt zaehlen Schritte nicht
    * Sie gehen an der Tagessumme vorbei, die Rate ist 0 - ohne Rate bucht activity.c weder
    * Strecke noch kcal (activity.c:1131-1141). In der Minute bleiben sie: der Dauerteil
@@ -1423,9 +1432,10 @@ bool activity_algorithm_metrics_changed_notification(void) {
 
 // ------------------------------------------------------------------------------------
 void activity_algorithm_enable_activity_tracking(bool enable) {
-  /* Boulder: D15 ein Training (workout_service.c:485, :584) beendet Kandidatin und
-   * Velo-Sitzung, seine Minuten zaehlen nicht fuer die Nacht; nur ein Merker, O(1) - der
-   * Aufruf kommt von der App-Task */
+  /* Boulder: D15 ein Training (workout_service.c:500, :605) beendet Kandidatin und
+   * Velo-Sitzung, seine Minuten zaehlen nicht fuer die Nacht; nur Merker und Zeit, O(1), ohne
+   * Sperre - der Aufruf kommt unter Pebbles Workout-Sperre, von der App-Task (Pebbles
+   * Workout-App) oder von KernelBG (Kieselsport) */
   boulder_dauerteil_training(!enable);
   /* Boulder: Ende D15 */
   if (!activity_tracking_on()) {
