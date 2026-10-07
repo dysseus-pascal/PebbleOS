@@ -61,7 +61,9 @@ BoulderLauf boulder_aufgabe_beginnt(BoulderAufgabe *aufgabe);
 void boulder_aufgabe_endet(BoulderLauf *lauf);
 
 // Die gemessenen Arbeiten in der Reihenfolge ihres ersten Laufs (fuer Diagnose und Shell).
-#define BOULDER_MESSUNG_MAX 24
+// Mit Kieselsport je Befehl, Pulsrueckruf und Beschleunigung (AP7) sind es 24 Namen, so viele
+// wie bisher Platz hatten - also mit Luft, denn was nicht mehr in die Liste passt, misst niemand.
+#define BOULDER_MESSUNG_MAX 32
 int boulder_messung_liste(BoulderAufgabe *const **liste);
 
 // Der ganze Minutenteil (Kopie und Variante, D16 in der Kopie): nur gemessen.

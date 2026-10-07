@@ -106,3 +106,8 @@ uint8_t ks_akku_prozent(bool *am_kabel);
 // Die App nach vorn holen, damit sie eine wartende Zusammenfassung schickt - nur vom Zifferblatt
 // aus, nie ueber eine andere App.
 void ks_app_holen(void);
+
+#if UNITTEST
+// Ein Neustart: Anmeldungen am Sensor und an der Beschleunigung sind weg (kieselsport_test_neustart).
+void ks_plattform_test_neustart(void);
+#endif

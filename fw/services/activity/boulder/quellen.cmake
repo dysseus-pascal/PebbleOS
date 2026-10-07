@@ -47,4 +47,8 @@ if(CONFIG_BOULDER_PRUEFLAUF)
     boulder/prueflauf.c
     boulder/prueflauf_daten.c
   )
+  # Kieselsport im Pruefbau (Schritt 2, AP7): Shell-Befehle und der Puls wie vom Sensor.
+  if(CONFIG_BOULDER_KIESELSPORT)
+    pbl_library_sources(boulder/prueflauf_sport.c)
+  endif()
 endif()

@@ -91,7 +91,13 @@ static uint32_t s_bestellt_beginn;
 #define STOPP_NACH_S 30
 static time_t s_stopp_um;
 
-static BoulderAufgabe s_messung_befehl = BOULDER_AUFGABE("Kieselsport Befehl", NULL);
+// JE BEFEHL EINE MESSUNG (Kriterium 7, T7.1): Das Speichern schreibt Zusammenfassung und Kurve in
+// den Persist, der Start ruft Pebbles Start mit Szene und Variante - unter einem gemeinsamen Namen
+// stuende nur der laengste da, und niemand wuesste, welcher es war.
+static BoulderAufgabe s_messung_start = BOULDER_AUFGABE("Kieselsport Start", NULL);
+static BoulderAufgabe s_messung_pause = BOULDER_AUFGABE("Kieselsport Pause", NULL);
+static BoulderAufgabe s_messung_speichern = BOULDER_AUFGABE("Kieselsport Speichern", NULL);
+static BoulderAufgabe s_messung_verwerfen = BOULDER_AUFGABE("Kieselsport Verwerfen", NULL);
 
 // --- Brummen ---
 //
@@ -419,7 +425,7 @@ static void prv_stopp_merken(void) {
 }
 
 static void prv_starte(void *daten) {
-  BOULDER_AUFGABE_LAEUFT(&s_messung_befehl);
+  BOULDER_AUFGABE_LAEUFT(&s_messung_start);
   kieselsport_init();
   // Der Ruhepuls kommt aus der Variante: ohne Sperre lesen (Regel 2.5.2).
   const uint8_t ruhe = ks_ruhepuls();
@@ -479,7 +485,7 @@ static void prv_starte(void *daten) {
 }
 
 static void prv_pause(void *daten) {
-  BOULDER_AUFGABE_LAEUFT(&s_messung_befehl);
+  BOULDER_AUFGABE_LAEUFT(&s_messung_pause);
   ks_sperren();
   const Laufzustand z = training_zustand();
   ks_entsperren();
@@ -568,12 +574,12 @@ static void prv_speichern_aus(Anlass anlass) {
 }
 
 static void prv_speichern(void *daten) {
-  BOULDER_AUFGABE_LAEUFT(&s_messung_befehl);
+  BOULDER_AUFGABE_LAEUFT(&s_messung_speichern);
   prv_speichern_aus(AnlassTaste);
 }
 
 static void prv_verwerfen(void *daten) {
-  BOULDER_AUFGABE_LAEUFT(&s_messung_befehl);
+  BOULDER_AUFGABE_LAEUFT(&s_messung_verwerfen);
   bool verworfen = false;
   ks_sperren();
   if (training_zustand() != LaufAus) {
@@ -868,9 +874,30 @@ bool kieselsport_kurve_zeiten(uint32_t sekunden[KS_ZONEN + 1]) {
 #if UNITTEST
 // Ein Neustart der Uhr: das RAM des Dienstes ist weg (auch ein ausstehender Stopp, V4), das
 // naechste kieselsport_init liest wieder alles aus dem Persist.
+// AUCH MITTEN IM TRAINING (AP7, T7.3): Das Training ist dann einfach weg - wie verworfen, aber
+// ohne Stopp im Persist (training_verwerfen schreibt nichts). Ebenso der Schnappschuss, die
+// Merker der Zeitgeber und der eingereihten Aufgaben: Bliebe ein "steht an" aus der Zeit vor dem
+// Neustart stehen, reihte der Takt nie wieder ein - das gaebe es auf der Uhr nicht.
 void kieselsport_test_neustart(void) {
   s_gestartet = false;
   s_einstellungen_da = false;
   s_stopp_um = 0;
+  if (training_zustand() != LaufAus) {
+    training_verwerfen();
+  }
+  s_stand = (KsStand){0};
+  s_letzte_zone = -1;
+  memset(s_minute, 0, sizeof(s_minute));
+  s_sekunde_der_minute = 0;
+  s_takt = (RegularTimerInfo){0};
+  s_ende = KsEndeKeins;
+  s_ende_nr = 0;
+  s_pause_s = 0;
+  s_nachsenden_takt = (RegularTimerInfo){0};
+  s_nachsenden_versuch = 0;
+  s_nachsenden_minuten = 0;
+  s_aufgabe_takt.steht_an = false;
+  s_aufgabe_nachsenden.steht_an = false;
+  ks_plattform_test_neustart();
 }
 #endif

@@ -204,6 +204,22 @@ static void prv_glied(void *data) {
   prv_weiter();
 }
 
+bool boulder_prueflauf_ballast(void) {
+  static bool s_versucht;
+  if (s_versucht) {
+    return s_ballast != NULL;
+  }
+  s_versucht = true;
+  const size_t gesamt = heap_size(kernel_heap_get());
+  const size_t ziel = CONFIG_BOULDER_PRUEFLAUF_HEAP;
+  if (gesamt > ziel) {
+    s_ballast = kernel_malloc(gesamt - ziel);
+  }
+  PBL_LOG_INFO("Boulder Pruefbau: Heap %u B, Ballast %u B (%s), Ziel %u B", (unsigned)gesamt,
+               (unsigned)(gesamt - ziel), s_ballast ? "geholt" : "FEHLT", (unsigned)ziel);
+  return s_ballast != NULL;
+}
+
 // Vorbereitung einmal je Boot, in einem eigenen Callback (die Datei zu fuellen dauert).
 static void prv_vorbereiten(void) {
   if (s_vorbereitet) {
@@ -213,13 +229,7 @@ static void prv_vorbereiten(void) {
   if (!s_wieder) {
     s_wieder = new_timer_create();
   }
-  const size_t gesamt = heap_size(kernel_heap_get());
-  const size_t ziel = CONFIG_BOULDER_PRUEFLAUF_HEAP;
-  if (gesamt > ziel) {
-    s_ballast = kernel_malloc(gesamt - ziel);
-  }
-  PBL_LOG_INFO("Boulder Pruefbau: Heap %u B, Ballast %u B (%s), Ziel %u B", (unsigned)gesamt,
-               (unsigned)(gesamt - ziel), s_ballast ? "geholt" : "FEHLT", (unsigned)ziel);
+  boulder_prueflauf_ballast();
   if (!activity_algorithm_test_fill_minute_file()) {
     PBL_LOG_WRN("Boulder Pruefbau: Minutendatei nicht gefuellt");
   }

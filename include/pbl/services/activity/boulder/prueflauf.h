@@ -51,6 +51,10 @@ extern const PrueflaufNacht g_boulder_prueflauf_naechte[PRUEFLAUF_NAECHTE];
 // Shell (KernelBG): Rueckgabe false, wenn `nr` unbekannt ist oder ein Lauf laeuft.
 bool boulder_prueflauf_starten(int nr);
 
+// Den Ballast holen, einmal je Boot (KernelBG). Ihn brauchen die Pruefnaechte und das lange
+// Training von Kieselsport (Schritt 2, T7.5). false: Er fehlt, der Heap ist groesser als auf obelix.
+bool boulder_prueflauf_ballast(void);
+
 // Naht im Dauerteil (dauerteil.c, nur im Pruefbau): echte Minuten und Cron-Takt sperren,
 // eine Pruefminute durchreichen, das Nachtfenster einer Zeit.
 void boulder_dauerteil_prueflauf(bool laeuft);

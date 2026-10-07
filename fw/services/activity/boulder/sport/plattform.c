@@ -166,7 +166,12 @@ static HRMSessionRef s_puls = HRM_INVALID_SESSION_REF;
 
 // KernelBG, unter der Sperre des HRM-Managers (hrm_manager.c:458-534). Darum hier nur die Sperre
 // des Dienstes und kein workout_service_*, und kein An- oder Abmelden.
+// GEMESSEN (Kriterium 7): Im Training kommt das jede Sekunde, und so lange haelt der HRM-Manager
+// seine Sperre; Activitys Abo und der Treiber mit dem naechsten Wert warten darauf.
+static BoulderAufgabe s_messung_puls = BOULDER_AUFGABE("Kieselsport Puls", NULL);
+
 static void prv_puls_ereignis(PebbleHRMEvent *e, void *context) {
+  BOULDER_AUFGABE_LAEUFT(&s_messung_puls);
   ks_sperren();
   if (e->event_type == HRMEvent_BPM) {
     puls_ereignis_bpm(e->bpm.bpm, (int8_t)e->bpm.quality);
@@ -200,7 +205,11 @@ void ks_puls_sensor(uint16_t takt_s, bool hrv) {
 
 static AccelServiceState *s_accel;
 
+// Beim Kraft zweieinhalbmal je Sekunde, so lange das Training laeuft (Kriterium 7).
+static BoulderAufgabe s_messung_accel = BOULDER_AUFGABE("Kieselsport Accel", NULL);
+
 static void prv_accel_daten(AccelData *daten, uint32_t anzahl) {
+  BOULDER_AUFGABE_LAEUFT(&s_messung_accel);
   KsAccel stueck[10];
   while (anzahl > 0) {
     const uint32_t n = MIN(anzahl, ARRAY_LENGTH(stueck));
@@ -291,3 +300,10 @@ void ks_app_holen(void) {
     .common.reason = APP_LAUNCH_WORKER,
   });
 }
+
+#if UNITTEST
+void ks_plattform_test_neustart(void) {
+  s_puls = HRM_INVALID_SESSION_REF;
+  s_accel = NULL;
+}
+#endif

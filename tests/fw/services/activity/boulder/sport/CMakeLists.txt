@@ -72,6 +72,16 @@ pbl_clar_test(test_kieselsport
   OVERRIDES dummy_board
 )
 
+# T7.3 (AP7): Zufallsfolgen im selben Umfeld (kieselsport_umfeld.h), ohne DUMA: Der Sekundentakt
+# reiht jede Sekunde einen Callback ein, und die Folgen haben ueber hundert Stunden. Mit DUMA
+# dauerte das minutenlang (jede Allokation auf eigenen Seiten); geprueft wird hier der Ablauf.
+pbl_clar_test(test_kieselsport_folgen
+  SOURCES ${kieselsport_dienst} ${kieselsport_workout_dienst}
+    fw/services/activity/activity_sessions.c
+  DEFINES CONFIG_HRM CONFIG_MAG CONFIG_BOULDER_KIESELSPORT DUMA_DISABLED
+  OVERRIDES dummy_board
+)
+
 # Der Persist von Kieselsport ueber der Datei der Uhr: Fehler beim Lesen, Schreiben und Loeschen
 # muessen im Log stehen (aus b25).
 pbl_clar_test(test_kieselsport_speicher
