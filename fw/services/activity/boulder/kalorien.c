@@ -5,9 +5,11 @@
 
 #include "pbl/services/activity/boulder/kalorien.h"
 
+#include "pbl/kernel/mutex.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/workout_service.h"
 #include "pbl/util/math.h"
+#include "pbl/util/testing.h"
 
 // Boulders Grenzen (B: Trainingsanalyse.kt:99-104, :136-142)
 #define RUHEPULS_MIN 30
@@ -171,10 +173,26 @@ int32_t boulder_kalorien_zaehler_summe(const BoulderKalorienZaehler *z, int32_t 
 // Das Training
 
 static BoulderKalorienZaehler s_training;
+// EINE EIGENE SPERRE FUER DEN ZAEHLER DES TRAININGS. Pebble schreibt ihn unter seiner
+// Workout-Sperre (Puls und Schritte auf KernelMain), Kieselsports Takt liest ihn auf KernelBG ohne
+// sie (boulder_kalorien_bisher). KernelMain hat die hoehere Prioritaet und kann die Kopie
+// mittendrin unterbrechen: Dann kaeme ein halb alter, halb neuer Stand heraus (anteil_s hat
+// 64 Bit, dazu stand_s und puls_s), ein falscher Wert in der Anzeige und - wenn Pebble das
+// Training selbst beendet - in der Zusammenfassung. Ein Blatt: Unter ihr wird nichts gerufen,
+// was eine weitere Sperre nimmt; das Profil liest boulder_kalorien_start vorher.
+PBL_T_STATIC PBL_MUTEX_DEFINE(s_kalorien_sperre);
 static uint8_t s_maxpuls;
 // Nur waehrend boulder_training_verwerfen() den Stopp ruft. So haengt der Merker an genau
 // diesem Stopp und kann kein spaeteres Training treffen.
 static volatile bool s_verwerfen;
+
+static void prv_sperren(void) {
+  pbl_mutex_lock(&s_kalorien_sperre, PBL_FOREVER);
+}
+
+static void prv_entsperren(void) {
+  pbl_mutex_unlock(&s_kalorien_sperre);
+}
 
 void boulder_kalorien_maxpuls(uint8_t bpm) {
   s_maxpuls = bpm;
@@ -193,23 +211,40 @@ void boulder_kalorien_start(void) {
   // laufende Training weiter mit dem alten, wie Boulder mit dem Profil vor dem Training.
   BoulderKalorienProfil profil;
   boulder_kalorien_profil_jetzt(&profil);
+  prv_sperren();
   boulder_kalorien_zaehler_neu(&s_training, &profil);
+  prv_entsperren();
 }
 
 int32_t boulder_kalorien_puls(uint8_t bpm, int32_t aktiv_s) {
-  return boulder_kalorien_zaehler_puls(&s_training, bpm, aktiv_s);
+  prv_sperren();
+  const int32_t zuwachs = boulder_kalorien_zaehler_puls(&s_training, bpm, aktiv_s);
+  prv_entsperren();
+  return zuwachs;
 }
 
 int32_t boulder_kalorien_schritte(int32_t cal, int32_t aktiv_s) {
-  return boulder_kalorien_zaehler_schritte(&s_training, cal, aktiv_s);
+  prv_sperren();
+  const int32_t zuwachs = boulder_kalorien_zaehler_schritte(&s_training, cal, aktiv_s);
+  prv_entsperren();
+  return zuwachs;
 }
 
 int32_t boulder_kalorien_ende(int32_t aktiv_s) {
-  return boulder_kalorien_zaehler_bis(&s_training, aktiv_s);
+  prv_sperren();
+  const int32_t zuwachs = boulder_kalorien_zaehler_bis(&s_training, aktiv_s);
+  prv_entsperren();
+  return zuwachs;
 }
 
 int32_t boulder_kalorien_bisher(int32_t aktiv_s) {
-  return boulder_kalorien_zaehler_summe(&s_training, aktiv_s);
+  // Unter der Sperre nur die Kopie, gerechnet wird danach: So wartet KernelMain nicht auf die
+  // Division in 64 Bit.
+  prv_sperren();
+  BoulderKalorienZaehler kopie = s_training;
+  prv_entsperren();
+  prv_verbuchen(&kopie, aktiv_s);
+  return prv_summe(&kopie);
 }
 
 // ---------------------------------------------------------------------------------------

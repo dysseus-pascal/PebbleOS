@@ -5,8 +5,11 @@
 
 #include "pbl/services/activity/boulder/kalorien.h"
 
+#include "pbl/kernel/mutex.h"
+
 #include "stubs_logging.h"
 
+#include <setjmp.h>
 #include <stdlib.h>
 
 // T5.1 (Spezifikation Schritt 2, 6.1): kalorien.c gegen Boulders Rechnung. Die Sollwerte stammen
@@ -36,6 +39,65 @@ bool workout_service_stop_workout(void) {
   s_verworfen_im_stopp = boulder_training_verworfen();
   return s_stopp_ergebnis;
 }
+
+// ---------------------------------------------------------------------------------------
+// Die Sperre des Zaehlers, mit zwei Tasks
+//
+// Pebble schreibt den Zaehler des Trainings auf KernelMain, Kieselsports Takt liest ihn auf
+// KernelBG. KernelMain hat die hoehere Prioritaet und kann KernelBG mitten im Lesen unterbrechen.
+// Der Test laeuft in einem Faden; die Attrappe laesst KernelMain im schlimmsten Moment dran:
+// sobald KernelBG die Sperre haelt, also mitten in der Kopie. Greift KernelMain dann zur selben
+// Sperre, muesste es warten: Sein Aufruf springt zurueck (longjmp, vor jeder Wirkung) und laeuft,
+// sobald KernelBG freigibt, von vorn - wie nach dem Warten.
+
+typedef enum { AufKernelBG, AufKernelMain } Task;
+static Task s_task;
+static struct pbl_mutex *s_gesperrt;  //< kalorien.c hat eine Sperre
+static Task s_halter;
+static int s_tiefe;
+static void (*s_kernel_main)(void);  //< kommt dran, sobald KernelBG sperrt
+static bool s_kernel_main_wartet;
+static int s_unterbrochen;
+static jmp_buf s_warten;
+
+static void prv_kernel_main_laeuft(void) {
+  s_task = AufKernelMain;
+  if (setjmp(s_warten) == 0) {
+    s_kernel_main();
+    s_kernel_main = NULL;
+  }
+  s_task = AufKernelBG;
+}
+
+void pbl_mutex_init(struct pbl_mutex *m) {}
+void pbl_mutex_deinit(struct pbl_mutex *m) {}
+int pbl_mutex_lock_lr(struct pbl_mutex *m, pbl_timeout_t timeout, uintptr_t lr) {
+  cl_assert(!s_gesperrt || s_gesperrt == m);
+  s_gesperrt = m;
+  if (s_tiefe > 0 && s_halter != s_task) {
+    cl_assert(s_task == AufKernelMain);
+    s_kernel_main_wartet = true;
+    longjmp(s_warten, 1);
+  }
+  s_halter = s_task;
+  s_tiefe++;
+  if (s_task == AufKernelBG && s_kernel_main && !s_kernel_main_wartet) {
+    s_unterbrochen++;
+    prv_kernel_main_laeuft();
+  }
+  return 0;
+}
+void pbl_mutex_unlock(struct pbl_mutex *m) {
+  cl_assert(s_tiefe > 0 && s_halter == s_task);
+  if (--s_tiefe == 0 && s_kernel_main_wartet) {
+    s_kernel_main_wartet = false;
+    prv_kernel_main_laeuft();
+  }
+}
+bool pbl_mutex_is_owner(const struct pbl_mutex *m) {
+  return s_tiefe > 0 && s_halter == s_task;
+}
+void pbl_mutex_assert_held(const struct pbl_mutex *m, bool held) {}
 
 // ---------------------------------------------------------------------------------------
 // Eingaben wie in Boulders Test
@@ -109,9 +171,16 @@ void test_boulder_kalorien__initialize(void) {
   s_stopps = 0;
   s_stopp_ergebnis = true;
   s_verworfen_im_stopp = false;
+  s_task = AufKernelBG;
+  s_kernel_main = NULL;
+  s_kernel_main_wartet = false;
+  s_unterbrochen = 0;
 }
 
 void test_boulder_kalorien__cleanup(void) {
+  // Keine Sperre bleibt gehalten, KernelMain wartet auf nichts mehr.
+  cl_assert_equal_i(s_tiefe, 0);
+  cl_assert(!s_kernel_main_wartet);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -360,6 +429,60 @@ void test_boulder_kalorien__start_liest_ruhepuls_und_geschlecht(void) {
   }
   summe += boulder_kalorien_ende(60 * (FAHRT_N - 1) + 10);
   prv_wie_boulder(summe, 106.153026);
+}
+
+// ---------------------------------------------------------------------------------------
+// Der Takt liest, waehrend Pebble schreibt (Gegenpruefung Schritt 2)
+//
+// Kieselsports Takt liest die Summe jede Sekunde fuer die Anzeige; beendet Pebble das Training
+// selbst, geht der letzte gelesene Wert in die Zusammenfassung. Er muss ein ganzer Stand sein:
+// der vor oder der nach Pebbles Haken, nie ein Gemisch aus beiden.
+
+static int32_t s_kernel_main_zuwachs;
+
+static void prv_pebble_puls(void) {
+  // Ein Pulswert, den Pebble 5 s vor dem Stand des Takts verbucht: Er aendert die Summe, die der
+  // Takt bei 200 s liest.
+  s_kernel_main_zuwachs = boulder_kalorien_puls(170, 195);
+}
+
+static void prv_pebble_schritte(void) {
+  // Eine Schrittmeldung nach 50 s ohne Puls: Pebbles Schritt-kcal zaehlen (F5 a = B).
+  s_kernel_main_zuwachs = boulder_kalorien_schritte(4000, 200);
+}
+
+static void prv_takt_liest_ganz(void (*pebble)(void)) {
+  boulder_kalorien_maxpuls(190);
+  boulder_kalorien_start();
+  int32_t summe = 0;
+  for (int t = 0; t < 100; t += 10) {
+    summe += boulder_kalorien_puls(120, t);
+  }
+  // Der letzte Wert (90 s) deckt bis 150 s, danach ist der Takt ohne Puls.
+  const int32_t vorher = boulder_kalorien_bisher(200);
+  cl_assert(vorher > 0);
+  cl_assert_equal_i(s_unterbrochen, 0);
+
+  s_kernel_main = pebble;
+  const int32_t gelesen = boulder_kalorien_bisher(200);
+  cl_assert_(s_unterbrochen == 1, "der Takt las den Zaehler ohne Sperre");
+  cl_assert_(s_kernel_main == NULL, "Pebbles Haken lief nicht, nachdem der Takt freigab");
+  // Pebble hat gewartet, bis der Takt seine Kopie hatte: Der Takt sah den Stand davor, ganz.
+  cl_assert_equal_i(gelesen, vorher);
+  // Danach steht Pebbles Wert drin, und die Summe ist wieder die gerundete.
+  cl_assert(s_kernel_main_zuwachs > 0);
+  summe += s_kernel_main_zuwachs;
+  cl_assert(boulder_kalorien_bisher(200) > vorher);
+  summe += boulder_kalorien_ende(200);
+  cl_assert_equal_i(boulder_kalorien_bisher(200), summe);
+}
+
+void test_boulder_kalorien__takt_liest_ganz_waehrend_pulswert(void) {
+  prv_takt_liest_ganz(prv_pebble_puls);
+}
+
+void test_boulder_kalorien__takt_liest_ganz_waehrend_schritten(void) {
+  prv_takt_liest_ganz(prv_pebble_schritte);
 }
 
 // ---------------------------------------------------------------------------------------

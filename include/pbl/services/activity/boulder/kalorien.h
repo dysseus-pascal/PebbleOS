@@ -27,8 +27,9 @@
 // Summe, auch nach Stunden mit einem Wert je Sekunde.
 //
 // BLATT UNTER DER WORKOUT-SPERRE: Die Haken laufen unter Pebbles Sperre (KernelMain fuer Puls
-// und Schritte, die Task des Aufrufers fuer Start und Stopp). Sie nehmen keine Sperre und rufen
-// nur Getter, die statischen Speicher lesen (activity_prefs_*, boulder_nacht_ruhepuls_median).
+// und Schritte, die Task des Aufrufers fuer Start und Stopp). Sie nehmen nur die eigene Sperre
+// des Zaehlers, unter der nichts weiter geschieht, und rufen nur Getter, die statischen Speicher
+// lesen (activity_prefs_*, boulder_nacht_ruhepuls_median).
 //
 // DIE BESTAETIGTE VELOFAHRT (F7, AP4) rechnet mit demselben Zaehler und demselben Profil
 // (boulder_kalorien_profil_jetzt), gefuehrt von kontext.c.
@@ -100,9 +101,10 @@ int32_t boulder_kalorien_puls(uint8_t bpm, int32_t aktiv_s);
 int32_t boulder_kalorien_schritte(int32_t cal, int32_t aktiv_s);
 // P1: Stopp ab 60 s, mit Pebbles Dauer. Der letzte Pulswert bis zum Ende.
 int32_t boulder_kalorien_ende(int32_t aktiv_s);
-// Fuer Kieselsports Anzeige und Zusammenfassung (KernelBG, ohne Sperre): die Summe bis
-// aktiv_s, in Kalorien. Im Training kann sie um einen Pulswert hinterherhinken; in der Pause
-// steht sie, denn dann ruft Pebble keinen Haken.
+// Fuer Kieselsports Anzeige und Zusammenfassung (KernelBG, ohne Pebbles Sperre; den Zaehler
+// liest sie unter seiner eigenen, also nie halb geschrieben): die Summe bis aktiv_s, in
+// Kalorien. Im Training kann sie um einen Pulswert hinterherhinken; in der Pause steht sie, denn
+// dann ruft Pebble keinen Haken.
 int32_t boulder_kalorien_bisher(int32_t aktiv_s);
 
 // ---------------------------------------------------------------------------------------

@@ -66,6 +66,7 @@
 // genommen wird. cleanup prueft in JEDEM Test die Regel 2.5.2.
 
 extern struct pbl_mutex s_kieselsport_sperre;
+extern struct pbl_mutex s_kalorien_sperre;
 extern void prv_workout_timer_cb(void *data);
 extern void workout_service_reset(void);
 extern void kieselsport_test_neustart(void);
@@ -89,6 +90,7 @@ typedef enum {
   SperreWorkout,   //< Pebbles Workout-Dienst
   SperreActivity,  //< Pebbles Activity (Sitzungsliste)
   SperreHrm,       //< der HRM-Manager (nachgebildet)
+  SperreKalorien,  //< der Zaehler des Trainings (kalorien.c)
   SperreArten,
 } SperrArt;
 
@@ -115,6 +117,7 @@ static SperrArt prv_art(const struct pbl_mutex *m) {
   if (m == s_workout_sperre) return SperreWorkout;
   if (m == &s_state.mutex) return SperreActivity;
   if (m == &s_hrm_sperre) return SperreHrm;
+  if (m == &s_kalorien_sperre) return SperreKalorien;
   return SperreAndere;
 }
 
@@ -761,6 +764,11 @@ static void umfeld_cleanup(void) {
   cl_assert_equal_i(s_kanten[SperreDienst][SperreActivity], 0);
   cl_assert_equal_i(s_kanten[SperreDienst][SperreHrm], 0);
   cl_assert_equal_i(s_kanten[SperreHrm][SperreWorkout], 0);
+  // Die Sperre des Kalorienzaehlers nimmt Pebble unter seiner Workout-Sperre: Sie ist ein Blatt,
+  // unter ihr wird keine andere genommen.
+  for (int b = 0; b < SperreArten; b++) {
+    cl_assert_equal_i(s_kanten[SperreKalorien][b], 0);
+  }
   // Und keine Sperre ueber Kreuz: was unter A genommen wird, nimmt nie A unter sich.
   for (int a = 1; a < SperreArten; a++) {
     for (int b = 1; b < SperreArten; b++) {
