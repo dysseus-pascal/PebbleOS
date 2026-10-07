@@ -6,7 +6,9 @@
 Aufruf: k1_waechter.py <repo>
 
 Liest `git diff <merge-base HEAD upstream/main>` mit dem Arbeitsbaum (auch
-Uncommittetes) und die unversionierten Dateien. Rot (Rueckgabe 1), wenn
+Uncommittetes) und die unversionierten Dateien. Die Funktion eines Hunks kommt aus
+`git diff -U0`: Ohne Kontextzeilen nennt der Kopf die Funktion der ersten geaenderten
+Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - eine Pebble-Datei ausserhalb der Liste unten geaendert ist,
   - eine erlaubte Pebble-Datei mehr Zeilen aendert als ihr Hoechstwert,
   - ein Hunk in einer Pebble-Datei kein "Boulder:" traegt,
@@ -33,7 +35,9 @@ PEBBLE = {
     'fw/services/activity/Kconfig': (16, None),                      # E1 Algorithmus-Wahl
     'fw/services/activity/CMakeLists.txt': (6, None),                # E2 Quellen
     'fw/services/blob_db/settings_blob_db.c': (1, None),             # E3 Whitelist Messstufe
-    'fw/services/alarms/alarm.c': (10, r'prv_should_smart_alarm_trigger'),  # E4 Weckregel
+    # E4 Weckregel, dazu das Nachholen nach einem Neustart (Entscheid 07.10.2026, wecklauf.h)
+    'fw/services/alarms/alarm.c': (
+        20, r'prv_should_smart_alarm_trigger\(|prv_record_alarm_op\(|alarm_init\('),
     'fw/services/hrm/hrm_manager.c': (10, None),                     # E5 HRV-Fix (F2)
     'fw/apps/system/settings/health.c': (40, None),                  # F3 Menue Messstufe
 }
@@ -66,8 +70,10 @@ def dateien(diff):
     return aus
 
 
-def pruefe_diff(diff, unversioniert):
+def pruefe_diff(diff, unversioniert, diff_u0=None):
+    """`diff_u0`: derselbe Diff ohne Kontext, fuer die Funktion der Hunks (sonst `diff`)."""
     fehler = []
+    ohne_kontext = dateien(diff_u0 if diff_u0 is not None else diff)
     for pfad, hunks in dateien(diff).items():
         if eigen(pfad):
             continue
@@ -82,6 +88,7 @@ def pruefe_diff(diff, unversioniert):
         for kopf, zeilen in hunks:
             if not any('Boulder:' in z for z in zeilen):
                 fehler.append(f'{pfad}: Hunk "{kopf}" ohne "Boulder:"')
+        for kopf, zeilen in ohne_kontext.get(pfad, []):
             nur_includes = all(z[1:].startswith('#include') or z[1:].strip().startswith(('/*', '//'))
                                for z in zeilen if z[:1] in '+-')
             if funktion and not nur_includes and not re.search(funktion, kopf):
@@ -103,9 +110,10 @@ def pruefe(repo):
                 'https://github.com/coredevices/PebbleOS.git)']
     basis = git(repo, 'merge-base', 'HEAD', 'upstream/main').strip()
     diff = git(repo, 'diff', basis)
+    diff_u0 = git(repo, 'diff', '-U0', basis)
     unversioniert = [z[3:] for z in git(repo, 'status', '--porcelain', '-z').split('\0')
                      if z.startswith('?? ')]
-    return pruefe_diff(diff, unversioniert)
+    return pruefe_diff(diff, unversioniert, diff_u0)
 
 
 def main(argv):

@@ -51,6 +51,15 @@ def proben_k1():
                                           'static void prv_andere(void) {'), [])
     yield 'richtige Funktion', not pruefe(hunk('fw/services/alarms/alarm.c', ['+  return 1;  // Boulder: x'],
                                                'static bool prv_should_smart_alarm_trigger('), [])
+    yield 'Nachholen in alarm_init', not pruefe(hunk('fw/services/alarms/alarm.c', ['+  x();  // Boulder: x'],
+                                                     'void alarm_init(void) {'), [])
+    yield 'Geklungen in prv_record_alarm_op', not pruefe(
+        hunk('fw/services/alarms/alarm.c', ['+  x();  // Boulder: x'],
+             'static bool prv_record_alarm_op(AlarmId id, AlarmConfig *config, void *context)'), [])
+    yield 'aehnlicher Name', pruefe(hunk('fw/services/alarms/alarm.c', ['+  x();  // Boulder: x'],
+                                         'void alarm_init_spaeter(void) {'), [])
+    yield 'alarm.c zu viele Zeilen', pruefe(hunk('fw/services/alarms/alarm.c', ['+  x();  // Boulder: x'] * 21,
+                                                 'void alarm_init(void) {'), [])
     yield 'neue Datei ausserhalb', pruefe('', ['fw/services/activity/neu.c'])
 
 

@@ -235,9 +235,9 @@ pbl_clar_test(test_boulder_messung
 
 # Die strenge Weckregel (AP7, T4.2): der echte alarm.c mit E4 und als Vergleich unveraendert,
 # mit der echten activity_sessions.c und dem Live-Zustand der Variante.
+# alarm.c bindet der Test selbst ein (#include), damit ein Neustart auch sein RAM loescht.
 set(boulder_wecker_quellen
     ${boulder_glue_umfeld}
-    fw/services/alarms/alarm.c
     subsys/cron/cron.c
     fw/services/activity/activity_sessions.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
@@ -253,6 +253,7 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/schlafanalyse.c
     fw/services/activity/boulder/spo2.c
     fw/services/activity/boulder/wecker.c
+    fw/services/activity/boulder/wecklauf.c
     fw/services/activity/boulder/ausgabe.c
     fw/services/activity/boulder/speicher.c
     fw/services/activity/boulder/diagnose.c

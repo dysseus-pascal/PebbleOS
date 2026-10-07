@@ -16,7 +16,7 @@
 #include "pbl/services/new_timer/new_timer.h"
 #include "pbl/services/system_task.h"
 #include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/boulder/wecker.h"  // Boulder: strenge Weckregel (E4)
+#include "pbl/services/activity/boulder/wecklauf.h"  // Boulder: Weckregel, Nachholen (E4)
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/services/timeline/event.h"
 #include <pbl/logging/logging.h>
@@ -197,7 +197,8 @@ static bool prv_should_smart_alarm_trigger(const AlarmConfig *config) {
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   // Boulder: streng - die Variante entscheidet in jedem Zustand, nie im Tiefschlaf.
   // Pebbles Weg darunter bleibt stehen, sonst waeren seine Helfer unbenutzt.
-  return boulder_kraepelin_wecken_erlaubt(config->hour, config->minute);
+  return boulder_wecklauf_fragen(s_most_recent_alarm_id, s_smart_snooze_counter, config->hour,
+                                 config->minute);
 #endif
   switch (prv_get_sleep_state()) {
     case ActivitySleepStateUnknown:
@@ -472,6 +473,10 @@ static void prv_put_alarm_event(void) {
 static bool prv_record_alarm_op(AlarmId id, AlarmConfig *config, void *context) {
   // Add a pin to the timeline (will show up in the past)
   prv_add_pin(id, config, rtc_get_time(), NULL);
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  // Boulder: Er hat geklungen - nach einem Neustart nicht noch einmal (wecklauf.h).
+  boulder_wecklauf_geklungen(id);
+#endif
 
   return false;
 }
@@ -1375,8 +1380,16 @@ void alarm_init(void) {
   // A "just once" alarm which was missed is still armed for its original weekday, a week out.
   prv_refresh_just_once_alarm_days(&file);
 
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  // Boulder: Smart Alarm nach einem Neustart in oder nach seinem Fenster (wecklauf.h). Was vor
+  // dem Boot scharf war, bevor das Neuplanen es ueberschreibt; nachholen bei geschlossener Datei.
+  boulder_wecklauf_boot(s_armed_record.id, s_armed_record.time);
+#endif
   prv_reload_alarms(&file);
   prv_file_close_and_unlock(&file);
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  boulder_wecklauf_nachholen(&s_missed_alarm_id, &s_missed_alarm_time);  // Boulder: s.o.
+#endif
 }
 
 // ----------------------------------------------------------------------------------------------

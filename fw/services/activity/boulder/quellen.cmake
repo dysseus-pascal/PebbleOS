@@ -23,6 +23,7 @@ pbl_library_sources(
   boulder/hrv.c
   boulder/spo2.c
   boulder/wecker.c
+  boulder/wecklauf.c
   boulder/ausgabe.c
   boulder/speicher.c
   boulder/umzug.c
