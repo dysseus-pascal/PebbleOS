@@ -172,6 +172,24 @@ static Zaehlung prv_zaehle(AppMenuFilterCallback filter) {
   return z;
 }
 
+// Die alte Store-App mit der Kennung der System-App, wie Boulder sie in den App-Speicher der Uhr
+// gelegt hat (V9). Die Werte stehen im Kopf von Kieselsport 0.18.1 (9261244,
+// build/emery/pebble-app.bin): SDK 5.106, Fassung 0.18, Flags 0x158 (JS, Worker, emery).
+static AppInstallId prv_store_app_installieren(void) {
+  AppDBEntry store = {
+    .name = "Kieselsport",
+    .uuid = KIESELSPORT_UUID_INIT,
+    .info_flags = PROCESS_INFO_ALLOW_JS | PROCESS_INFO_HAS_WORKER | PROCESS_INFO_PLATFORM_EMERY,
+    .app_version = {.major = 0, .minor = 18},
+    .sdk_version = {.major = 5, .minor = 106},
+  };
+  cl_assert_equal_i(app_db_insert((uint8_t *)&store.uuid, sizeof(Uuid), (uint8_t *)&store,
+                                  sizeof(store)), S_SUCCESS);
+  const AppInstallId id = app_db_get_install_id_for_uuid(&store.uuid);
+  app_cache_add_entry(id, 10701);
+  return id;
+}
+
 void test_kieselsport_startmenue__initialize(void) {
   fake_spi_flash_init(0, 0x1000000);
   pfs_init(false);
@@ -237,4 +255,30 @@ void test_kieselsport_startmenue__workout_bleibt_startbar(void) {
 #else
   cl_assert(!app_install_entry_is_hidden(&e));
 #endif
+}
+
+// V9 (bestaetigt: nicht ausblenden, nur pruefen): Liegt die alte Store-App mit derselben Kennung
+// im App-Speicher, steht Kieselsport mit der Variante zweimal im Startmenue und in der
+// Quick-Launch-Auswahl - die System-App (-103) und die Store-App. Gestartet ueber die Kennung
+// (Boulder, Pin, Meldung) wird die System-App, denn die Registry geht vor
+// (app_install_manager.c:300-301); der zweite Eintrag startet die alte Store-App. Darum die
+// Release-Notiz: die Store-App einmal loeschen. Ohne Variante ist es der eine Eintrag der
+// Store-App, wie vor b25.
+void test_kieselsport_startmenue__alte_store_app_doppelt(void) {
+  const AppInstallId store = prv_store_app_installieren();
+  cl_assert(store > 0);
+  const Zaehlung start = prv_zaehle(prv_startmenue);
+  const Zaehlung schnell = prv_zaehle(prv_quick_launch);
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  cl_assert_equal_i(start.kieselsport, 2);
+  cl_assert_equal_i(schnell.kieselsport, 2);
+  cl_assert(start.kieselsport_ids[0] == -103 || start.kieselsport_ids[1] == -103);
+  cl_assert(start.kieselsport_ids[0] == store || start.kieselsport_ids[1] == store);
+  cl_assert_equal_i(app_install_get_id_for_uuid(&s_kieselsport_uuid), -103);
+#else
+  cl_assert_equal_i(start.kieselsport, 1);
+  cl_assert_equal_i(start.kieselsport_ids[0], store);
+  cl_assert_equal_i(app_install_get_id_for_uuid(&s_kieselsport_uuid), store);
+#endif
+  cl_assert_equal_i(start.workout, schnell.workout);
 }

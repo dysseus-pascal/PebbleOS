@@ -96,3 +96,32 @@ pbl_clar_test(test_kieselsport_abo
   DEFINES CONFIG_HRM CONFIG_BOULDER_KIESELSPORT
   OVERRIDES dummy_board
 )
+
+# AP6 (T6.2, T6.3): der Wechsel von b25. Kieselsports Persist, wie b25 ihn hinterlaesst
+# (tests/fixtures/activity/boulder/kieselsport-b25/), im echten Persist-Dienst; V2s Dienst liest
+# ihn ueber speicher.c, die App meldet Einstellungen und Liegengebliebenes ans Telefon.
+pbl_clar_test(test_kieselsport_wechsel
+  SOURCES
+    ${kieselsport_dienst}
+    ${kieselsport_workout_dienst}
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/boulder/sport/speicher.c
+    fw/services/persist/service.c
+    fw/applib/persist.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    fw/services/filesystem/pfs.c
+    fw/services/filesystem/app_file.c
+    fw/services/filesystem/flash_translation.c
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    fw/kernel/rand.c
+    third_party/tinymt/TinyMT/tinymt/tinymt32.c
+    tests/fakes/fake_spi_flash.c
+    fw/apps/system/kieselsport/telefon.c
+    fw/apps/system/kieselsport/meldungen.c
+    fw/apps/system/kieselsport/einstellungen.c
+    fw/applib/dict.c
+  DEFINES CONFIG_HRM CONFIG_MAG CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
+  OVERRIDES dummy_board
+)
