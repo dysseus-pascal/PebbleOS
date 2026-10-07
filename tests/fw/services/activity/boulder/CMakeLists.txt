@@ -131,8 +131,16 @@ pbl_clar_test(test_boulder_glue_differenz_kopie
 )
 
 # Die geteilten Formate (Tag 84, Sitzungstypen, 0x4001/0x4002, NachtBild) und der
-# Waechter fuer den Bau (vertraege.c), dazu die Referenzsaetze aus b26.
+# Waechter fuer den Bau (vertraege.c), dazu die Referenzsaetze aus b26. Wie auf obelix und
+# qemu_emery mit Kieselsport (Tag 84 in Fassung 7, P4); ohne den Schalter die Fassung 3 der
+# Boards ohne Variante.
 pbl_clar_test(test_boulder_vertraege
+  SOURCES
+    fw/services/activity/boulder/vertraege.c
+  DEFINES CONFIG_BOULDER_KIESELSPORT
+)
+pbl_clar_test(test_boulder_vertraege_ohne_kieselsport
+  SOURCE test_boulder_vertraege.c
   SOURCES
     fw/services/activity/boulder/vertraege.c
 )

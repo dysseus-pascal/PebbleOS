@@ -11,7 +11,10 @@ mit denen im Arbeitsbaum (U:), ohne Kommentare und Leerraum:
   DLSChunkHeader, die Fassung, die Chunk-Grenzen, der Dateiname, DataLoggingItemType;
 - Pebbles Activity-Datei: Name, Groesse, ActivitySettingsKey (die Merker der zuletzt geloggten
   Enden und die Sitzungsliste muessen unter denselben Schluesseln stehen), die Sitzung selbst
-  und die Laenge der Liste.
+  und die Laenge der Liste;
+- Tag 84 (Schritt 2, P4): Fassung und Satz, wie obelix und qemu_emery sie mit Kieselsport bauen
+  (CONFIG_BOULDER_KIESELSPORT an). Liegende b25-Saetze und neue sind dann gleich lang (27 Byte)
+  und tragen `manual` an derselben Stelle.
 
 WARUM KEIN HOST-TEST DER GROESSEN: Die Satzkoepfe stehen privat in dls_storage.c, und b25s
 Quellen lassen sich im V2-Baum nicht uebersetzen. Gleicher Text heisst gleicher Aufbau.
@@ -20,9 +23,13 @@ Erlaubt ist nur, was die Liste ERLAUBT nennt (b25s Union-Mitglied nicht_schlaf_m
 Sitzung: kleiner als step_data, die Groesse bleibt). Rot (1) bei jedem anderen Unterschied.
 --gegenprobe: prueft, dass ein veraenderter Kopf rot wird.
 """
+import os
 import re
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from vertraege import SCHALTER, zweig  # noqa: E402
 
 B25 = '217428e90'
 
@@ -54,6 +61,12 @@ PRUEFEN = [
      'typedef', 'ActivitySessionDataStepping'),
     ('include/pbl/services/activity/activity.h', 'include/pbl/services/activity/activity.h',
      'typedef', 'ActivitySession'),
+    ('include/pbl/services/activity/activity_private.h',
+     'include/pbl/services/activity/activity_private.h', 'define',
+     'ACTIVITY_SESSION_LOGGING_VERSION'),
+    ('include/pbl/services/activity/activity_private.h',
+     'include/pbl/services/activity/activity_private.h', 'typedef',
+     'ActivitySessionDataLoggingRecord'),
 ]
 
 # b25s Mitglied in der Union der Sitzung (M: activity.h:240-244): 2 Byte neben 8 Byte step_data.
@@ -101,7 +114,8 @@ def pruefe(repo, commit, aendern=None):
             neu_text = f.read()
         if aendern and aendern[0] == name:
             neu_text = neu_text.replace(*aendern[1:])
-        neu = teil(neu_text, art, name)
+        # V2 wie auf obelix und qemu_emery gebaut: mit Kieselsport (P4).
+        neu = teil(zweig(neu_text, SCHALTER, True), art, name)
         if alt is None or neu is None:
             fehler.append(f'{name}: nicht gefunden (b25 {alt is not None}, V2 {neu is not None})')
             continue

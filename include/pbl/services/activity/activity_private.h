@@ -389,7 +389,11 @@ typedef struct PBL_PACKED {
  * Treated as a bitfield by the mobile app: while bit 0 is set, fields may be appended to
  * @ref ActivitySessionDataLoggingRecord; clearing it marks the record unparseable.
  */
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P4 (F4 = A), Fassung 7 wie b25: Bit 2 = `manual`
+#define ACTIVITY_SESSION_LOGGING_VERSION 7
+#else
 #define ACTIVITY_SESSION_LOGGING_VERSION 3
+#endif
 
 /**
  * @brief Data logging record of an activity session.
@@ -418,6 +422,9 @@ typedef struct PBL_PACKED {
     /** Data of sleep sessions. */
     ActivitySessionDataSleeping sleep_data;
   };
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: 1 = Training; Boulder 0.52 traegt es nicht doppelt ein
+  uint8_t manual;
+#endif
 } ActivitySessionDataLoggingRecord;
 
 /** @brief Raw accelerometer sample collection state. */

@@ -1193,8 +1193,9 @@ void test_boulder_fahrt__t4_2_fahrt_endet_am_trainingsstart(void) {
 // T4.3: Mit Logging zwischen den beiden Schliessungen gehen von der Fahrt zwei Saetze hinaus,
 // gleicher Start und Typ, der spaetere laenger (bis zum Trainingsstart). Boulder speichert unter
 // (Start, Typ) und behaelt den laengeren (B: HealthDaoExt.kt:45-57): ein Eintrag je Sitzung. Das
-// prueft Boulders eigener Code mit diesen Saetzen (Scratchpad, AP4-Bericht); mit
-// BOULDER_DLS84_AUSGABE schreibt der Test sie dafuer als Hex in eine Datei.
+// prueft Boulders eigener Code mit diesen Saetzen (Scratchpad, Berichte AP4 und AP5: Parser, DAO
+// und das Ueberspringen von `manual`); mit BOULDER_DLS84_AUSGABE schreibt der Test sie dafuer als
+// Hex in eine Datei.
 void test_boulder_fahrt__t4_3_dls84_mit_logging_zwischen_den_schliessungen(void) {
   prv_fahrt_dann_training(true);
   const ActivitySession *f = prv_sitzung_manuell(ActivitySessionType_Open, false);
@@ -1202,6 +1203,12 @@ void test_boulder_fahrt__t4_3_dls84_mit_logging_zwischen_den_schliessungen(void)
   uint32_t erste = 0, letzte = 0;
   for (int i = 0; i < s_dls84_anzahl; i++) {
     const ActivitySessionDataLoggingRecord *r = &s_dls84[i];
+    // P4 (F4 = A): Fassung 7, 27 Byte; `manual` traegt nur das Training. Boulder 0.52 traegt
+    // es damit nicht noch einmal als Workout ein; Fahrt und Spaziergaenge bleiben erkannt.
+    const uint8_t *bytes = (const uint8_t *)r;
+    cl_assert_equal_i(r->version, 7);
+    cl_assert_equal_i(r->size, 27);
+    cl_assert_equal_i(bytes[26], r->start_utc == (uint32_t)s_start_um);
     if (r->activity != ActivitySessionType_Open) {
       continue;  // Kraepelins Spaziergaenge davor und danach
     }

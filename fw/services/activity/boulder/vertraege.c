@@ -2,9 +2,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // DIE VERTRAEGE, DIE BOULDER MIT UPSTREAM TEILT - beim Bauen bewacht (aus b26,
-// fuer V2: Pebbles Sitzungstypen 0 bis 7, kein eigener Typ; Tag 84 in Pebbles
-// Fassung 3). Aendert ein Upstream-Merge einen Wert oder vergibt einen neuen Typ
-// oder Tag, bricht der Bau - nicht erst die App, die still falsch liest.
+// fuer V2: Pebbles Sitzungstypen 0 bis 7, kein eigener Typ; Tag 84 mit Kieselsport in
+// Fassung 7 wie b25, sonst in Pebbles Fassung 3). Aendert ein Upstream-Merge einen Wert
+// oder vergibt einen neuen Typ oder Tag, bricht der Bau - nicht erst die App, die still
+// falsch liest.
 // Was der Compiler nicht sieht (ein neuer Name auf einem vergebenen Wert),
 // prueft tools/boulder/vertraege.py (ctest). Die Funktionen ruft niemand.
 
@@ -16,9 +17,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Tag 84: Fassung 3, Satz 26 Byte (Schrittdaten im Anhang).
+#ifdef CONFIG_BOULDER_KIESELSPORT
+// Tag 84 mit Kieselsport (P4, F4 = A): Fassung 7, Satz 27 Byte, `manual` an Byte 26 - so liest
+// Boulder 0.52 das Kennzeichen, und nur so (B: HealthDataParser.kt:284-293). Mit einer anderen
+// Fassung oder Stelle stuende jedes Training in Health Connect doppelt.
+_Static_assert(ACTIVITY_SESSION_LOGGING_VERSION == 7, "Tag 84: Fassung 7");
+_Static_assert(sizeof(ActivitySessionDataLoggingRecord) == 27, "Tag 84: Satz 27 Byte");
+_Static_assert(offsetof(ActivitySessionDataLoggingRecord, manual) == 26, "Tag 84: manual");
+#else
+// Tag 84 ohne Kieselsport: Pebbles Fassung 3, Satz 26 Byte (Schrittdaten im Anhang).
 _Static_assert(ACTIVITY_SESSION_LOGGING_VERSION == 3, "Tag 84: Fassung 3");
 _Static_assert(sizeof(ActivitySessionDataLoggingRecord) == 26, "Tag 84: Satz 26 Byte");
+#endif
 _Static_assert(offsetof(ActivitySessionDataLoggingRecord, start_utc) == 10, "Tag 84: start_utc");
 _Static_assert(offsetof(ActivitySessionDataLoggingRecord, step_data) == 18, "Tag 84: Anhang");
 _Static_assert(ActivitySessionTypeCount == 8, "Sitzungstypen 0 bis 7, kein eigener Typ");

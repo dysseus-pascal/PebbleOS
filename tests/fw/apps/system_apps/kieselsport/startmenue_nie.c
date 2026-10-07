@@ -1,0 +1,92 @@
+/* SPDX-FileCopyrightText: 2026 dysseus-pascal */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// Fuer test_kieselsport_startmenue: Von workout.c und kieselsport.c zaehlt dort nur der
+// Prozess-Eintrag. Ihre App-Rumpfe (Fenster, Dialoge, Pebbles Workout-Dienst, Kieselsports
+// Laufschirm) laufen nie; was sie rufen, steht hier ohne Koepfe, damit es bindet. Laeuft doch
+// etwas davon, bricht der Test ab - der Test waere dann falsch gebaut.
+
+#define NIE(fn)                                                  \
+  void fn(void) {                                                \
+    fprintf(stderr, "test_kieselsport_startmenue: %s\n", #fn);  \
+    abort();                                                     \
+  }
+
+NIE(activity_prefs_get_workout_app_opened_version)
+NIE(activity_prefs_set_workout_app_opened_version)
+NIE(app_event_loop)
+NIE(app_launch_get_args)
+NIE(app_launch_reason)
+NIE(app_window_stack_push)
+NIE(app_workout_dialog_push)
+NIE(art_gruppe)
+NIE(art_name)
+NIE(dialog_set_background_color)
+NIE(dialog_set_destroy_on_pop)
+NIE(dialog_set_fullscreen)
+NIE(dialog_set_icon)
+NIE(dialog_set_icon_animate_direction)
+NIE(dialog_set_text_color)
+NIE(dialog_set_timeout)
+NIE(dialog_show_status_bar_layer)
+NIE(graphics_fill_round_rect_by_value)
+NIE(health_tracking_ui_show_message)
+NIE(health_util_format_hours_minutes_seconds)
+NIE(health_util_get_distance_string)
+NIE(kieselsport_init_anstossen)
+NIE(kieselsport_laeuft)
+NIE(lauf_window_zeige)
+NIE(lauf_window_zeige_laufend)
+NIE(lauf_window_zuruecksetzen)
+NIE(layer_add_child)
+NIE(layer_get_bounds_by_value)
+NIE(menu_cell_layer_is_highlighted)
+NIE(menu_layer_set_callbacks_by_value)
+NIE(menu_layer_set_highlight_colors)
+NIE(menu_layer_set_normal_colors)
+NIE(sende_window_zeige)
+NIE(sende_window_zuruecksetzen)
+NIE(strings_refresh)
+NIE(symbol_sport)
+NIE(telefon_init)
+NIE(telefon_stopp_wartet)
+NIE(telefon_wartet)
+NIE(telefon_zuruecksetzen)
+NIE(thema_sportfarbe)
+NIE(thema_zuruecksetzen)
+NIE(window_create)
+NIE(window_destroy)
+NIE(window_get_root_layer)
+NIE(window_set_background_color)
+NIE(window_set_window_handlers_by_value)
+NIE(window_single_click_subscribe)
+NIE(workout_active_create_for_activity_type)
+NIE(workout_active_window_push)
+NIE(workout_data_fill_metric_value)
+NIE(workout_data_get_metric_value)
+NIE(workout_data_update)
+NIE(workout_dialog_get_dialog)
+NIE(workout_dialog_init)
+NIE(workout_dialog_pop)
+NIE(workout_dialog_set_action_bar_hidden)
+NIE(workout_dialog_set_click_config_context)
+NIE(workout_dialog_set_click_config_provider)
+NIE(workout_dialog_set_subtext)
+NIE(workout_dialog_set_text)
+NIE(workout_service_frontend_closed)
+NIE(workout_service_frontend_opened)
+NIE(workout_service_get_current_workout_type)
+NIE(workout_service_is_paused)
+NIE(workout_service_is_workout_ongoing)
+NIE(workout_service_pause_workout)
+NIE(workout_service_start_workout)
+NIE(workout_service_stop_workout)
+NIE(workout_service_takeover_activity_session)
+NIE(workout_summary_update_activity_type)
+NIE(workout_summary_window_create)
+NIE(workout_summary_window_push)
+NIE(workout_utils_find_ongoing_activity_session)
+NIE(workout_utils_get_detection_text_for_activity)

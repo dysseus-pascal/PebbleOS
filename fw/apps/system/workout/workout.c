@@ -254,6 +254,9 @@ const PebbleProcessMd *workout_app_get_info(void) {
           .uuid =
               {0xfe, 0xf8, 0x2c, 0x82, 0x71, 0x76, 0x4e, 0x22, 0x88, 0xde, 0x35, 0xa3, 0xfc, 0x18,
                0xd4, 0x3f},
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P2, Kieselsport ist die Trainings-App (Schritt 2)
+          .visibility = ProcessVisibilityHidden,
+#endif
         },
     .name = i18n_noop("Workout"),
     .icon_resource_id = RESOURCE_ID_ACTIVITY_TINY,

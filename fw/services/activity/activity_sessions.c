@@ -245,6 +245,9 @@ void activity_sessions_prv_send_activity_session_to_data_logging(ActivitySession
     .utc_to_local = start_local - session->start_utc,
     .start_utc = (uint32_t)session->start_utc,
     .elapsed_sec = session->length_min * PBL_SEC_PER_MIN,
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P4 (F4 = A), Training oder von der Uhr erkannt
+    .manual = session->manual,
+#endif
   };
   if (activity_sessions_prv_is_sleep_activity(session->type)) {
     dls_record.sleep_data = session->sleep_data;

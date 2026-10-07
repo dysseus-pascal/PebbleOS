@@ -12,7 +12,9 @@ belegten oder gesperrten Wert traegt. Mit --stempel wird die Datei bei Erfolg
 geschrieben (Bauschritt).
 
 V2 (aus b26 uebernommen): Pebbles Sitzungstypen 0 bis 7 ohne eigenen Typ, Tag 84
-in Pebbles Fassung 3, die Formate der Nacht in boulder/nacht_satz.h.
+mit Kieselsport (CONFIG_BOULDER_KIESELSPORT, obelix und qemu_emery) in Fassung 7 wie
+b25, ohne in Pebbles Fassung 3 (Schritt 2, P4), die Formate der Nacht in
+boulder/nacht_satz.h.
 
 WARUM NEBEN boulder/vertraege.c: der Compiler bricht bei einem neuen Namen in
 einem switch ohne default, aber nicht, wenn ein neuer Name einen schon
@@ -64,7 +66,9 @@ SOLL_BOULDER = {
 # wie 84), 86 (bei Pebble ausser Dienst) und alles von Boulder.
 GESPERRT = {83, 86} | set(SOLL_BOULDER.values())
 
-SOLL_FASSUNG_84 = 3
+# Tag 84 je nach Schalter (P4, F4 = A): Boulder 0.52 liest `manual` nur in Fassung 7.
+SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
+SOLL_FASSUNG_84 = {True: 7, False: 3}
 
 ACTIVITY_H = 'include/pbl/services/activity/activity.h'
 PRIVATE_H = 'include/pbl/services/activity/activity_private.h'
@@ -79,6 +83,32 @@ SOLL_MESSSTUFE = '"boulderMessstufe"'
 def ohne_kommentare(text):
     text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)
     return re.sub(r'//[^\n]*', '', text)
+
+
+def zweig(text, schalter, an):
+    """Der Text, wie der Praeprozessor ihn mit `schalter` an oder aus sieht.
+
+    Nur `#ifdef/#ifndef schalter ... [#else ...] #endif` wird aufgeloest; andere
+    Bedingungen darin zaehlen nur mit, damit das passende #else/#endif gefunden wird.
+    """
+    aus, stapel = [], []  # je offenem #if: (ist es der Schalter, gilt der Zweig)
+    for zeile in text.splitlines():
+        z = zeile.strip()
+        m = re.match(r'#\s*(ifdef|ifndef)\s+(\w+)', z)
+        if m and m.group(2) == schalter:
+            stapel.append((True, an == (m.group(1) == 'ifdef')))
+            continue
+        if re.match(r'#\s*if', z):
+            stapel.append((False, True))
+        elif re.match(r'#\s*else', z) and stapel and stapel[-1][0]:
+            stapel[-1] = (True, not stapel[-1][1])
+            continue
+        elif re.match(r'#\s*endif', z) and stapel:
+            if stapel.pop()[0]:
+                continue
+        if all(gilt for _, gilt in stapel):
+            aus.append(zeile)
+    return '\n'.join(aus)
 
 
 def zahl(ausdruck, bekannt):
@@ -146,10 +176,12 @@ def pruefe(repo):
         if w in GESPERRT:
             fehler.append(f'DlsSystemTag: {k} = {w} ist von Boulder belegt oder gesperrt')
 
-    fassung = defines(lies(PRIVATE_H), ['ACTIVITY_SESSION_LOGGING_VERSION'])
-    if fassung.get('ACTIVITY_SESSION_LOGGING_VERSION') != SOLL_FASSUNG_84:
-        fehler.append(f'ACTIVITY_SESSION_LOGGING_VERSION = '
-                      f'{fassung.get("ACTIVITY_SESSION_LOGGING_VERSION")}, soll {SOLL_FASSUNG_84}')
+    for an, soll in SOLL_FASSUNG_84.items():
+        fassung = defines(zweig(lies(PRIVATE_H), SCHALTER, an),
+                          ['ACTIVITY_SESSION_LOGGING_VERSION'])
+        if fassung.get('ACTIVITY_SESSION_LOGGING_VERSION') != soll:
+            fehler.append(f'ACTIVITY_SESSION_LOGGING_VERSION ({SCHALTER} {"an" if an else "aus"})'
+                          f' = {fassung.get("ACTIVITY_SESSION_LOGGING_VERSION")}, soll {soll}')
 
     boulder = defines(lies(NACHT_H), SOLL_BOULDER.keys())
     fehler += vergleiche('Boulder-Tags', boulder, SOLL_BOULDER)

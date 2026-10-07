@@ -33,9 +33,13 @@ void test_boulder_vertraege__sitzungstypen_wie_pebble(void) {
   cl_assert_equal_i(boulder_vertrag_typen(ActivitySessionType_Open), 7);
 }
 
-void test_boulder_vertraege__tag_84_fassung_3(void) {
+// Tag 84 Byte fuer Byte. Mit Kieselsport (obelix und qemu_emery, P4, F4 = A) in Fassung 7 wie
+// b25, `manual` an Byte 26: Boulder 0.52 liest das Kennzeichen nur so (B:
+// HealthDataParser.kt:284-293) und traegt ein Training dann nicht noch einmal als Workout in
+// Health Connect ein (PlatformHealthSync.kt:356). Ohne (die Boards ohne Variante) Pebbles
+// Fassung 3 ohne `manual`. Ein Test fuer beide: clar liest die Testnamen ohne Praeprozessor.
+void test_boulder_vertraege__tag_84(void) {
   cl_assert_equal_i(DlsSystemTagActivitySession, 84);
-  cl_assert_equal_i(ACTIVITY_SESSION_LOGGING_VERSION, 3);
   ActivitySessionDataLoggingRecord r;
   memset(&r, 0, sizeof(r));
   r.version = 0x0102;
@@ -45,7 +49,6 @@ void test_boulder_vertraege__tag_84_fassung_3(void) {
   r.elapsed_sec = 600;
   r.step_data.steps = 0x0A0B;
   const uint8_t *b = (const uint8_t *)&r;
-  cl_assert_equal_i(sizeof(r), 26);
   cl_assert_equal_i(b[0], 0x02);
   cl_assert_equal_i(b[4], ActivitySessionType_Walk);
   cl_assert_equal_i(b[6], 7200 & 0xFF);
@@ -54,6 +57,15 @@ void test_boulder_vertraege__tag_84_fassung_3(void) {
   cl_assert_equal_i(b[14], 600 & 0xFF);
   cl_assert_equal_i(b[18], 0x0B);
   cl_assert_equal_i(b[19], 0x0A);
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  cl_assert_equal_i(ACTIVITY_SESSION_LOGGING_VERSION, 7);
+  r.manual = 1;
+  cl_assert_equal_i(sizeof(r), 27);
+  cl_assert_equal_i(b[26], 1);
+#else
+  cl_assert_equal_i(ACTIVITY_SESSION_LOGGING_VERSION, 3);
+  cl_assert_equal_i(sizeof(r), 26);
+#endif
 }
 
 void test_boulder_vertraege__boulder_tags(void) {
