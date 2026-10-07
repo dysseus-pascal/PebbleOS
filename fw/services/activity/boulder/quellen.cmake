@@ -34,6 +34,8 @@ pbl_library_sources(
 # Kieselsport (Schritt 2): der Dienst unter sport/ ohne feste Liste, damit die Pakete
 # parallel Dateien anlegen, ohne sich hier zu treffen. Nur mit der Variante und Puls.
 if(CONFIG_BOULDER_KIESELSPORT)
+  # Pulskalorien und Verwerfen: Boulders Seite von P1 in workout_service.c.
+  pbl_library_sources(boulder/kalorien.c)
   file(GLOB boulder_sport_quellen CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
        ${CMAKE_CURRENT_SOURCE_DIR}/boulder/sport/*.c)
   if(boulder_sport_quellen)

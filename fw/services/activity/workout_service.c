@@ -8,6 +8,9 @@
 #include "pbl/services/activity/activity_insights.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/hr_util.h"
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: Pulskalorien und Verwerfen (Schritt 2, P1)
+#include "pbl/services/activity/boulder/kalorien.h"
+#endif
 
 #include "apps/system/workout/utils.h"
 #include "applib/app.h"
@@ -202,7 +205,12 @@ static void prv_handle_movement_update(HealthEventMovementUpdateData *event) {
     // Calculate active calories
     const int32_t active_calories =
         activity_private_compute_active_calories(delta_distance_mm, delta_ms);
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: Schritt-kcal nur fuer Sekunden ohne Puls (F5 a = B)
+    wrkt_data->active_calories += boulder_kalorien_schritte(active_calories, rtc_get_time() -
+        wrkt_data->start_utc - wrkt_data->duration_completed_pauses_s);
+#else
     wrkt_data->active_calories += active_calories;
+#endif
   }
 
   // Reset the last event count regardless of whether we are paused
@@ -252,6 +260,10 @@ static void prv_handle_heart_rate_update(HealthEventHeartRateUpdateData *event) 
           wrkt_data->current_bpm_timestamp_ts - prev_bpm_timestamp_ts;
       wrkt_data->hr_samples_count++;
       wrkt_data->hr_samples_sum += raw_bpm;
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: Pulskalorien nach Boulders Formel, aktive Sekunden
+      wrkt_data->active_calories += boulder_kalorien_puls(raw_bpm, rtc_get_time() -
+          wrkt_data->start_utc - wrkt_data->duration_completed_pauses_s);
+#endif
     }
   }
   return;
@@ -468,6 +480,9 @@ bool workout_service_start_workout(ActivitySessionType type) {
     s_workout_data.current_workout->type = type;
     s_workout_data.current_workout->start_utc = rtc_get_time();
     s_workout_data.current_workout->current_bpm_timestamp_ts = time_get_uptime_seconds();
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: Profil fuer die Pulskalorien, Zaehler auf 0
+    boulder_kalorien_start();
+#endif
     // FIXME: This probably doesn't need to be on a timer. We can just flush out a new time on each
     // API function call
     s_workout_data.second_timer = (RegularTimerInfo){
@@ -558,6 +573,9 @@ bool workout_service_stop_workout(void) {
     // workout mutex. activity_insights_push_activity_session_notification
     // creates a notification (blob_db flash write) that can take long enough
     if (wrkt->duration_s >= PBL_SEC_PER_MIN) {
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: der letzte Pulswert zaehlt bis zum Ende
+      wrkt->active_calories += boulder_kalorien_ende(wrkt->duration_s);
+#endif
       const time_t len_min =
           MIN(ACTIVITY_SESSION_MAX_LENGTH_MIN, wrkt->duration_s / PBL_SEC_PER_MIN);
       session_to_save = (ActivitySession){
@@ -576,6 +594,9 @@ bool workout_service_stop_workout(void) {
       memcpy(hr_zone_time_s_to_save, wrkt->hr_zone_time_s, sizeof(hr_zone_time_s_to_save));
       s_workout_data.last_workout_end_ts = time_get_uptime_seconds();
       save_session = true;
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: verworfen (F3 = A) - keine Sitzung, keine Meldung
+      save_session = !boulder_training_verworfen();
+#endif
     }
 
     regular_timer_remove_callback(&s_workout_data.second_timer);
