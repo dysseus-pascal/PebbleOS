@@ -114,8 +114,9 @@ typedef struct {
 
 // --- Start des Dienstes (Spezifikation 2.5, Regel 5: ohne Pebble-Haken)
 
-// Nur auf KernelBG, beliebig oft: Das erste Mal liest es Einstellungen und schickt nach, was
-// vor einem Neustart nicht ankam. Es rufen der erste Takt der Variante und die App.
+// Nur auf KernelBG, beliebig oft: Das erste Mal schickt es nach, was vor einem Neustart nicht
+// ankam. Es rufen der erste Takt der Variante und die App. Die Einstellungen laedt schon der erste
+// Zugriff auf sie (auch die App, bevor KernelBG init abarbeitet).
 void kieselsport_init(void);
 // Von jeder Task: reiht kieselsport_init auf KernelBG ein (fuer den Start der App).
 void kieselsport_init_anstossen(void);

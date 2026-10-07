@@ -2047,7 +2047,9 @@ void test_kieselsport__abo_takt_und_ablauf(void) {
   cl_assert_equal_i(prv_sensor_takt(), 0);
 }
 
-// Regel 2.5.5: Init ohne Pebble-Haken - beliebig oft, einmal wirksam. Von jeder Task anstossen.
+// Regel 2.5.5: Init ohne Pebble-Haken - beliebig oft, einmal wirksam. Von jeder Task anstossen;
+// gearbeitet wird erst auf KernelBG. (AP3: Woran das zu sehen ist, ist jetzt das Nachsenden - die
+// Einstellungen laedt seither der erste Zugriff, siehe einstellungen_vor_init.)
 void test_kieselsport__init_einmal(void) {
   kieselsport_maxpuls_setze(185);
   ks_persist_write_int(PERSIST_MAXPULS, 175);
@@ -2055,9 +2057,61 @@ void test_kieselsport__init_einmal(void) {
   kieselsport_init();
   stub_pebble_tasks_set_current(PebbleTask_App);
   cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  // Nach einem Neustart wartet ein Stopp aufs Telefon: init holt dafuer das Nachsenden an.
+  stopp_merken(BEGINN, BEGINN + 60, ArtLaufen);
+  memset(s_minuten_takte, 0, sizeof(s_minuten_takte));
   kieselsport_test_neustart();
   kieselsport_init_anstossen();
-  cl_assert_equal_i(kieselsport_maxpuls(), 185);
+  cl_assert(!prv_minutentakt_an());
   prv_kernel_bg();
+  cl_assert(prv_minutentakt_an());
   cl_assert_equal_i(kieselsport_maxpuls(), 175);
+}
+
+// AP3: Die App stoesst init an, und KernelBG kommt erst, wenn die App wartet (Regel 2.5.5).
+// Vor dem Neustart eingestellt: 3, 60 s, 50 m; nach dem Neustart stehen im RAM die Vorgaben.
+static void prv_neustart_mit_einstellungen(void) {
+  kieselsport_empfindlichkeit_setze(2);
+  kieselsport_pausenziel_setze(90);
+  kieselsport_becken_setze(25);
+  ks_persist_write_int(PERSIST_EMPFIND, 3);
+  ks_persist_write_int(PERSIST_PAUSENZIEL, 60);
+  ks_persist_write_int(PERSIST_BECKEN, 50);
+  kieselsport_test_neustart();
+  kieselsport_init_anstossen();
+}
+
+// Schickt das Telefon vorher Einstellungen, gelten sie trotzdem - auch die Rueckkehr zum
+// Vorgabewert, die ein Vergleich mit dem RAM fuer "unveraendert" hielte. Jede Einstellung einmal
+// als erster Zugriff nach dem Neustart.
+void test_kieselsport__einstellungen_vor_init(void) {
+  for (int fall = 0; fall < 3; fall++) {
+    prv_neustart_mit_einstellungen();
+    if (fall == 0) kieselsport_empfindlichkeit_setze(2);
+    if (fall == 1) kieselsport_pausenziel_setze(90);
+    if (fall == 2) kieselsport_becken_setze(25);
+    prv_kernel_bg();
+    if (fall == 0) {
+      cl_assert_equal_i(kieselsport_empfindlichkeit(), 2);
+      cl_assert_equal_i(ks_persist_read_int(PERSIST_EMPFIND), 2);
+    }
+    if (fall == 1) {
+      cl_assert_equal_i(kieselsport_pausenziel(), 90);
+      cl_assert_equal_i(ks_persist_read_int(PERSIST_PAUSENZIEL), 90);
+    }
+    if (fall == 2) {
+      cl_assert_equal_i(kieselsport_becken(), 25);
+      cl_assert_equal_i(ks_persist_read_int(PERSIST_BECKEN), 25);
+    }
+  }
+}
+
+// Das Echo ans Telefon vor init nennt die gespeicherten Werte, nicht die Vorgaben.
+void test_kieselsport__echo_vor_init(void) {
+  prv_neustart_mit_einstellungen();
+  cl_assert_equal_i(kieselsport_empfindlichkeit(), 3);
+  cl_assert_equal_i(kieselsport_pausenziel(), 60);
+  cl_assert_equal_i(kieselsport_becken(), 50);
+  prv_kernel_bg();
+  cl_assert_equal_i(kieselsport_pausenziel(), 60);
 }

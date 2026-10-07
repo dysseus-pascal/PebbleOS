@@ -55,6 +55,23 @@ void ks_entsperren(void) {
 
 static bool s_gestartet;  //< kieselsport_init lief (nur KernelBG)
 
+// DIE EINSTELLUNGEN LAEDT, WER SIE ZUERST BRAUCHT (unter der Sperre), nicht erst kieselsport_init.
+// Fuer die App kommt init eingereiht auf KernelBG, und KernelBG laeuft unter der App (Regel
+// 2.5.5): Bis es dran ist, kann das Telefon schon Einstellungen geschickt haben. Ein Setter
+// verglich dann mit den Vorgaben im RAM, hielt die Rueckkehr zum Vorgabewert fuer "unveraendert"
+// und schrieb sie nicht - init las danach den alten Wert. Und das Echo nannte die Vorgaben.
+static bool s_einstellungen_da;
+
+static void prv_einstellungen_laden(void) {
+  if (s_einstellungen_da) {
+    return;
+  }
+  s_einstellungen_da = true;
+  training_init();
+  reps_laden();
+  bahnen_laden();
+}
+
 static KsStand s_stand;
 static int s_letzte_zone = -1;
 static uint8_t s_minute[KS_MINUTE_S];
@@ -588,10 +605,8 @@ void kieselsport_init(void) {
   s_gestartet = true;
   const uint8_t ruhe = ks_ruhepuls();
   ks_sperren();
-  training_init();
+  prv_einstellungen_laden();
   puls_setze_ruhepuls(ruhe);
-  reps_laden();
-  bahnen_laden();
   prv_schnappschuss();
   // Nach einem Neustart: was vorher nicht ankam, wird wieder nachgereicht.
   const bool wartet = wartend_da() || stopp_da();
@@ -658,6 +673,7 @@ uint16_t kieselsport_zonengrenze(int zone) {
 
 uint16_t kieselsport_maxpuls(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   const uint16_t wert = puls_maximum();
   ks_entsperren();
   return wert;
@@ -665,6 +681,7 @@ uint16_t kieselsport_maxpuls(void) {
 
 bool kieselsport_maxpuls_gesetzt(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   const bool gesetzt = puls_maximum_gesetzt();
   ks_entsperren();
   return gesetzt;
@@ -672,6 +689,7 @@ bool kieselsport_maxpuls_gesetzt(void) {
 
 void kieselsport_maxpuls_setze(uint16_t schlaege) {
   ks_sperren();
+  prv_einstellungen_laden();
   puls_setze_maximum(schlaege);
   prv_schnappschuss();
   ks_entsperren();
@@ -679,6 +697,7 @@ void kieselsport_maxpuls_setze(uint16_t schlaege) {
 
 void kieselsport_maxpuls_nicht_setzen(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   puls_maximum_nicht_setzen();
   prv_schnappschuss();
   ks_entsperren();
@@ -686,6 +705,7 @@ void kieselsport_maxpuls_nicht_setzen(void) {
 
 void kieselsport_maxpuls_alt(uint16_t schlaege) {
   ks_sperren();
+  prv_einstellungen_laden();
   puls_maximum_alt(schlaege);
   prv_schnappschuss();
   ks_entsperren();
@@ -693,6 +713,7 @@ void kieselsport_maxpuls_alt(uint16_t schlaege) {
 
 uint8_t kieselsport_empfindlichkeit(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   const uint8_t wert = reps_empfindlichkeit();
   ks_entsperren();
   return wert;
@@ -700,12 +721,14 @@ uint8_t kieselsport_empfindlichkeit(void) {
 
 void kieselsport_empfindlichkeit_setze(uint8_t stufe) {
   ks_sperren();
+  prv_einstellungen_laden();
   reps_empfindlichkeit_setze(stufe);
   ks_entsperren();
 }
 
 uint16_t kieselsport_pausenziel(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   const uint16_t wert = reps_pausenziel();
   ks_entsperren();
   return wert;
@@ -713,12 +736,14 @@ uint16_t kieselsport_pausenziel(void) {
 
 void kieselsport_pausenziel_setze(uint16_t sekunden) {
   ks_sperren();
+  prv_einstellungen_laden();
   reps_pausenziel_setze(sekunden);
   ks_entsperren();
 }
 
 uint16_t kieselsport_becken(void) {
   ks_sperren();
+  prv_einstellungen_laden();
   const uint16_t wert = bahnen_becken();
   ks_entsperren();
   return wert;
@@ -726,6 +751,7 @@ uint16_t kieselsport_becken(void) {
 
 void kieselsport_becken_setze(uint16_t meter) {
   ks_sperren();
+  prv_einstellungen_laden();
   bahnen_becken_setze(meter);
   ks_entsperren();
 }
@@ -830,6 +856,7 @@ bool kieselsport_kurve_zeiten(uint32_t sekunden[KS_ZONEN + 1]) {
 // naechste kieselsport_init liest wieder alles aus dem Persist.
 void kieselsport_test_neustart(void) {
   s_gestartet = false;
+  s_einstellungen_da = false;
   s_stopp_um = 0;
 }
 #endif
