@@ -35,7 +35,10 @@ PEBBLE = {
     'fw/services/activity/Kconfig': (16, None),                      # E1 Algorithmus-Wahl
     'fw/services/activity/CMakeLists.txt': (6, None),                # E2 Quellen
     'fw/services/blob_db/settings_blob_db.c': (1, None),             # E3 Whitelist Messstufe
-    # E4 Weckregel, dazu das Nachholen nach einem Neustart (Entscheid 07.10.2026, wecklauf.h)
+    # E4 Weckregel, dazu das Nachholen nach einem Neustart (Entscheid 07.10.2026, wecklauf.h).
+    # ABWEICHUNG, Freigabe durch den Nutzer offen: Der Entscheid nennt nur die Stelle der
+    # Weckregel. Nach einem Boot fragt alarm.c die Weckregel nie, deshalb kamen mit c1c7b2eb0
+    # prv_record_alarm_op (geklungen) und alarm_init (Nachholen) dazu.
     'fw/services/alarms/alarm.c': (
         20, r'prv_should_smart_alarm_trigger\(|prv_record_alarm_op\(|alarm_init\('),
     'fw/services/hrm/hrm_manager.c': (10, None),                     # E5 HRV-Fix (F2)

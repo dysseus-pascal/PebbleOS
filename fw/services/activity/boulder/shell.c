@@ -4,8 +4,9 @@
 // Boulder V2: Shell-Befehle der Variante (Spezifikation 7.5, AP9).
 //   boulder zeiten         Laufzeit je Arbeit, Heap, Schlange, Diagnosesatz des Tages
 //   boulder prueflauf <n>  nur im Pruefbau (CONFIG_BOULDER_PRUEFLAUF, prueflauf.c)
-//   boulder wecker <h> <m> [einmal]  nur im Pruefbau: Smart Alarm anlegen (QEMU-Ablauf
-//                          "Neustart im Fenster", wecklauf.h)
+//   boulder wecker <h> <m> [einmal|gewoehnlich]  nur im Pruefbau: Smart Alarm anlegen, oder
+//                          einen gewoehnlichen taeglichen Wecker (QEMU-Ablaeufe zum Neustart,
+//                          wecklauf.h)
 // Shell-Befehle laufen auf KernelBG (shell.h): heap_calc_totals geht die Blockliste durch,
 // das ist hier erlaubt, im Takt nicht.
 
@@ -18,6 +19,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int prv_zeiten(const struct pbl_shell *sh, size_t argc, char **argv) {
   BoulderAufgabe *const *liste;
@@ -71,13 +73,15 @@ static int prv_wecker(const struct pbl_shell *sh, size_t argc, char **argv) {
     pbl_shell_print(sh, "Weckzeit %s:%s ungueltig", argv[1], argv[2]);
     return -1;
   }
+  const bool gewoehnlich = (argc > 3) && !strcmp(argv[3], "gewoehnlich");
+  const bool einmal = (argc > 3) && !gewoehnlich;
   const AlarmInfo info = {
-    .hour = stunde, .minute = minute, .is_smart = true, .vibrate_enabled = true,
-    .kind = (argc > 3) ? ALARM_KIND_JUST_ONCE : ALARM_KIND_EVERYDAY,
+    .hour = stunde, .minute = minute, .is_smart = !gewoehnlich, .vibrate_enabled = true,
+    .kind = einmal ? ALARM_KIND_JUST_ONCE : ALARM_KIND_EVERYDAY,
   };
   const AlarmId id = alarm_create(&info);
-  pbl_shell_print(sh, "Smart Alarm %d auf %02d:%02d (%s)", id, stunde, minute,
-                  (argc > 3) ? "einmal" : "taeglich");
+  pbl_shell_print(sh, "%s %d auf %02d:%02d (%s)", gewoehnlich ? "Wecker" : "Smart Alarm", id,
+                  stunde, minute, einmal ? "einmal" : "taeglich");
   return (id == ALARM_INVALID_ID) ? -1 : 0;
 }
 #endif
@@ -86,7 +90,8 @@ static const struct pbl_shell_cmd sub_boulder[] = {
   PBL_SHELL_CMD(zeiten, NULL, "Laufzeiten, Heap, Diagnose", prv_zeiten),
 #if defined(CONFIG_BOULDER_PRUEFLAUF)
   PBL_SHELL_CMD(prueflauf, NULL, "Pruefnacht im Zeitraffer", prv_prueflauf),
-  PBL_SHELL_CMD_ARG(wecker, NULL, "Smart Alarm anlegen <h> <m> [einmal]", prv_wecker, 3, 1),
+  PBL_SHELL_CMD_ARG(wecker, NULL, "Wecker anlegen <h> <m> [einmal|gewoehnlich]", prv_wecker, 3,
+                    1),
 #endif
   PBL_SHELL_SUBCMD_SET_END,
 };

@@ -50,6 +50,10 @@
 
 #include "stubs_activity_insights.h"
 #include "stubs_alarm.h"
+// Der Wecklauf (wecklauf.c) prueft test_boulder_wecker mit dem echten alarm.c; hier laeuft
+// kein Smart Alarm, die Minute hat nichts zu tun.
+void boulder_wecklauf_minute(void) {
+}
 #include "stubs_analytics.h"
 #include "stubs_hexdump.h"
 #include "stubs_hr_util.h"

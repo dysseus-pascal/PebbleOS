@@ -46,6 +46,7 @@
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/umzug.h"
 #include "pbl/services/activity/boulder/wecker.h"
+#include "pbl/services/activity/boulder/wecklauf.h"
 #include "pbl/services/activity/boulder/zyklen.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/time.h"
@@ -194,6 +195,8 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   }
   s_letzte_minute_utc = minute->utc;
   boulder_wecker_minute(minute->utc, minute->vmc);
+  // Lebt Pebbles Lauf noch? Nur ein Merker hier, die Arbeit auf KernelBG (wecklauf.h).
+  boulder_wecklauf_minute();
   const time_t beginn = prv_fenster(minute->utc);
   const int index = (int)((minute->utc - beginn) / PBL_SEC_PER_MIN);
   // Ein Training ist kein Schlaf, auch wenn es ruhig ist (Yoga, Kraft).

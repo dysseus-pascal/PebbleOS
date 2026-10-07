@@ -29,6 +29,7 @@
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/activity/boulder/variante.h"
 #include "pbl/services/activity/boulder/wecker.h"
+#include "pbl/services/activity/boulder/wecklauf.h"
 #include "pbl/services/alarms/alarm.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/data_logging/data_logging_service.h"
@@ -282,11 +283,19 @@ static const char *s_naechte[] = {
 
 static AccelSamplingRate s_rate;
 
-static void prv_wecker_boot(void) {
+// Auf der Uhr gibt event_loop.c die Wecker erst nach alarm_init frei (services_set_runlevel):
+// hier `freigabe_s` danach. KernelBG startet einen verpassten Wecker noch einmal `bg_s` spaeter.
+static void prv_wecker_boot_verzoegert(int freigabe_s, int bg_s) {
   pbl_cron_init();
   alarm_init();
+  rtc_set_time(rtc_get_time() + freigabe_s);
   alarm_service_enable_alarms(true);
+  rtc_set_time(rtc_get_time() + bg_s);
   fake_system_task_callbacks_invoke_pending();
+}
+
+static void prv_wecker_boot(void) {
+  prv_wecker_boot_verzoegert(0, 0);
 }
 
 // Das RAM von alarm.c: alle Variablen mit statischer Dauer (test_boulder_wecker__alarm_ram_
@@ -397,8 +406,7 @@ static void prv_minute(int m) {
 // Ein Neustart, der die Minuten [von, bis) verschluckt: nichts Statisches ueberlebt, Pebbles
 // Liste ist weg (wie bei einem Boot ohne gespeicherte Sitzungen), der Wecker bootet neu und
 // holt einen verpassten Fensterbeginn nach (alarm.c, ArmedAlarm).
-static void prv_neustart(int von, int bis) {
-  (void)von;
+static void prv_neustart_um(time_t an_utc, int freigabe_s, int bg_s) {
   fake_system_task_callbacks_invoke_pending();
   activity_algorithm_deinit();
   fake_system_task_callbacks_invoke_pending();
@@ -407,9 +415,14 @@ static void prv_neustart(int von, int bis) {
   memset(&s_state, 0, sizeof(s_state));
   s_letzte_vmc = 0;
   s_schlummer_bis = 0;
-  rtc_set_time(s_ref.beginn_utc + (time_t)bis * PBL_SEC_PER_MIN);
+  rtc_set_time(an_utc);
   cl_assert(activity_algorithm_init(&s_rate));
-  prv_wecker_boot();
+  prv_wecker_boot_verzoegert(freigabe_s, bg_s);
+}
+
+static void prv_neustart(int von, int bis) {
+  (void)von;
+  prv_neustart_um(s_ref.beginn_utc + (time_t)bis * PBL_SEC_PER_MIN, 0, 0);
 }
 
 static void prv_smart_alarm(int weckzeit) {
@@ -647,6 +660,8 @@ void test_boulder_wecker__konstanten(void) {
   cl_assert_equal_i(FENSTER, 30);
   // W erst, wenn der Live-Automat nach einer Luecke wieder einschlafen konnte: 10 + 2 Minuten.
   cl_assert_equal_i(WECKER_W_AB, 12);
+  // wecklauf.c legt den Start eines nachgeholten Weckers nach Pebbles Grenze fuer verpasste.
+  cl_assert_equal_i(WECKLAUF_PEBBLE_VERPASST_S, ALARM_MISSED_MAX_DELAY_S);
 }
 
 // Alle Variablen von alarm.c mit statischer Dauer muessen in ALARM_RAM stehen, sonst ueberlebte
@@ -1149,4 +1164,316 @@ void test_boulder_wecker__geklungen_uhr_zurueck(void) {
   prv_laufen(W_STILL - 5, BIS_STILL, W_STILL - 1, W_STILL + 10);
   prv_bericht("geklungen, Uhr zurueck, ueber Fensterbeginn aus", W_STILL - 1, W_STILL + 10);
   cl_assert_equal_i(s_klingeln, 1);
+}
+
+// =============================================================================================
+// Befunde der Gegenpruefung zum Wecker nach einem Neustart (07.10.2026)
+
+// Minuten [von, bis) ab dem Fensterbeginn der Referenz ohne jede Regung, auch ueber ihr Ende
+// hinaus (der naechste Morgen).
+static void prv_still(int von, int bis) {
+  for (int m = von; m < bis; m++) {
+    prv_minute_utc(s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN, true, 0, 60);
+  }
+}
+
+// Der naechste Morgen: still bis W + 10, Neustart, an W + 11, still bis W + 40. Wie oft klingelt
+// er dabei? Klingelt er, dann zur Weckzeit (*minute, -1 = nicht).
+static int prv_naechster_morgen_mit_neustart(int von, int *minute) {
+  const int klingeln = s_klingeln;
+  const time_t geklingelt = s_geklingelt;
+  s_geklingelt = 0;
+  const int w_morgen = W_STILL + PBL_MIN_PER_DAY;
+  prv_still(von, w_morgen + 10);
+  prv_neustart(w_morgen + 10, w_morgen + 11);
+  prv_still(w_morgen + 11, w_morgen + 40);
+  *minute = prv_weckminute();
+  s_geklingelt = geklingelt;
+  return s_klingeln - klingeln;
+}
+
+// Grenze des Nachholfensters: alarm_init 10 s vor seinem Ende, die Freigabe der Wecker
+// (event_loop.c) erst 5 s danach. Pebble startet den nachgeholten Wecker dann nicht mehr: kein
+// Klingeln, auch nicht spaeter mit der Weckzeit von morgen. Kommt die Freigabe noch im
+// Nachholfenster und ist KernelBG erst danach dran: sofort. Am naechsten Morgen holt ein
+// Neustart im Fenster ihn wie immer nach.
+void test_boulder_wecker__nachholgrenze(void) {
+  for (int lief = 0; lief <= 1; lief++) {
+    for (int knapp = 0; knapp <= 1; knapp++) {
+      prv_stiller_morgen(ALARM_KIND_EVERYDAY, -1);
+      prv_laufen(0, lief ? T_STILL - 2 : W_STILL - 1, -1, -1);
+      const time_t init = s_ref.beginn_utc + (time_t)(T_STILL + NACHHOLEN) * PBL_SEC_PER_MIN - 10;
+      if (knapp) {
+        prv_neustart_um(init, 5, 7);
+      } else {
+        prv_neustart_um(init, 15, 0);
+      }
+      prv_laufen(T_STILL + NACHHOLEN, T_STILL + NACHHOLEN + 60, -1, -1);
+      printf("\n%s Nachholgrenze (%s, Freigabe %s): %dx", STRENG ? "streng" : "Pebble",
+             lief ? "Lauf unterbrochen" : "ueber Fensterbeginn aus",
+             knapp ? "knapp davor" : "danach", s_klingeln);
+      if (s_klingeln) {
+        printf(" um %02d:%02d", UHR(prv_weckminute()));
+      }
+#if STRENG
+      cl_assert_equal_i(s_klingeln, knapp ? 1 : 0);
+      if (knapp) {
+        cl_assert_equal_i(prv_weckminute(), T_STILL + NACHHOLEN);
+      }
+#else
+      cl_assert_equal_i(s_klingeln, 0);
+#endif
+      int minute;
+      const int morgen = prv_naechster_morgen_mit_neustart(T_STILL + NACHHOLEN + 60, &minute);
+      printf(", naechster Morgen mit Neustart im Fenster %dx", morgen);
+      cl_assert_equal_i(morgen, STRENG ? 1 : 0);
+#if STRENG
+      // Zu seiner Weckzeit, nicht zu der von gestern.
+      cl_assert_equal_i(minute, T_STILL + PBL_MIN_PER_DAY);
+#endif
+    }
+  }
+}
+
+// Vor dem Fenster des Smart Alarms war ein anderer Wecker faellig, waehrend die Uhr aus war:
+// Pebbles scharfer Wecker ist dann der andere. Der Smart Alarm wird trotzdem nachgeholt, sein
+// Fensterbeginn fiel ja in die Zeit, in der die Uhr aus war.
+void test_boulder_wecker__anderer_wecker_davor(void) {
+  static const struct {
+    bool smart;  //< der andere ist ein frueherer Smart Alarm (Weckzeit T - 60, sonst T - 40)
+    int an;
+  } s_fall[] = {
+    { false, T_STILL - 10 }, { false, T_STILL + 5 }, { false, T_STILL + NACHHOLEN + 1 },
+    { true, T_STILL - 10 },
+  };
+  for (size_t i = 0; i < ARRAY_LENGTH(s_fall); i++) {
+    prv_stiller_morgen(ALARM_KIND_EVERYDAY, -1);
+    const int andere = T_STILL - (s_fall[i].smart ? 60 : 40);
+    alarm_create(&(AlarmInfo){ .hour = (andere / 60 + 20) % 24, .minute = andere % 60,
+                               .kind = ALARM_KIND_EVERYDAY, .is_smart = s_fall[i].smart });
+    const int aus = andere - (s_fall[i].smart ? FENSTER : 0) - 5;
+    prv_laufen(0, BIS_STILL + 5, aus, s_fall[i].an);
+    prv_bericht(s_fall[i].smart ? "frueherer Smart Alarm davor" : "gewoehnlicher Wecker davor",
+                aus, s_fall[i].an);
+#if STRENG
+    if (s_fall[i].an < T_STILL + NACHHOLEN) {
+      cl_assert_equal_i(s_klingeln, 1);
+      cl_assert_equal_i(prv_weckminute(), MAX(T_STILL, s_fall[i].an));
+    } else {
+      cl_assert_equal_i(s_klingeln, 0);
+    }
+#else
+    cl_assert_equal_i(s_klingeln, 0);
+#endif
+  }
+
+  // Gegenfaelle, in beiden Bauten nichts: Pebble plante den Smart Alarm gar nicht fuer heute.
+  // a) Erst im Fenster angelegt (Pebble plant morgen), dann ist die Uhr ueber einen anderen
+  //    Wecker (W + 10) aus. b) Heute nicht dran (nur an den anderen Wochentagen), die Uhr ist
+  //    ueber einen anderen Wecker (W - 10) und den Fensterbeginn aus.
+  for (int fall = 0; fall <= 1; fall++) {
+    prv_neu("nacht-2026-09-30");
+    for (int m = W_STILL - 60; m < BIS_STILL + 5; m++) {
+      s_ref.vmc[m] = 0;
+    }
+    const int andere = fall ? W_STILL - 10 : W_STILL + 10;
+    alarm_create(&(AlarmInfo){ .hour = (andere / 60 + 20) % 24, .minute = andere % 60,
+                               .kind = ALARM_KIND_EVERYDAY, .is_smart = false });
+    struct tm ort;
+    const time_t t_utc = s_ref.beginn_utc + (time_t)T_STILL * PBL_SEC_PER_MIN;
+    localtime_r(&t_utc, &ort);
+    bool tage[PBL_DAY_PER_WEEK];
+    for (int t = 0; t < PBL_DAY_PER_WEEK; t++) {
+      tage[t] = (t != ort.tm_wday);
+    }
+    const AlarmInfo smart = { .hour = (T_STILL / 60 + 20) % 24, .minute = T_STILL % 60,
+                              .kind = fall ? ALARM_KIND_CUSTOM : ALARM_KIND_EVERYDAY,
+                              .is_smart = true, .scheduled_days = fall ? &tage : NULL };
+    if (fall) {
+      alarm_create(&smart);
+      prv_laufen(0, BIS_STILL + 5, andere - 2, W_STILL + 20);
+    } else {
+      prv_laufen(0, W_STILL + 5, -1, -1);
+      alarm_create(&smart);
+      fake_system_task_callbacks_invoke_pending();
+      prv_laufen(W_STILL + 5, BIS_STILL + 5, andere - 2, W_STILL + 20);
+    }
+    prv_bericht(fall ? "heute nicht dran, anderer Wecker verpasst"
+                     : "im Fenster angelegt, anderer Wecker verpasst", andere - 2, W_STILL + 20);
+    cl_assert_equal_i(s_klingeln, 0);
+  }
+}
+
+// Zwei Smart Alarme haben ihren Fensterbeginn verpasst (06:10 und 06:30, aus 05:30, an 06:25):
+// alarm.c fuehrt nur einen Lauf. Der mit der fruehesten Weckzeit klingelt sofort.
+void test_boulder_wecker__zwei_verpasst(void) {
+  prv_stiller_morgen(ALARM_KIND_EVERYDAY, -1);
+  const int frueher = T_STILL - 20;
+  alarm_create(&(AlarmInfo){ .hour = (frueher / 60 + 20) % 24, .minute = frueher % 60,
+                             .kind = ALARM_KIND_EVERYDAY, .is_smart = true });
+  prv_laufen(0, BIS_STILL, W_STILL - 30, T_STILL - 5);
+  prv_bericht("zwei verpasst", W_STILL - 30, T_STILL - 5);
+#if STRENG
+  cl_assert_equal_i(s_klingeln, 1);
+  cl_assert_equal_i(prv_weckminute(), T_STILL - 5);
+#else
+  cl_assert_equal_i(s_klingeln, 0);
+#endif
+}
+
+// Pebbles Lauf endet im Fenster ohne Klingeln: aus und gleich wieder an, geloescht und gleich
+// neu angelegt (dieselbe Id), oder ein anderer Wecker loest ihn ab. Ohne Neustart klingelt er
+// an diesem Morgen nicht mehr (Pebble plant morgen) - ein Neustart danach holt ihn dann auch
+// nicht nach. Umgestellt und zurueck laeuft Pebbles Lauf weiter: Er klingelt mit und ohne
+// Neustart.
+typedef enum {
+  EndeAusAn,
+  EndeNeuAngelegt,
+  EndeAndererWecker,
+  EndeZeitZurueck,
+  EndeAnzahl,
+} Ende;
+
+void test_boulder_wecker__lauf_endet(void) {
+  static const char *s_name[] = { "aus und wieder an", "geloescht und neu angelegt",
+                                  "anderer Wecker loest ab", "umgestellt und zurueck" };
+  static const int s_ohne_neustart[] = { 0, 0, 1, 1 };
+  for (Ende e = 0; e < EndeAnzahl; e++) {
+    int klingeln[2];
+    for (int neustart = 0; neustart <= 1; neustart++) {
+      AlarmId id = prv_stiller_morgen(ALARM_KIND_EVERYDAY, -1);
+      if (e == EndeAndererWecker) {
+        const int andere = W_STILL + 10;
+        alarm_create(&(AlarmInfo){ .hour = (andere / 60 + 20) % 24, .minute = andere % 60,
+                                   .kind = ALARM_KIND_EVERYDAY, .is_smart = false });
+      }
+      prv_laufen(0, W_STILL + 5, -1, -1);
+      const AlarmInfo info = { .hour = (T_STILL / 60 + 20) % 24, .minute = T_STILL % 60,
+                               .kind = ALARM_KIND_EVERYDAY, .is_smart = true };
+      switch (e) {
+        case EndeAusAn:
+          alarm_set_enabled(id, false);
+          alarm_set_enabled(id, true);
+          break;
+        case EndeNeuAngelegt:
+          alarm_delete(id);
+          cl_assert_equal_i(alarm_create(&info), id);
+          break;
+        case EndeZeitZurueck:
+          alarm_set_time(id, (T_STILL / 60 + 21) % 24, T_STILL % 60);
+          alarm_set_time(id, info.hour, info.minute);
+          break;
+        default:
+          break;
+      }
+      fake_system_task_callbacks_invoke_pending();
+      prv_laufen(W_STILL + 5, BIS_STILL, neustart ? W_STILL + 15 : -1, W_STILL + 16);
+      prv_bericht(s_name[e], neustart ? W_STILL + 15 : -1, neustart ? W_STILL + 16 : -1);
+      klingeln[neustart] = s_klingeln;
+    }
+    cl_assert_equal_i(klingeln[0], s_ohne_neustart[e]);
+#if STRENG
+    cl_assert_equal_i(klingeln[1], klingeln[0]);
+#else
+    // Pebble allein holt nach einem Neustart im Fenster nie nach.
+    cl_assert_equal_i(klingeln[1], e == EndeAndererWecker ? 1 : 0);
+#endif
+  }
+}
+
+// Ohne Neustart: geklungen, dann geht die Uhr vor das Fenster zurueck. Pebble plant das Fenster
+// neu, und er klingelt noch einmal - in beiden Bauten gleich. "Nie zweimal fuer dieselbe
+// Weckzeit" gilt ueber einen Neustart (geklungen_uhr_zurueck), nicht hier.
+void test_boulder_wecker__geklungen_uhr_zurueck_ohne_neustart(void) {
+  prv_stiller_morgen(ALARM_KIND_EVERYDAY, W_STILL + 10);
+  prv_laufen(0, W_STILL + 13, -1, -1);
+  cl_assert_equal_i(s_klingeln, 1);
+  rtc_set_time(s_ref.beginn_utc + (time_t)(W_STILL - 5) * PBL_SEC_PER_MIN);
+  alarm_handle_clock_change();
+  fake_system_task_callbacks_invoke_pending();
+  prv_laufen(W_STILL - 5, BIS_STILL, -1, -1);
+  prv_bericht("geklungen, Uhr zurueck, ohne Neustart", -1, -1);
+  cl_assert_equal_i(s_klingeln, 2);
+}
+
+// Gestellt: Der Flash ist voll. Erst PFS mit Fuelldateien, dann die Datei des Wecklaufs, bis kein
+// Satz mehr hineinpasst. Name und Groesse wie in wecklauf.c, hier bewusst festgehalten.
+#define WECKLAUF_DATEI_IM_TEST "boulder_wecker"
+#define WECKLAUF_GROESSE_IM_TEST 1024
+static int s_fuelldateien;
+
+static void prv_flash_voll(void) {
+  char name[16];
+  s_fuelldateien = 0;
+  for (size_t groesse = 1u << 20; groesse >= 256 && s_fuelldateien < 10000;) {
+    snprintf(name, sizeof(name), "fuell%d", s_fuelldateien);
+    const int fd = pfs_open(name, OP_FLAG_WRITE, FILE_TYPE_STATIC, groesse);
+    if (fd < 0) {
+      groesse /= 2;
+      continue;
+    }
+    pfs_close(fd);
+    s_fuelldateien++;
+  }
+  cl_assert(s_fuelldateien > 0);
+  // Die Datei bis zum letzten Byte: zuletzt so kleine Saetze, dass kein Lauf mehr passt. Ohne
+  // E4 gibt es sie nicht, und anlegen geht dann nicht mehr.
+  SettingsFile datei;
+  const status_t offen =
+      settings_file_open(&datei, WECKLAUF_DATEI_IM_TEST, WECKLAUF_GROESSE_IM_TEST);
+  cl_assert_equal_i(offen, STRENG ? S_SUCCESS : E_OUT_OF_STORAGE);
+  if (offen != S_SUCCESS) {
+    return;
+  }
+  static const uint8_t s_satz[32];
+  int saetze = 0;
+  for (size_t laenge = sizeof(s_satz); laenge > 0; laenge /= 2) {
+    while (saetze < 2000 &&
+           settings_file_set(&datei, "fuell", 5, s_satz, laenge) == S_SUCCESS) {
+      saetze++;
+    }
+  }
+  settings_file_close(&datei);
+  cl_assert(saetze < 2000);
+}
+
+static void prv_flash_frei(void) {
+  char name[16];
+  for (int i = 0; i < s_fuelldateien; i++) {
+    snprintf(name, sizeof(name), "fuell%d", i);
+    pfs_remove(name);
+  }
+  s_fuelldateien = 0;
+}
+
+// Der Lauf steht in der Datei, dann ist der Flash voll, und er klingelt: "geklungen" muss
+// trotzdem in die Datei - sonst klingelt ein Neustart im Nachholfenster ein zweites Mal.
+void test_boulder_wecker__geklungen_bei_vollem_flash(void) {
+  prv_stiller_morgen(ALARM_KIND_EVERYDAY, W_STILL + 10);
+  prv_laufen(0, W_STILL + 5, -1, -1);
+  prv_flash_voll();
+  prv_laufen(W_STILL + 5, BIS_STILL, W_STILL + 15, W_STILL + 16);
+  prv_bericht("geklungen bei vollem Flash, Neustart", W_STILL + 15, W_STILL + 16);
+  prv_flash_frei();
+  cl_assert_equal_i(s_klingeln, 1);
+  cl_assert_equal_i(prv_weckminute(), W_STILL + 11);
+}
+
+// Der Flash ist voll, als das Fenster beginnt: Der Lauf kommt nicht in die Datei. Wird wieder
+// Platz frei, holt eine spaetere Frage das Schreiben nach, und ein Neustart im Fenster findet
+// den Lauf.
+void test_boulder_wecker__lauf_spaeter_gespeichert(void) {
+  prv_stiller_morgen(ALARM_KIND_EVERYDAY, -1);
+  prv_laufen(0, W_STILL - 2, -1, -1);
+  prv_flash_voll();
+  prv_laufen(W_STILL - 2, W_STILL + 3, -1, -1);
+  prv_flash_frei();
+  prv_laufen(W_STILL + 3, BIS_STILL, W_STILL + 8, W_STILL + 9);
+  prv_bericht("Lauf erst nach vollem Flash gespeichert, Neustart", W_STILL + 8, W_STILL + 9);
+#if STRENG
+  cl_assert_equal_i(s_klingeln, 1);
+  cl_assert_equal_i(prv_weckminute(), T_STILL);
+#else
+  cl_assert_equal_i(s_klingeln, 0);
+#endif
 }

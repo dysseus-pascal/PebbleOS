@@ -49,6 +49,10 @@
 #define alarm_get_next_enabled_alarm stubs_alarm_get_next_enabled_alarm
 #include "stubs_alarm.h"
 #undef alarm_get_next_enabled_alarm
+// Der Wecklauf (wecklauf.c) prueft test_boulder_wecker mit dem echten alarm.c; hier laeuft
+// kein Smart Alarm, die Minute hat nichts zu tun.
+void boulder_wecklauf_minute(void) {
+}
 #include "stubs_analytics.h"
 #include "stubs_hexdump.h"
 #include "stubs_hr_util.h"
