@@ -22,3 +22,11 @@ pbl_clar_test(test_bh_app_zeiten
 # seinen Gegenproben. Die Objekte der echten App prueft es am Firmware-Bau, nicht hier.
 add_test(NAME test_bh_ohne_rechte_gegenproben
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_pruefe_ohne_rechte.py)
+
+# T4.2: die Rechnungen der App (Urteile, HRV-Band, Pulszonen, Formate) gegen das Orakel aus
+# Boulders Kotlin (orakel_rechnung.h, erzeugt in boulder-v2/belege-schritt3/ap5-orakel/).
+pbl_clar_test(test_bh_rechnung
+  SOURCES
+    fw/apps/system/boulder_health/rechnung.c
+  DEFINES CONFIG_BOULDER_HEALTH_APP
+)
