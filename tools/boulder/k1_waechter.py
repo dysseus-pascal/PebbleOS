@@ -14,9 +14,11 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - ein Hunk in einer Pebble-Datei kein "Boulder:" traegt,
   - ein Hunk in einer anderen Funktion liegt als erlaubt,
   - eine Datei mehr Hunks (ohne Kontext gezaehlt) hat als erlaubt,
-  - ein Hunk einer Kieselsport-Stelle den Schalter CONFIG_BOULDER_KIESELSPORT nicht nennt,
+  - ein Hunk einer Kieselsport-Stelle Pebbles Code ausserhalb von
+    #ifdef CONFIG_BOULDER_KIESELSPORT aendert (neue Zeile davor, danach oder im #else,
+    entfernte Zeile; auch ein Include) - im Registry-JSON: den Schalter nicht nennt,
   - eine eigene Datei in Pebbles Ordnern (EIGENE_DATEIEN) Pebbles Zeilen aendert, kein
-    "Boulder:" traegt oder als .c den Schalter nicht nennt,
+    "Boulder:" traegt oder als .c nicht ganz unter dem Schalter steht,
   - der Remote `upstream` fehlt.
 Die eigenen Ordner der Variante und von Kieselsport sind frei.
 """
@@ -84,31 +86,126 @@ PEBBLE = {
     # Zeile in der Liste s_override_table, dem einzigen "static const struct {" der Datei.
     'fw/process_management/app_menu_data_source.c': Stelle(
         3, r'^static const struct \{$', hunks=1, schalter=True),
-    # P6 die Kachel mit der Laufzeit: Include und ein Eintrag in der Liste der System-Kacheln.
+    # P6 die Kachel mit der Laufzeit: Include und ein Eintrag in der Liste der System-Kacheln, je
+    # #ifdef, Zeile, #endif. Die Grenze ist so eng wie bei P5, damit kein weiterer Eintrag durchgeht.
     'fw/apps/system/launcher/default/app_glance_service.c': Stelle(
-        8, r'prv_load_glance_for_node\(', hunks=2, schalter=True),
+        6, r'prv_load_glance_for_node\(', hunks=2, schalter=True),
 }
 
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
 UNVERSIONIERT_FREI = re.compile(r'^build[^/]*/')
 
 HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@ ?(.*)$')
+# Praeprozessor-Zeilen ohne Kommentar. Nur genau "#ifdef SCHALTER" oeffnet den eigenen Block.
+SCHALTER_AUF = re.compile(r'#\s*ifdef\s+' + SCHALTER)
+IF = re.compile(r'#\s*if')
+ELSE = re.compile(r'#\s*(?:else|elif)\b')
+ENDIF = re.compile(r'#\s*endif\b')
 
 
 def eigen(pfad):
     return pfad.startswith(EIGENE_ORDNER)
 
 
+def ohne_kommentar(text, kommentar):
+    """(Code der Zeile ohne Kommentare, ob am Zeilenende ein /* offen ist).
+
+    `kommentar`: ob die Zeile in einem /* beginnt. Zeichenketten kennt das nicht: ein "//" darin
+    kuerzt nur Code, der davor schon steht, die Zeile bleibt Code; ein "/*" darin hielte die
+    folgenden Zeilen faelschlich fuer Kommentar (in Pebbles Haken kommt das nicht vor).
+    """
+    code, rest = '', text
+    while rest:
+        if kommentar:
+            ende = rest.find('*/')
+            if ende < 0:
+                break
+            rest, kommentar = rest[ende + 2:], False
+            continue
+        auf, zeile = rest.find('/*'), rest.find('//')
+        if zeile >= 0 and (auf < 0 or zeile < auf):
+            code += rest[:zeile]
+            break
+        if auf < 0:
+            code += rest
+            break
+        code, rest, kommentar = code + rest[:auf] + ' ', rest[auf + 2:], True
+    return code.strip(), kommentar
+
+
+def ausserhalb_des_schalters(zeilen):
+    """Die Zeilen eines Hunks, mit denen Pebbles Code auf jedem Board anders wird.
+
+    Das sind neue Zeilen, die nicht im ersten Zweig eines #ifdef SCHALTER stehen (davor, danach,
+    im #else), und entfernte Zeilen. Kommentare und Leerzeilen aendern keinen Code und zaehlen
+    nicht. Gelesen wird das Ergebnis (Kontext und neue Zeilen) mit den offenen #if; ein Hunk ohne
+    das eigene #ifdef steht darum ausserhalb. Ein neues #endif ist ueberall erlaubt: git haengt
+    das eigene #endif oft an ein altes an (P5), und ein #if, das es schliessen koennte, ist selbst
+    neu und muss unter dem Schalter stehen.
+    """
+    aussen = []
+    offen = []  # je offenes #if: (ist es #ifdef SCHALTER, steht man in seinem ersten Zweig)
+    kommentar = False
+    for zeile in zeilen:
+        art, text = zeile[:1], zeile[1:]
+        if art == '-':
+            if ohne_kommentar(text, False)[0]:
+                aussen.append(zeile)
+            continue
+        if art not in ' +':
+            continue
+        code, kommentar = ohne_kommentar(text, kommentar)
+        if not code:
+            continue
+        neu = art == '+'
+        unter = any(schalter and erster for schalter, erster in offen)
+        if SCHALTER_AUF.fullmatch(code):
+            offen.append((True, True))
+        elif IF.match(code):
+            if neu and not unter:
+                aussen.append(zeile)
+            offen.append((False, True))
+        elif ELSE.match(code):
+            schalter = bool(offen) and offen[-1][0]
+            if neu and not (unter or schalter):
+                aussen.append(zeile)
+            if offen:
+                offen[-1] = (schalter, False)
+        elif ENDIF.match(code):
+            if offen:
+                offen.pop()
+        elif neu and not unter:
+            aussen.append(zeile)
+    return aussen
+
+
+def schalterfehler(pfad, kopf, zeilen):
+    """Ein Hunk einer Kieselsport-Stelle: C ganz unter dem Schalter, JSON nennt ihn ("ifdefs")."""
+    if pfad.endswith(('.c', '.h')):
+        aussen = ausserhalb_des_schalters(zeilen)
+        if aussen:
+            return [f'{pfad}: Hunk "{kopf}" aendert ausserhalb von #ifdef {SCHALTER}: '
+                    f'"{aussen[0].strip()}"']
+        return []
+    if not any(SCHALTER in z for z in zeilen):
+        return [f'{pfad}: Hunk "{kopf}" ohne {SCHALTER}']
+    return []
+
+
 def pruefe_eigene_datei(pfad, hunks):
-    """Eine eigene Datei in Pebbles Ordner: nur neue Zeilen, "Boulder:", als .c mit Schalter."""
+    """Eine eigene Datei in Pebbles Ordner: nur neue Zeilen, "Boulder:", als .c ganz unter dem
+    Schalter - fw/apps/system/ sammelt jede .c ein, Code davor oder danach baute jedes Board."""
     fehler = []
     zeilen = [x for _, z in hunks for x in z]
     if any(x.startswith('-') for x in zeilen):
         fehler.append(f'{pfad}: eigene Datei aendert Zeilen, die es schon gab')
     if not any('Boulder:' in x for x in zeilen):
         fehler.append(f'{pfad}: eigene Datei ohne "Boulder:"')
-    if pfad.endswith('.c') and not any(x.startswith('+#ifdef ' + SCHALTER) for x in zeilen):
-        fehler.append(f'{pfad}: eigene Datei nicht unter #ifdef {SCHALTER}')
+    if pfad.endswith('.c'):
+        aussen = ausserhalb_des_schalters([x for x in zeilen if x.startswith('+')])
+        if aussen:
+            fehler.append(f'{pfad}: eigene Datei nicht ganz unter #ifdef {SCHALTER}: '
+                          f'"{aussen[0].strip()}"')
     return fehler
 
 
@@ -120,7 +217,8 @@ def als_neue_datei(pfad, text):
 
 
 def nur_includes(zeilen):
-    """Nur Includes und Kommentare geaendert: an keine Funktion und keinen Schalter gebunden.
+    """Nur Includes und Kommentare geaendert: an keine Funktion gebunden (den Schalter brauchen sie
+    trotzdem, siehe schalterfehler).
 
     Ein #ifdef um ein Include zaehlt mit; ohne Include waere ein #if 0 frei.
     """
@@ -170,9 +268,9 @@ def pruefe_diff(diff, unversioniert, diff_u0=None):
         for kopf, zeilen in hunks:
             if not any('Boulder:' in z for z in zeilen):
                 fehler.append(f'{pfad}: Hunk "{kopf}" ohne "Boulder:"')
-            # Mit Kontext: ein #endif zwei Zeilen unter dem eigenen #ifdef gehoert dazu.
-            if stelle.schalter and not nur_includes(zeilen) and not any(SCHALTER in z for z in zeilen):
-                fehler.append(f'{pfad}: Hunk "{kopf}" ohne {SCHALTER}')
+            # Mit Kontext: das #ifdef, unter dem eine Zeile steht, und sein #endif gehoeren dazu.
+            if stelle.schalter:
+                fehler += schalterfehler(pfad, kopf, zeilen)
         u0 = ohne_kontext.get(pfad, [])
         if stelle.hunks is not None and len(u0) > stelle.hunks:
             fehler.append(f'{pfad}: {len(u0)} Hunks - hoechstens {stelle.hunks}')

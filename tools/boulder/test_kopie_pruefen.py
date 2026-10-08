@@ -6,7 +6,9 @@
 Jede Probe muss den Waechter rot faerben; die markierte Fassung gruen.
 """
 import pathlib
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import k1_waechter  # noqa: E402
@@ -31,6 +33,11 @@ def proben_kopie():
     _, kopien, _ = kopie_pruefen.lies_herkunft(herkunft)
     falsch = herkunft.replace(kopien[0][2], '0' * 64)
     yield 'falsche Pruefsumme', any('SHA-256' in f for f in kopie_pruefen.pruefe(repo, falsch))
+
+
+def rot(fehler, wort):
+    """Rot aus dem erwarteten Grund: eine Meldung enthaelt `wort`."""
+    return any(wort in f for f in fehler)
 
 
 def hunk(datei, zeilen, kopf=''):
@@ -94,8 +101,10 @@ def proben_kieselsport(pruefe):
     yield 'P2 in anderer Funktion', pruefe(hunk(WORKOUT_C, P2, 'static void prv_init(void) {'), [])
     yield 'P2 zu viele Zeilen', pruefe(hunk(WORKOUT_C, P2 + ['+  x;', '+  y;'], WORKOUT_INFO), [])
     yield 'P1 im Stopp', not pruefe(hunk(DIENST, P1, STOPP), [])
-    yield 'P1 Include ohne Schalter', not pruefe(
-        hunk(DIENST, ['+#include "pbl/services/activity/boulder/kalorien.h"  // Boulder: P1']), [])
+    # Ein Include ohne Schalter zieht den Kopf auf jedem Board herein (Befund nach a75d3156a).
+    yield 'P1 Include ohne Schalter', rot(pruefe(
+        hunk(DIENST, ['+#include "pbl/services/activity/boulder/kalorien.h"  // Boulder: P1']), []),
+        'ausserhalb von #ifdef')
     yield 'P1 Include mit Schalter', not pruefe(
         hunk(DIENST, ['+#ifdef CONFIG_BOULDER_KIESELSPORT',
                       '+#include "pbl/services/activity/boulder/kalorien.h"  // Boulder: P1',
@@ -105,8 +114,31 @@ def proben_kieselsport(pruefe):
     yield 'P1 in Pause', pruefe(hunk(DIENST, P1, 'bool workout_service_pause_workout(bool should_be_paused) {'),
                                 [])
     yield 'P1 ohne Schalter', pruefe(hunk(DIENST, ['+  boulder_x();  // Boulder: P1'], STOPP), [])
+    yield 'P1 Schalter nur im Kommentar', rot(pruefe(hunk(
+        DIENST, ['+  boulder_x();  // Boulder: P1 wie CONFIG_BOULDER_KIESELSPORT'], STOPP), []),
+        'ausserhalb von #ifdef')
+    yield 'P1 Zeile nach dem #endif', rot(pruefe(hunk(DIENST, P1 + ['+  boulder_y();'], STOPP), []),
+                                          'ausserhalb von #ifdef')
+    # Pebbles Zeile bleibt im #else stehen (Schritt-kcal, F5): so ist es richtig ...
+    bewegung = ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: Schritt-kcal',
+                '+    kcal += boulder_kalorien_schritte(kcal_neu);', '+#else',
+                '     kcal += kcal_neu;', '+#endif', '   }']
+    yield 'P1 Pebbles Zeile im #else', not pruefe(hunk(DIENST, bewegung, STOPP), [])
+    # ... geaendert oder neu im #else aendert sie jedes andere Board.
+    geaendert = bewegung[:3] + ['-    kcal += kcal_neu;', '+    kcal += 2 * kcal_neu;'] + bewegung[4:]
+    yield 'P1 Zeile im #else geaendert', rot(pruefe(hunk(DIENST, geaendert, STOPP), []),
+                                             'ausserhalb von #ifdef')
+    yield 'P1 neue Zeile im #else', rot(pruefe(hunk(DIENST, P1[:2] + ['+#else', '+  pebble_y();'] + P1[2:],
+                                                    STOPP), []), 'ausserhalb von #ifdef')
+    yield 'P1 Pebbles Zeile entfernt', rot(pruefe(hunk(DIENST, P1 + ['-  save_session = true;'], STOPP),
+                                                  []), 'ausserhalb von #ifdef')
+    yield 'P1 #if 0 ohne Schalter', rot(pruefe(hunk(DIENST, ['+#if 0  // Boulder: x', '   alt();', '+#endif'],
+                                                    STOPP), []), 'ausserhalb von #ifdef')
+    yield 'P1 Kommentar vor dem #ifdef', not pruefe(hunk(DIENST, ['+  // Boulder: P1, warum'] + P1, STOPP), [])
     yield 'P1 zu viele Zeilen', pruefe(hunk(DIENST, P1 * 9, STOPP), [])
     yield 'P3 Registry', not pruefe(hunk(REGISTRY, P3), [])
+    yield 'P3 ohne Schalter', rot(pruefe(hunk(REGISTRY, [z for z in P3 if 'ifdefs' not in z]), []),
+                                  'ohne CONFIG_BOULDER_KIESELSPORT')
     zwei = hunks(REGISTRY, ('', P3), ('', P3))
     yield 'P3 zweiter Eintrag', pruefe(zwei, [], zwei)
     yield 'P4 Satz', not pruefe(hunk(
@@ -146,22 +178,86 @@ def proben_startmenue(pruefe):
                                          [])
     zwei = hunks(MENUE, (LISTE, P5), (LISTE, ['+// Boulder: zweiter Hunk']))
     yield 'P5 zweiter Hunk', pruefe(zwei, [], zwei)
+    # So zeigt git P5 wirklich: das eigene #endif vor dem eigenen #ifdef, Pebbles #endif danach.
+    verschoben = ['  {APP_ID_GOLF, false},', ' #ifdef APP_ID_WORKOUT', '   {APP_ID_WORKOUT, true},',
+                  '+#endif', '+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P5',
+                  '+  {APP_ID_KIESELSPORT, true},', ' #endif', '   {APP_ID_MUSIC, true},']
+    yield 'P5 wie git es zeigt', not pruefe(hunk(MENUE, verschoben, LISTE), [])
+    yield 'P5 Zeile nach dem #endif', rot(pruefe(hunk(MENUE, verschoben[:-1] + ['+  {APP_ID_GOLF, true},'] +
+                                                      verschoben[-1:], LISTE), []), 'ausserhalb von #ifdef')
     beide = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, P6))
     yield 'P6 Include und Eintrag', not pruefe(beide, [], beide)
     yield 'P6 in anderer Funktion', pruefe(hunk(GLANCE, P6, 'void launcher_app_glance_service_init('), [])
     yield 'P6 ohne Schalter', pruefe(hunk(GLANCE, ['+    {.uuid = X},  // Boulder: P6'], LADEN), [])
-    drei = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, P6), (LADEN, ['+// Boulder: dritter Hunk']))
-    yield 'P6 dritter Hunk', pruefe(drei, [], drei)
+    # Das Include ohne Schalter: eine Zeile statt drei, der Kopf kaeme auf jedes Board.
+    ohne = hunks(GLANCE, ('', ['+#include "app_glance_kieselsport.h"  // Boulder: P6']), (LADEN, P6))
+    yield 'P6 Include ohne Schalter', rot(pruefe(ohne, [], ohne), 'ausserhalb von #ifdef')
+    vorher = hunks(GLANCE, ('', ['+#include "app_glance_kieselsport.h"  // Boulder: P6',
+                                 '+#ifdef CONFIG_BOULDER_KIESELSPORT', '+#endif']), (LADEN, P6))
+    yield 'P6 Include vor dem #ifdef', rot(pruefe(vorher, [], vorher), 'ausserhalb von #ifdef')
+    # Ein weiterer Eintrag in der Liste: unter dem Schalter, aber ueber der Grenze (6 Zeilen).
+    mehr = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, P6[:2] + P6[1:]))
+    yield 'P6 weiterer Eintrag', rot(pruefe(mehr, [], mehr), 'hoechstens 6')
+    # Drei Hunks mit 5 Zeilen: nur die Zahl der Hunks ist zu hoch.
+    drei = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, ['+// Boulder: a']), (LADEN, ['+// Boulder: b']))
+    yield 'P6 dritter Hunk', rot(pruefe(drei, [], drei), '3 Hunks')
     # Die Kacheldatei: neu, ganz Boulder, unter dem Schalter - committet oder noch unversioniert.
     neu = k1_waechter.als_neue_datei(KACHEL, KACHEL_TEXT)
     yield 'Kacheldatei', not pruefe(neu, [])
-    yield 'Kacheldatei unversioniert', not pruefe('', [KACHEL])
+    yield 'Kacheldatei unversioniert erlaubt', not pruefe('', [KACHEL])
     yield 'Kacheldatei ohne Schalter', pruefe(k1_waechter.als_neue_datei(KACHEL, '// Boulder: P6\nint x;\n'), [])
+    # Ganz unter dem Schalter: fw/apps/system/ baut jede .c, Code davor oder danach jedes Board.
+    for name, text in (('Zeile vor dem #ifdef', 'int y;\n' + KACHEL_TEXT),
+                       ('Zeile nach dem #endif', KACHEL_TEXT + 'int y;\n'),
+                       ('Zeile im #else', KACHEL_TEXT.replace('#endif', '#else\nint y;\n#endif')),
+                       ('Code hinter einem Kommentar', '/* SPDX */ int y;\n' + KACHEL_TEXT)):
+        yield f'Kacheldatei {name}', rot(pruefe(k1_waechter.als_neue_datei(KACHEL, text), []),
+                                         'nicht ganz unter')
+    kommentiert = ('/* SPDX-FileCopyrightText: x */\n/*\n * int nicht_code;\n */\n' + KACHEL_TEXT +
+                   '// nach dem Schalter nur Kommentar\n')
+    yield 'Kacheldatei mit Kommentaren aussen', not pruefe(k1_waechter.als_neue_datei(KACHEL, kommentiert), [])
     yield 'Kacheldatei ohne Marke', pruefe(
         k1_waechter.als_neue_datei(KACHEL, '#ifdef CONFIG_BOULDER_KIESELSPORT\nint x;\n#endif\n'), [])
     yield 'Kacheldatei aendert Pebbles Zeilen', pruefe(hunk(KACHEL, ['-alt', '+// Boulder: P6',
                                                                      '+#ifdef CONFIG_BOULDER_KIESELSPORT']), [])
     yield 'andere neue Datei im Startmenue', pruefe('', ['fw/apps/system/launcher/default/app_glance_x.c'])
+    yield from proben_arbeitsbaum()
+
+
+def arbeitsbaum(unversioniert):
+    """pruefe() an einem echten Git-Repo, upstream/main = HEAD, dazu unversionierte Dateien.
+
+    Pebbles Kachel-Ordner ist versioniert, sonst zeigte git status nur "fw/".
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = pathlib.Path(tmp)
+
+        def git(*args):
+            subprocess.run(['git', '-C', tmp, '-c', 'user.name=k1', '-c', 'user.email=k1@test',
+                            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', *args],
+                           check=True, capture_output=True)
+        git('init', '-q')
+        (repo / GLANCE).parent.mkdir(parents=True)
+        (repo / GLANCE).write_text('// Pebble\n')
+        git('add', '.')
+        git('commit', '-q', '-m', 'Pebble')
+        git('remote', 'add', 'upstream', tmp)
+        git('update-ref', 'refs/remotes/upstream/main', 'HEAD')
+        for pfad, text in unversioniert.items():
+            (repo / pfad).write_text(text)
+        return k1_waechter.pruefe(repo)
+
+
+def proben_arbeitsbaum():
+    # Eine Kacheldatei vor dem ersten git add: git diff zeigt sie nicht, ihr Inhalt zaehlt trotzdem.
+    yield 'Arbeitsbaum: Kacheldatei unversioniert', not arbeitsbaum({KACHEL: KACHEL_TEXT})
+    yield 'Arbeitsbaum: Kacheldatei unversioniert, Zeile vor dem #ifdef', rot(
+        arbeitsbaum({KACHEL: 'int y;\n' + KACHEL_TEXT}), 'nicht ganz unter')
+    yield 'Arbeitsbaum: Kacheldatei unversioniert ohne Marke', rot(
+        arbeitsbaum({KACHEL: KACHEL_TEXT.replace('// Boulder: P6\n', '')}), 'ohne "Boulder:"')
+    yield 'Arbeitsbaum: andere Datei unversioniert', rot(
+        arbeitsbaum({'fw/apps/system/launcher/default/app_glance_x.c': KACHEL_TEXT}),
+        'ausserhalb der eigenen Ordner')
 
 
 def main():
