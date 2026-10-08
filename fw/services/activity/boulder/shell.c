@@ -12,6 +12,8 @@
 //   boulder probe          nur im Pruefbau mit der Health-App: oeffnet sie fuer die Probe der
 //                          Bausteine ohne Systemrechte (Schritt 3, AP1; apps/.../probe.h)
 //   boulder fehlerprobe    dasselbe fuer die Fehlerprobe: Die App schreibt in Kernel-RAM (T2.1)
+//   boulder pins           nur im Pruefbau mit der Health-App: Pebbles Pins der Insights mit
+//                          "Open App" anlegen (Schritt 3, AP7, T3.4)
 // Shell-Befehle laufen auf KernelBG (shell.h): heap_calc_totals geht die Blockliste durch,
 // das ist hier erlaubt, im Takt nicht.
 
@@ -127,6 +129,20 @@ static int prv_probe(const struct pbl_shell *sh, size_t argc, char **argv) {
 static int prv_fehlerprobe(const struct pbl_shell *sh, size_t argc, char **argv) {
   return prv_health_probe(sh, BH_PROBE_FEHLER, "der Fehlerprobe");
 }
+
+#include "pbl/services/activity/activity_insights.h"
+
+// Legt Pins der Insights an, ueber Pebbles eigene Pruefhilfe (wie Pebbles Activity-Demo,
+// apps/demo/activity_demo/activity_demo.c:564): je vier Pins zu Aktivitaet (jetzt) und Schlaf
+// (7 Uhr heute), jeder mit "Open App" und dem Kartentyp, den Pebbles activity_insights.c setzt.
+// Ohne Bewegung und ohne Telefon entstuenden in QEMU keine; so laeuft der Weg vom Pin in die
+// Health-App ganz durch Pebbles Code (T3.4). Die Meldungen dazu kommen nur, wenn die Insights an
+// sind (in QEMU aus).
+static int prv_pins(const struct pbl_shell *sh, size_t argc, char **argv) {
+  activity_insights_test_push_summary_pins();
+  pbl_shell_print(sh, "Pins der Insights angelegt");
+  return 0;
+}
 #endif
 #endif
 
@@ -140,6 +156,7 @@ static const struct pbl_shell_cmd sub_boulder[] = {
 #if defined(CONFIG_BOULDER_HEALTH_APP)
   PBL_SHELL_CMD(probe, NULL, "Health-App: Probe der Bausteine", prv_probe),
   PBL_SHELL_CMD(fehlerprobe, NULL, "Health-App: Fehlerprobe in Kernel-RAM", prv_fehlerprobe),
+  PBL_SHELL_CMD(pins, NULL, "Pins der Insights mit Open App", prv_pins),
 #endif
 #endif
   PBL_SHELL_SUBCMD_SET_END,

@@ -7,11 +7,16 @@
 // weg, sonst gaebe es die Funktion zweimal.
 #ifdef CONFIG_BOULDER_HEALTH_APP
 
+#include "einstieg.h"
+#include "karten.h"
 #include "probe.h"
 #include "zeiten.h"
 
 #include "applib/app.h"
+#include "applib/app_launch_button.h"
+#include "applib/app_launch_reason.h"
 #include "applib/ui/app_window_stack.h"
+#include "applib/ui/click.h"
 #include "applib/ui/layer.h"
 #include "applib/ui/window.h"
 #include "kernel/pbl_malloc.h"
@@ -30,30 +35,77 @@
 // was ein Syscall ihr kopiert. Darum gibt es hier kein beschreibbares static - es laege in
 // .kernel_bss, das die App nicht schreiben darf. Der Zustand liegt im Heap der App.
 //
-// Noch das Geruest (AP0): ein leeres Fenster. Daten, Karten und Laden kommen mit AP2-AP6.
+// Noch der Rahmen: Start und Blaettern (AP7), jede Karte mit ihrem Kopfbalken. Daten, Inhalt der
+// Karten, Details und Laden kommen mit AP2-AP6.
 
 typedef struct {
   Window *fenster;
-  // Zeichnet nichts. Ihr erstes Zeichnen ist das Ende des ersten Bildes, an dem L1 misst.
+  // Zeichnet die gezeigte Karte. Ihr Zeichnen nach dem Start und nach jeder Taste ist das Ende
+  // des Bildes, an dem L1 und L2 messen.
   Layer *flaeche;
-  bool gezeichnet;
+  BhEinstieg einstieg;
+  BhKarte karte;
+  bool bild_offen; //< das naechste Zeichnen beendet einen Start oder einen Tastendruck
 } BhApp;
 
 const PebbleProcessMd *health_app_get_info(void);
 
 static void prv_flaeche_zeichnen(Layer *flaeche, GContext *ctx) {
   BhApp *app = app_state_get_user_data();
-  if (!app->gezeichnet) {
-    app->gezeichnet = true;
+  bh_kopf_zeichnen(ctx, layer_get_bounds_by_value(flaeche), app->karte);
+  if (app->bild_offen) {
+    app->bild_offen = false;
     BH_ZEIT("bild");
   }
+}
+
+// Oben und Unten (2.4). OHNE SYSCALL bis zum Bild (L3): Die Karte kommt aus dem Zustand im Heap,
+// nur der Pruefbau schreibt die Zeitstempel.
+static void prv_blaettern(ClickRecognizerRef anlass, void *kontext) {
+  BhApp *app = app_state_get_user_data();
+  const ButtonId knopf = click_recognizer_get_button_id(anlass);
+  BH_ZEIT("taste");
+  switch (bh_blaettern(&app->einstieg, &app->karte, knopf)) {
+    case BhSchrittKarte:
+      BH_PROTOKOLL("karte %s", bh_karte_titel(app->karte));
+      app->bild_offen = true;
+      layer_mark_dirty(app->flaeche);
+      break;
+    case BhSchrittZifferblatt:
+      BH_ZEIT("zifferblatt");
+      // Wie Pebble (card_view.c:291): Die App endet, und Pebble kehrt zum Zifferblatt zurueck,
+      // von dem Quick Launch sie geoeffnet hat - mit dem Uebergang nach dem Start (shell.c:48-54).
+      app_window_stack_pop_all(true /* animiert */);
+      break;
+    case BhSchrittNichts:
+      BH_ZEIT("nichts");
+      break;
+  }
+}
+
+static void prv_tasten(void *kontext) {
+  window_single_click_subscribe(BUTTON_ID_UP, prv_blaettern);
+  window_single_click_subscribe(BUTTON_ID_DOWN, prv_blaettern);
 }
 
 static void prv_start(void) {
   BhApp *app = app_zalloc_check(sizeof(BhApp));
   app_state_set_user_data(app);
+  // Wie die App gestartet ist, liest sie einmal hier, vor dem ersten Bild (Phase 0).
+  const AppLaunchReason grund = app_launch_reason();
+  const ButtonId knopf = app_launch_button();
+  const AppQuickLaunchAction aktion = app_launch_get_quick_launch_action();
+  const uint32_t argument = app_launch_get_args();
+  app->einstieg = bh_einstieg(grund, knopf, aktion, argument);
+  app->karte = app->einstieg.karte;
+  app->bild_offen = true;
+  BH_PROTOKOLL("start grund=%d knopf=%d aktion=%d argument=%lu %s kreis=%d spiegel=%d",
+               (int)grund, (int)knopf, (int)aktion, (unsigned long)argument,
+               bh_karte_titel(app->karte), (int)app->einstieg.kreis,
+               (int)app->einstieg.gespiegelt);
   app->fenster = window_create();
   window_set_background_color(app->fenster, GColorWhite);
+  window_set_click_config_provider(app->fenster, prv_tasten);
   Layer *wurzel = window_get_root_layer(app->fenster);
   app->flaeche = layer_create(layer_get_bounds_by_value(wurzel));
   layer_set_update_proc(app->flaeche, prv_flaeche_zeichnen);
