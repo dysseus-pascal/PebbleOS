@@ -7,6 +7,7 @@
 // weg, sonst gaebe es die Funktion zweimal.
 #ifdef CONFIG_BOULDER_HEALTH_APP
 
+#include "probe.h"
 #include "zeiten.h"
 
 #include "applib/app.h"
@@ -69,6 +70,11 @@ static void prv_ende(void) {
 
 static void prv_boulder_health_main(void) {
   BH_ZEIT("main");
+  // Nur im Pruefbau: "boulder probe" und "boulder fehlerprobe" starten statt der App eine Probe
+  // (probe.h). Sonst ist bh_probe() false und der Zweig faellt weg.
+  if (bh_probe()) {
+    return;
+  }
   prv_start();
   app_event_loop();
   prv_ende();

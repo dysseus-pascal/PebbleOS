@@ -7,6 +7,11 @@
 //   boulder wecker <h> <m> [einmal|gewoehnlich]  nur im Pruefbau: Smart Alarm anlegen, oder
 //                          einen gewoehnlichen taeglichen Wecker (QEMU-Ablaeufe zum Neustart,
 //                          wecklauf.h)
+//   boulder stapel         nur im Pruefbau: Tiefstand der Syscall-Stapel seit dem Boot (Schritt 3,
+//                          T2.5)
+//   boulder probe          nur im Pruefbau mit der Health-App: oeffnet sie fuer die Probe der
+//                          Bausteine ohne Systemrechte (Schritt 3, AP1; apps/.../probe.h)
+//   boulder fehlerprobe    dasselbe fuer die Fehlerprobe: Die App schreibt in Kernel-RAM (T2.1)
 // Shell-Befehle laufen auf KernelBG (shell.h): heap_calc_totals geht die Blockliste durch,
 // das ist hier erlaubt, im Takt nicht.
 
@@ -84,6 +89,45 @@ static int prv_wecker(const struct pbl_shell *sh, size_t argc, char **argv) {
                   stunde, minute, einmal ? "einmal" : "taeglich");
   return (id == ALARM_INVALID_ID) ? -1 : 0;
 }
+
+#include "syscall/syscall_internal.h"
+
+// Wie viele Byte der Syscall-Stapel von App und Worker seit dem Boot nie benutzt wurden (2 KiB
+// je Stapel, syscall_internal.c). Nur Syscalls aus Code ohne Systemrechte laufen dort; der
+// Tiefstand ist also der tiefste Syscall einer solchen App seit dem Boot. Darum misst T2.5 nach
+// frischem Boot.
+static int prv_stapel(const struct pbl_shell *sh, size_t argc, char **argv) {
+  pbl_shell_print(sh, "Syscall-Stapel nie benutzt: App %u B, Worker %u B",
+                  (unsigned)syscall_app_stack_free_bytes(),
+                  (unsigned)syscall_worker_stack_free_bytes());
+  return 0;
+}
+
+#if defined(CONFIG_BOULDER_HEALTH_APP)
+#include "apps/system/boulder_health/probe.h"
+#include "process_management/app_manager.h"
+#include "shell/system_app_ids.auto.h"
+
+// Oeffnet die Health-App wie "Open App" aus einem Pin, mit der Probe als Startargument: Nur fuer
+// APP_LAUNCH_TIMELINE_ACTION reicht Pebble ein Argument an die App durch (probe.h).
+static int prv_health_probe(const struct pbl_shell *sh, uint32_t probe, const char *name) {
+  app_manager_put_launch_app_event(&(AppLaunchEventConfig){
+    .id = APP_ID_HEALTH_APP,
+    .common.args = (void *)(uintptr_t)probe,
+    .common.reason = APP_LAUNCH_TIMELINE_ACTION,
+  });
+  pbl_shell_print(sh, "Health-App mit %s", name);
+  return 0;
+}
+
+static int prv_probe(const struct pbl_shell *sh, size_t argc, char **argv) {
+  return prv_health_probe(sh, BH_PROBE_BAUSTEINE, "der Probe der Bausteine");
+}
+
+static int prv_fehlerprobe(const struct pbl_shell *sh, size_t argc, char **argv) {
+  return prv_health_probe(sh, BH_PROBE_FEHLER, "der Fehlerprobe");
+}
+#endif
 #endif
 
 static const struct pbl_shell_cmd sub_boulder[] = {
@@ -92,6 +136,11 @@ static const struct pbl_shell_cmd sub_boulder[] = {
   PBL_SHELL_CMD(prueflauf, NULL, "Pruefnacht im Zeitraffer", prv_prueflauf),
   PBL_SHELL_CMD_ARG(wecker, NULL, "Wecker anlegen <h> <m> [einmal|gewoehnlich]", prv_wecker, 3,
                     1),
+  PBL_SHELL_CMD(stapel, NULL, "Tiefstand der Syscall-Stapel seit dem Boot", prv_stapel),
+#if defined(CONFIG_BOULDER_HEALTH_APP)
+  PBL_SHELL_CMD(probe, NULL, "Health-App: Probe der Bausteine", prv_probe),
+  PBL_SHELL_CMD(fehlerprobe, NULL, "Health-App: Fehlerprobe in Kernel-RAM", prv_fehlerprobe),
+#endif
 #endif
   PBL_SHELL_SUBCMD_SET_END,
 };

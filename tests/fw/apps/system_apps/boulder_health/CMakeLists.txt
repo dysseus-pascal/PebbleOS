@@ -17,3 +17,8 @@ pbl_clar_test(test_bh_app_zeiten
     fw/apps/system/boulder_health/boulder_health.c
   DEFINES CONFIG_BOULDER_HEALTH_APP CONFIG_BOULDER_HEALTH_ZEITEN
 )
+
+# T2.2: das Pruefskript der Objekte ohne Systemrechte (tools/boulder/pruefe_ohne_rechte.py) mit
+# seinen Gegenproben. Die Objekte der echten App prueft es am Firmware-Bau, nicht hier.
+add_test(NAME test_bh_ohne_rechte_gegenproben
+  COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_pruefe_ohne_rechte.py)
