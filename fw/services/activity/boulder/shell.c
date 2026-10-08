@@ -3,7 +3,8 @@
 
 // Boulder V2: Shell-Befehle der Variante (Spezifikation 7.5, AP9).
 //   boulder zeiten         Laufzeit je Arbeit, Heap, Schlange, Diagnosesatz des Tages
-//   boulder prueflauf <n>  nur im Pruefbau (CONFIG_BOULDER_PRUEFLAUF, prueflauf.c)
+//   boulder prueflauf <n> [tage]  nur im Pruefbau (CONFIG_BOULDER_PRUEFLAUF, prueflauf.c); `tage`
+//                          Fenster vor dem juengsten (Schritt 3, AP3)
 //   boulder wecker <h> <m> [einmal|gewoehnlich]  nur im Pruefbau: Smart Alarm anlegen, oder
 //                          einen gewoehnlichen taeglichen Wecker (QEMU-Ablaeufe zum Neustart,
 //                          wecklauf.h)
@@ -21,6 +22,8 @@
 //   boulder spo2 <n>       dasselbe: den SpO2-Ring mit n Werten fuellen (8.1)
 //   boulder stufe <n>      dasselbe: Die Health-App setzt die Messstufe n ueber S4 (6: ungueltig)
 //   boulder lage           dasselbe: die zuletzt veroeffentlichte Lage (S2 ohne die App)
+//   boulder naechte        dasselbe: die Liste der Naechte im Kern, juengster Wachtag zuerst
+//                          (Schritt 3, AP3; S5 ohne die App)
 // Shell-Befehle laufen auf KernelBG (shell.h): heap_calc_totals geht die Blockliste durch,
 // das ist hier erlaubt, im Takt nicht.
 
@@ -68,12 +71,18 @@ static int prv_zeiten(const struct pbl_shell *sh, size_t argc, char **argv) {
 
 static int prv_prueflauf(const struct pbl_shell *sh, size_t argc, char **argv) {
   const int n = (argc > 1) ? atoi(argv[1]) : -1;
-  if (!boulder_prueflauf_starten(n)) {
-    pbl_shell_print(sh, "Pruefnacht %d unbekannt oder ein Lauf laeuft (0-3 Fixtures, "
-                        "4 schlimmste Nacht, 5 Velo)", n);
+  const int tage = (argc > 2) ? atoi(argv[2]) : 0;
+  if (!boulder_prueflauf_starten(n, tage)) {
+    pbl_shell_print(sh,
+                    "Pruefnacht %d (%d Tage zurueck) unbekannt oder ein Lauf laeuft (0-3 "
+                    "Fixtures, 4 schlimmste Nacht, 5 Velo; 0-30 Tage)",
+                    n, tage);
     return -1;
   }
-  pbl_shell_print(sh, "Pruefnacht %d laeuft; Ende im Log, Zeiten mit 'boulder zeiten'", n);
+  pbl_shell_print(sh,
+                  "Pruefnacht %d laeuft, %d Tage zurueck; Ende im Log, Zeiten mit "
+                  "'boulder zeiten'",
+                  n, tage);
   return 0;
 }
 
@@ -226,6 +235,22 @@ static int prv_lage(const struct pbl_shell *sh, size_t argc, char **argv) {
                   l.ziel_schlaf_min, l.maxpuls, l.ruhepuls_median, l.nickerchen);
   return 0;
 }
+
+#include "pbl/services/activity/boulder/naechte.h"
+
+// Ohne Kopie und ohne Sperre: Shell-Befehle laufen auf KernelBG, und nur KernelBG schreibt die
+// Liste (naechte.h). Gedruckt wird ausserhalb jeder Sperre.
+static int prv_naechte(const struct pbl_shell *sh, size_t argc, char **argv) {
+  const BoulderNaechte *n = boulder_naechte_kern();
+  pbl_shell_print(sh, "Naechte %d: anzahl %d neu %d min %d/%d", (int)n->fassung, (int)n->anzahl,
+                  (int)n->neu, (int)n->min_ruhe, (int)n->min_hrv);
+  for (int k = 0; k < n->anzahl; k++) {
+    const BoulderNachtEintrag *e = &n->tage[(n->neu + NAECHTE_MAX - k) % NAECHTE_MAX];
+    pbl_shell_print(sh, "Nacht %d: tag %d hrv %d ruhepuls %d", k, (int)e->tag, (int)e->hrv,
+                    (int)e->ruhepuls);
+  }
+  return 0;
+}
 #endif
 #endif
 
@@ -246,6 +271,7 @@ static const struct pbl_shell_cmd sub_boulder[] = {
                     prv_ziele, 2, 3),
   PBL_SHELL_CMD_ARG(spo2, NULL, "SpO2-Ring fuellen <n>", prv_spo2, 2, 0),
   PBL_SHELL_CMD(lage, NULL, "Lage der Health-App", prv_lage),
+  PBL_SHELL_CMD(naechte, NULL, "Naechte der Health-App (S5)", prv_naechte),
 #endif
 #endif
   PBL_SHELL_SUBCMD_SET_END,

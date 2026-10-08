@@ -4,7 +4,7 @@
 #pragma once
 
 // Boulder V2, Schritt 3: die Schnittstelle der Variante zur eigenen Health-App (Spezifikation
-// Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele).
+// Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele; AP3: S5, die Naechte).
 //
 // WARUM SYSCALLS: Die Health-App laeuft ohne Systemrechte. Was die Variante weiss, liegt in
 // Kernel-RAM, das die App nicht lesen darf. Jeder Syscall prueft den Puffer der App, nimmt
@@ -81,7 +81,42 @@ _Static_assert(sizeof(BoulderZieleSatz) == 8, "BoulderZieleSatz: 8 B");
 _Static_assert(offsetof(BoulderZieleSatz, schritte) == 2, "BoulderZieleSatz: schritte");
 _Static_assert(offsetof(BoulderZieleSatz, schlaf_min) == 4, "BoulderZieleSatz: schlaf_min");
 
-// --- Die Syscalls der App (S1-S4) -------------------------------------------------------------
+// HRV und Ruhepuls je Wachtag (AP3, F2; naechte.h). Nur Datum, HRV und Ruhepuls - sonst behaelt
+// die Uhr von frueheren Naechten nichts.
+//
+// WARUM 37: Das HRV-Band eines Tages kommt aus den 30 Tagen davor, Heart-Detail zeigt 7 Naechte
+// mit je ihrem Band. Die aelteste dieser 7 braucht Werte bis 36 Tage zurueck (3.3).
+#define NAECHTE_MAX             37
+#define BOULDER_NAECHTE_FASSUNG 1
+
+typedef struct PBL_PACKED {
+  uint16_t tag;     //!< Wachtag: Tage seit 1.1.2000, Ortsdatum des Aufwachens
+  uint16_t hrv;     //!< ms, laengste Nacht des Wachtags mit HRV (Boulders jeTagMitHrv), 0 = keine
+  uint8_t ruhepuls; //!< laengste Nacht des Wachtags (Boulders jeTag), 0 = keiner
+  uint8_t reserve;
+} BoulderNachtEintrag;
+
+// Ein Ring: tage[neu] ist der juengste Wachtag, die aelteren folgen rueckwaerts. Die Tage sind
+// streng aufsteigend, jeder hoechstens einmal.
+typedef struct PBL_PACKED {
+  uint8_t fassung; //!< BOULDER_NAECHTE_FASSUNG
+  uint8_t anzahl;  //!< 0..NAECHTE_MAX
+  uint8_t neu;     //!< Platz des juengsten Wachtags
+  uint8_t reserve;
+  uint16_t min_ruhe; //!< Schlafminuten der Nacht, die ruhepuls des juengsten Tags lieferte
+  uint16_t min_hrv;  //!< dasselbe fuer hrv; beides nur Auswahlhilfe, nie angezeigt
+  BoulderNachtEintrag tage[NAECHTE_MAX];
+} BoulderNaechte;
+
+_Static_assert(sizeof(BoulderNachtEintrag) == 6, "BoulderNachtEintrag: 6 B (Spezifikation 3.3)");
+_Static_assert(offsetof(BoulderNachtEintrag, hrv) == 2, "BoulderNachtEintrag: hrv");
+_Static_assert(offsetof(BoulderNachtEintrag, ruhepuls) == 4, "BoulderNachtEintrag: ruhepuls");
+_Static_assert(sizeof(BoulderNaechte) == 230, "BoulderNaechte: 8 + 37 * 6 = 230 B (3.3)");
+_Static_assert(offsetof(BoulderNaechte, min_ruhe) == 4, "BoulderNaechte: min_ruhe");
+_Static_assert(offsetof(BoulderNaechte, min_hrv) == 6, "BoulderNaechte: min_hrv");
+_Static_assert(offsetof(BoulderNaechte, tage) == 8, "BoulderNaechte: tage");
+
+// --- Die Syscalls der App (S1-S5) -------------------------------------------------------------
 
 // S1: die letzte Nacht als Block mit Phasen. Ohne Datei: Ist das Bild seit dem Boot noch nicht
 // geladen, laedt es ein Auftrag auf KernelBG, und die Antwort ist BoulderLesenSpaeter.
@@ -97,6 +132,10 @@ uint32_t sys_boulder_spo2(time_t von, time_t bis, Spo2Wert *aus, uint32_t max);
 // S4: die Messstufe setzen wie in Settings -> Health. Der Wunsch geht nicht verloren, ein
 // zweiter vor dem Setzen ersetzt den ersten. false nur fuer eine ungueltige Stufe (nicht 1..5).
 bool sys_boulder_messstufe_setzen(uint8_t stufe);
+
+// S5: HRV und Ruhepuls je Wachtag (naechte.h). Rueckgabe false, solange "Laden" die Liste seit
+// dem Boot nicht gelesen hat; *aus ist dann eine leere Liste.
+bool sys_boulder_naechte(BoulderNaechte *aus);
 
 // --- Kern ------------------------------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 
 // Boulder V2: der QEMU-Pruefbau (Spezifikation 7.5, AP9) - nur mit CONFIG_BOULDER_PRUEFLAUF.
 //
-// `boulder prueflauf <n>` spielt eine Nacht im Zeitraffer durch den echten Minutenteil der
+// `boulder prueflauf <n> [tage]` spielt eine Nacht im Zeitraffer durch den echten Minutenteil der
 // Variante, den Takt und alle Callbacks, die sie einreiht (Nachlauf, Ablage, Ausgabe,
 // Anlage), mit der echten activity_sessions.c und dem echten Datalogging des QEMU-Abbilds:
 //   0-3  die Referenznaechte 26.9., 29.9., 30.9., 3.10. (prueflauf_daten.c)
@@ -16,9 +16,11 @@
 // wieder leer ist - alles, was die Minute einreiht, laeuft vorher ganz durch wie zwischen zwei
 // echten Minuten.
 // Die Minuten liegen im Nachtfenster, das zur QEMU-Uhrzeit gehoert (20 Uhr Ortszeit plus
-// Minute), damit Pebbles Liste sie als juengste Nacht fuehrt. Waehrend des Laufs nimmt der
-// Dauerteil keine echten Minuten und keinen Cron-Takt an (sonst mischten sich zwei Zeiten).
-// Vor einer Nacht (0-4) beginnt der Dauerteil neu (boulder_dauerteil_test_neustart).
+// Minute), damit Pebbles Liste sie als juengste Nacht fuehrt. Mit `tage` (Schritt 3, AP3) liegt
+// die Nacht so viele Fenster frueher: So bekommen Pruefnaechte verschiedene Wachtage, und die
+// Liste der Naechte der Health-App (naechte.h) waechst wie an aufeinanderfolgenden Tagen. Waehrend
+// des Laufs nimmt der Dauerteil keine echten Minuten und keinen Cron-Takt an (sonst mischten sich
+// zwei Zeiten). Vor einer Nacht (0-4) beginnt der Dauerteil neu (boulder_dauerteil_test_neustart).
 //
 // BALLAST: Beim ersten Lauf holt der Pruefbau einen Block, der den Kernel-Heap auf die Groesse
 // von obelix bringt (CONFIG_BOULDER_PRUEFLAUF_HEAP, Spezifikation 7.2), und fuellt die
@@ -48,8 +50,9 @@ typedef struct {
 
 extern const PrueflaufNacht g_boulder_prueflauf_naechte[PRUEFLAUF_NAECHTE];
 
-// Shell (KernelBG): Rueckgabe false, wenn `nr` unbekannt ist oder ein Lauf laeuft.
-bool boulder_prueflauf_starten(int nr);
+// Shell (KernelBG): Rueckgabe false, wenn `nr` unbekannt ist, `tage` nicht 0..30 oder ein Lauf
+// laeuft.
+bool boulder_prueflauf_starten(int nr, int tage);
 
 // Den Ballast holen, einmal je Boot (KernelBG). Ihn brauchen die Pruefnaechte und das lange
 // Training von Kieselsport (Schritt 2, T7.5). false: Er fehlt, der Heap ist groesser als auf obelix.

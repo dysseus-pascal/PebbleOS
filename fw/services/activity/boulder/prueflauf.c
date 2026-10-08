@@ -35,6 +35,7 @@ PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 typedef struct {
   int nr;
+  int tage;        //< so viele Fenster vor dem juengsten (Schritt 3, AP3)
   int m;           //< naechste Minute
   int bis;
   time_t beginn;   //< Minute 0
@@ -267,6 +268,11 @@ static void prv_start_cb(void *data) {
     if (fenster + (time_t)BIS_NACHT * PBL_SEC_PER_MIN > jetzt) {
       fenster = boulder_dauerteil_fenster(fenster - PBL_SEC_PER_MIN);
     }
+    // Fruehere Fenster ueber eine Zeit mitten in ihnen: so stimmt auch ein Tag mit Zeitumstellung.
+    if (s_lauf.tage > 0) {
+      fenster = boulder_dauerteil_fenster(fenster - (time_t)s_lauf.tage * PBL_SEC_PER_DAY +
+                                          3 * PBL_SEC_PER_HOUR);
+    }
     s_lauf.beginn = fenster;
     // Jede Pruefnacht liegt im selben Fenster: Pebbles Liste (32 Plaetze) haelt sonst die
     // Sitzungen der vorigen Laeufe und laeuft ueber - auf der Uhr raeumt der Tageswechsel
@@ -286,12 +292,12 @@ static void prv_start_cb(void *data) {
   prv_glied(NULL);
 }
 
-bool boulder_prueflauf_starten(int nr) {
-  if (s_laeuft || nr < 0 || nr > NR_VELO) {
+bool boulder_prueflauf_starten(int nr, int tage) {
+  if (s_laeuft || nr < 0 || nr > NR_VELO || tage < 0 || tage > 30) {
     return false;
   }
   s_laeuft = true;
-  s_lauf = (Lauf){.nr = nr};
+  s_lauf = (Lauf){.nr = nr, .tage = tage};
   if (!system_task_add_callback(prv_start_cb, NULL)) {
     s_laeuft = false;
     return false;

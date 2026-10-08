@@ -380,8 +380,9 @@ pbl_clar_test(test_boulder_diagnose
 # Schritt 3, AP2: die Schnittstelle zur Health-App (S1-S4, Lage, Ziele; T2.3, T2.4, T6.2, T6.3)
 # gegen die echte Variante wie test_boulder_zyklen, die echte messstufe.c und Pebbles echte BlobDB
 # (api.c) mit der echten healthdb (health_db.c). --wrap zaehlt Dateien und Heap im Syscall.
-pbl_clar_test(test_boulder_schnittstelle
-  SOURCES
+# AP3: dasselbe Umfeld (schnittstelle_umfeld.h) fuer die Naechte (S5, T4.3) in
+# test_boulder_naechte.
+set(boulder_schnittstelle_quellen
     ${boulder_glue_umfeld}
     fw/services/activity/activity_sessions.c
     fw/services/activity/boulder/kalorien.c
@@ -408,15 +409,27 @@ pbl_clar_test(test_boulder_schnittstelle
     fw/services/activity/boulder/messstufe.c
     fw/services/activity/boulder/schnittstelle.c
     fw/services/activity/boulder/ziele.c
+    fw/services/activity/boulder/naechte.c
     fw/services/blob_db/api.c
     fw/services/blob_db/health_db.c
     subsys/cron/cron.c
-    tests/fw/services/activity/boulder/fake_nachfrage.c
+    tests/fw/services/activity/boulder/fake_nachfrage.c)
+set(boulder_schnittstelle_libs
+    -Wl,--wrap=settings_file_open,--wrap=settings_file_open_growable,--wrap=pfs_open
+    -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
+    -Wl,--wrap=kernel_zalloc_check)
+pbl_clar_test(test_boulder_schnittstelle
+  SOURCES ${boulder_schnittstelle_quellen}
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT CONFIG_BOULDER_HEALTH_APP
           UNITTEST_WITH_SYSCALL_PRIVILEGES=1
   OVERRIDES dummy_board
-  LIBS
-    -Wl,--wrap=settings_file_open,--wrap=settings_file_open_growable,--wrap=pfs_open
-    -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
-    -Wl,--wrap=kernel_zalloc_check
+  LIBS ${boulder_schnittstelle_libs}
+)
+# Die Liste der Naechte zaehlt dazu, wie oft settings_file_set sie schreibt (Schreiblast).
+pbl_clar_test(test_boulder_naechte
+  SOURCES ${boulder_schnittstelle_quellen}
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT CONFIG_BOULDER_HEALTH_APP
+          UNITTEST_WITH_SYSCALL_PRIVILEGES=1
+  OVERRIDES dummy_board
+  LIBS ${boulder_schnittstelle_libs} -Wl,--wrap=settings_file_set
 )

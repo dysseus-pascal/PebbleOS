@@ -2,8 +2,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // Boulder V2, Schritt 3: die Schnittstelle zur Health-App (schnittstelle.h; Spezifikation
-// Schritt 3, 3.1-3.4, AP2). Nur mit der eigenen Health-App; ohne den Schalter bleibt die Datei
-// leer.
+// Schritt 3, 3.1-3.4; AP2: S1-S4, AP3: S5). Nur mit der eigenen Health-App; ohne den Schalter
+// bleibt die Datei leer.
 #ifdef CONFIG_BOULDER_HEALTH_APP
 
 #include "pbl/services/activity/boulder/schnittstelle.h"
@@ -14,6 +14,7 @@
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/activity/boulder/naechte.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/ziele.h"
@@ -207,6 +208,14 @@ DEFINE_SYSCALL(uint32_t, sys_boulder_spo2, time_t von, time_t bis, Spo2Wert *aus
   }
   // Der Ring kopiert unter seiner Sperre direkt in den Puffer (spo2.c).
   return (uint32_t)boulder_spo2_werte(von, bis, aus, (int)MIN(max, (uint32_t)SPO2_WERTE_MAX));
+}
+
+DEFINE_SYSCALL(bool, sys_boulder_naechte, BoulderNaechte *aus) {
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(aus, sizeof(*aus));
+  }
+  // Unter s_naechte_sperre nur die Kopie in den Puffer der App (naechte.c).
+  return boulder_naechte_kopieren(aus);
 }
 
 DEFINE_SYSCALL(bool, sys_boulder_messstufe_setzen, uint8_t stufe) {

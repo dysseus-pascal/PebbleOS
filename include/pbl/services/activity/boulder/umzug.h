@@ -9,7 +9,9 @@
 // - boulder_nacht/"zustand" (18 B): was zuletzt geschickt wurde und bis wohin das Fenster
 //   erledigt ist. Einmal gelesen, solange boulder_v2 noch keinen Kopf hat: dieselbe Nacht
 //   geht nicht noch einmal ans Telefon, und im selben Fenster entsteht keine zweite Nacht.
-// - boulder_nacht/"letzte" (NachtBild 0/1): liest ausgabe.c und schreibt es fort.
+// - boulder_nacht/"letzte" (NachtBild 0/1): liest ausgabe.c und schreibt es fort. Mit der
+//   eigenen Health-App beginnt es die Liste der Naechte (naechte.h), wenn b26 die Nacht
+//   abgeschlossen hat.
 // - boulder_hrv (Ring der HRV-Fenster): nur in die laufende, offene Nacht uebernommen.
 // - Pebbles Sitzungsliste: mit einer Movement-Sitzung (Typ 8) nullt Pebble sie beim Boot
 //   und startet einmal neu (activity_sessions.c:612-626, F1 hingenommen). Ohne Typ 8 steht

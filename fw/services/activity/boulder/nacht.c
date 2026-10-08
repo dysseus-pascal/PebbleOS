@@ -7,6 +7,9 @@
 #include "pbl/services/activity/boulder/eingang.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
+#ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/naechte.h"
+#endif
 #include "pbl/services/activity/boulder/schlafanalyse.h"
 #include "pbl/services/activity/boulder/zyklen.h"
 #include <pbl/logging/logging.h>
@@ -217,6 +220,14 @@ static void prv_nacht_takt(void) {
   }
   boulder_zyklen_endgueltig();
   boulder_ausgabe_endgueltig();
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Schritt 3 (F2): HRV und Ruhepuls fuer die Liste der Health-App, jetzt, wo die Nacht nicht
+  // mehr waechst - dieselben Werte wie im NachtBild. Die Ablage unten schreibt sie mit.
+  if (e->gefunden) {
+    boulder_naechte_eintragen(s_beginn + (time_t)aufwachen * 60, e->schlaf_minuten, e->hrv,
+                              e->ruhepuls);
+  }
+#endif
   // Fuer den Kopf: ihr Abschluss laeuft noch ein paar Minuten, ein Neustart setzt ihn fort.
   s_alt = e->gefunden;
   s_alt_ab = s_ab;

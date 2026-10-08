@@ -10,6 +10,9 @@
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/boulder/ausgabe.h"
+#ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/naechte.h"
+#endif
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/nacht_satz.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
@@ -127,6 +130,15 @@ bool boulder_umzug_kopf(time_t fenster, BoulderKopf *kopf) {
   // Der Ruhepuls der letzten Nacht: ohne ihn erkennte V2 bis zur naechsten fertigen Nacht kein
   // Nickerchen (nacht.c).
   kopf->ruhepuls = bild_da ? bild->ruhepuls : 0;
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Schritt 3 (3.8.1): DIE NAECHTE DER HEALTH-APP BEGINNEN MIT DER NACHT, DIE b26 ABGESCHLOSSEN
+  // HAT. Liegt sie ab s_v2_ab, rechnet V2 sie selbst noch einmal und traegt sie ein, wenn sie
+  // endgueltig wird - mit V2s Werten, wie Boulder sie dann auch hat (derselbe Beginn ersetzt b26s
+  // Satz). Eine Saat davor stuende mit b26s Werten fest, sobald V2s Nacht nicht laenger ist.
+  if (bild_da && bild->fertig && (time_t)bild->beginn_utc < s_v2_ab) {
+    boulder_naechte_saat(bild);
+  }
+#endif
   PBL_LOG_INFO("Boulder: Umzug von b25, Zustand %d, Stufe %d ab Minute %d", (int)zustand,
                (int)kopf->stufe, (int)kopf->ab);
   return true;

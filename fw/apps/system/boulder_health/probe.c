@@ -72,11 +72,12 @@ typedef enum {
   BhStarttaste,
   BhStartargument,
   BhQuickLaunch,
-  // 3.2 Die Schnittstelle der Variante (AP2): S1-S4
+  // 3.2 Die Schnittstelle der Variante (AP2): S1-S4, (AP3): S5
   BhNacht,
   BhLage,
   BhSpo2,
   BhMessstufe,
+  BhNaechte,
   // 3.6 Oberflaeche
   BhFenster,
   BhEbene,
@@ -124,6 +125,7 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhLage] = "sys_boulder_lage",
   [BhSpo2] = "sys_boulder_spo2",
   [BhMessstufe] = "sys_boulder_messstufe_setzen",
+  [BhNaechte] = "sys_boulder_naechte",
   [BhFenster] = "window",
   [BhEbene] = "layer",
   [BhMenue] = "menu_layer",
@@ -191,11 +193,12 @@ typedef struct {
   GBitmap *bild;
   GDrawCommandImage *zeichnung;
   ActivitySession *sitzungen;
-  // AP2: was S1-S4 liefern, im Heap wie spaeter die Karten (512 B und 96 x 8 B).
+  // AP2: was S1-S4 liefern, im Heap wie spaeter die Karten (512 B und 96 x 8 B); AP3: S5 (230 B).
   NachtBild *nacht;
   Spo2Wert *spo2;
+  BoulderNaechte *naechte;
   BoulderLage lage;
-  char lage_text[64];
+  char lage_text[80];
   GFont schriften[SCHRIFTEN];
   uint64_t benutzt; //< ein Bit je BhBaustein
   uint8_t ereignisse;
@@ -291,11 +294,32 @@ static void prv_daten(BhProbe *probe) {
   prv_benutzt(probe, BhSpo2, (int32_t)spo2);
   APP_LOG(APP_LOG_LEVEL_INFO, "bh probe spo2 %lu letzter=%d", (unsigned long)spo2,
           spo2 ? probe->spo2[spo2 - 1].prozent : -1);
-  // Was S1-S3 liefern, auch im Bild der Probe (QEMU-Beleg): Ziele und Stufe, Nacht und SpO2.
+  // S5 (AP3): die Naechte, im Heap wie spaeter die Karten. Ins Protokoll der Kopf und die Liste,
+  // der juengste Wachtag zuerst, vier je Zeile (wie "boulder naechte" im Kern).
+  probe->naechte = app_malloc_check(sizeof(BoulderNaechte));
+  const BoulderNaechte *n = probe->naechte;
+  const bool naechte_da = sys_boulder_naechte(probe->naechte);
+  prv_benutzt(probe, BhNaechte, naechte_da ? n->anzahl : -1);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe naechte %d anzahl=%d neu=%d min=%d/%d", naechte_da,
+          n->anzahl, n->neu, n->min_ruhe, n->min_hrv);
+  for (int i = 0; i < n->anzahl; i += 4) {
+    char zeile[64];
+    int laenge = 0;
+    for (int k = i; k < i + 4 && k < n->anzahl; k++) {
+      const BoulderNachtEintrag *e = &n->tage[(n->neu + NAECHTE_MAX - k) % NAECHTE_MAX];
+      laenge += snprintf(zeile + laenge, sizeof(zeile) - laenge, " %d/%d/%d", e->tag, e->hrv,
+                         e->ruhepuls);
+    }
+    APP_LOG(APP_LOG_LEVEL_INFO, "bh probe naechte%s", zeile);
+  }
+  const BoulderNachtEintrag *juengster = n->anzahl ? &n->tage[n->neu] : NULL;
+  // Was S1-S3 und S5 liefern, auch im Bild der Probe (QEMU-Beleg): Ziele, Stufe und SpO2; Nacht,
+  // Zahl der Wachtage und HRV und Ruhepuls des juengsten.
   snprintf(probe->lage_text, sizeof(probe->lage_text),
-           "Goals %d/%d Precision %d\nNight %d min SpO2 %lu", l->ziel_schritte,
-           l->ziel_schlaf_min, l->messstufe,
-           nacht == BoulderLesenDa ? probe->nacht->schlaf_minuten : -1, (unsigned long)spo2);
+           "Goals %d/%d Prec %d SpO2 %lu\nNight %d Nights %d HRV %d RHR %d", l->ziel_schritte,
+           l->ziel_schlaf_min, l->messstufe, (unsigned long)spo2,
+           nacht == BoulderLesenDa ? probe->nacht->schlaf_minuten : -1, n->anzahl,
+           juengster ? juengster->hrv : -1, juengster ? juengster->ruhepuls : -1);
   // Dieselbe Stufe noch einmal: Der Weg (Auftrag in der Schlange der App) laeuft, an der
   // Einstellung aendert sich nichts. Vor dem ersten Lesen (0) lehnt S4 ab.
   prv_benutzt(probe, BhMessstufe, sys_boulder_messstufe_setzen(l->messstufe));
@@ -445,6 +469,7 @@ static void prv_bausteine(void) {
   task_free(probe->sitzungen);
   task_free(probe->nacht);
   task_free(probe->spo2);
+  task_free(probe->naechte);
   task_free(probe);
 }
 

@@ -15,6 +15,7 @@
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/umzug.h"
 #ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/naechte.h"
 #include "pbl/services/activity/boulder/ziele.h"
 #endif
 #include "pbl/services/settings/settings_file.h"
@@ -276,6 +277,11 @@ static void prv_ablage_cb(void *data) {
       settings_file_set(&datei, "ruhe", 4, &r, sizeof(r)) == S_SUCCESS) {
     s_ruhe_datei = r;
   }
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Schritt 3: die Naechte der Health-App, nur nach einer Aenderung (eine endgueltige Nacht). Vor
+  // dem Kopf: Ein Kopf, der die Nacht endgueltig nennt, steht nie ohne ihren Eintrag in der Datei.
+  boulder_naechte_ablegen(&datei);
+#endif
   BoulderKopf k;
   prv_kopf(&k);
   if (memcmp(&k, &s_kopf_datei, sizeof(k)) != 0 &&
@@ -379,13 +385,19 @@ static void prv_rest_laden(SettingsFile *datei) {
 void boulder_speicher_laden(void) {
   prv_neues_fenster(boulder_nacht_fenster());
   SettingsFile datei;
-  if (!s_fenster) {
-    boulder_diagnose_laden(NULL, rtc_get_time());
-    boulder_nacht_laden(NULL, 0);
-    return;
-  }
-  if (settings_file_open(&datei, SPEICHER_DATEI, SPEICHER_DATEI_GROESSE) != S_SUCCESS) {
-    PBL_LOG_WRN("Boulder: %s nicht geoeffnet, Nacht neu", SPEICHER_DATEI);
+  const bool offen =
+      settings_file_open(&datei, SPEICHER_DATEI, SPEICHER_DATEI_GROESSE) == S_SUCCESS;
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Schritt 3: DIE NAECHTE GELTEN UEBER JEDES FENSTER HINAUS, auch ohne eins - zuerst, damit der
+  // Umzug (boulder_umzug_kopf) in die geladene Liste saet.
+  boulder_naechte_laden(offen ? &datei : NULL);
+#endif
+  if (!s_fenster || !offen) {
+    if (!offen) {
+      PBL_LOG_WRN("Boulder: %s nicht geoeffnet, Nacht neu", SPEICHER_DATEI);
+    } else {
+      settings_file_close(&datei);
+    }
     boulder_diagnose_laden(NULL, rtc_get_time());
     boulder_nacht_laden(NULL, 0);
     return;
