@@ -2,8 +2,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // Boulder V2, Schritt 3: die Schnittstelle zur Health-App (schnittstelle.h; Spezifikation
-// Schritt 3, 3.1-3.4; AP2: S1-S4, AP3: S5). Nur mit der eigenen Health-App; ohne den Schalter
-// bleibt die Datei leer.
+// Schritt 3, 3.1-3.4; AP2: S1-S4, AP3: S5, AP4: S6 und S7). Nur mit der eigenen Health-App; ohne
+// den Schalter bleibt die Datei leer.
 #ifdef CONFIG_BOULDER_HEALTH_APP
 
 #include "pbl/services/activity/boulder/schnittstelle.h"
@@ -12,11 +12,13 @@
 #include "pbl/kernel/mutex.h"
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/boulder/ausgabe.h"
+#include "pbl/services/activity/boulder/herz.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/naechte.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/woche.h"
 #include "pbl/services/activity/boulder/ziele.h"
 #ifdef CONFIG_BOULDER_KIESELSPORT
 #include "pbl/services/activity/boulder/sport/kieselsport.h"
@@ -216,6 +218,22 @@ DEFINE_SYSCALL(bool, sys_boulder_naechte, BoulderNaechte *aus) {
   }
   // Unter s_naechte_sperre nur die Kopie in den Puffer der App (naechte.c).
   return boulder_naechte_kopieren(aus);
+}
+
+DEFINE_SYSCALL(bool, sys_boulder_herz, BoulderHerz *aus) {
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(aus, sizeof(*aus));
+  }
+  // Unter s_herz_sperre nur die Kopie in den Puffer der App (herz.c).
+  return boulder_herz_kopieren(aus);
+}
+
+DEFINE_SYSCALL(bool, sys_boulder_woche, BoulderWoche *aus) {
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(aus, sizeof(*aus));
+  }
+  // Unter s_woche_sperre nur die Kopie in den Puffer der App (woche.c).
+  return boulder_woche_kopieren(aus);
 }
 
 DEFINE_SYSCALL(bool, sys_boulder_messstufe_setzen, uint8_t stufe) {

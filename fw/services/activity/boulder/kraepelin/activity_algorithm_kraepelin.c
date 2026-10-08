@@ -1723,9 +1723,11 @@ typedef struct {
 
 /* Boulder: D14 die Saetze des Nacht- und Tagfensters an den Dauerteil
  * Nur waehrend init (s_ring gesetzt), im Durchlauf, der die Datei ohnehin zaehlt. */
+// Statisch statt auf dem Stapel: init laeuft auf KernelBG, ggf. unter der Activity-Sperre. Auch
+// D18 liest hierhin; beide nur unter der Kraepelin-Sperre, also nie zugleich.
+static AlgMinuteFileRecord s_gruppe;
+
 static void prv_ring_saetze(SettingsFile *file, SettingsRecordInfo *info) {
-  // Statisch statt auf dem Stapel: init laeuft auf KernelBG, ggf. unter der Activity-Sperre.
-  static AlgMinuteFileRecord s_gruppe;
   const uint32_t erster = prv_minute_file_get_settings_key(s_ring->von_utc);
   const uint32_t letzter = prv_minute_file_get_settings_key(s_ring->bis_utc);
   if (!prv_read_minute_file_record(file, info, erster, letzter, &s_gruppe)) {
@@ -1763,6 +1765,90 @@ static bool prv_read_minute_file_info_cb(SettingsFile *file, SettingsRecordInfo 
   return true;
 }
 
+/* Boulder: D18 jede Minute eines Zeitraums aus Minutendatei und Puffer an den Dauerteil
+ * (Schritt 3, "Herz nachrechnen", variante.h). Wie get_minute_history, aber je Minute ein Ruf
+ * statt eines Felds im Heap, und ohne die Teilminute. */
+typedef struct {
+  time_t von_utc;
+  time_t bis_utc;
+  BoulderJeMinute je_minute;
+  void *kontext;
+} BoulderDurchlauf;
+
+static void prv_durchlauf_minute(const BoulderDurchlauf *d, time_t utc,
+                                 const AlgMinuteFileSampleV5 *felder, uint8_t puls) {
+  if (utc < d->von_utc || utc >= d->bis_utc) {
+    return;
+  }
+  const BoulderMinute minute = {
+    .utc = utc,
+    .vmc = felder->vmc,
+    .lage = felder->orientation,
+    .schritte = felder->steps,
+    .puls = puls,
+    .geladen = felder->plugged_in,
+    .nicht_getragen = felder->plugged_in,
+  };
+  d->je_minute(&minute, d->kontext);
+}
+
+static bool prv_durchlauf_datei_cb(SettingsFile *file, SettingsRecordInfo *info, void *kontext) {
+  const BoulderDurchlauf *d = kontext;
+  // Ein Satz beginnt nicht auf seinem Schluessel: einer mehr nach beiden Seiten, wie
+  // get_minute_history, und die Minuten selbst nach der Zeit gefiltert.
+  const uint32_t erster = prv_minute_file_get_settings_key(d->von_utc) - 1;
+  const uint32_t letzter = prv_minute_file_get_settings_key(d->bis_utc) + 1;
+  if (!prv_read_minute_file_record(file, info, erster, letzter, &s_gruppe)) {
+    return true;
+  }
+  const unsigned anzahl = MIN(s_gruppe.hdr.num_samples, ALG_MINUTES_PER_FILE_RECORD);
+  for (unsigned i = 0; i < anzahl; i++) {
+    prv_durchlauf_minute(d, s_gruppe.hdr.time_utc + i * PBL_SEC_PER_MIN,
+                         &s_gruppe.samples[i].v5_fields, s_gruppe.samples[i].heart_rate_bpm);
+  }
+  return true;
+}
+
+bool boulder_kraepelin_minuten(time_t von_utc, time_t bis_utc, BoulderJeMinute je_minute,
+                               void *kontext) {
+  if (!s_alg_state) {
+    return false;
+  }
+  if (!prv_lock()) {
+    return false;
+  }
+  const BoulderDurchlauf d = {
+    .von_utc = von_utc, .bis_utc = bis_utc, .je_minute = je_minute, .kontext = kontext,
+  };
+  bool gelesen = false;
+  SettingsFile *file = prv_minute_data_file_open();
+  if (file) {
+    gelesen = settings_file_each(file, prv_durchlauf_datei_cb, (void *)&d) == S_SUCCESS;
+    prv_minute_data_file_close(file);
+  }
+  if (gelesen) {
+    // Was noch nicht in der Datei steht: der Puffer ab dem Leser der Datei. Der Leser liest und
+    // bekommt danach seinen alten Stand zurueck - verbraucht wird nichts (wie
+    // prv_read_minute_history_buffer; der Puffer kennt nur seine eingetragenen Leser).
+    struct pbl_shared_cbuf_client *leser = &s_alg_state->file_minute_data_client;
+    const struct pbl_shared_cbuf_client vorher = *leser;
+    AlgMinuteRecord *satz = &s_alg_state->cbuf_record;
+    int anzahl = pbl_shared_cbuf_get_read_space_remaining(&s_alg_state->minute_data_cbuf, leser) /
+                 sizeof(*satz);
+    while (anzahl-- > 0) {
+      uint16_t gelesen_len;
+      if (!pbl_shared_cbuf_read_consume(&s_alg_state->minute_data_cbuf, leser, sizeof(*satz),
+                                        (uint8_t *)satz, &gelesen_len)) {
+        break;
+      }
+      prv_durchlauf_minute(&d, satz->utc_sec, &satz->data.base, satz->data.heart_rate_bpm);
+    }
+    *leser = vorher;
+  }
+  prv_unlock();
+  return gelesen;
+}
+/* Boulder: Ende D18 */
 bool activity_algorithm_minute_file_info(bool compact_first, uint32_t *num_records,
                                          uint32_t *data_bytes, uint32_t *minutes) {
   if (!prv_lock()) {

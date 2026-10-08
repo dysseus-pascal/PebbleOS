@@ -24,6 +24,15 @@
 //   boulder lage           dasselbe: die zuletzt veroeffentlichte Lage (S2 ohne die App)
 //   boulder naechte        dasselbe: die Liste der Naechte im Kern, juengster Wachtag zuerst
 //                          (Schritt 3, AP3; S5 ohne die App)
+//   boulder herz           dasselbe: Herzband und Zonen im Kern (Schritt 3, AP4; S6 ohne die App)
+//   boulder woche          dasselbe: die Woche und der Spiegel im Kern, dazu Pebbles Tageswerte
+//                          (S7 ohne die App, T4.5)
+//   boulder schritte <n>   dasselbe: Pebbles Schritte von heute auf n setzen (QEMU hat keine
+//                          Bewegung; activity_metrics_set_metric_exact wie qemu_serial.c)
+//   boulder zeit <utc>     dasselbe: die Uhr stellen wie das Telefon (clock_set_time), etwa kurz
+//                          vor Mitternacht fuer den Tageswechsel der Woche
+//   boulder bewegung <wochentag 0-6> <schritte> [utc]  dasselbe: einen Satz "<tag>_movementData"
+//                          in die BlobDB Health, wie ihn das Telefon schickt (Gegenprobe T4.5)
 // Shell-Befehle laufen auf KernelBG (shell.h): heap_calc_totals geht die Blockliste durch,
 // das ist hier erlaubt, im Takt nicht.
 
@@ -35,6 +44,7 @@
 #include "pbl/services/activity/boulder/takt.h"
 
 #include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -251,6 +261,96 @@ static int prv_naechte(const struct pbl_shell *sh, size_t argc, char **argv) {
   }
   return 0;
 }
+
+#include "pbl/services/activity/activity_private.h"
+#include "pbl/services/activity/boulder/herz.h"
+#include "pbl/services/activity/boulder/woche.h"
+#include "pbl/services/clock.h"
+
+// Wie "boulder naechte": ohne Kopie, auf KernelBG. Je Zeile vier Halbstunden mit Puls:
+// Platz:min/max/mittel/n, aelteste zuerst.
+static int prv_herz(const struct pbl_shell *sh, size_t argc, char **argv) {
+  const BoulderHerz *h = boulder_herz_kern();
+  pbl_shell_print(sh, "Herz bereit %d neueste %lu grenzen %d/%d/%d", boulder_herz_bereit(),
+                  (unsigned long)h->neueste, h->grenzen[0], h->grenzen[1], h->grenzen[2]);
+  pbl_shell_print(sh, "Herz zonen tag %d: %d %d %d %d", (int)h->zonen_tag, h->zonen_min[0],
+                  h->zonen_min[1], h->zonen_min[2], h->zonen_min[3]);
+  char zeile[96];
+  int laenge = 0;
+  int belegt = 0;
+  for (int k = 0; k < HERZ_HALBSTUNDEN && h->neueste; k++) {
+    const uint32_t halbstunde = h->neueste - (HERZ_HALBSTUNDEN - 1) + k;
+    const int platz = (int)(halbstunde % HERZ_HALBSTUNDEN);
+    if (!h->n[platz]) {
+      continue;
+    }
+    belegt++;
+    laenge += snprintf(zeile + laenge, sizeof(zeile) - laenge, " %d:%d/%d/%d/%d", platz,
+                       h->min[platz], h->max[platz], h->mittel[platz], h->n[platz]);
+    if (belegt % 4 == 0) {
+      pbl_shell_print(sh, "Herz%s", zeile);
+      laenge = 0;
+    }
+  }
+  if (laenge) {
+    pbl_shell_print(sh, "Herz%s", zeile);
+  }
+  pbl_shell_print(sh, "Herz halbstunden %d", belegt);
+  return 0;
+}
+
+static int prv_woche(const struct pbl_shell *sh, size_t argc, char **argv) {
+  const BoulderWoche *w = boulder_woche_kern();
+  const BoulderSchrittSpiegel *sp = boulder_woche_spiegel();
+  pbl_shell_print(sh, "Woche tag %d: %ld %ld %ld %ld %ld %ld; spiegel tag %d %lu", (int)w->tag,
+                  (long)(int32_t)w->schritte[0], (long)(int32_t)w->schritte[1],
+                  (long)(int32_t)w->schritte[2], (long)(int32_t)w->schritte[3],
+                  (long)(int32_t)w->schritte[4], (long)(int32_t)w->schritte[5], (int)sp->tag,
+                  (unsigned long)sp->schritte);
+  // Pebbles Tageswerte zum Vergleich: heute und die Tage 1-6 (mit Verlauf: hier auf KernelBG
+  // erlaubt, in der App nicht).
+  int32_t pebble[ACTIVITY_HISTORY_DAYS];
+  activity_get_metric(ActivityMetricStepCount, ACTIVITY_HISTORY_DAYS, pebble);
+  pbl_shell_print(sh, "Pebble heute %ld, Tage 1-6: %ld %ld %ld %ld %ld %ld", (long)pebble[0],
+                  (long)pebble[1], (long)pebble[2], (long)pebble[3], (long)pebble[4],
+                  (long)pebble[5], (long)pebble[6]);
+  return 0;
+}
+
+static int prv_schritte(const struct pbl_shell *sh, size_t argc, char **argv) {
+  activity_metrics_set_metric_exact(ActivityMetricStepCount, atoi(argv[1]));
+  pbl_shell_print(sh, "Pebbles Schritte heute: %s", argv[1]);
+  return 0;
+}
+
+static int prv_zeit(const struct pbl_shell *sh, size_t argc, char **argv) {
+  const time_t utc = (time_t)strtoul(argv[1], NULL, 10);
+  clock_set_time(utc);
+  pbl_shell_print(sh, "Uhr auf %lu", (unsigned long)rtc_get_time());
+  return 0;
+}
+
+// Wie health_db.c ihn liest (MovementData, Fassung 1): sieben Worte.
+static int prv_bewegung(const struct pbl_shell *sh, size_t argc, char **argv) {
+  static const char *const s_tage[] = { "sunday", "monday", "tuesday", "wednesday",
+                                        "thursday", "friday", "saturday" };
+  const int wochentag = atoi(argv[1]);
+  if (wochentag < 0 || wochentag > 6) {
+    pbl_shell_print(sh, "Wochentag %s: 0 (Sonntag) bis 6", argv[1]);
+    return -1;
+  }
+  const uint32_t satz[7] = {
+    1, (argc > 3) ? (uint32_t)strtoul(argv[3], NULL, 10) : (uint32_t)rtc_get_time(),
+    (uint32_t)strtoul(argv[2], NULL, 10), 0, 0, 0, 0,
+  };
+  char schluessel[32];
+  snprintf(schluessel, sizeof(schluessel), "%s_movementData", s_tage[wochentag]);
+  const status_t st = blob_db_insert(BlobDBIdHealth, (const uint8_t *)schluessel,
+                                     strlen(schluessel), (const uint8_t *)satz, sizeof(satz));
+  pbl_shell_print(sh, "%s %lu Schritte, Zeit %lu (%d)", schluessel, (unsigned long)satz[2],
+                  (unsigned long)satz[1], (int)st);
+  return (st == S_SUCCESS) ? 0 : -1;
+}
 #endif
 #endif
 
@@ -272,6 +372,12 @@ static const struct pbl_shell_cmd sub_boulder[] = {
   PBL_SHELL_CMD_ARG(spo2, NULL, "SpO2-Ring fuellen <n>", prv_spo2, 2, 0),
   PBL_SHELL_CMD(lage, NULL, "Lage der Health-App", prv_lage),
   PBL_SHELL_CMD(naechte, NULL, "Naechte der Health-App (S5)", prv_naechte),
+  PBL_SHELL_CMD(herz, NULL, "Herzband und Zonen der Health-App (S6)", prv_herz),
+  PBL_SHELL_CMD(woche, NULL, "Woche der Health-App (S7) und Pebbles Tageswerte", prv_woche),
+  PBL_SHELL_CMD_ARG(schritte, NULL, "Pebbles Schritte heute setzen <n>", prv_schritte, 2, 0),
+  PBL_SHELL_CMD_ARG(zeit, NULL, "Uhr stellen <utc>", prv_zeit, 2, 0),
+  PBL_SHELL_CMD_ARG(bewegung, NULL, "movementData wie das Telefon <tag> <schritte> [utc]",
+                    prv_bewegung, 3, 1),
 #endif
 #endif
   PBL_SHELL_SUBCMD_SET_END,

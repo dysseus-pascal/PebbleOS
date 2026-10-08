@@ -16,6 +16,7 @@
 #include "pbl/services/activity/boulder/umzug.h"
 #ifdef CONFIG_BOULDER_HEALTH_APP
 #include "pbl/services/activity/boulder/naechte.h"
+#include "pbl/services/activity/boulder/woche.h"
 #include "pbl/services/activity/boulder/ziele.h"
 #endif
 #include "pbl/services/settings/settings_file.h"
@@ -281,6 +282,8 @@ static void prv_ablage_cb(void *data) {
   // Schritt 3: die Naechte der Health-App, nur nach einer Aenderung (eine endgueltige Nacht). Vor
   // dem Kopf: Ein Kopf, der die Nacht endgueltig nennt, steht nie ohne ihren Eintrag in der Datei.
   boulder_naechte_ablegen(&datei);
+  // AP4: die Woche nach einem Tageswechsel, sonst hoechstens stuendlich (woche.h).
+  boulder_woche_ablegen(&datei, rtc_get_time());
 #endif
   BoulderKopf k;
   prv_kopf(&k);
@@ -391,6 +394,8 @@ void boulder_speicher_laden(void) {
   // Schritt 3: DIE NAECHTE GELTEN UEBER JEDES FENSTER HINAUS, auch ohne eins - zuerst, damit der
   // Umzug (boulder_umzug_kopf) in die geladene Liste saet.
   boulder_naechte_laden(offen ? &datei : NULL);
+  // AP4: die Woche ebenso, unabhaengig vom Fenster.
+  boulder_woche_laden(offen ? &datei : NULL);
 #endif
   if (!s_fenster || !offen) {
     if (!offen) {

@@ -33,6 +33,7 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/boulder/ausgabe.h"
+#include "pbl/services/activity/boulder/herz.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/naechte.h"
@@ -43,6 +44,7 @@
 #include "pbl/services/activity/boulder/spo2.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/variante.h"
+#include "pbl/services/activity/boulder/woche.h"
 #include "pbl/services/activity/boulder/ziele.h"
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/blob_db/api.h"
@@ -106,6 +108,8 @@
 extern struct pbl_mutex s_lage_sperre;  // schnittstelle.c (PBL_T_STATIC)
 extern struct pbl_mutex s_bild_sperre;  // ausgabe.c
 extern struct pbl_mutex s_naechte_sperre;  // naechte.c (AP3)
+extern struct pbl_mutex s_herz_sperre;     // herz.c (AP4)
+extern struct pbl_mutex s_woche_sperre;    // woche.c (AP4)
 
 #define GEHALTEN_MAX 8
 static struct pbl_mutex *s_gehalten[GEHALTEN_MAX];
@@ -118,7 +122,8 @@ static int s_blatt_verstoss;        //< unter einer Sperre der Schnittstelle ein
 static int s_pebble_unter_sperre;   //< Pebble unter einer Sperre der Schnittstelle gerufen
 
 static bool prv_schnittstellen_sperre(const struct pbl_mutex *m) {
-  return m == &s_lage_sperre || m == &s_bild_sperre || m == &s_naechte_sperre;
+  return m == &s_lage_sperre || m == &s_bild_sperre || m == &s_naechte_sperre ||
+         m == &s_herz_sperre || m == &s_woche_sperre;
 }
 
 static bool prv_haelt_schnittstellen_sperre(void) {
@@ -184,17 +189,28 @@ void pbl_mutex_assert_held(const struct pbl_mutex *m, bool held) {
 
 static int s_syscall_dateien;
 static int s_syscall_heap;
+// AP4: dasselbe fuer einen Abschnitt, den ein Test waehlt (Minutenteil, "Herz nachrechnen"). Der
+// Heap beim Oeffnen einer Datei (der Name, settings_file.c) zaehlt getrennt.
+static bool s_zaehlen;
+static int s_gezaehlt_dateien;
+static int s_gezaehlt_heap;
+static int s_gezaehlt_heap_ausser_oeffnen;
+static int s_im_oeffnen;
 static int s_bild_datei_unter_sperre;  //< boulder_nacht geoeffnet, waehrend s_bild_sperre gehalten
 static int s_bild_datei_geoeffnet;
 
 status_t __real_settings_file_open(SettingsFile *file, const char *name, int max_used_space);
 status_t __wrap_settings_file_open(SettingsFile *file, const char *name, int max_used_space) {
   s_syscall_dateien += s_im_syscall;
+  s_gezaehlt_dateien += s_zaehlen;
   if (!strcmp(name, "boulder_nacht")) {
     s_bild_datei_geoeffnet++;
     s_bild_datei_unter_sperre += (s_bild_sperre.count > 0);
   }
-  return __real_settings_file_open(file, name, max_used_space);
+  s_im_oeffnen++;
+  const status_t st = __real_settings_file_open(file, name, max_used_space);
+  s_im_oeffnen--;
+  return st;
 }
 
 status_t __real_settings_file_open_growable(SettingsFile *file, const char *name,
@@ -202,33 +218,43 @@ status_t __real_settings_file_open_growable(SettingsFile *file, const char *name
 status_t __wrap_settings_file_open_growable(SettingsFile *file, const char *name,
                                             int max_used_space, int initial_size) {
   s_syscall_dateien += s_im_syscall;
+  s_gezaehlt_dateien += s_zaehlen;
   return __real_settings_file_open_growable(file, name, max_used_space, initial_size);
 }
 
 int __real_pfs_open(const char *name, uint8_t op_flags, uint8_t file_type, size_t start_size);
 int __wrap_pfs_open(const char *name, uint8_t op_flags, uint8_t file_type, size_t start_size) {
   s_syscall_dateien += s_im_syscall;
+  s_gezaehlt_dateien += s_zaehlen && !s_im_oeffnen;
   return __real_pfs_open(name, op_flags, file_type, start_size);
 }
 
 void *__real_kernel_malloc(size_t bytes);
 void *__wrap_kernel_malloc(size_t bytes) {
   s_syscall_heap += s_im_syscall;
+  s_gezaehlt_heap += s_zaehlen;
+  s_gezaehlt_heap_ausser_oeffnen += s_zaehlen && !s_im_oeffnen;
   return __real_kernel_malloc(bytes);
 }
 void *__real_kernel_zalloc(size_t bytes);
 void *__wrap_kernel_zalloc(size_t bytes) {
   s_syscall_heap += s_im_syscall;
+  s_gezaehlt_heap += s_zaehlen;
+  s_gezaehlt_heap_ausser_oeffnen += s_zaehlen && !s_im_oeffnen;
   return __real_kernel_zalloc(bytes);
 }
 void *__real_kernel_malloc_check(size_t bytes);
 void *__wrap_kernel_malloc_check(size_t bytes) {
   s_syscall_heap += s_im_syscall;
+  s_gezaehlt_heap += s_zaehlen;
+  s_gezaehlt_heap_ausser_oeffnen += s_zaehlen && !s_im_oeffnen;
   return __real_kernel_malloc_check(bytes);
 }
 void *__real_kernel_zalloc_check(size_t bytes);
 void *__wrap_kernel_zalloc_check(size_t bytes) {
   s_syscall_heap += s_im_syscall;
+  s_gezaehlt_heap += s_zaehlen;
+  s_gezaehlt_heap_ausser_oeffnen += s_zaehlen && !s_im_oeffnen;
   return __real_kernel_zalloc_check(bytes);
 }
 
@@ -557,9 +583,11 @@ bool activity_metrics_prv_is_hrm_offwrist(time_t now_utc) {
 }
 void activity_metrics_prv_set_hrm_worn_status(time_t now_utc, bool is_offwrist) {
 }
+// Der Puls der Minute, wie ihn die Glue-Kopie in den Minutensatz schreibt (AP4: test_boulder_herz).
+static int32_t s_median_puls = 60;
 void activity_metrics_prv_get_median_hr_bpm(int32_t *median, int32_t *total_weight) {
   if (median) {
-    *median = 60;
+    *median = s_median_puls;
   }
   if (total_weight) {
     *total_weight = 100;
@@ -570,6 +598,18 @@ HRZone activity_metrics_prv_get_hr_zone(void) {
 }
 uint32_t activity_metrics_prv_get_steps(void) {
   return 0;
+}
+// Pebbles Metriken von heute (AP4: die Woche liest die Schritte). Wie activity_metrics.c nimmt der
+// Aufruf Pebbles Activity-Sperre - hier gemeldet als Grenze zu Pebble.
+static int32_t s_pebble_schritte;
+static int s_metrik_abfragen;
+bool activity_get_metric(ActivityMetric metric, uint32_t history_len, int32_t *history) {
+  prv_pebble();
+  s_metrik_abfragen++;
+  cl_assert_equal_i(metric, ActivityMetricStepCount);
+  cl_assert_equal_i(history_len, 1);
+  history[0] = s_pebble_schritte;
+  return true;
 }
 uint32_t activity_metrics_prv_get_distance_mm(void) {
   return 0;
@@ -741,6 +781,24 @@ static void prv_app_ende(void) {
   cl_assert(s_syscall_tiefe_max <= 1);
 }
 
+// Hinter S5 (test_boulder_naechte: ab 3072, 230 B).
+static BoulderHerz *const s_app_herz = (BoulderHerz *)&s_app_ram[3328];
+static BoulderWoche *const s_app_woche = (BoulderWoche *)&s_app_ram[3584];
+
+static bool prv_s6(void) {
+  prv_app_beginn();
+  const bool r = sys_boulder_herz(s_app_herz);
+  prv_app_ende();
+  return r;
+}
+
+static bool prv_s7(void) {
+  prv_app_beginn();
+  const bool r = sys_boulder_woche(s_app_woche);
+  prv_app_ende();
+  return r;
+}
+
 static BoulderLesen prv_s1(void) {
   prv_app_beginn();
   const BoulderLesen r = sys_boulder_nacht(s_app_bild);
@@ -834,6 +892,8 @@ static void prv_boot(void) {
   boulder_dauerteil_test_neustart();
   boulder_messstufe_test_zuruecksetzen();
   boulder_naechte_test_neustart();
+  boulder_herz_test_neustart();
+  boulder_woche_test_neustart();
   cl_assert(activity_algorithm_init(&s_rate));
 }
 
@@ -855,6 +915,11 @@ static void prv_umfeld_beginn(void) {
   s_pebble_unter_sperre = 0;
   s_syscall_dateien = 0;
   s_syscall_heap = 0;
+  s_zaehlen = false;
+  s_gezaehlt_dateien = 0;
+  s_gezaehlt_heap = 0;
+  s_gezaehlt_heap_ausser_oeffnen = 0;
+  s_im_oeffnen = 0;
   s_bild_datei_unter_sperre = 0;
   s_bild_datei_geoeffnet = 0;
   s_puffer_geprueft = 0;
@@ -872,6 +937,9 @@ static void prv_umfeld_beginn(void) {
   s_wunsch_dazwischen = false;
   s_absturz_nach = NULL;
   s_saetze_anzahl = 0;
+  s_pebble_schritte = 0;
+  s_metrik_abfragen = 0;
+  s_median_puls = 60;
   pbl_cron_init();
   prv_boot();
 }

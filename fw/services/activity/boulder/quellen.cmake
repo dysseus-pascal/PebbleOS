@@ -42,13 +42,15 @@ if(CONFIG_BOULDER_KIESELSPORT)
     pbl_library_sources(${boulder_sport_quellen})
   endif()
 endif()
-# Die Schnittstelle zur eigenen Health-App und die Ziele (Schritt 3, AP2), die Naechte (AP3): nur
-# mit der App.
+# Die Schnittstelle zur eigenen Health-App und die Ziele (Schritt 3, AP2), die Naechte (AP3), Herz
+# und Woche (AP4): nur mit der App.
 if(CONFIG_BOULDER_HEALTH_APP)
   pbl_library_sources(
     boulder/schnittstelle.c
     boulder/ziele.c
     boulder/naechte.c
+    boulder/herz.c
+    boulder/woche.c
   )
 endif()
 if(CONFIG_BOULDER_PRUEFLAUF)

@@ -114,6 +114,15 @@ void boulder_kraepelin_fahrt_zurueckgeben(uint32_t schritte);
 // D5: Schritte, die seit init an der Summe vorbeigingen (Diagnose, Tests).
 uint32_t boulder_kraepelin_gestrichen(void);
 
+// D18 (Schritt 3, "Herz nachrechnen"): jede Minute in [von, bis) aus Pebbles Minutendatei und dem
+// Puffer der Kopie, der noch nicht in der Datei steht - in Dateireihenfolge, die nicht die
+// Zeitfolge sein muss. Ein Durchlauf mit settings_file_each, ohne Heap fuer die Minuten. Laeuft
+// unter der Kraepelin-Sperre: `je_minute` rechnet nur und nimmt keine Sperre. Rueckgabe false ohne
+// Tracking-Teil oder ohne Minutendatei (dann kam keine Minute).
+typedef void (*BoulderJeMinute)(const BoulderMinute *minute, void *kontext);
+bool boulder_kraepelin_minuten(time_t von_utc, time_t bis_utc, BoulderJeMinute je_minute,
+                               void *kontext);
+
 // ---------------------------------------------------------------------------------------
 // Szene des Puls-Algorithmus (szene.c, D10): eine Stelle fuer Kraepelins Walk/Run und
 // das Abo "Aktiv". Kraepelin geht vor; zurueckgesetzt wird nur die eigene Szene.

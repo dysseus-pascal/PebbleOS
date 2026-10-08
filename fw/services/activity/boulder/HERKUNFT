@@ -25,3 +25,4 @@ abweichung D14 init fuellt den Ring des Dauerteils im ohnehin noetigen Dateidurc
 abweichung D15 Training und early_deinit an den Dauerteil (Kandidatin und Velo-Sitzung enden)
 abweichung D16 Rechenzeit des ganzen Minutenteils fuer die Diagnose (AP9, Kriterium 7)
 abweichung D17 Training ohne Schritte (Schritt 2, V1): weder Tagessumme noch Minute, Rate 0
+abweichung D18 Schritt 3: jede Minute eines Zeitraums aus Minutendatei und Puffer an den Dauerteil (Herz nachrechnen), ohne Heap fuer die Minuten

@@ -35,6 +35,10 @@
 // fuer die App (schnittstelle.h) und stoesst das erste Lesen der Ziele an (ziele.h). Auch der
 // Takt veroeffentlicht sie: Am Kabel und mit Tracking aus laeuft kein Minutenteil, der Lebenslauf
 // der Nacht aber schon. "Laden" veroeffentlicht sie nach dem Boot.
+//
+// STAND SCHRITT 3, AP4: Jede Minute geht nach der Lage an das Herzband (herz.h) und an die Woche
+// (woche.h); nach "Laden" rechnet "Herz nachrechnen" das Band aus der Minutendatei, der Takt holt
+// es nach, falls es nicht lief.
 
 #include "pbl/services/activity/boulder/variante.h"
 
@@ -61,7 +65,9 @@
 #include "pbl/services/activity/boulder/sport/kieselsport.h"
 #endif
 #ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/herz.h"
 #include "pbl/services/activity/boulder/schnittstelle.h"
+#include "pbl/services/activity/boulder/woche.h"
 #include "pbl/services/activity/boulder/ziele.h"
 #endif
 #include "pbl/services/battery/battery_state.h"
@@ -165,6 +171,9 @@ static void prv_laden_cb(void *data) {
   // Nach dem Laden der Ruhepulse und Kieselsports: Die App sieht ab jetzt Nacht, Median und
   // Maximalpuls, nicht erst nach dem ersten Minutenlauf.
   boulder_lage_veroeffentlichen();
+  // Erst jetzt stehen die Grenzen der Zonen fest (Median aus "ruhe", Maximalpuls): das Band und
+  // die Zonen von heute aus der Minutendatei (3.8.2).
+  boulder_herz_nachrechnen();
 #endif
   if (!s_test_ohne_cron) {
     pbl_cron_job_schedule(&s_takt_job);
@@ -211,6 +220,7 @@ void boulder_dauerteil_takt(time_t jetzt) {
   }
 #ifdef CONFIG_BOULDER_HEALTH_APP
   boulder_lage_veroeffentlichen();
+  boulder_herz_takt();
 #endif
 }
 
@@ -247,6 +257,13 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   // Die Lage zuletzt, nach Nacht, Live-Automat und Stufe dieser Minute (O(1), 3.1 Regel 5).
   boulder_ziele_minute();
   boulder_lage_veroeffentlichen();
+  // Nach der Lage: Das Herzband zaehlt mit den Grenzen, die sie eben veroeffentlicht hat.
+  boulder_herz_minute(minute->utc, minute->puls);
+  // Die Woche nur aus echten Minuten: Eine Pruefnacht liegt in der Vergangenheit, Pebbles Schritte
+  // aber sind die von heute.
+  if (!PRUEFLAUF_AKTIV()) {
+    boulder_woche_minute(minute->utc);
+  }
 #endif
 }
 

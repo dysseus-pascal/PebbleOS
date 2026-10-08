@@ -4,7 +4,8 @@
 #pragma once
 
 // Boulder V2, Schritt 3: die Schnittstelle der Variante zur eigenen Health-App (Spezifikation
-// Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele; AP3: S5, die Naechte).
+// Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele; AP3: S5, die Naechte; AP4: S6 und
+// S7, Herzband und Woche).
 //
 // WARUM SYSCALLS: Die Health-App laeuft ohne Systemrechte. Was die Variante weiss, liegt in
 // Kernel-RAM, das die App nicht lesen darf. Jeder Syscall prueft den Puffer der App, nimmt
@@ -116,7 +117,51 @@ _Static_assert(offsetof(BoulderNaechte, min_ruhe) == 4, "BoulderNaechte: min_ruh
 _Static_assert(offsetof(BoulderNaechte, min_hrv) == 6, "BoulderNaechte: min_hrv");
 _Static_assert(offsetof(BoulderNaechte, tage) == 8, "BoulderNaechte: tage");
 
-// --- Die Syscalls der App (S1-S5) -------------------------------------------------------------
+// Das Herzband der letzten 24 h und die Zonenminuten von heute (AP4, F8 = A; herz.h). Die
+// Variante fuehrt beides jede Minute mit, die App liest keinen Minutenverlauf (2.6.2).
+//
+// EIN RING VON 48 HALBSTUNDEN: Platz = Nummer % 48, die Nummer ist utc / 1800. Gueltig sind die
+// Nummern neueste - 47 .. neueste; ein Platz ohne Messung hat n = 0. Die Halbstunden liegen in UTC:
+// So bleibt ein Platz ueber die Zeitumstellung derselbe, und die App rechnet die Ortszeit selbst.
+// "neueste" ist die Halbstunde der juengsten Minute ueberhaupt, mit oder ohne Puls.
+#define HERZ_HALBSTUNDEN     48
+#define HERZ_HALBSTUNDE_S    1800
+#define HERZ_ZONEN           4
+
+typedef struct {
+  uint32_t neueste;                 //!< Nummer der juengsten Halbstunde (utc / 1800), 0 = leer
+  uint8_t min[HERZ_HALBSTUNDEN];    //!< bpm; 0 = keine Messung
+  uint8_t max[HERZ_HALBSTUNDEN];
+  uint8_t mittel[HERZ_HALBSTUNDEN]; //!< gerundetes Mittel der Minuten mit Puls
+  uint8_t n[HERZ_HALBSTUNDEN];      //!< Minuten mit Puls
+  uint16_t zonen_min[HERZ_ZONEN];   //!< heute: leicht, moderat, kraeftig, Spitze (Boulders pulsZone)
+  uint16_t zonen_tag;               //!< Tage seit 1.1.2000 (Ortszeit) von zonen_min
+  uint8_t grenzen[HERZ_ZONEN - 1];  //!< Karvonen 40/60/80 %, mit denen gezaehlt wurde
+  uint8_t reserve[3];               //!< ohne PBL_PACKED rundet der Compiler auf 4 B auf (3.3)
+} BoulderHerz;
+
+_Static_assert(sizeof(BoulderHerz) == 212, "BoulderHerz: 4 + 192 + 8 + 2 + 3 + 3 = 212 B (3.3)");
+_Static_assert(offsetof(BoulderHerz, min) == 4, "BoulderHerz: min");
+_Static_assert(offsetof(BoulderHerz, n) == 4 + 3 * HERZ_HALBSTUNDEN, "BoulderHerz: n");
+_Static_assert(offsetof(BoulderHerz, zonen_min) == 196, "BoulderHerz: zonen_min");
+_Static_assert(offsetof(BoulderHerz, zonen_tag) == 204, "BoulderHerz: zonen_tag");
+_Static_assert(offsetof(BoulderHerz, grenzen) == 206, "BoulderHerz: grenzen");
+
+// Die Schritte der sechs Vortage (AP4, F9 = A; woche.h): Pebbles Tageswert, wie die Uhr ihn am
+// Tagesende hatte - nicht Pebbles Tageshistorie, die das Telefon ueberschreibt.
+#define WOCHE_VORTAGE     6
+#define WOCHE_KEIN_WERT   UINT32_MAX
+
+typedef struct {
+  uint16_t tag;                      //!< Tage seit 1.1.2000 (Ortszeit) von schritte[0], 0 = leer
+  uint16_t reserve;
+  uint32_t schritte[WOCHE_VORTAGE];  //!< [0] der Tag `tag` .. [5] fuenf Tage davor
+} BoulderWoche;
+
+_Static_assert(sizeof(BoulderWoche) == 28, "BoulderWoche: 28 B (3.3)");
+_Static_assert(offsetof(BoulderWoche, schritte) == 4, "BoulderWoche: schritte");
+
+// --- Die Syscalls der App (S1-S7) -------------------------------------------------------------
 
 // S1: die letzte Nacht als Block mit Phasen. Ohne Datei: Ist das Bild seit dem Boot noch nicht
 // geladen, laedt es ein Auftrag auf KernelBG, und die Antwort ist BoulderLesenSpaeter.
@@ -136,6 +181,14 @@ bool sys_boulder_messstufe_setzen(uint8_t stufe);
 // S5: HRV und Ruhepuls je Wachtag (naechte.h). Rueckgabe false, solange "Laden" die Liste seit
 // dem Boot nicht gelesen hat; *aus ist dann eine leere Liste.
 bool sys_boulder_naechte(BoulderNaechte *aus);
+
+// S6: das Herzband und die Zonen von heute (herz.h). Rueckgabe false, solange "Herz nachrechnen"
+// seit dem Boot nicht gelaufen ist; *aus ist dann leer.
+bool sys_boulder_herz(BoulderHerz *aus);
+
+// S7: die Schritte der Vortage (woche.h). Rueckgabe false, solange "Laden" die Woche seit dem
+// Boot nicht gelesen hat; *aus ist dann leer.
+bool sys_boulder_woche(BoulderWoche *aus);
 
 // --- Kern ------------------------------------------------------------------------------------
 

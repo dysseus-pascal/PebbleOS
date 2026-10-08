@@ -410,6 +410,8 @@ set(boulder_schnittstelle_quellen
     fw/services/activity/boulder/schnittstelle.c
     fw/services/activity/boulder/ziele.c
     fw/services/activity/boulder/naechte.c
+    fw/services/activity/boulder/herz.c
+    fw/services/activity/boulder/woche.c
     fw/services/blob_db/api.c
     fw/services/blob_db/health_db.c
     subsys/cron/cron.c
@@ -432,4 +434,49 @@ pbl_clar_test(test_boulder_naechte
           UNITTEST_WITH_SYSCALL_PRIVILEGES=1
   OVERRIDES dummy_board
   LIBS ${boulder_schnittstelle_libs} -Wl,--wrap=settings_file_set
+)
+# AP4: die Woche (T4.5) gegen Pebbles echtes activity.c, activity_metrics.c und die healthdb; die
+# Umgebung wie Pebbles test_activity.
+pbl_clar_test(test_boulder_woche
+  SOURCES
+    fw/applib/health_service.c
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    fw/services/clock/time.c
+    lib/c/time/gmtime.c
+    lib/c/time/mktime.c
+    fw/services/regular_timer/service.c
+    fw/services/activity/activity.c
+    fw/services/activity/activity_metrics.c
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/activity_calculators.c
+    fw/services/activity/hr_util.c
+    fw/services/blob_db/health_db.c
+    fw/services/activity/boulder/woche.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/services/settings/settings_file.c
+    fw/services/settings/settings_raw_iter.c
+    fw/shell/normal/prefs.c
+    tests/stubs/stubs_i18n.c
+    tests/fakes/fake_accel_service.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+  DEFINES DUMA_DISABLED CAPABILITY_HAS_HEALTH_TRACKING=1 CONFIG_HRM
+          CONFIG_SERVICE_ACTIVITY_BATCH_SAMPLES=25 CONFIG_BOULDER_HEALTH_APP
+  OVERRIDES dummy_board
+  LIBS -Wl,--wrap=settings_file_set
+)
+# AP4: Herzband und Zonen (S6, T4.4) im selben Umfeld. Die Minuten laufen durch die Glue-Kopie in
+# Pebbles Minutendatei; Bewegung je Minute aus dem Test (boulder_kalg_*). Gezaehlt: der Durchlauf
+# (boulder_kraepelin_minuten, settings_file_each, flash_read_bytes) und was "woche" schreibt.
+pbl_clar_test(test_boulder_herz
+  SOURCES ${boulder_schnittstelle_quellen}
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT CONFIG_BOULDER_HEALTH_APP
+          UNITTEST_WITH_SYSCALL_PRIVILEGES=1
+  OVERRIDES dummy_board
+  LIBS ${boulder_schnittstelle_libs} -Wl,--wrap=settings_file_set,--wrap=settings_file_each
+       -Wl,--wrap=boulder_kalg_analyze_samples,--wrap=boulder_kalg_minute_stats
+       -Wl,--wrap=boulder_kraepelin_minuten,--wrap=flash_read_bytes
 )

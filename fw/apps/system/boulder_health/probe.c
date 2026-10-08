@@ -72,12 +72,14 @@ typedef enum {
   BhStarttaste,
   BhStartargument,
   BhQuickLaunch,
-  // 3.2 Die Schnittstelle der Variante (AP2): S1-S4, (AP3): S5
+  // 3.2 Die Schnittstelle der Variante (AP2): S1-S4, (AP3): S5, (AP4): S6, S7
   BhNacht,
   BhLage,
   BhSpo2,
   BhMessstufe,
   BhNaechte,
+  BhHerz,
+  BhWoche,
   // 3.6 Oberflaeche
   BhFenster,
   BhEbene,
@@ -126,6 +128,8 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhSpo2] = "sys_boulder_spo2",
   [BhMessstufe] = "sys_boulder_messstufe_setzen",
   [BhNaechte] = "sys_boulder_naechte",
+  [BhHerz] = "sys_boulder_herz",
+  [BhWoche] = "sys_boulder_woche",
   [BhFenster] = "window",
   [BhEbene] = "layer",
   [BhMenue] = "menu_layer",
@@ -193,12 +197,15 @@ typedef struct {
   GBitmap *bild;
   GDrawCommandImage *zeichnung;
   ActivitySession *sitzungen;
-  // AP2: was S1-S4 liefern, im Heap wie spaeter die Karten (512 B und 96 x 8 B); AP3: S5 (230 B).
+  // AP2: was S1-S4 liefern, im Heap wie spaeter die Karten (512 B und 96 x 8 B); AP3: S5 (230 B);
+  // AP4: S6 (212 B) und S7 (28 B).
   NachtBild *nacht;
   Spo2Wert *spo2;
   BoulderNaechte *naechte;
+  BoulderHerz *herz;
+  BoulderWoche *woche;
   BoulderLage lage;
-  char lage_text[80];
+  char lage_text[120];
   GFont schriften[SCHRIFTEN];
   uint64_t benutzt; //< ein Bit je BhBaustein
   uint8_t ereignisse;
@@ -313,13 +320,59 @@ static void prv_daten(BhProbe *probe) {
     APP_LOG(APP_LOG_LEVEL_INFO, "bh probe naechte%s", zeile);
   }
   const BoulderNachtEintrag *juengster = n->anzahl ? &n->tage[n->neu] : NULL;
-  // Was S1-S3 und S5 liefern, auch im Bild der Probe (QEMU-Beleg): Ziele, Stufe und SpO2; Nacht,
-  // Zahl der Wachtage und HRV und Ruhepuls des juengsten.
+  // S6 (AP4): Band und Zonen. Ins Protokoll der Kopf, die Zahl der Halbstunden mit Puls und je
+  // Zeile vier davon (Platz:min/max/mittel/n, aelteste zuerst) - wie "boulder herz" im Kern.
+  probe->herz = app_malloc_check(sizeof(BoulderHerz));
+  const BoulderHerz *h = probe->herz;
+  const bool herz_da = sys_boulder_herz(probe->herz);
+  int halbstunden = 0;
+  for (int i = 0; i < HERZ_HALBSTUNDEN; i++) {
+    halbstunden += (h->n[i] != 0);
+  }
+  prv_benutzt(probe, BhHerz, herz_da ? halbstunden : -1);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe herz %d neueste=%lu halb=%d grenzen=%d/%d/%d", herz_da,
+          (unsigned long)h->neueste, halbstunden, h->grenzen[0], h->grenzen[1], h->grenzen[2]);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe herz2 zonen tag %d: %d %d %d %d", h->zonen_tag,
+          h->zonen_min[0], h->zonen_min[1], h->zonen_min[2], h->zonen_min[3]);
+  {
+    char zeile[96];
+    int laenge = 0, belegt = 0;
+    for (int k = 0; k < HERZ_HALBSTUNDEN && h->neueste; k++) {
+      const int platz = (int)((h->neueste - (HERZ_HALBSTUNDEN - 1) + k) % HERZ_HALBSTUNDEN);
+      if (!h->n[platz]) {
+        continue;
+      }
+      laenge += snprintf(zeile + laenge, sizeof(zeile) - laenge, " %d:%d/%d/%d/%d", platz,
+                         h->min[platz], h->max[platz], h->mittel[platz], h->n[platz]);
+      if (++belegt % 4 == 0) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "bh probe herz%s", zeile);
+        laenge = 0;
+      }
+    }
+    if (laenge) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "bh probe herz%s", zeile);
+    }
+  }
+  // S7 (AP4): die Woche.
+  probe->woche = app_malloc_check(sizeof(BoulderWoche));
+  const BoulderWoche *w = probe->woche;
+  const bool woche_da = sys_boulder_woche(probe->woche);
+  prv_benutzt(probe, BhWoche, woche_da ? w->tag : -1);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe woche %d tag=%d %ld %ld %ld %ld %ld %ld", woche_da, w->tag,
+          (long)(int32_t)w->schritte[0], (long)(int32_t)w->schritte[1],
+          (long)(int32_t)w->schritte[2], (long)(int32_t)w->schritte[3],
+          (long)(int32_t)w->schritte[4], (long)(int32_t)w->schritte[5]);
+  // Was S1-S3 und S5-S7 liefern, auch im Bild der Probe (QEMU-Beleg): Ziele, Stufe und SpO2; Nacht,
+  // Zahl der Wachtage und HRV und Ruhepuls des juengsten; Halbstunden mit Puls, Zonen von heute
+  // und die Schritte des juengsten Vortags.
   snprintf(probe->lage_text, sizeof(probe->lage_text),
-           "Goals %d/%d Prec %d SpO2 %lu\nNight %d Nights %d HRV %d RHR %d", l->ziel_schritte,
-           l->ziel_schlaf_min, l->messstufe, (unsigned long)spo2,
+           "Goals %d/%d Prec %d SpO2 %lu\nNight %d Nights %d HRV %d RHR %d\n"
+           "Band %d Zones %d/%d/%d/%d Wk %ld",
+           l->ziel_schritte, l->ziel_schlaf_min, l->messstufe, (unsigned long)spo2,
            nacht == BoulderLesenDa ? probe->nacht->schlaf_minuten : -1, n->anzahl,
-           juengster ? juengster->hrv : -1, juengster ? juengster->ruhepuls : -1);
+           juengster ? juengster->hrv : -1, juengster ? juengster->ruhepuls : -1, halbstunden,
+           h->zonen_min[0], h->zonen_min[1], h->zonen_min[2], h->zonen_min[3],
+           (long)(int32_t)w->schritte[0]);
   // Dieselbe Stufe noch einmal: Der Weg (Auftrag in der Schlange der App) laeuft, an der
   // Einstellung aendert sich nichts. Vor dem ersten Lesen (0) lehnt S4 ab.
   prv_benutzt(probe, BhMessstufe, sys_boulder_messstufe_setzen(l->messstufe));
@@ -416,7 +469,8 @@ static void prv_oberflaeche(BhProbe *probe) {
   layer_set_update_proc(&probe->flaeche, prv_flaeche_zeichnen);
   layer_add_child(wurzel, &probe->flaeche);
 
-  probe->menue = menu_layer_create(GRect(0, 140, rahmen.size.w, 50));
+  // Eine Zeile Menue: darunter braucht der Text drei Zeilen (AP4).
+  probe->menue = menu_layer_create(GRect(0, 140, rahmen.size.w, 25));
   menu_layer_set_callbacks_by_value(probe->menue, probe,
                                     (MenuLayerCallbacks){
                                       .get_num_rows = prv_menue_zeilen,
@@ -425,10 +479,10 @@ static void prv_oberflaeche(BhProbe *probe) {
                                     });
   layer_add_child(wurzel, menu_layer_get_layer(probe->menue));
 
-  probe->rolle = scroll_layer_create(GRect(0, 190, rahmen.size.w, rahmen.size.h - 190));
-  // So hoch wie die Rolle: zwei Zeilen ohne den Schatten, der sonst die zweite verdeckt.
-  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, rahmen.size.h - 190));
-  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, rahmen.size.h - 190));
+  probe->rolle = scroll_layer_create(GRect(0, 165, rahmen.size.w, rahmen.size.h - 165));
+  // So hoch wie die Rolle: drei Zeilen ohne den Schatten, der sonst die letzte verdeckt.
+  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, rahmen.size.h - 165));
+  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, rahmen.size.h - 165));
   text_layer_set_text(probe->rollen_text, probe->lage_text);
   text_layer_set_font(probe->rollen_text, probe->schriften[0]);
   scroll_layer_add_child(probe->rolle, text_layer_get_layer(probe->rollen_text));
@@ -470,6 +524,8 @@ static void prv_bausteine(void) {
   task_free(probe->nacht);
   task_free(probe->spo2);
   task_free(probe->naechte);
+  task_free(probe->herz);
+  task_free(probe->woche);
   task_free(probe);
 }
 
