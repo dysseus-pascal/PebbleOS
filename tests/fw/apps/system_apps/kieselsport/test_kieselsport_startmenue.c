@@ -114,7 +114,12 @@ ANDERE(quiet_time_toggle_get_app_info)
 ANDERE(backlight_state_toggle_get_app_info)
 ANDERE(motion_backlight_toggle_get_app_info)
 ANDERE(airplane_mode_toggle_get_app_info)
-ANDERE(sports_app_get_info)
+// Sports steht in Pebbles Liste ganz vorn (app_menu_data_source.c, s_override_table), ist aber nur
+// sichtbar, solange eine Sport-App mit der Uhr spricht (workout/sports.c:339). So hier auch -
+// sonst stuende es im Test immer ueber allem.
+static const PebbleProcessMdSystem s_sports = {
+    .common = {.visibility = ProcessVisibilityShownOnCommunication}, .name = "Sports"};
+const PebbleProcessMd *sports_app_get_info(void) { return &s_sports.common; }
 ANDERE(timeline_full_get_app_info)
 ANDERE(notifications_clear_history_app_get_info)
 ANDERE(quick_launch_nothing_get_app_info)
@@ -281,4 +286,48 @@ void test_kieselsport_startmenue__alte_store_app_doppelt(void) {
   cl_assert_equal_i(app_install_get_id_for_uuid(&s_kieselsport_uuid), store);
 #endif
   cl_assert_equal_i(start.workout, schnell.workout);
+}
+
+// Der Platz einer App im Startmenue (0 = ganz oben), -1 = nicht da.
+static int prv_platz(const Uuid *uuid) {
+  static MenuLayer menue;
+  AppMenuDataSource liste;
+  app_menu_data_source_init(&liste, &(AppMenuDataSourceCallbacks){.filter = prv_startmenue},
+                            &menue);
+  int platz = -1;
+  const uint16_t n = app_menu_data_source_get_count(&liste);
+  for (uint16_t i = 0; i < n && platz < 0; i++) {
+    AppMenuNode *node = app_menu_data_source_get_node_at_index(&liste, i);
+    cl_assert(node);
+    if (uuid_equal(&node->uuid, uuid)) {
+      platz = i;
+    }
+  }
+  app_menu_data_source_deinit(&liste);
+  return platz;
+}
+
+// P5 (Entscheid 3 vom 08.10.2026): Mit dem Start markiert der Dienst Kieselsport ohne Ablauf
+// (plattform.c, ks_startmenue_oben), und das Startmenue stellt es ganz nach oben - wie Pebble es
+// mit Workout tut. Auch nach Stunden. Nach dem Ende (mit Ablauf) bleibt es Pebbles Frist von fuenf
+// Minuten oben, dann steht es wieder an seinem Platz. Ohne Variante gilt das fuer Workout wie bei
+// Pebble.
+void test_kieselsport_startmenue__im_training_oben(void) {
+#ifdef CONFIG_BOULDER_KIESELSPORT
+  const Uuid *app = &s_kieselsport_uuid;
+#else
+  const Uuid *app = &s_workout_uuid;
+#endif
+  const AppInstallId id = app_install_get_id_for_uuid(app);
+  const int platz = prv_platz(app);
+  cl_assert(platz > 0);
+  app_install_mark_prioritized(id, false /* can_expire: das Training laeuft */);
+  cl_assert_equal_i(prv_platz(app), 0);
+  rtc_set_time(rtc_get_time() + 3 * 60 * 60);
+  cl_assert_equal_i(prv_platz(app), 0);
+  app_install_mark_prioritized(id, true /* can_expire: das Training ist vorbei */);
+  rtc_set_time(rtc_get_time() + 5 * 60 - 1);
+  cl_assert_equal_i(prv_platz(app), 0);
+  rtc_set_time(rtc_get_time() + 1);
+  cl_assert_equal_i(prv_platz(app), platz);
 }

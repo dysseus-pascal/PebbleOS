@@ -3,6 +3,7 @@
 
 #pragma once
 #include "pebble_compat.h"
+#include "kachel.h"
 
 // Texte der Oberflaeche. Die Uhr gibt die Sprache vor
 // (Settings -> Display -> Language); die App folgt ihr, es gibt keinen eigenen
@@ -36,6 +37,4 @@ typedef enum {
 // fehlende englische Spalte auf den leeren String.
 const char *S(StringId id);
 
-// Sprache neu von der Uhr lesen. i18n_get_system_locale() ist ein Syscall und es gibt kein
-// Ereignis fuer einen Sprachwechsel - also einmal beim Start der App.
-void strings_refresh(void);
+// strings_refresh() steht in kachel.h - die Kachel im Startmenue ruft ihn auch.

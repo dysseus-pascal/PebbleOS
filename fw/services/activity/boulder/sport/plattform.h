@@ -68,8 +68,13 @@ typedef struct {
 
 // Startet Pebbles Training fuer diese Art (Laufen -> Run, Wandern -> Walk, sonst Open) mit
 // [maxpuls] fuer die Pulskalorien. Arten ohne Schritte (V1: alle ausser Laufen und Wandern)
-// zaehlen bis zum Stopp keine Schritte. false: Pebble lehnt ab (es laeuft schon eines).
+// zaehlen keine Schritte, solange das Training laeuft. false: Pebble lehnt ab (es laeuft schon
+// eines).
 bool ks_workout_starten(Sportart art, uint16_t maxpuls);
+// Ohne Sperre: Die Variante streicht neue Schritte (D17) - an nur, solange ein Training ohne
+// Schritte laeuft, nicht in der Pause und nicht nach dem Ende. Jeder Start und Stopp von Pebbles
+// Training loescht den Merker ohnehin (D15).
+void ks_schritte_streichen(bool an);
 // Boulders geprueftes Maximum (V2) fuer die Pulskalorien der naechsten bestaetigten Velofahrt
 // (F7) und des naechsten Trainings.
 void ks_kalorien_maxpuls(uint16_t maxpuls);
@@ -106,6 +111,9 @@ uint8_t ks_akku_prozent(bool *am_kabel);
 // Die App nach vorn holen, damit sie eine wartende Zusammenfassung schickt - nur vom Zifferblatt
 // aus, nie ueber eine andere App.
 void ks_app_holen(void);
+// Ohne Sperre: Kieselsport im Startmenue oben, solange ein Training laeuft (P5, Entscheid 3 vom
+// 08.10.2026); nach dem Ende rutscht es mit Pebbles Frist zurueck.
+void ks_startmenue_oben(bool laeuft);
 
 #if UNITTEST
 // Ein Neustart: Anmeldungen am Sensor und an der Beschleunigung sind weg (kieselsport_test_neustart).

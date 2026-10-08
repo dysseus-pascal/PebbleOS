@@ -50,6 +50,27 @@ pbl_clar_test(test_kieselsport_lauf
   DEFINES CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
 )
 
+# P6 (Entscheid 3 vom 08.10.2026): die Kachel im Startmenue (aus b25). Sie fragt den Dienst nur,
+# solange ein Training laeuft, und zeigt Art und Laufzeit, in der Pause mit "|| ".
+pbl_clar_test(test_kieselsport_kachel
+  SOURCES
+    fw/apps/system/launcher/default/app_glance_kieselsport.c
+  DEFINES CONFIG_BOULDER_KIESELSPORT
+)
+
+# P6 im Startmenue: Pebbles echte app_glance_service.c nimmt fuer Kieselsport diese Kachel - mit
+# dem Schalter wie obelix und qemu_emery, ohne wie asterix (dort die allgemeine).
+pbl_clar_test(test_kieselsport_kachel_haken
+  SOURCES
+    fw/apps/system/launcher/default/app_glance_service.c
+  DEFINES CONFIG_BOULDER_KIESELSPORT
+)
+pbl_clar_test(test_kieselsport_kachel_haken_ohne_variante
+  SOURCE test_kieselsport_kachel_haken.c
+  SOURCES
+    fw/apps/system/launcher/default/app_glance_service.c
+)
+
 # Tote Texte und Funktionen der App (tools/boulder/pruefe_unbenutzt.py, aus b25).
 add_test(NAME test_boulder_apps_unbenutzt
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/pruefe_unbenutzt.py

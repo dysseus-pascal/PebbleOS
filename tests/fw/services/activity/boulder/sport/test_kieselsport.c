@@ -1491,3 +1491,187 @@ void test_kieselsport__messung_je_callback(void) {
   cl_assert(prv_laeufe("Kieselsport Takt") >= vorher[4] + 80);
   cl_assert(prv_laeufe("Kieselsport Puls") >= vorher[5] + 80);
 }
+
+// =============================================================================================
+// Nach Schritt 2 (Entscheide vom 08.10.2026)
+
+// Entscheid 2 vom 08.10.2026: Die Variante streicht Schritte nur, solange ein Training ohne
+// Schritte LAEUFT. Was sie damit zaehlt, ist Pebbles laufendes Training UND der Merker (kontext.c,
+// boulder_kontext_training_ohne_schritte_laeuft); den Merker sieht dieser Test, Pebbles Training
+// ist das echte. Die Wirkung auf Tagessumme, Minute und Rate prueft test_boulder_fahrt.
+static bool prv_gestrichen(void) {
+  return workout_service_is_workout_ongoing() && g_fake_ohne_schritte;
+}
+
+// Jede Meldung an die Variante: auf KernelBG und ohne Kieselsports Sperre (Regel 2.5.2).
+static int s_merker_falsch_gemeldet;
+static void prv_merker_pruefen(bool ohne) {
+  s_merker_falsch_gemeldet += pebble_task_get_current() != PebbleTask_KernelBackground ||
+                              pbl_mutex_is_owner(&s_kieselsport_sperre);
+}
+
+// Velo: laufend 0, Pause zaehlt, Weiter wieder 0, nach dem Speichern zaehlt - auch in den 30 s,
+// in denen Pebbles Training noch pausiert dasteht (V4), und danach.
+void test_kieselsport__schritte_zaehlen_in_der_pause(void) {
+  s_merker_falsch_gemeldet = 0;
+  g_fake_ohne_schritte_beim_aufruf = prv_merker_pruefen;
+  prv_starte(ArtBike, BEGINN);
+  cl_assert(prv_gestrichen());
+  prv_sekunden(30);
+  cl_assert(prv_gestrichen());
+  prv_pause();
+  cl_assert(!prv_gestrichen());
+  prv_sekunden_leer(20);
+  cl_assert(!prv_gestrichen());
+  prv_pause();  // weiter
+  cl_assert(prv_gestrichen());
+  prv_sekunden(40);
+  cl_assert(prv_gestrichen());
+  prv_pause();
+  prv_sekunden_leer(5);
+  cl_assert(!prv_gestrichen());
+  prv_speichern();
+  for (int i = 0; i < 29; i++) {
+    cl_assert(workout_service_is_workout_ongoing());
+    cl_assert(!prv_gestrichen());
+    prv_sekunde();
+  }
+  prv_sekunde();
+  cl_assert(!workout_service_is_workout_ongoing());
+  cl_assert(!prv_gestrichen());
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(s_merker_falsch_gemeldet, 0);
+}
+
+// Speichern ohne vorherige Pause ist nicht moeglich (die App bietet es nur in der Pause an), der
+// Dienst nimmt es aber an - auch dann zaehlt es ab dem Speichern. Verwerfen ebenso.
+void test_kieselsport__schritte_zaehlen_nach_speichern_und_verwerfen(void) {
+  prv_starte(ArtKraft, BEGINN);
+  prv_sekunden(70);
+  cl_assert(prv_gestrichen());
+  prv_speichern();
+  cl_assert(workout_service_is_workout_ongoing());
+  cl_assert(!prv_gestrichen());
+  prv_sekunden_leer(30);
+  cl_assert(!workout_service_is_workout_ongoing());
+
+  prv_starte(ArtSchwimmen, BEGINN + 1000);
+  prv_sekunden(70);
+  cl_assert(prv_gestrichen());
+  prv_verwerfen();
+  cl_assert(!g_fake_ohne_schritte);
+  cl_assert(!prv_gestrichen());
+}
+
+// Pebbles eigene Pause beim Laden (Regel 2.5.4) hebt das Streichen mit dem naechsten Takt auf; ein
+// Weiter von anderswo (Pebbles Workout-App) setzt es wieder.
+void test_kieselsport__schritte_in_pebbles_pause(void) {
+  prv_starte(ArtYoga, BEGINN);
+  prv_sekunden(60);
+  cl_assert(prv_gestrichen());
+  stub_pebble_tasks_set_current(PebbleTask_KernelMain);
+  PebbleActivityEvent laden = {.type = PebbleActivityEvent_TrackingStopped};
+  workout_service_activity_event_handler(&laden);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  prv_sekunde();
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert(!prv_gestrichen());
+  cl_assert(workout_service_pause_workout(false));
+  prv_sekunde();
+  cl_assert_equal_i(prv_stand().zustand, LaufLaeuft);
+  cl_assert(prv_gestrichen());
+}
+
+// Laufen und Wandern zaehlen Schritte wie bisher: weder laufend noch in der Pause gestrichen.
+void test_kieselsport__laufen_und_wandern_zaehlen_immer(void) {
+  const Sportart arten[] = {ArtLaufen, ArtWandern};
+  for (size_t i = 0; i < ARRAY_LENGTH(arten); i++) {
+    prv_starte(arten[i], BEGINN + i * 1000);
+    cl_assert(!prv_gestrichen());
+    prv_sekunden(40);
+    prv_pause();
+    cl_assert(!prv_gestrichen());
+    prv_pause();
+    cl_assert(!prv_gestrichen());
+    prv_sekunden(30);
+    prv_pause();
+    prv_speichern();
+    cl_assert(!prv_gestrichen());
+    prv_sekunden_leer(30);
+  }
+}
+
+// P5 (Entscheid 3 vom 08.10.2026): Mit dem Start steht Kieselsport ohne Ablauf oben im Startmenue,
+// mit dem Ende (gespeichert, verworfen, von selbst) nur noch Pebbles Frist lang. Die Kennung kommt
+// aus der UUID (hier 4242).
+void test_kieselsport__startmenue_oben_im_training(void) {
+  prv_starte(ArtLaufen, BEGINN);
+  cl_assert_equal_i(s_oben_aufrufe, 1);
+  cl_assert_equal_i(s_oben_id, 4242);
+  cl_assert(s_oben_ohne_ablauf);
+  prv_sekunden(70);
+  prv_pause();
+  prv_pause();
+  cl_assert(s_oben_ohne_ablauf);
+  prv_speichern();
+  cl_assert(!s_oben_ohne_ablauf);
+  int aufrufe = s_oben_aufrufe;
+  prv_sekunden_leer(30);
+  cl_assert_equal_i(s_oben_aufrufe, aufrufe);
+
+  prv_starte(ArtBike, BEGINN + 1000);
+  cl_assert(s_oben_ohne_ablauf);
+  prv_verwerfen();
+  cl_assert_equal_i(s_oben_aufrufe, aufrufe + 2);
+  cl_assert(!s_oben_ohne_ablauf);
+
+  // Von selbst nach 30 min Pause: bis dahin oben, danach mit Ablauf.
+  prv_starte(ArtWandern, BEGINN + 2000);
+  cl_assert(s_oben_ohne_ablauf);
+  prv_sekunden(70);
+  prv_pause();
+  prv_sekunden_leer(30 * 60 - 1);
+  cl_assert_equal_i(prv_stand().zustand, LaufPause);
+  cl_assert(s_oben_ohne_ablauf);
+  prv_sekunden_leer(1);
+  cl_assert_equal_i(prv_stand().zustand, LaufAus);
+  cl_assert(!s_oben_ohne_ablauf);
+  aufrufe = s_oben_aufrufe;
+  prv_sekunden_leer(120);
+  cl_assert_equal_i(s_oben_aufrufe, aufrufe);
+}
+
+// Jede AppMessage der App setzt Pebbles Frist an Kieselsports Stelle (app_message_sender.c,
+// app_message_receiver.c: mit Ablauf). Der Dienst markiert jede Minute wieder ohne Ablauf, auch in
+// der Pause - sonst rutschte Kieselsport fuenf Minuten nach der letzten Nachricht mitten im
+// Training ab. Nach dem Ende nicht mehr.
+void test_kieselsport__startmenue_oben_trotz_nachrichten(void) {
+  prv_starte(ArtBike, BEGINN);
+  cl_assert(s_oben_ohne_ablauf);
+  for (int runde = 0; runde < 2; runde++) {
+    app_install_mark_prioritized(4242, true /* wie eine gesendete Zustandsmeldung */);
+    cl_assert(!s_oben_ohne_ablauf);
+    prv_sekunden(60);
+    cl_assert(s_oben_ohne_ablauf);
+    cl_assert_equal_i(s_oben_id, 4242);
+    prv_pause();
+  }
+  // Nach dem zweiten Umschalten laeuft es wieder; Pause, Speichern, und die Minuten danach.
+  prv_pause();
+  prv_speichern();
+  cl_assert(!s_oben_ohne_ablauf);
+  const int aufrufe = s_oben_aufrufe;
+  prv_sekunden_leer(120);
+  cl_assert(!s_oben_ohne_ablauf);
+  cl_assert_equal_i(s_oben_aufrufe, aufrufe);
+}
+
+// Lehnt Pebble den Start ab (ein fremdes Training), rueckt Kieselsport nicht nach oben.
+void test_kieselsport__startmenue_nicht_oben_ohne_start(void) {
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  cl_assert(workout_service_start_workout(ActivitySessionType_Walk));
+  prv_starte(ArtLaufen, BEGINN + 7);
+  cl_assert_equal_i(prv_stand().zustand, LaufAus);
+  cl_assert_equal_i(s_oben_aufrufe, 0);
+  cl_assert(workout_service_stop_workout());
+}

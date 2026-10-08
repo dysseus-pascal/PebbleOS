@@ -527,6 +527,20 @@ AppInstallId app_install_get_id_for_uuid(const Uuid *uuid) {
   return uuid_equal(uuid, &kieselsport) ? 4242 : INSTALL_ID_INVALID;
 }
 
+// P5 (Entscheid 3 vom 08.10.2026): Kieselsport im Startmenue oben. Was Pebble daraus macht, prueft
+// test_kieselsport_startmenue am echten app_install_manager.c; hier zaehlt, wann der Dienst es
+// meldet: welche App, ob ohne Ablauf (im Training) oder mit (danach), und nie unter seiner Sperre.
+static int s_oben_aufrufe;
+static AppInstallId s_oben_id;
+static bool s_oben_ohne_ablauf;
+static bool s_oben_unter_sperre;
+void app_install_mark_prioritized(AppInstallId install_id, bool can_expire) {
+  s_oben_aufrufe++;
+  s_oben_id = install_id;
+  s_oben_ohne_ablauf = !can_expire;
+  s_oben_unter_sperre |= pbl_mutex_is_owner(&s_kieselsport_sperre);
+}
+
 // =============================================================================================
 // Persist von Kieselsport (speicher.c hat seinen eigenen Test): im Speicher
 
@@ -747,6 +761,10 @@ static void umfeld_initialize(void) {
   s_brumm_zahl = 0;
   s_akku = 80;
   s_geholt = 0;
+  s_oben_aufrufe = 0;
+  s_oben_id = INSTALL_ID_INVALID;
+  s_oben_ohne_ablauf = false;
+  s_oben_unter_sperre = false;
   prv_neustart();
 }
 
@@ -764,6 +782,8 @@ static void umfeld_cleanup(void) {
   cl_assert_equal_i(s_kanten[SperreDienst][SperreActivity], 0);
   cl_assert_equal_i(s_kanten[SperreDienst][SperreHrm], 0);
   cl_assert_equal_i(s_kanten[SperreHrm][SperreWorkout], 0);
+  // P5: das Startmenue nie unter der Sperre des Dienstes (sie bleibt ein Blatt).
+  cl_assert(!s_oben_unter_sperre);
   // Die Sperre des Kalorienzaehlers nimmt Pebble unter seiner Workout-Sperre: Sie ist ein Blatt,
   // unter ihr wird keine andere genommen.
   for (int b = 0; b < SperreArten; b++) {

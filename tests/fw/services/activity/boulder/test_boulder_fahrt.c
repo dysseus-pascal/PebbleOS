@@ -1116,6 +1116,80 @@ void test_boulder_fahrt__t4_1_laufen_zaehlt_schritte(void) {
   cl_assert(prv_pruefe_minuten() >= 5 + 5 + 24);
 }
 
+// Entscheid 2 vom 08.10.2026: Bei einem Training ohne Schritte streicht die Variante nur, solange
+// es LAEUFT. Kieselsport hebt den Merker bei Pause, Speichern und Verwerfen auf und setzt ihn beim
+// Weiter wieder, jedes Mal nach Pebbles Aufruf und ohne Sperre (dienst.c; test_kieselsport prueft
+// diese Seite). Hier die Wirkung an der echten Variante, waehrend Pebbles Training die ganze Zeit
+// besteht: laufend 0, in der Pause zaehlen Tagessumme, Minute (DLS 81) und Rate, Weiter wieder 0,
+// nach dem Speichern zaehlt es auch in den 30 s bis zu Pebbles Stopp (V4), nach dem Verwerfen
+// sofort.
+static void prv_kieselsport_pause(void) {
+  cl_assert(workout_service_pause_workout(true));
+  boulder_variante_training_ohne_schritte(false);
+}
+static void prv_kieselsport_weiter(void) {
+  cl_assert(workout_service_pause_workout(false));
+  boulder_variante_training_ohne_schritte(true);
+}
+static void prv_kieselsport_verwerfen(void) {
+  boulder_variante_training_ohne_schritte(false);
+  cl_assert(boulder_training_verwerfen());
+}
+
+// Laufend: viele Schritte (an der Hantel, im Wasser), keiner zaehlt.
+static void prv_training_minuten_ohne(int minuten) {
+  const uint32_t vorher = prv_zaehler();
+  s_erwartet_ohne_schritte = true;
+  for (int i = 0; i < minuten; i++) {
+    prv_minute((i % 2) ? 40 : 110, 2400, 0x37, prv_puls(125));
+    cl_assert_equal_i(prv_zaehler(), vorher);
+    cl_assert_equal_i(prv_rate(), 0);
+  }
+  s_erwartet_ohne_schritte = false;
+}
+
+// Pause: zum Auto, zur Garderobe - jeder Schritt zaehlt.
+static void prv_training_minuten_mit(int minuten) {
+  const uint32_t vorher = prv_zaehler();
+  for (int i = 0; i < minuten; i++) {
+    prv_minute(90, 2600, 0x41, prv_puls(100));
+    cl_assert(prv_rate() > 0);
+  }
+  cl_assert_equal_i(prv_zaehler(), vorher + (uint32_t)minuten * 90);
+}
+
+void test_boulder_fahrt__pause_zaehlt_schritte(void) {
+  prv_gehen(5);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  prv_training_minuten_ohne(4);
+  prv_kieselsport_pause();
+  prv_training_minuten_mit(3);
+  cl_assert(workout_service_is_workout_ongoing());
+  prv_kieselsport_weiter();
+  prv_training_minuten_ohne(4);
+  // Speichern: Kieselsport pausiert Pebble und hebt den Merker auf; Pebbles Stopp kommt 30 s
+  // spaeter, mitten in dieser Minute. Beide Haelften zaehlen.
+  prv_kieselsport_pause();
+  prv_minute_geteilt(40, prv_training_stopp, 45, 85, 2600, 0x41, 0);
+  cl_assert(prv_rate() > 0);
+  const ActivitySession *t = prv_sitzung_manuell(ActivitySessionType_Open, true);
+  cl_assert(t);
+  cl_assert_equal_i(t->start_utc, s_start_um);
+  // Verwerfen: zaehlt sofort wieder.
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  prv_training_minuten_ohne(3);
+  prv_kieselsport_verwerfen();
+  cl_assert(!workout_service_is_workout_ongoing());
+  prv_training_minuten_mit(3);
+  prv_gehen(40);
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+  cl_assert(prv_pruefe_minuten() >= 5 + 4 + 3 + 4 + 1 + 3 + 3);
+  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 0);
+}
+
 // T4.2, T2.3 mit Training (Kriterium 4): Eine bestaetigte Fahrt laeuft, zwei Minuten an der Ampel
 // (weder velo- noch auto-artig), dann startet ein Velo-Training mitten in der Minute. Die Fahrt
 // endet am Trainingsstart (auf die Minute), mit der Ampel, und ueberdeckt das Training nicht. Auf

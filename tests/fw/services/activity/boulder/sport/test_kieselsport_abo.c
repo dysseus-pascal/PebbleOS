@@ -129,6 +129,7 @@ BatteryChargeState battery_get_charge_state(void) {
 bool app_manager_is_watchface_running(void) { return false; }
 void app_manager_put_launch_app_event(const AppLaunchEventConfig *config) {}
 AppInstallId app_install_get_id_for_uuid(const Uuid *uuid) { return INSTALL_ID_INVALID; }
+void app_install_mark_prioritized(AppInstallId install_id, bool can_expire) {}
 void launcher_task_add_callback(CallbackEventCallback cb, void *daten) { cb(daten); }
 
 // Persist von Kieselsport: leer, nichts liegt an

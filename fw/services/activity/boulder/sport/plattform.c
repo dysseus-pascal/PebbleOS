@@ -86,10 +86,15 @@ bool ks_workout_starten(Sportart art, uint16_t maxpuls) {
   }
   // SCHRITTE NUR BEIM LAUFEN UND WANDERN (V1, vom Nutzer geaendert): Am Lenker, an der Hantel, auf
   // der Matte und im Wasser zaehlt der Schrittzaehler Bewegung, die keine Schritte sind. Die
-  // Variante laesst sie bis zum Stopp weg - aus Tagessumme, Minute und Rate (D17). Erst nach dem
-  // Start, ohne Sperre (Regel 2.5.2): der Start hat den Merker der Variante frisch gesetzt.
-  boulder_variante_training_ohne_schritte(!art_info(art)->schritte);
+  // Variante laesst sie weg, solange das Training laeuft - aus Tagessumme, Minute und Rate (D17);
+  // Pause und Ende heben das auf (dienst.c). Erst nach dem Start, ohne Sperre (Regel 2.5.2): der
+  // Start hat den Merker der Variante frisch geloescht.
+  ks_schritte_streichen(!art_info(art)->schritte);
   return true;
+}
+
+void ks_schritte_streichen(bool an) {
+  boulder_variante_training_ohne_schritte(an);
 }
 
 void ks_kalorien_maxpuls(uint16_t maxpuls) {
@@ -287,6 +292,8 @@ uint8_t ks_akku_prozent(bool *am_kabel) {
   return akku.charge_percent;
 }
 
+static const Uuid s_kieselsport_uuid = KIESELSPORT_UUID_INIT;
+
 void ks_app_holen(void) {
   // WIE FRUEHER DER WORKER, aber hoeflicher: der holte die App auch ueber eine andere hinweg.
   // Hier nur vom Zifferblatt aus - wer gerade etwas anderes tut, bekommt die Zusammenfassung beim
@@ -294,11 +301,19 @@ void ks_app_holen(void) {
   if (!app_manager_is_watchface_running()) {
     return;
   }
-  static const Uuid s_uuid = KIESELSPORT_UUID_INIT;
   app_manager_put_launch_app_event(&(AppLaunchEventConfig){
-    .id = app_install_get_id_for_uuid(&s_uuid),
+    .id = app_install_get_id_for_uuid(&s_kieselsport_uuid),
     .common.reason = APP_LAUNCH_WORKER,
   });
+}
+
+void ks_startmenue_oben(bool laeuft) {
+  // WIE PEBBLE ES FUER SEINE WORKOUT-APP TUT (shell_event_loop.c, PEBBLE_WORKOUT_EVENT): Waehrend
+  // des Trainings steht Kieselsport ohne Ablauf ganz oben, nach dem Ende noch Pebbles Frist lang
+  // (app_install_manager.c, fuenf Minuten), dann wieder an seinem Platz. Oben steht es nur, weil
+  // das Startmenue es mit P5 in seiner Liste kennt (app_menu_data_source.c). Ueber die Kennung,
+  // nicht die Nummer: dieselbe Suche wie beim Holen der App.
+  app_install_mark_prioritized(app_install_get_id_for_uuid(&s_kieselsport_uuid), !laeuft);
 }
 
 #if UNITTEST

@@ -15,6 +15,8 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - ein Hunk in einer anderen Funktion liegt als erlaubt,
   - eine Datei mehr Hunks (ohne Kontext gezaehlt) hat als erlaubt,
   - ein Hunk einer Kieselsport-Stelle den Schalter CONFIG_BOULDER_KIESELSPORT nicht nennt,
+  - eine eigene Datei in Pebbles Ordnern (EIGENE_DATEIEN) Pebbles Zeilen aendert, kein
+    "Boulder:" traegt oder als .c den Schalter nicht nennt,
   - der Remote `upstream` fehlt.
 Die eigenen Ordner der Variante und von Kieselsport sind frei.
 """
@@ -35,10 +37,18 @@ EIGENE_ORDNER = (
     'tests/fw/apps/system_apps/kieselsport/',
 )
 
+# Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht). Die Kachel
+# im Startmenue (P6) steht neben Pebbles Kacheln, weil sie deren Koepfe braucht; die .c baut jedes
+# Board und muss darum ganz unter dem Schalter stehen.
+EIGENE_DATEIEN = (
+    'fw/apps/system/launcher/default/app_glance_kieselsport.c',
+    'fw/apps/system/launcher/default/app_glance_kieselsport.h',
+)
+
 # Pebble-Datei: hoechstens geaenderte Zeilen, Funktion der Hunks als Regex, hoechstens so
 # viele Hunks (ohne Kontext), und ob jeder Hunk den Schalter nennen muss.
 # Die Liste folgt den Entscheidungen (entscheidungen.md; Schritt 1: Spezifikation 2.1, F2, F3;
-# Schritt 2: Spezifikation 2.3, P1-P4).
+# Schritt 2: Spezifikation 2.3, P1-P6).
 Stelle = collections.namedtuple('Stelle', 'zeilen funktion hunks schalter',
                                 defaults=(None, None, None))
 SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
@@ -48,9 +58,9 @@ PEBBLE = {
     'fw/services/activity/CMakeLists.txt': Stelle(6),                # E2 Quellen
     'fw/services/blob_db/settings_blob_db.c': Stelle(1),             # E3 Whitelist Messstufe
     # E4 Weckregel, dazu das Nachholen nach einem Neustart (Entscheid 07.10.2026, wecklauf.h).
-    # ABWEICHUNG, Freigabe durch den Nutzer offen: Der Entscheid nennt nur die Stelle der
-    # Weckregel. Nach einem Boot fragt alarm.c die Weckregel nie, deshalb kamen mit c1c7b2eb0
-    # prv_record_alarm_op (geklungen) und alarm_init (Nachholen) dazu.
+    # Nach einem Boot fragt alarm.c die Weckregel nie, deshalb kamen mit c1c7b2eb0
+    # prv_record_alarm_op (geklungen) und alarm_init (Nachholen) dazu. Vom Nutzer freigegeben am
+    # 08.10.2026 (Entscheid 1 = A): diese drei Funktionen, zusammen hoechstens 20 Zeilen.
     'fw/services/alarms/alarm.c': Stelle(
         20, r'prv_should_smart_alarm_trigger\(|prv_record_alarm_op\(|alarm_init\('),
     'fw/services/hrm/hrm_manager.c': Stelle(10),                     # E5 HRV-Fix (F2)
@@ -70,6 +80,13 @@ PEBBLE = {
     'fw/services/activity/activity_sessions.c': Stelle(
         4, r'activity_sessions_prv_send_activity_session_to_data_logging\(', hunks=1,
         schalter=True),
+    # P5 Kieselsport rueckt im Training im Startmenue nach oben (Entscheid 3 vom 08.10.2026): eine
+    # Zeile in der Liste s_override_table, dem einzigen "static const struct {" der Datei.
+    'fw/process_management/app_menu_data_source.c': Stelle(
+        3, r'^static const struct \{$', hunks=1, schalter=True),
+    # P6 die Kachel mit der Laufzeit: Include und ein Eintrag in der Liste der System-Kacheln.
+    'fw/apps/system/launcher/default/app_glance_service.c': Stelle(
+        8, r'prv_load_glance_for_node\(', hunks=2, schalter=True),
 }
 
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
@@ -80,6 +97,26 @@ HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@ ?(.*)$')
 
 def eigen(pfad):
     return pfad.startswith(EIGENE_ORDNER)
+
+
+def pruefe_eigene_datei(pfad, hunks):
+    """Eine eigene Datei in Pebbles Ordner: nur neue Zeilen, "Boulder:", als .c mit Schalter."""
+    fehler = []
+    zeilen = [x for _, z in hunks for x in z]
+    if any(x.startswith('-') for x in zeilen):
+        fehler.append(f'{pfad}: eigene Datei aendert Zeilen, die es schon gab')
+    if not any('Boulder:' in x for x in zeilen):
+        fehler.append(f'{pfad}: eigene Datei ohne "Boulder:"')
+    if pfad.endswith('.c') and not any(x.startswith('+#ifdef ' + SCHALTER) for x in zeilen):
+        fehler.append(f'{pfad}: eigene Datei nicht unter #ifdef {SCHALTER}')
+    return fehler
+
+
+def als_neue_datei(pfad, text):
+    """Eine unversionierte Datei als Diff gegen nichts - so prueft der Waechter sie wie committet."""
+    zeilen = text.splitlines()
+    return (f'diff --git a/{pfad} b/{pfad}\n--- /dev/null\n+++ b/{pfad}\n'
+            f'@@ -0,0 +1,{len(zeilen)} @@\n' + ''.join('+' + z + '\n' for z in zeilen))
 
 
 def nur_includes(zeilen):
@@ -119,6 +156,9 @@ def pruefe_diff(diff, unversioniert, diff_u0=None):
     for pfad, hunks in dateien(diff).items():
         if eigen(pfad):
             continue
+        if pfad in EIGENE_DATEIEN:
+            fehler += pruefe_eigene_datei(pfad, hunks)
+            continue
         if pfad not in PEBBLE:
             fehler.append(f'{pfad}: Pebble-Datei ausserhalb der erlaubten Stellen geaendert')
             continue
@@ -140,7 +180,7 @@ def pruefe_diff(diff, unversioniert, diff_u0=None):
             if stelle.funktion and not nur_includes(zeilen) and not re.search(stelle.funktion, kopf):
                 fehler.append(f'{pfad}: Hunk in "{kopf}", erlaubt nur {stelle.funktion}')
     for pfad in unversioniert:
-        if not eigen(pfad) and not UNVERSIONIERT_FREI.match(pfad):
+        if not eigen(pfad) and pfad not in EIGENE_DATEIEN and not UNVERSIONIERT_FREI.match(pfad):
             fehler.append(f'{pfad}: neue Datei ausserhalb der eigenen Ordner')
     return fehler
 
@@ -159,6 +199,12 @@ def pruefe(repo):
     diff_u0 = git(repo, 'diff', '-U0', basis)
     unversioniert = [z[3:] for z in git(repo, 'status', '--porcelain', '-z').split('\0')
                      if z.startswith('?? ')]
+    # Eine eigene Datei, noch nicht im Index: git diff zeigt sie nicht, geprueft wird sie trotzdem.
+    for pfad in unversioniert:
+        if pfad in EIGENE_DATEIEN:
+            neu = als_neue_datei(pfad, (pathlib.Path(repo) / pfad).read_text())
+            diff += neu
+            diff_u0 += neu
     return pruefe_diff(diff, unversioniert, diff_u0)
 
 

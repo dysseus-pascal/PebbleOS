@@ -120,6 +120,48 @@ def proben_kieselsport(pruefe):
     yield 'App-Ordner frei', not pruefe('', ['fw/apps/system/kieselsport/lauf_window.c'])
     yield 'Testordner der App frei', not pruefe('', ['tests/fw/apps/system_apps/kieselsport/test_x.c'])
     yield 'anderer App-Ordner', pruefe('', ['fw/apps/system/kieselstrasse/x.c'])
+    yield from proben_startmenue(pruefe)
+
+
+# Schritt 2, P5/P6 und die Kacheldatei (Entscheid 3 vom 08.10.2026).
+MENUE = 'fw/process_management/app_menu_data_source.c'
+LISTE = 'static const struct {'
+P5 = ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P5', '+  {APP_ID_KIESELSPORT, true},', '+#endif']
+GLANCE = 'fw/apps/system/launcher/default/app_glance_service.c'
+LADEN = 'static LauncherAppGlance *prv_load_glance_for_node(const AppMenuNode *node,'
+P6_INCLUDE = ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P6', '+#include "app_glance_kieselsport.h"',
+              '+#endif']
+P6 = ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P6',
+      '+    {.uuid = KIESELSPORT_UUID_INIT, .constructor = launcher_app_glance_kieselsport_create},',
+      '+#endif']
+KACHEL = 'fw/apps/system/launcher/default/app_glance_kieselsport.c'
+KACHEL_TEXT = '// Boulder: P6\n#ifdef CONFIG_BOULDER_KIESELSPORT\nint x;\n#endif\n'
+
+
+def proben_startmenue(pruefe):
+    yield 'P5 in der Liste', not pruefe(hunk(MENUE, P5, LISTE), [])
+    yield 'P5 ohne Schalter', pruefe(hunk(MENUE, ['+  {APP_ID_KIESELSPORT, true},  // Boulder: P5'], LISTE), [])
+    yield 'P5 zu viele Zeilen', pruefe(hunk(MENUE, P5 + ['+  {APP_ID_X, true},'], LISTE), [])
+    yield 'P5 in einer Funktion', pruefe(hunk(MENUE, P5, 'static int prv_override_index(AppInstallId app_id) {'),
+                                         [])
+    zwei = hunks(MENUE, (LISTE, P5), (LISTE, ['+// Boulder: zweiter Hunk']))
+    yield 'P5 zweiter Hunk', pruefe(zwei, [], zwei)
+    beide = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, P6))
+    yield 'P6 Include und Eintrag', not pruefe(beide, [], beide)
+    yield 'P6 in anderer Funktion', pruefe(hunk(GLANCE, P6, 'void launcher_app_glance_service_init('), [])
+    yield 'P6 ohne Schalter', pruefe(hunk(GLANCE, ['+    {.uuid = X},  // Boulder: P6'], LADEN), [])
+    drei = hunks(GLANCE, ('', P6_INCLUDE), (LADEN, P6), (LADEN, ['+// Boulder: dritter Hunk']))
+    yield 'P6 dritter Hunk', pruefe(drei, [], drei)
+    # Die Kacheldatei: neu, ganz Boulder, unter dem Schalter - committet oder noch unversioniert.
+    neu = k1_waechter.als_neue_datei(KACHEL, KACHEL_TEXT)
+    yield 'Kacheldatei', not pruefe(neu, [])
+    yield 'Kacheldatei unversioniert', not pruefe('', [KACHEL])
+    yield 'Kacheldatei ohne Schalter', pruefe(k1_waechter.als_neue_datei(KACHEL, '// Boulder: P6\nint x;\n'), [])
+    yield 'Kacheldatei ohne Marke', pruefe(
+        k1_waechter.als_neue_datei(KACHEL, '#ifdef CONFIG_BOULDER_KIESELSPORT\nint x;\n#endif\n'), [])
+    yield 'Kacheldatei aendert Pebbles Zeilen', pruefe(hunk(KACHEL, ['-alt', '+// Boulder: P6',
+                                                                     '+#ifdef CONFIG_BOULDER_KIESELSPORT']), [])
+    yield 'andere neue Datei im Startmenue', pruefe('', ['fw/apps/system/launcher/default/app_glance_x.c'])
 
 
 def main():

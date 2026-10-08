@@ -46,6 +46,9 @@ static const struct {
 #ifdef APP_ID_WORKOUT
   {APP_ID_WORKOUT, true},
 #endif
+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P5 im Training oben, wie Workout (Entscheid 08.10.)
+  {APP_ID_KIESELSPORT, true},
+#endif
   {APP_ID_MUSIC, true},
 };
 

@@ -189,8 +189,8 @@ void test_kieselsport_app__start_stoesst_den_dienst_an(void) {
   cl_assert_equal_i(s_laufschirm_laufend + s_laufschirm_bereit + s_sendeschirm, 0);
 }
 
-// Laeuft ein Training, fuehrt die App gleich in den Laufschirm (F6 = B: ohne Kachel ist das der
-// Weg zurueck ins Training, auch ueber Quick Launch) - vor jedem anderen Anlass.
+// Laeuft ein Training, fuehrt die App gleich in den Laufschirm (der Weg zurueck ins Training, aus
+// dem Startmenue mit der Kachel P6 und ueber Quick Launch) - vor jedem anderen Anlass.
 void test_kieselsport_app__laufendes_training_gleich_in_den_laufschirm(void) {
   s_laeuft = true;
   s_grund = APP_LAUNCH_WORKER;

@@ -207,6 +207,26 @@ static void prv_sensor_stellen(void) {
   }
 }
 
+// --- Schritte und Startmenue, ohne Sperre ---
+
+// SCHRITTE STREICHT DIE VARIANTE NUR, SOLANGE DAS TRAINING LAEUFT (D17; Entscheid 2 vom
+// 08.10.2026). Bei den Arten ohne Schritte (V1) zaehlt der Schrittzaehler am Lenker, an der Hantel,
+// auf der Matte und im Wasser Bewegung, die kein Gehen ist. In der Pause und nach dem Speichern
+// aber geht man wirklich - zum Auto, zur Garderobe, zum Beckenrand. Darum gilt der Merker nur im
+// Zustand "laeuft": Pause, Speichern (auch die 30 s bis zu Pebbles Stopp, V4) und Verwerfen heben
+// ihn auf, Weiter setzt ihn wieder. Unter der Sperre gelesen, ohne sie gemeldet (Regel 2.5.2).
+static bool prv_schritte_streichen(void) {
+  return training_zustand() == LaufLaeuft && !art_info(training_art())->schritte;
+}
+
+// Das Training ist vorbei (gespeichert, verworfen, von selbst oder durch Pebble beendet): Die
+// Variante zaehlt wieder Schritte, und Kieselsport rutscht nach Pebbles Frist im Startmenue an
+// seinen Platz zurueck (P5).
+static void prv_training_vorbei(void) {
+  ks_schritte_streichen(false);
+  ks_startmenue_oben(false);
+}
+
 // --- Pebbles Zeit uebernehmen (unter der Sperre) ---
 
 // So viele aktive Sekunden holt ein Takt einzeln nach (Pebbles Timer laesst bei belegter Sperre
@@ -330,7 +350,11 @@ static void prv_tick(void *daten) {
     prv_speichern_aus(AnlassPebble);
     return;
   }
+  const Laufzustand vorher = training_zustand();
   prv_uebernehmen(&w);
+  // Pebbles eigene Pause (Laden) oder ein Weiter von anderswo aendert, ob Schritte zaehlen.
+  const bool gewechselt = training_zustand() != vorher;
+  const bool streichen = prv_schritte_streichen();
   // Gezaehlt wird am Stueck: jedes Weiter faengt von vorn an.
   s_pause_s = training_zustand() == LaufPause ? s_pause_s + 1 : 0;
   if (s_pause_s >= AUTO_ENDE_S) {
@@ -341,7 +365,8 @@ static void prv_tick(void *daten) {
     return;
   }
   // JEDE MINUTE, AUCH IN DER PAUSE: der Akku, und die Anmeldung am Sensor, die sonst ablaeuft.
-  if (++s_sekunde_der_minute >= 60) {
+  const bool neue_minute = ++s_sekunde_der_minute >= 60;
+  if (neue_minute) {
     s_sekunde_der_minute = 0;
     prv_akku_pruefen();
     puls_auffrischen();
@@ -349,6 +374,17 @@ static void prv_tick(void *daten) {
   prv_zonenwechsel();
   prv_schnappschuss();
   ks_entsperren();
+  if (gewechselt) {
+    ks_schritte_streichen(streichen);
+  }
+  // OBEN BLEIBEN (P5), JEDE MINUTE AUFS NEUE: Jede Nachricht der App ans Telefon und vom Telefon
+  // markiert Kieselsport mit Pebbles Frist (app_message_sender.c, app_message_receiver.c) und
+  // ersetzt damit die Markierung ohne Ablauf - fuenf Minuten nach der letzten Nachricht rutschte es
+  // mitten im Training ab. Pebble leitet den Platz seiner Workout-App ebenso immer wieder aus dem
+  // Zustand ab (shell_event_loop.c).
+  if (neue_minute) {
+    ks_startmenue_oben(true);
+  }
   prv_sensor_stellen();
 }
 
@@ -482,6 +518,7 @@ static void prv_starte(void *daten) {
   PBL_LOG_INFO("Kieselsport: Training gestartet, Art %d", (int)art);
   ks_entsperren();
   prv_sensor_stellen();
+  ks_startmenue_oben(true);
 }
 
 static void prv_pause(void *daten) {
@@ -507,8 +544,10 @@ static void prv_pause(void *daten) {
   if (training_zustand() == z) {
     training_pause_umschalten();
   }
+  const bool streichen = prv_schritte_streichen();
   prv_schnappschuss();
   ks_entsperren();
+  ks_schritte_streichen(streichen);
   prv_sensor_stellen();
 }
 
@@ -562,6 +601,7 @@ static void prv_speichern_aus(Anlass anlass) {
   // OHNE SPERRE ZU PEBBLE. Genau dann eine Sitzung, wenn eine Zusammenfassung im Persist liegt
   // (T2.1). Beide zaehlen Pebbles angehaltene Dauer; unter 60 s verwirft Kieselsport darum
   // ausdruecklich, ohne Meldung und ohne Anstoss ans Datalogging.
+  prv_training_vorbei();
   if (anlass != AnlassPebble) {
     if (!behalten) {
       ks_workout_verwerfen();
@@ -590,6 +630,7 @@ static void prv_verwerfen(void *daten) {
   }
   ks_entsperren();
   if (verworfen) {
+    prv_training_vorbei();
     // F3 = A: Pebble stoppt ohne Sitzung und ohne Meldung.
     ks_workout_verwerfen();
     prv_nachsenden_an();

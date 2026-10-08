@@ -156,6 +156,18 @@ static void prv_folge_invarianten(void) {
     FOLGE_PRUEFE(!prv_ks_takt_an() || pebble, "Sekundentakt ohne Training");
     FOLGE_PRUEFE(s_offen == 0, "Persist offen (%d)", s_offen);
   }
+  // Entscheid 2 vom 08.10.2026: Die Variante streicht Schritte genau dann, wenn Kieselsport ein
+  // Training ohne Schritte LAUFEN hat - nicht in der Pause (auch Pebbles Lade-Pause), nicht im
+  // 30-s-Fenster nach dem Speichern, nie ohne Kieselsport. Gestrichen wird nur in Pebbles Training
+  // mit dem Merker (kontext.c). Die Arten nach V1 (entscheidungen.md), nicht aus art.c gelesen.
+  static const bool s_ohne[ArtAnzahl] = {
+    [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
+    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true,
+  };
+  const bool gestrichen = pebble && g_fake_ohne_schritte;
+  const bool soll = s.zustand == LaufLaeuft && s.art < ArtAnzahl && s_ohne[s.art];
+  FOLGE_PRUEFE(gestrichen == soll, "Schritte gestrichen %d, soll %d (Zustand %d, Art %d)",
+               gestrichen, soll, s.zustand, s.art);
   s_folge.ohne_ks_s = (pebble && s.zustand == LaufAus) ? s_folge.ohne_ks_s + 1 : 0;
   FOLGE_PRUEFE(s_folge.ohne_ks_s <= 31, "Pebbles Training steht seit %d s ohne Kieselsport",
                s_folge.ohne_ks_s);
