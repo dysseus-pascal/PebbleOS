@@ -28,12 +28,15 @@
 #include "font_resource_keys.auto.h"
 #include "kernel/pbl_malloc.h"
 #include "pbl/services/activity/activity.h"
+#include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/services/activity/boulder/schnittstelle.h"
 #include "pbl/services/clock.h"
 #include "process_state/app_state/app_state.h"
 #include "resource/resource_ids.auto.h"
 #include "shell/prefs_syscalls.h"
 #include "syscall/syscall.h"
 
+#include <stdio.h>
 #include <time.h>
 
 // Die Probe der Bausteine (T2.5) und die Fehlerprobe (T2.1).
@@ -69,6 +72,11 @@ typedef enum {
   BhStarttaste,
   BhStartargument,
   BhQuickLaunch,
+  // 3.2 Die Schnittstelle der Variante (AP2): S1-S4
+  BhNacht,
+  BhLage,
+  BhSpo2,
+  BhMessstufe,
   // 3.6 Oberflaeche
   BhFenster,
   BhEbene,
@@ -112,6 +120,10 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhStarttaste] = "app_launch_button",
   [BhStartargument] = "app_launch_get_args",
   [BhQuickLaunch] = "app_launch_get_quick_launch_action",
+  [BhNacht] = "sys_boulder_nacht",
+  [BhLage] = "sys_boulder_lage",
+  [BhSpo2] = "sys_boulder_spo2",
+  [BhMessstufe] = "sys_boulder_messstufe_setzen",
   [BhFenster] = "window",
   [BhEbene] = "layer",
   [BhMenue] = "menu_layer",
@@ -179,6 +191,11 @@ typedef struct {
   GBitmap *bild;
   GDrawCommandImage *zeichnung;
   ActivitySession *sitzungen;
+  // AP2: was S1-S4 liefern, im Heap wie spaeter die Karten (512 B und 96 x 8 B).
+  NachtBild *nacht;
+  Spo2Wert *spo2;
+  BoulderLage lage;
+  char lage_text[64];
   GFont schriften[SCHRIFTEN];
   uint64_t benutzt; //< ein Bit je BhBaustein
   uint8_t ereignisse;
@@ -251,6 +268,37 @@ static void prv_daten(BhProbe *probe) {
   prv_benutzt(probe, BhStarttaste, app_launch_button());
   prv_benutzt(probe, BhStartargument, (int32_t)app_launch_get_args());
   prv_benutzt(probe, BhQuickLaunch, app_launch_get_quick_launch_action());
+
+  // S1-S4 (AP2). Jeder einmal, mit den Puffern im Heap. Das QEMU-Skript vergleicht die Zeilen
+  // "bh probe nacht/lage/spo2" mit dem, was der Pruefbefehl "boulder lage" im Kern zeigt.
+  probe->nacht = app_malloc_check(sizeof(NachtBild));
+  const BoulderLesen nacht = sys_boulder_nacht(probe->nacht);
+  prv_benutzt(probe, BhNacht, nacht);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe nacht %d schlaf=%d fertig=%d", (int)nacht,
+          nacht == BoulderLesenDa ? probe->nacht->schlaf_minuten : -1,
+          nacht == BoulderLesenDa ? probe->nacht->fertig : -1);
+  const bool lage_da = sys_boulder_lage(&probe->lage);
+  prv_benutzt(probe, BhLage, lage_da);
+  const BoulderLage *l = &probe->lage;
+  // Zwei Zeilen: Pebbles Protokoll kuerzt eine lange Zeile.
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe lage fassung=%d tracking=%d stufe=%d ziele=%d/%d",
+          l->fassung, l->tracking, l->messstufe, l->ziel_schritte, l->ziel_schlaf_min);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe lage2 maxpuls=%d ruhepuls=%d spo2=%d stand=%lu",
+          l->maxpuls, l->ruhepuls_median, l->spo2_takt_min, (unsigned long)l->stand_utc);
+  probe->spo2 = app_malloc_check(SPO2_WERTE_MAX * sizeof(Spo2Wert));
+  const uint32_t spo2 = sys_boulder_spo2(jetzt - 24 * 60 * 60, jetzt + 1, probe->spo2,
+                                         SPO2_WERTE_MAX);
+  prv_benutzt(probe, BhSpo2, (int32_t)spo2);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe spo2 %lu letzter=%d", (unsigned long)spo2,
+          spo2 ? probe->spo2[spo2 - 1].prozent : -1);
+  // Was S1-S3 liefern, auch im Bild der Probe (QEMU-Beleg): Ziele und Stufe, Nacht und SpO2.
+  snprintf(probe->lage_text, sizeof(probe->lage_text),
+           "Goals %d/%d Precision %d\nNight %d min SpO2 %lu", l->ziel_schritte,
+           l->ziel_schlaf_min, l->messstufe,
+           nacht == BoulderLesenDa ? probe->nacht->schlaf_minuten : -1, (unsigned long)spo2);
+  // Dieselbe Stufe noch einmal: Der Weg (Auftrag in der Schlange der App) laeuft, an der
+  // Einstellung aendert sich nichts. Vor dem ersten Lesen (0) lehnt S4 ab.
+  prv_benutzt(probe, BhMessstufe, sys_boulder_messstufe_setzen(l->messstufe));
 }
 
 // --- Oberflaeche ---
@@ -302,7 +350,11 @@ static int16_t prv_menue_hoehe(MenuLayer *menue, MenuIndex *index, void *kontext
 
 static void prv_menue_zeile(GContext *ctx, const Layer *zelle, MenuIndex *index, void *kontext) {
   BhProbe *probe = kontext;
-  graphics_draw_text(ctx, index->row ? "Light" : "Balanced", probe->schriften[2],
+  // Die Namen der Stufen aus dem Flash (messstufe.h, AP2), die geltende zuerst.
+  const uint8_t stufe = probe->lage.messstufe ? probe->lage.messstufe : MESSSTUFE_VORGABE;
+  const char *name =
+      BOULDER_MESSSTUFE_NAMEN[(stufe - MESSSTUFE_MIN + index->row) % MESSSTUFE_MAX];
+  graphics_draw_text(ctx, name, probe->schriften[2],
                      layer_get_bounds_by_value(zelle), GTextOverflowModeTrailingEllipsis,
                      GTextAlignmentLeft, NULL);
   prv_benutzt(probe, BhMenue, index->row);
@@ -350,9 +402,10 @@ static void prv_oberflaeche(BhProbe *probe) {
   layer_add_child(wurzel, menu_layer_get_layer(probe->menue));
 
   probe->rolle = scroll_layer_create(GRect(0, 190, rahmen.size.w, rahmen.size.h - 190));
-  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, 100));
-  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, 100));
-  text_layer_set_text(probe->rollen_text, "ScrollLayer");
+  // So hoch wie die Rolle: zwei Zeilen ohne den Schatten, der sonst die zweite verdeckt.
+  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, rahmen.size.h - 190));
+  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, rahmen.size.h - 190));
+  text_layer_set_text(probe->rollen_text, probe->lage_text);
   text_layer_set_font(probe->rollen_text, probe->schriften[0]);
   scroll_layer_add_child(probe->rolle, text_layer_get_layer(probe->rollen_text));
   layer_add_child(wurzel, scroll_layer_get_layer(probe->rolle));
@@ -390,6 +443,8 @@ static void prv_bausteine(void) {
   APP_LOG(APP_LOG_LEVEL_INFO, "bh probe ende %s",
           probe->fertig ? "vollstaendig" : "UNVOLLSTAENDIG");
   task_free(probe->sitzungen);
+  task_free(probe->nacht);
+  task_free(probe->spo2);
   task_free(probe);
 }
 
@@ -419,11 +474,26 @@ static void prv_fehler(void) {
   window_destroy(fenster);
 }
 
+// --- S4 aus der App ---
+
+// Nur der Syscall: Den Auftrag fuehrt KernelBG aus, auch wenn die App gleich endet (die Schlange
+// der App gehoert dem System, nicht der App).
+static void prv_stufe(uint8_t stufe) {
+  const bool angenommen = sys_boulder_messstufe_setzen(stufe);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe stufe %d %d", stufe, angenommen);
+}
+
 bool bh_probe(void) {
   if (app_launch_reason() != APP_LAUNCH_TIMELINE_ACTION) {
     return false;
   }
-  switch (app_launch_get_args()) {
+  const uint32_t argument = app_launch_get_args();
+  if (argument > BH_PROBE_STUFE && argument <= BH_PROBE_STUFE + MESSSTUFE_MAX + 1) {
+    // + 1: auch eine ungueltige Stufe (6), die S4 ablehnen muss.
+    prv_stufe((uint8_t)(argument - BH_PROBE_STUFE));
+    return true;
+  }
+  switch (argument) {
     case BH_PROBE_BAUSTEINE:
       prv_bausteine();
       return true;

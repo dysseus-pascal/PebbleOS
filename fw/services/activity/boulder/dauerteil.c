@@ -30,6 +30,11 @@
 // STAND SCHRITT 2, AP4: Training ohne Schritte (D17, V1), die Fahrt endet am Trainingsstart,
 // nach dem Training beginnt der Ring der Kandidatin neu, Pulskalorien der Velofahrt (F7) - alles
 // in kontext.c.
+//
+// STAND SCHRITT 3, AP2 (nur mit der eigenen Health-App): Der Minutenteil veroeffentlicht die Lage
+// fuer die App (schnittstelle.h) und stoesst das erste Lesen der Ziele an (ziele.h). Auch der
+// Takt veroeffentlicht sie: Am Kabel und mit Tracking aus laeuft kein Minutenteil, der Lebenslauf
+// der Nacht aber schon. "Laden" veroeffentlicht sie nach dem Boot.
 
 #include "pbl/services/activity/boulder/variante.h"
 
@@ -54,6 +59,10 @@
 #include "pbl/services/activity/boulder/zyklen.h"
 #ifdef CONFIG_BOULDER_KIESELSPORT
 #include "pbl/services/activity/boulder/sport/kieselsport.h"
+#endif
+#ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/schnittstelle.h"
+#include "pbl/services/activity/boulder/ziele.h"
 #endif
 #include "pbl/services/battery/battery_state.h"
 #include "pbl/services/time.h"
@@ -152,6 +161,11 @@ static void prv_laden_cb(void *data) {
   // den Dienst, damit Liegengebliebenes nach einem Neustart auch ohne App-Start ans Telefon geht.
   kieselsport_init();
 #endif
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Nach dem Laden der Ruhepulse und Kieselsports: Die App sieht ab jetzt Nacht, Median und
+  // Maximalpuls, nicht erst nach dem ersten Minutenlauf.
+  boulder_lage_veroeffentlichen();
+#endif
   if (!s_test_ohne_cron) {
     pbl_cron_job_schedule(&s_takt_job);
   }
@@ -195,6 +209,9 @@ void boulder_dauerteil_takt(time_t jetzt) {
   if (t % 15 == 3) {
     boulder_speicher_anstossen(false);
   }
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  boulder_lage_veroeffentlichen();
+#endif
 }
 
 // Nur gemessen: der Anteil der Variante am Minutenteil (Ziel 2 ms, Spezifikation 7.1).
@@ -226,6 +243,11 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   boulder_messstufe_minute();
   boulder_puls_minute(minute->utc + PBL_SEC_PER_MIN,
                       im_nachtfenster && minute->vmc <= SCHLAF_SCHWELLE_VMC);
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Die Lage zuletzt, nach Nacht, Live-Automat und Stufe dieser Minute (O(1), 3.1 Regel 5).
+  boulder_ziele_minute();
+  boulder_lage_veroeffentlichen();
+#endif
 }
 
 void boulder_dauerteil_hrv_fenster(time_t beginn_utc, uint16_t rmssd, uint8_t puls) {
@@ -332,6 +354,10 @@ void boulder_dauerteil_test_neustart(void) {
   boulder_ausgabe_test_neustart();
   boulder_speicher_test_neustart();
   boulder_umzug_test_neustart();
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  boulder_schnittstelle_test_neustart();
+  boulder_ziele_test_neustart();
+#endif
 }
 
 void boulder_dauerteil_test_ohne_cron(bool ohne) {

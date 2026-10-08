@@ -24,6 +24,10 @@
 // die Uhr laeuft weiter.
 #define BH_PROBE_FEHLER 0x42480002u
 
+// S4 aus der App ohne Systemrechte (AP2, T6.1 in QEMU): Die App setzt die Messstufe n (1-5) wie
+// spaeter die Karte Settings und endet. Argument BH_PROBE_STUFE + n.
+#define BH_PROBE_STUFE 0x42480010u
+
 // Der Wert, den die Fehlerprobe schreibt; die Gegenprobe mit Systemrechten liest ihn zurueck.
 #define BH_FEHLERPROBE_WERT 0xDEADBEEFu
 

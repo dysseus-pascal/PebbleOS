@@ -562,9 +562,16 @@ static Eintrag *prv_finde(uint32_t key) {
   return NULL;
 }
 
-bool ks_persist_exists(uint32_t key) { return prv_finde(key) != NULL; }
+// Jeder Blick in den Persist ist ein Zugriff auf die Datei (Schritt 3: Maximalpuls ohne Datei).
+static int s_persist_gelesen;
+
+bool ks_persist_exists(uint32_t key) {
+  s_persist_gelesen++;
+  return prv_finde(key) != NULL;
+}
 
 int ks_persist_read_data(uint32_t key, void *puffer, size_t groesse) {
+  s_persist_gelesen++;
   Eintrag *e = prv_finde(key);
   if (!e) return 0;
   const size_t n = e->laenge < groesse ? e->laenge : groesse;

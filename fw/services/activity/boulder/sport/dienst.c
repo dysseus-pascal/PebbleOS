@@ -737,6 +737,16 @@ uint16_t kieselsport_maxpuls(void) {
   return wert;
 }
 
+uint16_t kieselsport_maxpuls_wirksam(void) {
+  // OHNE DATEI: Sind die Einstellungen geladen, rechnet puls_maximum_wirksam nur im RAM (Wert,
+  // Alter der Uhr, Ruhepuls). Davor waere das Laden ein Lesen des Persist - dann lieber 0. So folgt
+  // der Wert wie Kieselsports Zonen dem Alter, auch ohne neuen Schnappschuss.
+  ks_sperren();
+  const uint16_t wert = s_einstellungen_da ? puls_maximum_wirksam() : 0;
+  ks_entsperren();
+  return wert;
+}
+
 bool kieselsport_maxpuls_gesetzt(void) {
   ks_sperren();
   prv_einstellungen_laden();

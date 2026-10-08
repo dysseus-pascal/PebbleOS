@@ -18,8 +18,9 @@
 // "offen", und der naechste Takt des Lebenslaufs (nacht.c) schickt sie ganz neu. Boulder
 // ersetzt eine Nacht mit gleichem beginn_utc (0.50).
 //
-// Alles auf KernelBG; nur boulder_nacht_letzte liest aus anderen Tasks (Health-App), unter
-// einer eigenen Sperre. Kein Heap.
+// Alles auf KernelBG; nur boulder_nacht_bild_kopieren liest aus einer anderen Task (S1 der
+// Health-App, Schritt 3), unter einer eigenen Sperre, unter der nie eine Datei gelesen wird. Kein
+// Heap.
 
 #include "pbl/services/activity/boulder/nacht_satz.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
@@ -77,9 +78,20 @@ bool boulder_ausgabe_bild(time_t beginn, const SchlafErgebnis *e, bool fertig);
 // Im Callback "Ablage": das NachtBild in boulder_nacht/"letzte", wenn es faellig ist.
 void boulder_ausgabe_bild_ablegen(void);
 
-// Die letzte Nacht fuer die Health-App (wie b26: aus der Datei, solange die Uhr seit dem
-// Boot noch keine gerechnet hat). Jede Task.
+// Die letzte Nacht (wie b26: aus der Datei, solange die Uhr seit dem Boot noch keine gerechnet
+// hat). Nur KernelBG: Es liest die Datei, wenn noetig.
 bool boulder_nacht_letzte(NachtBild *aus);
+
+// KernelBG: das Bild aus der Datei laden, falls seit dem Boot weder gelesen noch gerechnet. Die
+// Datei liest es ohne die Sperre des Bilds.
+void boulder_nacht_bild_laden(void);
+
+#ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/schnittstelle.h"
+// S1 (Schritt 3): das Bild ohne Datei, jede Task. Unter der Sperre nur die Kopie nach `aus`.
+// BoulderLesenSpaeter: seit dem Boot noch nicht geladen (dann boulder_nacht_bild_laden).
+BoulderLesen boulder_nacht_bild_kopieren(NachtBild *aus);
+#endif
 
 // Dasselbe ohne Kopie auf dem Stapel (T7.3, AP9): das Bild im Satzpuffer der Ausgabe, oder NULL.
 // Gilt nur bis zum Ende des laufenden KernelBG-Callbacks - die Ausgabe baut und loggt jeden Satz

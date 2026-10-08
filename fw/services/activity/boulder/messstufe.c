@@ -24,7 +24,6 @@
 #include "pbl/services/activity/boulder/puls.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/blob_db/api.h"
-#include "pbl/services/i18n/i18n.h"
 #include "pbl/services/settings/settings_file.h"
 #include "shell/prefs_private.h"
 #include "system/status_codes.h"
@@ -44,12 +43,6 @@ static const BoulderStufe s_stufen[MESSSTUFE_MAX] = {
   { .puls_nacht_s = 1 * 60, .puls_tag_min = 5, .hrv_takt_min = 10, .spo2_min = 10 },
 };
 
-// Die Namen aus b25 (settings/health.c dort), sparsam zuerst.
-static const char *s_namen[MESSSTUFE_MAX] = {
-  i18n_noop("Battery Saver"), i18n_noop("Light"), i18n_noop("Balanced"),
-  i18n_noop("Detailed"),      i18n_noop("Precise"),
-};
-
 static uint8_t s_stufe;       //< geltende Stufe, 0 = noch nicht gelesen
 static bool s_gestartet;      //< Abo auf KernelMain angestossen
 static bool s_lesen;          //< neu lesen (Ereignis, Menue, Ablage)
@@ -66,8 +59,11 @@ const BoulderStufe *boulder_messstufe_werte(uint8_t stufe) {
   return &s_stufen[(prv_gueltig(stufe) ? stufe : MESSSTUFE_VORGABE) - MESSSTUFE_MIN];
 }
 
+// EINE LISTE fuer beide Orte, an denen die Stufe steht (Settings -> Health und die Health-App):
+// Die Namen liegen im Flash (messstufe.h). Pebbles Auswahlmenue verlangt ein Feld ohne const und
+// liest es nur (option_menu.c, i18n_get).
 const char **boulder_messstufe_namen(void) {
-  return s_namen;
+  return (const char **)BOULDER_MESSSTUFE_NAMEN;
 }
 
 // Fehlt der Wert oder ist er ungueltig, gilt die Vorgabe 3 (b25, M: messstufe.h:39).

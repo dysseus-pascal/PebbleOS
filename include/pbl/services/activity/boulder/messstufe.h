@@ -22,6 +22,8 @@
 // die HRV-Fenster misst das eine Abo der Variante (puls.c). "Nacht" heisst: im
 // Nachtfenster und die letzte Minute ruhig (VMC <= SCHLAF_SCHWELLE_VMC).
 
+#include "pbl/kernel/compiler.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -31,6 +33,13 @@
 #define BOULDER_MESSSTUFE_SCHLUESSEL "boulderMessstufe"
 // Titel im Einstellungsmenue (nur Englisch, wie Gravel).
 #define BOULDER_MESSSTUFE_TITEL "Precision"
+
+// Die Namen der Stufen 1-5, sparsam zuerst (aus b25). IM FLASH, als Feld konstanter Zeiger auf
+// Literale: Die Health-App ohne Systemrechte (Schritt 3, Karte Settings) liest sie hier selbst.
+// Ein Feld im Kernel-.data oder ein Aufruf in die Variante bliebe ihr verschlossen (3.6, 3.7).
+static const char *const BOULDER_MESSSTUFE_NAMEN[MESSSTUFE_MAX] PBL_UNUSED = {
+  "Battery Saver", "Light", "Balanced", "Detailed", "Precise",
+};
 
 typedef struct {
   uint16_t puls_nacht_s;  //< Takt des Abos der Variante in Nachtruhe
@@ -45,7 +54,8 @@ const BoulderStufe *boulder_messstufe_werte(uint8_t stufe);
 // Fuer das Menue (App-Task): die geltende Stufe. Ist sie noch nicht gelesen, liest das
 // den Speicher (Datei, Heap) - deshalb nie aus dem Minutenteil.
 uint8_t boulder_messstufe(void);
-// Fuer das Menue: die Namen der Stufen 1-5 (MESSSTUFE_MAX Eintraege).
+// Fuer das Menue in Settings -> Health: BOULDER_MESSSTUFE_NAMEN in der Form, die Pebbles
+// Auswahlmenue nimmt (es liest die Eintraege nur).
 const char **boulder_messstufe_namen(void);
 // Das Menue waehlt eine Stufe: speichern (geht ans Telefon), Pebbles Werte und das Abo
 // folgen im eigenen Callback.

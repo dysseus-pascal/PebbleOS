@@ -153,6 +153,10 @@ uint16_t kieselsport_zonengrenze(int zone);
 // Ein eingestellter Wert gilt fuer Zonen und kcal nur, wenn er ueber Ruhepuls + 20 und
 // hoechstens Tanaka + 25 liegt, sonst Tanaka. Diesen Wert zeigt KsStand.maxpuls.
 uint16_t kieselsport_maxpuls(void);
+// DER WIRKSAME WERT OHNE DATEI (Schritt 3, Lage der Health-App): derselbe wie KsStand.maxpuls und
+// Kieselsports Zonen (Boulders Pruefung, sonst Tanaka), aber ohne die Einstellungen nachzuladen.
+// Darf darum aus dem Minutenteil kommen. 0, solange sie nicht geladen sind (kieselsport_init).
+uint16_t kieselsport_maxpuls_wirksam(void);
 bool kieselsport_maxpuls_gesetzt(void);
 void kieselsport_maxpuls_setze(uint16_t schlaege);
 void kieselsport_maxpuls_nicht_setzen(void);

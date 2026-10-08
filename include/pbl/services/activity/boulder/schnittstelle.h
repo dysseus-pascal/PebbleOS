@@ -1,0 +1,112 @@
+/* SPDX-FileCopyrightText: 2026 dysseus-pascal */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#pragma once
+
+// Boulder V2, Schritt 3: die Schnittstelle der Variante zur eigenen Health-App (Spezifikation
+// Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele).
+//
+// WARUM SYSCALLS: Die Health-App laeuft ohne Systemrechte. Was die Variante weiss, liegt in
+// Kernel-RAM, das die App nicht lesen darf. Jeder Syscall prueft den Puffer der App, nimmt
+// hoechstens eine Blattsperre der Variante, kopiert direkt in den Puffer und kehrt zurueck. Er
+// oeffnet keine Datei, holt keinen Heap und wartet nie auf eine Arbeit von KernelBG (L5, L6).
+//
+// WAS OHNE SPERRE LEBT (Lebenslauf der Nacht, Live-Zustand, Messstufe, Ziele), fasst die LAGE
+// zusammen: KernelBG veroeffentlicht sie in O(1) unter einer eigenen Blattsperre - jede Minute
+// und nach jedem Ereignis, das sie aendert (Boot, Messstufe, Ziele).
+//
+// ARBEIT MIT DATEIEN (NachtBild nach dem Boot laden, Messstufe setzen) geht als Auftrag an
+// KernelBG, nie ueber boulder_aufgabe_einreihen: Aus einem Syscall laeuft der Code auf der
+// App-Task, und system_task_get_available_space() mass dort die Schlange der App, nicht die, die
+// system_task_add_callback_droppable fuellt (3.1, Regel 6). Darum system_task_add_callback aus
+// der App-Task in deren eigene Schlange, ein Merker je Auftrag, hoechstens zwei Auftraege.
+//
+// Die Strukturen sind die Fassung 2 aus 3.3; ihre Groessen und Versaetze stehen unten fest.
+
+#include "pbl/services/activity/boulder/nacht_satz.h"
+#include "pbl/services/activity/boulder/spo2.h"
+#include "pbl/kernel/compiler.h"
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <time.h>
+
+// Antwort von S1.
+typedef enum {
+  BoulderLesenDa,      //!< das Bild steht im Puffer
+  BoulderLesenKeine,   //!< die Uhr hat keine Nacht
+  BoulderLesenSpaeter, //!< seit dem Boot noch nicht geladen; KernelBG laedt es, in 1 s erneut
+} BoulderLesen;
+
+#define BOULDER_LAGE_FASSUNG 2
+
+typedef struct {
+  uint8_t fassung;          //!< BOULDER_LAGE_FASSUNG
+  bool tracking;            //!< Pebbles Schalter "Health Tracking", vom Syscall frisch gelesen
+  uint8_t messstufe;        //!< 1..5, 0 = noch nicht gelesen
+  uint8_t nacht_stufe;      //!< NachtStufe (nacht.h)
+  uint32_t stand_utc;       //!< letzte Veroeffentlichung, 0 = noch keine seit dem Boot
+  uint32_t fenster_utc;     //!< Minute 0 des laufenden Nachtfensters, 0 = keins
+  uint16_t ziel_schritte;   //!< 1 000..50 000, Vorgabe 10 000 (ziele.h)
+  uint16_t ziel_schlaf_min; //!< 240..720, Vorgabe 480
+  uint16_t maxpuls;         //!< wie KsStand.maxpuls (Einstellung oder Tanaka), 0 = keiner
+  uint8_t ruhepuls_median;  //!< Median der letzten sieben Naechte (nacht.h), 0 = keiner
+  bool schlaeft;            //!< Live-Automat (live.h)
+  uint8_t spo2_takt_min;    //!< SpO2 alle so viele Minuten nach Stufe und Pebbles Schalter, 0 = aus
+  uint8_t nickerchen;       //!< heute gemeldete Nickerchen (im laufenden Fenster)
+  uint8_t reserve[2];
+} BoulderLage;
+
+_Static_assert(sizeof(BoulderLage) == 24, "BoulderLage: 24 B (Spezifikation 3.3)");
+_Static_assert(offsetof(BoulderLage, stand_utc) == 4, "BoulderLage: stand_utc");
+_Static_assert(offsetof(BoulderLage, fenster_utc) == 8, "BoulderLage: fenster_utc");
+_Static_assert(offsetof(BoulderLage, ziel_schritte) == 12, "BoulderLage: ziel_schritte");
+_Static_assert(offsetof(BoulderLage, maxpuls) == 16, "BoulderLage: maxpuls");
+_Static_assert(offsetof(BoulderLage, ruhepuls_median) == 18, "BoulderLage: ruhepuls_median");
+_Static_assert(offsetof(BoulderLage, spo2_takt_min) == 20, "BoulderLage: spo2_takt_min");
+
+// Der Wert des Schluessels "boulder_ziele" in der BlobDB Health (F10 = A), little endian. Das
+// Telefon schreibt ihn (Boulder 0.53), die Uhr liest ihn nur (ziele.h).
+typedef struct PBL_PACKED {
+  uint8_t fassung;     //!< BOULDER_ZIELE_FASSUNG
+  uint8_t reserve;
+  uint16_t schritte;   //!< 1 000..50 000
+  uint16_t schlaf_min; //!< 240..720
+  uint16_t reserve2;
+} BoulderZieleSatz;
+
+// 8 B: healthdb nimmt nur Vielfache von 4 (health_db.c, prv_value_is_valid).
+_Static_assert(sizeof(BoulderZieleSatz) == 8, "BoulderZieleSatz: 8 B");
+_Static_assert(offsetof(BoulderZieleSatz, schritte) == 2, "BoulderZieleSatz: schritte");
+_Static_assert(offsetof(BoulderZieleSatz, schlaf_min) == 4, "BoulderZieleSatz: schlaf_min");
+
+// --- Die Syscalls der App (S1-S4) -------------------------------------------------------------
+
+// S1: die letzte Nacht als Block mit Phasen. Ohne Datei: Ist das Bild seit dem Boot noch nicht
+// geladen, laedt es ein Auftrag auf KernelBG, und die Antwort ist BoulderLesenSpaeter.
+BoulderLesen sys_boulder_nacht(NachtBild *aus);
+
+// S2: die Lage. Rueckgabe false, solange seit dem Boot keine veroeffentlicht ist; *aus traegt
+// dann die Vorgaben (Ziele 10 000 und 480 min, sonst 0) und den frischen Schalter "tracking".
+bool sys_boulder_lage(BoulderLage *aus);
+
+// S3: die SpO2-Werte in [von, bis), aelteste zuerst, hoechstens `max`. Rueckgabe: wie viele.
+uint32_t sys_boulder_spo2(time_t von, time_t bis, Spo2Wert *aus, uint32_t max);
+
+// S4: die Messstufe setzen wie in Settings -> Health. Der Wunsch geht nicht verloren, ein
+// zweiter vor dem Setzen ersetzt den ersten. false nur fuer eine ungueltige Stufe (nicht 1..5).
+bool sys_boulder_messstufe_setzen(uint8_t stufe);
+
+// --- Kern ------------------------------------------------------------------------------------
+
+// KernelBG: die Lage neu veroeffentlichen. O(1), ohne Heap und ohne Datei; ruft nichts von
+// Pebble unter der Sperre. Der Minutenteil ruft es jede Minute, der Takt auch am Kabel, dazu
+// "Laden" nach dem Boot, das Setzen der Messstufe und das Lesen der Ziele.
+void boulder_lage_veroeffentlichen(void);
+
+// Pruefbau und Tests: die zuletzt veroeffentlichte Lage, ohne den frischen Schalter.
+void boulder_lage_lesen(BoulderLage *aus);
+
+// Tests: wie nach einem Boot.
+void boulder_schnittstelle_test_neustart(void);

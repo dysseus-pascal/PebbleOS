@@ -14,6 +14,9 @@
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/umzug.h"
+#ifdef CONFIG_BOULDER_HEALTH_APP
+#include "pbl/services/activity/boulder/ziele.h"
+#endif
 #include "pbl/services/settings/settings_file.h"
 #include <pbl/drivers/rtc.h>
 #include <pbl/logging/logging.h>
@@ -235,6 +238,10 @@ static void prv_ablage_cb(void *data) {
   s_alles = false;
   // AP5: die Messstufe in jeder Ablage nachlesen (ein ueberschriebener Wert kommt zurueck).
   boulder_messstufe_nachlesen();
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  // Schritt 3: die Ziele ebenso, falls ein Ereignis der BlobDB verloren ging.
+  boulder_ziele_nachlesen();
+#endif
   boulder_ausgabe_bild_ablegen();
   // Vor dem Laden ist nichts Eigenes da - eine Ablage ueberschriebe den Stand von vor dem
   // Boot mit einem leeren.

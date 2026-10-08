@@ -18,8 +18,10 @@
 //
 // 96 WERTE reichen fuer einen Tag und eine Nacht bei der dichtesten Messstufe
 // (alle zehn Minuten sind es 144 am Tag, aber gemessen wird nur, wenn die Uhr
-// ruhig am Arm liegt). Nach einem Neustart ist der Ring leer - die Werte
-// selbst hat das Telefon. (V2: den Ring nach dem Boot fuellt AP4 aus der Minutendatei.)
+// ruhig am Arm liegt). NACH EINEM NEUSTART BLEIBT DER RING LEER - die Werte
+// selbst hat das Telefon. Fuellen liesse er sich auch nicht: Pebbles Minutendatei
+// hat kein SpO2-Feld, und der Durchlauf beim Boot (D14) kennt darum keins
+// (Schritt 3, BD D1, V6). Die Health-App zeigt dann "-".
 
 #define SPO2_WERTE_MAX 96
 

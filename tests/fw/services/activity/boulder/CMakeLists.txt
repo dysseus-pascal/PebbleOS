@@ -376,3 +376,47 @@ pbl_clar_test(test_boulder_diagnose
   DEFINES DUMA_DISABLED
   OVERRIDES dummy_board
 )
+
+# Schritt 3, AP2: die Schnittstelle zur Health-App (S1-S4, Lage, Ziele; T2.3, T2.4, T6.2, T6.3)
+# gegen die echte Variante wie test_boulder_zyklen, die echte messstufe.c und Pebbles echte BlobDB
+# (api.c) mit der echten healthdb (health_db.c). --wrap zaehlt Dateien und Heap im Syscall.
+pbl_clar_test(test_boulder_schnittstelle
+  SOURCES
+    ${boulder_glue_umfeld}
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/boulder/kalorien.c
+    fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+    fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+    fw/services/activity/boulder/szene.c
+    fw/services/activity/boulder/takt.c
+    fw/services/activity/boulder/dauerteil.c
+    fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/live.c
+    fw/services/activity/boulder/zyklen.c
+    fw/services/activity/boulder/eingang.c
+    fw/services/activity/boulder/nachlauf.c
+    fw/services/activity/boulder/schlafanalyse.c
+    fw/services/activity/boulder/spo2.c
+    fw/services/activity/boulder/wecker.c
+    fw/services/activity/boulder/ausgabe.c
+    fw/services/activity/boulder/speicher.c
+    fw/services/activity/boulder/diagnose.c
+    tests/fw/services/activity/boulder/fake_heap.c
+    fw/services/activity/boulder/umzug.c
+    fw/services/activity/boulder/umzug_prefs.c
+    fw/services/activity/boulder/kontext.c
+    fw/services/activity/boulder/messstufe.c
+    fw/services/activity/boulder/schnittstelle.c
+    fw/services/activity/boulder/ziele.c
+    fw/services/blob_db/api.c
+    fw/services/blob_db/health_db.c
+    subsys/cron/cron.c
+    tests/fw/services/activity/boulder/fake_nachfrage.c
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT CONFIG_BOULDER_HEALTH_APP
+          UNITTEST_WITH_SYSCALL_PRIVILEGES=1
+  OVERRIDES dummy_board
+  LIBS
+    -Wl,--wrap=settings_file_open,--wrap=settings_file_open_growable,--wrap=pfs_open
+    -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check
+    -Wl,--wrap=kernel_zalloc_check
+)

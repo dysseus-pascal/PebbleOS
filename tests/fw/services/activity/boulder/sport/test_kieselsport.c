@@ -520,6 +520,41 @@ void test_kieselsport__ohne_einstellung_rechnet_die_uhr_nach_alter(void) {
   cl_assert(!kieselsport_maxpuls_gesetzt());
 }
 
+// Schritt 3, AP2: Den Maximalpuls fuer die Lage der Health-App liest der Minutenteil. Er ist ohne
+// Datei zu haben, sobald die Einstellungen geladen sind, und gleich dem, mit dem Kieselsport rechnet
+// und den KsStand zeigt - auch wenn sich das Alter aendert (Tanaka) oder ein Wert zu hoch ist.
+void test_kieselsport__maxpuls_fuer_die_health_app_ohne_datei(void) {
+  // Wie nach einem Boot, bevor kieselsport_init lief: nichts geladen, also 0 statt eines Lesens.
+  kieselsport_test_neustart();
+  s_persist_gelesen = 0;
+  cl_assert_equal_i(kieselsport_maxpuls_wirksam(), 0);
+  cl_assert_equal_i(s_persist_gelesen, 0);
+  s_alter = 40;  // Tanaka 180
+  fake_ruhepuls_setzen(55);
+  prv_neustart();
+  KsStand st;
+  s_persist_gelesen = 0;
+  cl_assert_equal_i(kieselsport_maxpuls_wirksam(), 180);
+  kieselsport_stand(&st);
+  cl_assert_equal_i(st.maxpuls, 180);
+  // Das Alter aendert sich (Telefon): der Wert folgt wie die Zonen, ohne Datei.
+  s_alter = 50;
+  cl_assert_equal_i(kieselsport_maxpuls_wirksam(), 173);
+  cl_assert_equal_i(kieselsport_zonengrenze(5), 173 * 90 / 100);
+  cl_assert_equal_i(s_persist_gelesen, 0);
+  // Eingestellt gilt, nach Boulders Pruefung; ueber Tanaka + 25 gilt Tanaka.
+  kieselsport_maxpuls_setze(175);
+  s_persist_gelesen = 0;
+  cl_assert_equal_i(kieselsport_maxpuls_wirksam(), 175);
+  kieselsport_stand(&st);
+  cl_assert_equal_i(st.maxpuls, 175);
+  kieselsport_maxpuls_setze(214);
+  cl_assert_equal_i(kieselsport_maxpuls_wirksam(), 173);
+  kieselsport_stand(&st);
+  cl_assert_equal_i(st.maxpuls, 173);
+  cl_assert_equal_i(s_persist_gelesen, 0);
+}
+
 void test_kieselsport__gemessene_190_ist_einstellbar(void) {
   s_alter = 41;
   kieselsport_maxpuls_setze(190);

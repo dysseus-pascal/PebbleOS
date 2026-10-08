@@ -19,6 +19,7 @@
 #include "pbl/services/data_logging/data_logging_service.h"
 #include "pbl/services/settings/settings_file.h"
 #include "pbl/services/time.h"
+#include "pbl/util/testing.h"
 #include "pbl/util/units.h"
 #include "pbl/util/uuid.h"
 #include <pbl/logging/logging.h>
@@ -76,8 +77,9 @@ static bool s_schub_faellig;
 static time_t s_weckzeit;          //< naechste Weckzeit, 0 = keine
 static time_t s_weckzeit_gelesen;
 
-// Das NachtBild: geschrieben auf KernelBG, gelesen aus der Health-App.
-static PBL_MUTEX_DEFINE(s_bild_sperre);
+// Das NachtBild: geschrieben auf KernelBG, gelesen aus der Health-App (S1, schnittstelle.c). Fuer
+// die Tests sichtbar (Sperrfolge, Schritt 3 T2.4).
+PBL_T_STATIC PBL_MUTEX_DEFINE(s_bild_sperre);
 static NachtBild s_bild;
 static bool s_bild_da;
 static bool s_bild_gelesen;   //< die Datei wurde seit dem Boot gelesen
@@ -333,43 +335,68 @@ BoulderGesendet *boulder_ausgabe_gesendet(void) {
 // ---------------------------------------------------------------------------------------
 // NachtBild
 
-static void prv_bild_laden(void) {
-  if (s_bild_da || s_bild_gelesen) {
-    return;
-  }
-  s_bild_gelesen = true;
+// Wie das Bild in der Datei stand.
+typedef enum {
+  BildKeins,
+  BildFassung1,  //< so in der Datei
+  BildB24,       //< von b24 uebernommen, in der Datei noch b24
+} BildDatei;
+
+// Liest das Bild aus der Datei nach `ziel`, OHNE DIE SPERRE (Schritt 3, S1): Wer S1 ruft, soll
+// nie auf den Flash warten, auch nicht nach dem Boot. Nur KernelBG liest die Datei.
+static BildDatei prv_bild_aus_datei(NachtBild *ziel) {
   SettingsFile datei;
   if (settings_file_open(&datei, BILD_DATEI, BILD_DATEI_GROESSE) != S_SUCCESS) {
     PBL_LOG_DBG("Boulder: keine Datei %s", BILD_DATEI);
-    return;
+    return BildKeins;
   }
+  BildDatei ergebnis = BildKeins;
   if (settings_file_get_len(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL)) ==
-          (int)sizeof(s_bild) &&
-      settings_file_get(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL), &s_bild,
-                        sizeof(s_bild)) == S_SUCCESS) {
-    if (s_bild.version == NACHT_BILD_VERSION) {
-      s_bild_da = true;
-      s_bild_in_datei = true;
-    } else if (s_bild.version == NACHT_BILD_VERSION_B24) {
+          (int)sizeof(*ziel) &&
+      settings_file_get(&datei, BILD_SCHLUESSEL, sizeof(BILD_SCHLUESSEL), ziel,
+                        sizeof(*ziel)) == S_SUCCESS) {
+    if (ziel->version == NACHT_BILD_VERSION) {
+      ergebnis = BildFassung1;
+    } else if (ziel->version == NACHT_BILD_VERSION_B24) {
       // AP8, Wechsel (Spezifikation 8): ein Bild von b24 hat denselben Aufbau, nur die Fassung
       // stand in einem Fuellbyte. Ohne es fehlte der Health-App die letzte Nacht, und der
       // Umzug faende nicht, was schon geschickt ist (wie b25, M: nacht.c:493-520). In der
       // Datei bleibt es b24, bis die naechste fertige Nacht es in Fassung 1 schreibt.
-      s_bild.version = NACHT_BILD_VERSION;
-      s_bild_da = true;
-      s_bild_in_datei = false;
+      ziel->version = NACHT_BILD_VERSION;
+      ergebnis = BildB24;
       PBL_LOG_INFO("Boulder: NachtBild von b24 uebernommen");
     } else {
-      PBL_LOG_WRN("Boulder: NachtBild Fassung %d nicht gelesen", (int)s_bild.version);
-      memset(&s_bild, 0, sizeof(s_bild));
+      PBL_LOG_WRN("Boulder: NachtBild Fassung %d nicht gelesen", (int)ziel->version);
     }
   }
   settings_file_close(&datei);
+  return ergebnis;
+}
+
+void boulder_nacht_bild_laden(void) {
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  const bool noetig = !s_bild_da && !s_bild_gelesen;
+  pbl_mutex_unlock(&s_bild_sperre);
+  if (!noetig) {
+    return;
+  }
+  // In den Satzpuffer: Er ist zwischen zwei Callbacks frei, und das Bild liegt so nicht auf dem
+  // Stapel (T7.3). Nur KernelBG schreibt s_bild, also kann es sich hier nicht aendern.
+  NachtBild *b = &s_puffer.bild;
+  const BildDatei gelesen = prv_bild_aus_datei(b);
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  s_bild_gelesen = true;
+  if (gelesen != BildKeins) {
+    s_bild = *b;
+    s_bild_da = true;
+    s_bild_in_datei = (gelesen == BildFassung1);
+  }
+  pbl_mutex_unlock(&s_bild_sperre);
 }
 
 bool boulder_nacht_letzte(NachtBild *aus) {
+  boulder_nacht_bild_laden();
   pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
-  prv_bild_laden();
   const bool da = s_bild_da;
   if (da) {
     *aus = s_bild;
@@ -377,6 +404,20 @@ bool boulder_nacht_letzte(NachtBild *aus) {
   pbl_mutex_unlock(&s_bild_sperre);
   return da;
 }
+
+#ifdef CONFIG_BOULDER_HEALTH_APP
+BoulderLesen boulder_nacht_bild_kopieren(NachtBild *aus) {
+  // UNTER DER SPERRE NUR DIE KOPIE (3.1, Regel 3), direkt in den Puffer des Aufrufers.
+  pbl_mutex_lock(&s_bild_sperre, PBL_FOREVER);
+  const bool da = s_bild_da;
+  const bool gelesen = s_bild_gelesen;
+  if (da) {
+    memcpy(aus, &s_bild, sizeof(*aus));
+  }
+  pbl_mutex_unlock(&s_bild_sperre);
+  return da ? BoulderLesenDa : (gelesen ? BoulderLesenKeine : BoulderLesenSpaeter);
+}
+#endif
 
 const NachtBild *boulder_nacht_letzte_leihen(void) {
   return boulder_nacht_letzte(&s_puffer.bild) ? &s_puffer.bild : NULL;
