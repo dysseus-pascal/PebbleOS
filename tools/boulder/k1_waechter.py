@@ -19,8 +19,10 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
     entfernte Zeile; auch ein Include) - im Registry-JSON: den Schalter nicht nennt,
   - eine eigene Datei in Pebbles Ordnern (EIGENE_DATEIEN) Pebbles Zeilen aendert, kein
     "Boulder:" traegt oder als .c nicht ganz unter dem Schalter steht,
+  - ein CMake-Hunk (P7) Pebbles Zeilen entfernt oder als Code etwas anderes bringt als genau
+    if(<Schalter>), die erlaubten Zeilen und endif(),
   - der Remote `upstream` fehlt.
-Die eigenen Ordner der Variante und von Kieselsport sind frei.
+Die eigenen Ordner der Variante, von Kieselsport und der Health-App sind frei.
 """
 import collections
 import pathlib
@@ -37,6 +39,9 @@ EIGENE_ORDNER = (
     # Kieselsport (Schritt 2): Dienst und Header liegen in den Ordnern der Variante (sport/).
     'fw/apps/system/kieselsport/',
     'tests/fw/apps/system_apps/kieselsport/',
+    # Boulders Health-App (Schritt 3); Pebbles fw/apps/system/health/ bleibt Pebble-Code.
+    'fw/apps/system/boulder_health/',
+    'tests/fw/apps/system_apps/boulder_health/',
 )
 
 # Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht). Die Kachel
@@ -48,12 +53,15 @@ EIGENE_DATEIEN = (
 )
 
 # Pebble-Datei: hoechstens geaenderte Zeilen, Funktion der Hunks als Regex, hoechstens so
-# viele Hunks (ohne Kontext), und ob jeder Hunk den Schalter nennen muss.
+# viele Hunks (ohne Kontext), ob jeder Hunk den Schalter nennen muss, und fuer CMake der Block,
+# den jeder Hunk genau bringen muss.
 # Die Liste folgt den Entscheidungen (entscheidungen.md; Schritt 1: Spezifikation 2.1, F2, F3;
-# Schritt 2: Spezifikation 2.3, P1-P6).
-Stelle = collections.namedtuple('Stelle', 'zeilen funktion hunks schalter',
-                                defaults=(None, None, None))
+# Schritt 2: Spezifikation 2.3, P1-P6; Schritt 3: Spezifikation 7, P7).
+Stelle = collections.namedtuple('Stelle', 'zeilen funktion hunks schalter cmake',
+                                defaults=(None, None, None, None))
 SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
+# Ein CMake-Block: if(schalter), darin genau die Zeilen `inhalt`, endif().
+CMakeBlock = collections.namedtuple('CMakeBlock', 'schalter inhalt')
 
 PEBBLE = {
     'fw/services/activity/Kconfig': Stelle(16),                      # E1 Algorithmus-Wahl
@@ -90,6 +98,11 @@ PEBBLE = {
     # #ifdef, Zeile, #endif. Die Grenze ist so eng wie bei P5, damit kein weiterer Eintrag durchgeht.
     'fw/apps/system/launcher/default/app_glance_service.c': Stelle(
         6, r'prv_load_glance_for_node\(', hunks=2, schalter=True),
+    # P7 Boulders Health-App auf emery (Schritt 3): Sie traegt Pebbles health_app_get_info, also
+    # darf Pebbles Ordner dort nicht mitgebaut werden. Ein Hunk, der unter dem Schalter nur diesen
+    # Ordner aus der Quellliste nimmt - jede weitere Zeile koennte still andere Apps abschalten.
+    'fw/apps/system/CMakeLists.txt': Stelle(4, hunks=1, cmake=CMakeBlock(
+        'CONFIG_BOULDER_HEALTH_APP', ('list(FILTER source EXCLUDE REGEX "/apps/system/health/")',))),
 }
 
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
@@ -192,6 +205,34 @@ def schalterfehler(pfad, kopf, zeilen):
     return []
 
 
+def cmake_code(text):
+    """Der Code einer CMake-Zeile: ohne Kommentar ("#" ausserhalb von Anfuehrungszeichen), ohne
+    Leerraum vor "(" und mit einfachem Leerraum - "if (X)" ist dasselbe wie "if(X)"."""
+    code, in_text = '', False
+    for zeichen in text:
+        if zeichen == '"':
+            in_text = not in_text
+        elif zeichen == '#' and not in_text:
+            break
+        code += zeichen
+    return re.sub(r'^(\w+)\s*\(', r'\1(', ' '.join(code.split()))
+
+
+def cmake_fehler(pfad, kopf, zeilen, block):
+    """Ein Hunk einer CMake-Stelle: als Code genau if(schalter), der Inhalt, endif(); keine Zeile
+    von Pebble entfernt. Kommentare und Leerzeilen zaehlen nicht ("Boulder:" steht im Kommentar)."""
+    soll = [f'if({block.schalter})', *block.inhalt, 'endif()']
+    neu = [cmake_code(z[1:]) for z in zeilen if z.startswith('+')]
+    weg = [cmake_code(z[1:]) for z in zeilen if z.startswith('-')]
+    neu, weg = [c for c in neu if c], [c for c in weg if c]
+    fehler = []
+    if weg:
+        fehler.append(f'{pfad}: Hunk "{kopf}" entfernt Pebbles Zeile "{weg[0]}"')
+    if neu != soll:
+        fehler.append(f'{pfad}: Hunk "{kopf}" bringt {neu}, erlaubt ist genau {soll}')
+    return fehler
+
+
 def pruefe_eigene_datei(pfad, hunks):
     """Eine eigene Datei in Pebbles Ordner: nur neue Zeilen, "Boulder:", als .c ganz unter dem
     Schalter - fw/apps/system/ sammelt jede .c ein, Code davor oder danach baute jedes Board."""
@@ -271,6 +312,8 @@ def pruefe_diff(diff, unversioniert, diff_u0=None):
             # Mit Kontext: das #ifdef, unter dem eine Zeile steht, und sein #endif gehoeren dazu.
             if stelle.schalter:
                 fehler += schalterfehler(pfad, kopf, zeilen)
+            if stelle.cmake:
+                fehler += cmake_fehler(pfad, kopf, zeilen, stelle.cmake)
         u0 = ohne_kontext.get(pfad, [])
         if stelle.hunks is not None and len(u0) > stelle.hunks:
             fehler.append(f'{pfad}: {len(u0)} Hunks - hoechstens {stelle.hunks}')

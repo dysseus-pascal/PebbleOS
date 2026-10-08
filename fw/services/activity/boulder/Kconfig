@@ -14,6 +14,26 @@ config BOULDER_KIESELSPORT
       gibt es Kieselsport nur auf obelix und qemu_emery. Die anderen Boards behalten
       Pebbles Workout-App. Ohne Pulssensor gaebe es weder Zonen noch Pulskalorien.
 
+config BOULDER_HEALTH_APP
+    bool "Boulder: eigene Health-App (ohne Systemrechte, anstelle von Pebbles)"
+    default y
+    depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER && PLATFORM_EMERY && HRM
+    help
+      Boulders Health-App in fw/apps/system/boulder_health/ (Schritt 3). Sie traegt Pebbles
+      ID -82, die UUID und health_app_get_info und erbt so jeden Einstieg (Startmenue, Quick
+      Launch, Insights, Uebergang der Shell); fw/apps/system/CMakeLists.txt laesst dafuer Pebbles
+      Ordner weg (P7). Sie zeigt nur, was die Variante misst und rechnet, darum haengt sie an
+      ihr; PLATFORM_EMERY, weil die Karten fuer 200x228 gebaut sind. Die anderen Boards behalten
+      Pebbles App.
+
+config BOULDER_HEALTH_ZEITEN
+    bool "Boulder: Zeitstempel der Health-App (nur QEMU-Pruefbau)"
+    depends on BOULDER_HEALTH_APP && QEMU
+    help
+      Schreibt "bh t=<ticks> <stelle>" ins Protokoll der App (Spezifikation Schritt 3, 2.6.3).
+      Daraus misst ein QEMU-Skript Start, Kartenwechsel und Auffrischen (L1-L6). Nie in einem
+      Bau fuer die Uhr: Jede Zeile kostet einen Syscall im gemessenen Weg.
+
 config BOULDER_PRUEFLAUF
     bool "Boulder: QEMU-Pruefbau (Pruefnaechte im Zeitraffer)"
     depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER && QEMU && SHELL

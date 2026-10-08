@@ -69,6 +69,7 @@ def proben_k1():
                                                  'void alarm_init(void) {'), [])
     yield 'neue Datei ausserhalb', pruefe('', ['fw/services/activity/neu.c'])
     yield from proben_kieselsport(pruefe)
+    yield from proben_health(pruefe)
 
 
 def hunks(datei, *teile):
@@ -222,6 +223,52 @@ def proben_startmenue(pruefe):
                                                                      '+#ifdef CONFIG_BOULDER_KIESELSPORT']), [])
     yield 'andere neue Datei im Startmenue', pruefe('', ['fw/apps/system/launcher/default/app_glance_x.c'])
     yield from proben_arbeitsbaum()
+
+
+# Schritt 3, P7: Boulders Health-App auf emery (Spezifikation 4.1, 7).
+CMAKE_APPS = 'fw/apps/system/CMakeLists.txt'
+FILTER = '+    list(FILTER source EXCLUDE REGEX "/apps/system/health/")'
+P7 = ['+  # Boulder: P7 eigene Health-App auf emery', '+  if(CONFIG_BOULDER_HEALTH_APP)', FILTER,
+      '+  endif()']
+# So zeigt git P7: Pebbles else()-Zweig als Kontext.
+P7_KONTEXT = ['   file(GLOB_RECURSE source CONFIGURE_DEPENDS *.c)'] + P7 + [' endif()', ' pbl_library()']
+
+
+def proben_health(pruefe):
+    yield 'P7 im else()-Zweig', not pruefe(hunk(CMAKE_APPS, P7_KONTEXT), [])
+    yield 'P7 mit Leerzeichen und Kommentar am Ende', not pruefe(hunk(CMAKE_APPS, [
+        '+  # Boulder: P7', '+  if (CONFIG_BOULDER_HEALTH_APP)', FILTER + '  # Pebbles Ordner', '+  endif ()']), [])
+    # Eine zweite Zeile im Block, in 4 Zeilen ("Boulder:" am if): rot nur wegen des Inhalts.
+    zweite = ['+  if(CONFIG_BOULDER_HEALTH_APP)  # Boulder: P7', FILTER,
+              '+    list(FILTER source EXCLUDE REGEX "/apps/system/settings/")', '+  endif()']
+    yield 'P7 zweite Zeile', rot(pruefe(hunk(CMAKE_APPS, zweite), []), 'erlaubt ist genau')
+    yield 'P7 zweite Zeile nach dem endif()', rot(pruefe(hunk(CMAKE_APPS, P7[1:] + [
+        '+  set(x y)  # Boulder: P7']), []), 'erlaubt ist genau')
+    yield 'P7 ohne Schalter', rot(pruefe(hunk(CMAKE_APPS, ['+  # Boulder: P7', FILTER]), []),
+                                  'erlaubt ist genau')
+    yield 'P7 anderer Schalter', rot(pruefe(hunk(CMAKE_APPS, [P7[0], '+  if(CONFIG_BOULDER_KIESELSPORT)',
+                                                                FILTER, P7[3]]), []), 'erlaubt ist genau')
+    yield 'P7 Schalter nur im Kommentar', rot(pruefe(hunk(CMAKE_APPS, [
+        '+  # Boulder: P7 if(CONFIG_BOULDER_HEALTH_APP)', FILTER]), []), 'erlaubt ist genau')
+    # "health" allein naehme settings/health.c und boulder_health/ mit: jeder andere Ausdruck ist rot.
+    yield 'P7 anderer Ausdruck', rot(pruefe(hunk(CMAKE_APPS, P7[:2] + [
+        '+    list(FILTER source EXCLUDE REGEX "health")'] + P7[3:]), []), 'erlaubt ist genau')
+    yield 'P7 entfernt Pebbles Zeile', rot(pruefe(hunk(CMAKE_APPS, [
+        '-  file(GLOB_RECURSE source CONFIGURE_DEPENDS *.c)'] + P7), []), 'entfernt Pebbles Zeile')
+    yield 'P7 ohne Marke', rot(pruefe(hunk(CMAKE_APPS, P7[1:]), []), 'ohne "Boulder:"')
+    # Ein weiterer Kommentar: der Block stimmt, nur die Grenze von 4 Zeilen nicht.
+    yield 'P7 zu viele Zeilen', rot(pruefe(hunk(CMAKE_APPS, P7[:1] + ['+  # warum'] + P7[1:]), []),
+                                    'hoechstens 4')
+    zwei = hunks(CMAKE_APPS, ('', P7), ('', P7))
+    yield 'P7 zweiter Hunk', rot(pruefe(zwei, [], zwei), '2 Hunks')
+    yield 'Zeile in Pebbles Health-Ordner', rot(pruefe(hunk(
+        'fw/apps/system/health/health.c', ['+  // Boulder: x']), []), 'ausserhalb der erlaubten Stellen')
+    yield 'neue Datei in Pebbles Health-Ordner', rot(pruefe('', ['fw/apps/system/health/boulder.c']),
+                                                     'ausserhalb der eigenen Ordner')
+    yield 'Ordner der Health-App frei', not pruefe('', ['fw/apps/system/boulder_health/karten.c'])
+    yield 'Testordner der Health-App frei', not pruefe(
+        '', ['tests/fw/apps/system_apps/boulder_health/test_bh_app.c'])
+    yield 'Pebbles Health-Tests nicht frei', pruefe('', ['tests/fw/apps/system_apps/health/test_x.c'])
 
 
 def arbeitsbaum(unversioniert):
