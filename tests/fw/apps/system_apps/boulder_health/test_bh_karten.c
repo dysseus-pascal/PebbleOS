@@ -428,7 +428,8 @@ void test_bh_karten__urteile_passen_neben_die_zahl(void) {
   for (size_t s_nr = 0; s_nr < ARRAY_LENGTH(schriften); s_nr++) {
     for (size_t i = 0; i < ARRAY_LENGTH(paare); i++) {
       const int16_t ende = bh_zahl_mit_einheit(&s_ctx, paare[i].zahl, paare[i].einheit,
-                                               schriften[s_nr], GPoint(BH_RAND, 30), GColorBlack);
+                                               schriften[s_nr], GPoint(BH_RAND, 30), GColorBlack) +
+                           bh_textbreite(paare[i].einheit, BhSchriftG18Fett);
       BhSchriftart art;
       const GRect r = bh_urteil_rahmen(paare[i].urteil, ende, DISP_COLS - BH_RAND, 50, &art);
       const GSize g = app_graphics_text_layout_get_content_size(
@@ -449,6 +450,31 @@ void test_bh_karten__urteile_passen_neben_die_zahl(void) {
       // Nicht in den Kopfbalken.
       cl_assert(r.origin.y >= BH_KOPF_H);
     }
+  }
+}
+
+// Ohne Layout steht ein Urteil in einer Zeile, wenn rechts der breitesten Einheit das breiteste
+// Urteil Platz hat (bh_urteil). Beide Grenzen muessen jede Einheit und jedes einzeilige Urteil
+// fassen, das die Karten zeigen.
+void test_bh_karten__urteil_grenzen_fassen_alles(void) {
+  static const char *const einheiten[] = {"h", "min", "bpm", "ms"};
+  for (size_t i = 0; i < ARRAY_LENGTH(einheiten); i++) {
+    printf("\nEinheit \"%s\": %d px", einheiten[i], bh_textbreite(einheiten[i], BhSchriftG18Fett));
+    cl_assert(bh_textbreite(einheiten[i], BhSchriftG18Fett) <= BH_EINHEIT_MAX);
+  }
+  char plus[8], minus[8];
+  bh_vorzeichen(255, plus, sizeof(plus));
+  bh_vorzeichen(-255, minus, sizeof(minus));
+  const char *const urteile[] = {
+    "Well rested", "Short night", "Very short night",
+    "so far",      "as usual",    "in range",
+    "above",       "below",       "now",
+    plus,          minus,         "1092:15 h",
+    "59 min",
+  };
+  for (size_t i = 0; i < ARRAY_LENGTH(urteile); i++) {
+    printf("\nUrteil \"%s\": %d px", urteile[i], bh_textbreite(urteile[i], BhSchriftG18Fett));
+    cl_assert(bh_textbreite(urteile[i], BhSchriftG18Fett) <= BH_URTEIL_MAX);
   }
 }
 

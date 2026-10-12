@@ -51,11 +51,11 @@ int16_t bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit
   if (!einheit) {
     return ort.x;
   }
-  // Die Breiten nur hier: Ein Layout je Text kostet beim Zeichnen so viel wie das Zeichnen selbst.
+  // Die Breite nur hier: Ein Layout je Text kostet beim Zeichnen so viel wie das Zeichnen selbst.
   const int16_t x = ort.x + bh_textbreite(zahl, art) + 3;
   const int16_t y = ort.y + s_grundlinie[art] - s_grundlinie[BhSchriftG18Fett];
   bh_schreiben(ctx, einheit, BhSchriftG18Fett, GRect(x, y, 80, 24), GTextAlignmentLeft, farbe);
-  return x + bh_textbreite(einheit, BhSchriftG18Fett);
+  return x;
 }
 
 // GOTHIC 18 fett: Hoehe einer Zeile im Layout (am Bild ausgemessen, test_bh_karten) und die des
@@ -91,10 +91,21 @@ GRect bh_urteil_rahmen(const char *text, int16_t frei_ab, int16_t rechts, int16_
   return GRect(links, oben + URTEIL_RAHMEN - klein, breite, klein);
 }
 
-void bh_urteil(GContext *ctx, const char *text, int16_t frei_ab, int16_t rechts, int16_t oben,
-               GColor farbe) {
-  BhSchriftart art;
-  const GRect r = bh_urteil_rahmen(text, frei_ab, rechts, oben, &art);
+void bh_urteil(GContext *ctx, const char *text, int16_t einheit_x, const char *einheit,
+               int16_t rechts, int16_t oben, GColor farbe) {
+  BhSchriftart art = BhSchriftG18Fett;
+  GRect r;
+  // SO WENIG LAYOUTS WIE MOEGLICH: Eins kostet beim Zeichnen so viel wie das Zeichnen des Texts
+  // (AP8). Rechts der breitesten Einheit hat das breiteste Urteil meist Platz (keins), sonst oft
+  // dieses (eins); erst sonst zaehlt die Einheit genau.
+  const int16_t sicher = einheit_x + BH_EINHEIT_MAX + URTEIL_LUECKE;
+  if (rechts - sicher >= BH_URTEIL_MAX ||
+      bh_textbreite(text, BhSchriftG18Fett) <= rechts - sicher) {
+    r = GRect(sicher, oben, rechts - sicher, URTEIL_RAHMEN);
+  } else {
+    r = bh_urteil_rahmen(text, einheit_x + bh_textbreite(einheit, BhSchriftG18Fett), rechts, oben,
+                         &art);
+  }
   graphics_context_set_text_color(ctx, farbe);
   graphics_draw_text(ctx, text, bh_schrift(art), r, GTextOverflowModeWordWrap, GTextAlignmentRight,
                      NULL);

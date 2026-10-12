@@ -161,10 +161,10 @@ static void prv_zeile(GContext *ctx, int16_t y, BhText label, const char *zahl, 
                       const char *urteil, bool gut) {
   bh_schreiben(ctx, bh_text(label), BhSchriftG14, GRect(BH_RAND, y - 2, INNEN, 16),
                GTextAlignmentLeft, BH_GRAU);
-  const int16_t ende =
+  const int16_t einheit_x =
       bh_zahl_mit_einheit(ctx, zahl, einheit, BhSchriftL26, GPoint(BH_RAND, y + 12), GColorBlack);
   if (urteil) {
-    bh_urteil(ctx, urteil, ende, BH_RAND + INNEN, y + 18, prv_urteilsfarbe(gut));
+    bh_urteil(ctx, urteil, einheit_x, einheit, BH_RAND + INNEN, y + 18, prv_urteilsfarbe(gut));
   }
 }
 
@@ -306,14 +306,14 @@ static void prv_night(GContext *ctx, GRect flaeche, const BhDaten *d) {
   const NachtBild *n = &d->nacht;
   BhAngabe dauer;
   bh_dauer(n->schlaf_minuten, &dauer);
-  const int16_t ende = bh_zahl_mit_einheit(ctx, dauer.zahl, dauer.einheit, BhSchriftL38,
-                                           GPoint(BH_RAND, 30), GColorBlack);
+  const int16_t einheit_x = bh_zahl_mit_einheit(ctx, dauer.zahl, dauer.einheit, BhSchriftL38,
+                                                GPoint(BH_RAND, 30), GColorBlack);
   if (n->fertig) {
     const BhSchlafurteil u = bh_schlafurteil(n->schlaf_minuten, d->lage.ziel_schlaf_min);
-    bh_urteil(ctx, prv_schlafurteil(u), ende, BH_RAND + INNEN, 50,
+    bh_urteil(ctx, prv_schlafurteil(u), einheit_x, dauer.einheit, BH_RAND + INNEN, 50,
               prv_urteilsfarbe(u == BhSchlafAusgeruht));
   } else {
-    bh_urteil(ctx, bh_text(BhTSoFar), ende, BH_RAND + INNEN, 50, BH_GRAU);
+    bh_urteil(ctx, bh_text(BhTSoFar), einheit_x, dauer.einheit, BH_RAND + INNEN, 50, BH_GRAU);
   }
 
   char von[12], bis[12], zeile[32];
@@ -363,16 +363,16 @@ static void prv_heart(GContext *ctx, const BhDaten *d) {
   char zahl[16], alter[24];
   if (d->puls > 0) {
     snprintf(zahl, sizeof(zahl), "%ld", (long)d->puls);
-    const int16_t ende = bh_zahl_mit_einheit(ctx, zahl, bh_text(BhTBpm), BhSchriftL38,
-                                             GPoint(BH_RAND, 30), GColorBlack);
+    const int16_t einheit_x = bh_zahl_mit_einheit(ctx, zahl, bh_text(BhTBpm), BhSchriftL38,
+                                                  GPoint(BH_RAND, 30), GColorBlack);
     if (bh_puls_frisch(d->puls_zeit, d->jetzt)) {
-      bh_urteil(ctx, bh_text(BhTNow), ende, BH_RAND + INNEN, 50, BH_GUT);
+      bh_urteil(ctx, bh_text(BhTNow), einheit_x, bh_text(BhTBpm), BH_RAND + INNEN, 50, BH_GUT);
     } else {
       BhAngabe a;
       const time_t s = (d->jetzt > d->puls_zeit) ? d->jetzt - d->puls_zeit : 0;
       bh_dauer((uint16_t)((s / 60 < 0xFFFF) ? s / 60 : 0xFFFF), &a);
       snprintf(alter, sizeof(alter), "%s %s", a.zahl, a.einheit ? a.einheit : "");
-      bh_urteil(ctx, alter, ende, BH_RAND + INNEN, 50, BH_GRAU);
+      bh_urteil(ctx, alter, einheit_x, bh_text(BhTBpm), BH_RAND + INNEN, 50, BH_GRAU);
     }
   } else {
     bh_schreiben(ctx, bh_fehlt(BhSchriftLeco), BhSchriftL38, GRect(BH_RAND, 30, INNEN, 50),
