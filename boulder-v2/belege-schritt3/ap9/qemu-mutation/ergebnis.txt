@@ -1,0 +1,2 @@
+qemu_health rc=1; L1 89.844 ms ok=False; Kernel-Heap ok=False (frei 49372 -> 48304 -> 47304 B)
+rc=0

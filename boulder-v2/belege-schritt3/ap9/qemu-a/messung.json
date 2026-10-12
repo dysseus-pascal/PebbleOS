@@ -1,0 +1,165 @@
+{
+  "L1": {
+    "Startmenue (app launch)": {
+      "n": 20,
+      "max": 49.8,
+      "median": 6.35
+    },
+    "Pin Night": {
+      "n": 20,
+      "max": 11.72,
+      "median": 7.81
+    },
+    "Pin Activity": {
+      "n": 20,
+      "max": 10.74,
+      "median": 5.86
+    }
+  },
+  "L2": {
+    "Karte": {
+      "n": 20,
+      "max": 13.67,
+      "median": 5.86
+    },
+    "Detail": {
+      "n": 16,
+      "max": 12.7,
+      "median": 6.35
+    },
+    "Detail bis Zeichnen": {
+      "n": 16,
+      "max": 2.93,
+      "median": 1.95
+    },
+    "Detail zeichnen": {
+      "n": 16,
+      "max": 9.77,
+      "median": 4.88
+    }
+  },
+  "L4": {
+    "n": 4,
+    "max": 8.79,
+    "median": 4.88
+  },
+  "L6": {
+    "sys_boulder_lage": 0.01,
+    "sys_boulder_nacht": 0.01,
+    "sys_boulder_naechte": 0.01,
+    "sys_boulder_herz": 0.01,
+    "sys_boulder_woche": 0.01,
+    "sys_boulder_spo2": 0.01,
+    "sys_activity_get_metric": 0.01,
+    "sys_activity_get_sessions": 0.01,
+    "sys_get_time": 0.01
+  },
+  "app_heap": {
+    "gross": 131068,
+    "hoechststand": 5404
+  },
+  "kernel_heap_frei": [
+    52736,
+    52668,
+    52668
+  ],
+  "laengster_callback_ms": 49.8,
+  "pruefungen": [
+    {
+      "pruefung": "L1 Startmenue (app launch): 20 von 20 Starts gemessen",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "L1 Pin Night: 20 von 20 Starts gemessen",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "L1 Pin Activity: 20 von 20 Starts gemessen",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "L4: 4 Minuten gemessen",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "L6: neun Syscalls gemessen",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "Puls im Sekundentakt auf Heart",
+      "ok": true,
+      "wert": 1
+    },
+    {
+      "pruefung": "kein Puls im Sekundentakt nach Verlassen von Heart",
+      "ok": true,
+      "wert": 0
+    },
+    {
+      "pruefung": "kein Puls im Sekundentakt nach dem Ende auf Heart",
+      "ok": true,
+      "wert": 0
+    },
+    {
+      "pruefung": "Kernel-Heap: kein Wachstum mit den Starts (100)",
+      "ok": true,
+      "wert": "frei 52736 -> 52668 -> 52668 B"
+    },
+    {
+      "pruefung": "Syscall-Stapel der App: Reserve",
+      "ok": true,
+      "wert": "1368 B nie benutzt"
+    },
+    {
+      "pruefung": "Fehlerprobe: die Uhr laeuft weiter",
+      "ok": true,
+      "wert": ""
+    },
+    {
+      "pruefung": "Fehlerprobe: die App endet am Fehler",
+      "ok": true,
+      "wert": "58] * - 20:09:19.663 hardfault_handle:59>     DACCVIOL = yes"
+    },
+    {
+      "pruefung": "kein Neustart im ganzen Lauf (Ticks steigen)",
+      "ok": true,
+      "wert": "875 Stempel, fallend: []"
+    },
+    {
+      "pruefung": "QEMU laeuft am Ende noch",
+      "ok": true,
+      "wert": ""
+    }
+  ],
+  "ziele": [
+    {
+      "ziel": "L1",
+      "hoechstwert_ms": 49.805,
+      "grenze_ms": 50.0,
+      "ok": true
+    },
+    {
+      "ziel": "L2",
+      "hoechstwert_ms": 13.672,
+      "grenze_ms": 30.0,
+      "ok": true
+    },
+    {
+      "ziel": "L4",
+      "hoechstwert_ms": 8.789,
+      "grenze_ms": 30.0,
+      "ok": true
+    },
+    {
+      "ziel": "L6",
+      "hoechstwert_ms": 0.01,
+      "grenze_ms": 1.0,
+      "ok": true
+    }
+  ]
+}

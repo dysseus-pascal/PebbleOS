@@ -1,0 +1,85 @@
+ok   L1: hoechstens 33.203 ms (Grenze 50.0 ms)
+ok   L2: hoechstens 17.578 ms (Grenze 30.0 ms)
+ok   L4: hoechstens 8.789 ms (Grenze 30.0 ms)
+ok   L6: hoechstens 0.01 ms (Grenze 1.0 ms)
+ok   L1 Startmenue (app launch): 20 von 20 Starts gemessen 
+ok   L1 Pin Night: 20 von 20 Starts gemessen 
+ok   L1 Pin Activity: 20 von 20 Starts gemessen 
+ok   L4: 4 Minuten gemessen 
+ok   L6: neun Syscalls gemessen 
+ok   Puls im Sekundentakt auf Heart 1
+ok   kein Puls im Sekundentakt nach Verlassen von Heart 0
+ok   kein Puls im Sekundentakt nach dem Ende auf Heart 0
+ok   Kernel-Heap: kein Wachstum mit den Starts (100) frei 52744 -> 52676 -> 52676 B
+ok   Syscall-Stapel der App: Reserve 1352 B nie benutzt
+ok   Fehlerprobe: die Uhr laeuft weiter 
+ok   Fehlerprobe: die App endet am Fehler 08] * - 20:09:23.299 hardfault_handle:59>     DACCVIOL = yes
+ok   kein Neustart im ganzen Lauf (Ticks steigen) 875 Stempel, fallend: []
+ok   QEMU laeuft am Ende noch 
+{
+  "L1": {
+    "Startmenue (app launch)": {
+      "n": 20,
+      "max": 33.2,
+      "median": 7.81
+    },
+    "Pin Night": {
+      "n": 20,
+      "max": 16.6,
+      "median": 8.3
+    },
+    "Pin Activity": {
+      "n": 20,
+      "max": 13.67,
+      "median": 5.86
+    }
+  },
+  "L2": {
+    "Karte": {
+      "n": 20,
+      "max": 14.65,
+      "median": 6.35
+    },
+    "Detail": {
+      "n": 16,
+      "max": 17.58,
+      "median": 7.32
+    },
+    "Detail bis Zeichnen": {
+      "n": 16,
+      "max": 4.88,
+      "median": 1.95
+    },
+    "Detail zeichnen": {
+      "n": 16,
+      "max": 14.65,
+      "median": 4.88
+    }
+  },
+  "L4": {
+    "n": 4,
+    "max": 8.79,
+    "median": 6.35
+  },
+  "L6": {
+    "sys_boulder_lage": 0.01,
+    "sys_boulder_nacht": 0.01,
+    "sys_boulder_naechte": 0.01,
+    "sys_boulder_herz": 0.01,
+    "sys_boulder_woche": 0.01,
+    "sys_boulder_spo2": 0.01,
+    "sys_activity_get_metric": 0.01,
+    "sys_activity_get_sessions": 0.0,
+    "sys_get_time": 0.0
+  },
+  "app_heap": {
+    "gross": 131068,
+    "hoechststand": 5404
+  },
+  "kernel_heap_frei": [
+    52744,
+    52676,
+    52676
+  ],
+  "laengster_callback_ms": 33.2
+}

@@ -297,3 +297,18 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Ballast-Ziel des Prüfbaus jetzt 72 736 B.
 - Belege: `belege-schritt3/ap8-qemu/` (messung.json, Protokoll, Bilder).
 - Nächster Schritt: Gegenprüfung von Schritt 3, dann AP9 (Abschnitt 5).
+
+## Stand nach AP9 (12.10.2026, `ecb6b739`)
+
+- Abnahme: `schritt3-abnahme.md`. Kriterien 1–5 und 7 erfüllt; 6 und 8 teilweise (offen sind der
+  Gerätetest und die Seite „Goals“ in Boulder 0.53).
+- Gegenprüfung: drei Prüfer, 23 Befunde (21 verschiedene), alle behoben in `11f0bb2a`, `082171a9`,
+  `022dd797`, `13e7a021` und `55d8e4c9`. Darunter K1 (S3 schrieb mit Systemrechten hinter das App-RAM)
+  und A1 (Use-after-free).
+- AP9: Das Messskript setzt die Schritte erst nach Pebbles Tageswechsel (`ecb6b739`). Der erste Start
+  nach dem Boot schwankt in Echtzeit-QEMU mit dem Host (30–54 ms); mit `-icount` sind es 17,6 ms wie in
+  AP8. Neu zu entscheiden: F17 (Abnahme, Abschnitt 7).
+- Prüfung: acht Bauten ohne Warnung, Host 409/409, Werkzeuge grün, drei QEMU-Läufe grün; Mutationen
+  43/43 rot, dazu die QEMU-Mutation.
+- Belege: `belege-schritt3/ap9/`.
+- Nächster Schritt: Abschnitt 6 (bis zur ersten Vorabversion), Abnahme Abschnitt 7.

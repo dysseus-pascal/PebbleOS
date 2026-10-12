@@ -1,0 +1,11 @@
+__sys_boulder_nacht          0
+boulder_nacht_bild_kopieren  0
+__sys_boulder_lage           0
+__sys_boulder_spo2           0
+boulder_spo2_werte           0
+__sys_boulder_naechte        0
+boulder_naechte_kopieren     0
+__sys_boulder_herz           0
+boulder_herz_kopieren        0
+__sys_boulder_woche          0
+boulder_woche_kopieren       0

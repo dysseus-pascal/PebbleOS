@@ -1,0 +1,12 @@
+ok  boulder_health.c.obj
+ok  daten.c.obj
+ok  details.c.obj
+ok  einstieg.c.obj
+ok  fehlerprobe.c.obj
+ok  inhalt.c.obj
+ok  karten.c.obj
+ok  nachttage.c.obj
+ok  probe.c.obj
+ok  rechnung.c.obj
+ok  texte.c.obj
+ok  zeichnen.c.obj

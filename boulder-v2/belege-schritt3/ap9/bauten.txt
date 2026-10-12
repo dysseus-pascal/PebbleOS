@@ -1,0 +1,38 @@
+# Schlusslauf auf ecb6b739: alle Boulder-Quellen neu uebersetzt (App, Kieselsport, Kern; touch), dann inkrementell
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=66
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=66
+build rc=0 warnungen=0 fehler=0 uebersetzt=541
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=397
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=514
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=395
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=511
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=541
+
+# Bauten nach der Gegenpruefung (inkrementell; vorher sauber neu, alle 0 Warnungen)
+build-obelix rc=0 warnungen=0 fehler=0 neu=3
+build-obelixrel rc=0 warnungen=0 fehler=0 neu=20
+build rc=0 warnungen=0 fehler=0 neu=134
+build-asterix rc=0 warnungen=0 fehler=0 neu=9
+build-getafix rc=0 warnungen=0 fehler=0 neu=122
+build-flint rc=0 warnungen=0 fehler=0 neu=9
+build-gabbro rc=0 warnungen=0 fehler=0 neu=122
+build-pruef rc=0 warnungen=0 fehler=0 neu=3
+
+# Sauber neu (vor der Gegenpruefung)
+== build-obelix 15:37:28
+rc=0 warnungen=0 fehler=0
+== build-obelixrel 15:38:43
+rc=0 warnungen=0 fehler=0
+== build 15:39:50
+rc=0 warnungen=0 fehler=0
+== build-asterix 15:40:42
+rc=0 warnungen=0 fehler=0
+== build-getafix 15:41:35
+rc=0 warnungen=0 fehler=0
+== build-flint 15:42:37
+rc=0 warnungen=0 fehler=0
+== build-gabbro 15:43:15
+rc=0 warnungen=0 fehler=0
+== build-pruef 15:44:05
+rc=0 warnungen=0 fehler=0
+== fertig 15:44:53

@@ -1,0 +1,24 @@
+__sys_boulder_nacht          0
+boulder_nacht_bild_kopieren  0
+__sys_boulder_lage           4
+    1205fb80:	ldmia	r5!, {r0, r1, r2, r3}
+    1205fb82:	stmia	r4!, {r0, r1, r2, r3}
+    1205fb84:	ldmia.w	r5, {r0, r1}
+    1205fb88:	stmia.w	r4, {r0, r1}
+__sys_boulder_spo2           0
+boulder_spo2_werte           2
+    1205b69c:	ldmia.w	r5, {r0, r1}
+    1205b6a0:	stmia.w	lr, {r0, r1}
+__sys_boulder_naechte        0
+boulder_naechte_kopieren     0
+__sys_boulder_herz           0
+boulder_herz_kopieren        0
+__sys_boulder_woche          0
+boulder_woche_kopieren       7
+    1206075e:	strd	r5, r5, [r4, #4]
+    12060762:	strd	r5, r5, [r4, #12]
+    12060766:	strd	r5, r5, [r4, #20]
+    12060776:	ldmia	r5!, {r0, r1, r2, r3}
+    12060778:	stmia	r4!, {r0, r1, r2, r3}
+    1206077a:	ldmia.w	r5, {r0, r1, r2}
+    1206077e:	stmia.w	r4, {r0, r1, r2}

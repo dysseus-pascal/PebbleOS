@@ -1,0 +1,113 @@
+rot        K1a   K1            Pebble-Datei ausserhalb der Liste geaendert (fw/apps/system/health/health.c)
+           | Kriterium 1 verletzt (tools/boulder/k1_waechter.py):
+           |   fw/apps/system/health/health.c: Pebble-Datei ausserhalb der erlaubten Stellen geaendert
+rot        K1b   K1            P7 bringt mehr als den Filter (fw/apps/system/CMakeLists.txt)
+           | stem/CMakeLists.txt: 5 Zeilen neu, 0 weg - hoechstens 4
+           |   fw/apps/system/CMakeLists.txt: Hunk "if(CONFIG_SHELL_SDK)" bringt ['if(CONFIG_BOULDER_HEALTH_APP)', 'list(FILTER source EXCLUDE REGEX "/apps/system/health/")', 'list(APPEND source boulder_health/zusatz.c)', 'endif()'], erlaubt ist genau ['if(CONFIG_BOULDER_HEALTH_APP)', 'list(FILTER source EXCLUDE REGEX "/apps/system/health/")', 'endif()']
+rot        K2a   K2            beschreibbares static in der App (fw/apps/system/boulder_health/daten.c)
+           | ROT daten.c.obj: beschreibbar: s_mutation.0, $d in .bss.s_mutation.0 (4 B)
+rot        K2b   K2            Aufruf aus der roten Liste (Minutenverlauf, L5) (fw/apps/system/boulder_health/daten.c)
+           | ROT daten.c.obj: rote Liste (L5): health_service_get_minute_history
+rot        K3a   K3            Zonen ohne Quelle S6 gezeigt (fw/apps/system/boulder_health/details.c)
+           | 1/1 Test #54: test_bh_grundsatz ................***Failed    0.00 sec
+rot        K3b   K3            Text vom Telefon (Koffein in mg) (fw/apps/system/boulder_health/texte_tabelle.h)
+           | 1/1 Test #54: test_bh_grundsatz ................***Failed    0.00 sec
+rot        K4a   K4            Schlafurteil: Grenze "kurz" 45 statt 60 min (fw/apps/system/boulder_health/rechnung.c)
+           | 1/1 Test #55: test_bh_rechnung .................***Failed    0.01 sec
+rot        K4b   K4            Ruhepuls "as usual" mit 3 statt 2 bpm Spanne (fw/apps/system/boulder_health/rechnung.c)
+           | 1/1 Test #55: test_bh_rechnung .................***Failed    0.01 sec
+rot        K5a   K5            Quick Launch Oben gespiegelt statt Unten (fw/apps/system/boulder_health/einstieg.c)
+           | 1/2 Test #56: test_bh_einstieg .................***Failed    0.01 sec
+           | 2/2 Test #59: test_bh_einstiege ................***Failed    0.01 sec
+rot        K5b   K5            Pebbles Health-App nur noch mit dem Schalter (asterix ohne) (fw/shell/normal/system_app_registry_list.json)
+           | 1/1 Test #58: test_bh_startmenue_asterix .......***Failed    0.20 sec
+rot        K6b   K6            Taste liest Daten (L3) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        K7a   K7            Puls-Takt bleibt nach dem Ende (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        K8a   K8            Leeren der Datenbank Health laesst alte Ziele stehen (fw/services/activity/boulder/ziele.c)
+           | 1/1 Test #250: test_boulder_schnittstelle .......***Failed    0.62 sec
+rot        K8b   K8            Schlafurteil mit festem Ziel statt dem aus der Lage (fw/apps/system/boulder_health/inhalt.c)
+           | 1/2 Test  #1: pbl_test_failed_dir ..............   Passed    0.01 sec
+           | 2/2 Test #53: test_bh_karten_obelix ............***Failed    2.95 sec
+rot        S1-3  Schritt 1 K3  Waelz-Regel beim Einschlafen wie b25: 20 statt 40 min (fw/services/activity/boulder/schlafanalyse.c)
+           | 1/2 Test #242: test_boulder_schlafkern ..........***Failed    2.70 sec
+           | 2/2 Test #251: test_boulder_naechte .............***Failed   11.01 sec
+rot        S1-4  Schritt 1 K4  Smart Alarm ohne Bewegung (auch im Tiefschlaf) (fw/services/activity/boulder/wecker.c)
+           | 1/2 Test #245: test_boulder_wecker ..............***Failed   32.81 sec
+           | 2/2 Test #246: test_boulder_wecker_vergleich ....***Failed   48.86 sec
+rot        S1-5  Schritt 1 K5  Velo nie erkannt (fw/services/activity/boulder/kontext.c)
+           | 1/1 Test #248: test_boulder_fahrt ...............***Failed    0.40 sec
+rot        S2-1  Schritt 2 V1  Velo-Training zaehlt Schritte (fw/services/activity/boulder/sport/plattform.c)
+           | 14/19 Test #257: test_workout_service_kieselsport ..............   Passed    0.01 sec
+           | 15/19 Test #258: test_kieselsport ..............................***Failed   87.31 sec
+           | 16/19 Test #259: test_kieselsport_folgen .......................***Failed    0.01 sec
+           | 17/19 Test #260: test_kieselsport_speicher .....................   Passed    4.38 sec
+           | 18/19 Test #261: test_kieselsport_abo ..........................   Passed    0.25 sec
+           | 19/19 Test #262: test_kieselsport_wechsel ......................   Passed    0.12 sec
+rot        S2-5  Schritt 2 K5  Pulskalorien: Ruheanteil 3,0 statt 3,5 ml/kg/min (fw/services/activity/boulder/kalorien.c)
+           | 1/2 Test #255: test_boulder_kalorien ............***Failed    0.01 sec
+           | 2/2 Test #256: test_kieselsport_kalorien ........***Failed    0.01 sec
+rot        G-A1  Gegenpruefung Inhaltsebene nach ihrer ScrollLayer frei (A1) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A2  Gegenpruefung Puls-Abo ohne Ablauf im Kern (A2) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A4a Gegenpruefung Select liest neu (A4 a) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A4b Gegenpruefung Precision liest beim Setzen neu (A4 b) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A4c Gegenpruefung Puls live im 5-s-Takt (A4 c) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.02 sec
+rot        G-A5  Gegenpruefung Detailhoehe nach neuen Daten nicht neu (A5) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A6  Gegenpruefung Tracking aus oeffnet Details (A6) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-A7  Gegenpruefung Puls live auch im Detail (A7) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #50: test_bh_app ......................***Failed    0.01 sec
+rot        G-C1  Gegenpruefung Urteil nie umbrochen (C1) (fw/apps/system/boulder_health/zeichnen.c)
+           | 1/2 Test  #1: pbl_test_failed_dir ..............   Passed    0.01 sec
+           | 2/2 Test #53: test_bh_karten_obelix ............***Failed    2.46 sec
+rot        G-C1b Gegenpruefung Grenze ohne Layout zu eng (Very short night passt nicht) (fw/apps/system/boulder_health/zeichnen.h)
+           | 1/2 Test  #1: pbl_test_failed_dir ..............   Passed    0.01 sec
+           | 2/2 Test #53: test_bh_karten_obelix ............***Failed    1.38 sec
+rot        G-C2  Gegenpruefung S1 nicht in der Naechteliste (C2) (fw/apps/system/boulder_health/nachttage.c)
+           | 1/1 Test #52: test_bh_daten ....................***Failed    0.01 sec
+rot        G-C3  Gegenpruefung Heart zeigt einen alten Wachtag (C3) (fw/apps/system/boulder_health/inhalt.c)
+           | 1/1 Test #54: test_bh_grundsatz ................***Failed    0.00 sec
+rot        G-C4  Gegenpruefung Folgenacht verdraengt die laengere Nacht (C4) (fw/apps/system/boulder_health/nachttage.c)
+           | 1/1 Test #52: test_bh_daten ....................***Failed    0.01 sec
+rot        G-C5  Gegenpruefung Uhrzeit mit dem Versatz des Fensterbeginns (C5) (fw/apps/system/boulder_health/nachttage.c)
+           | 1/1 Test #52: test_bh_daten ....................***Failed    0.01 sec
+rot        G-C6  Gegenpruefung SpO2 nur aus 24 h (C6) (fw/apps/system/boulder_health/daten.c)
+           | 1/1 Test #52: test_bh_daten ....................***Failed    0.00 sec
+rot        G-C8  Gegenpruefung Zonenminuten ohne Tausender (C8) (fw/apps/system/boulder_health/details.c)
+           | 1/1 Test #54: test_bh_grundsatz ................***Failed    0.00 sec
+rot        G-A8  Gegenpruefung Today urteilt ueber eine unfertige Nacht (A8) (fw/apps/system/boulder_health/inhalt.c)
+           | 1/1 Test #54: test_bh_grundsatz ................***Failed    0.00 sec
+rot        G-K6  Gegenpruefung Fertige Nacht im Minutentakt nicht neu gelesen (K6) (fw/apps/system/boulder_health/daten.c)
+           | 1/1 Test #52: test_bh_daten ....................***Failed    0.00 sec
+rot        G-K1  Gegenpruefung S3 prueft den Puffer mit max statt dem Begrenzten (K1) (fw/services/activity/boulder/schnittstelle.c)
+           | 1/1 Test #250: test_boulder_schnittstelle .......***Exception: SegFault  0.47 sec
+rot        G-K2  Gegenpruefung S2 kopiert per Strukturzuweisung (K2) (fw/services/activity/boulder/schnittstelle.c)
+           | __sys_boulder_naechte        0
+           | boulder_naechte_kopieren     0
+           | __sys_boulder_herz           0
+           | boulder_herz_kopieren        0
+           | __sys_boulder_woche          0
+           | boulder_woche_kopieren       0
+rot        G-K3  Gegenpruefung Laden nicht nachgeholt (K3) (fw/services/activity/boulder/dauerteil.c)
+           | 1/1 Test #250: test_boulder_schnittstelle .......***Failed    0.68 sec
+rot        G-K4  Gegenpruefung Ziele-Filter nimmt auch laengere Schluessel (K4) (fw/services/activity/boulder/ziele.c)
+           | 1/1 Test #250: test_boulder_schnittstelle .......***Failed    0.66 sec
+rot        G-K5  Gegenpruefung Uhr zurueck: kein Nachrechnen (K5) (fw/services/activity/boulder/herz.c)
+           | 1/1 Test #253: test_boulder_herz ................***Failed    1.39 sec
+rot        G-A9  Gegenpruefung pruefe_ohne_rechte laesst jedes sys_* durch (A9) (tools/boulder/pruefe_ohne_rechte.py)
+           | ok    Bauordner: gelinktes Objekt gruen, altes zaehlt nicht
+           | ok    Bauordner: gelinktes Objekt rot
+           | ok    Bauordner: App nicht gelinkt
+           | ok    Bauordner: Syscall aus dem Abbild gruen
+           | ok    Bauordner: ohne Abbild rot
+           | ok    Abbild: Syscalls zwischen den Marken
+43/43 rot
+rc=0
+ecb6b739 Boulder V2 Schritt 3: qemu_health setzt die Schritte nach Pebbles Tageswechsel

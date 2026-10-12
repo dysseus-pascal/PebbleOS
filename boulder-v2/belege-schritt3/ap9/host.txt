@@ -1,0 +1,3 @@
+# Voller Host-Lauf (pbl test -b build-test -j4) auf ecb6b739
+100% tests passed, 0 tests failed out of 409
+Total Test time (real) = 163.13 sec
