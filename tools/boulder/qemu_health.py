@@ -215,8 +215,10 @@ class Messung:
         self.pruefungen.append({'pruefung': name, 'ok': bool(ok), 'wert': wert})
 
     def vorbereiten(self):
+        stand = self.k.stand()
         for c in ['boulder tracking', f'boulder zeit {UHR_UTC}', 'boulder prueflauf 0']:
             self.k.befehl(c)
+        gestellt = time.time()
         # Die Pruefnacht laeuft im Zeitraffer; fertig ist sie, wenn S5 sie fuehrt.
         time.sleep(30)
         frist = time.time() + 120
@@ -224,6 +226,10 @@ class Messung:
             if zahl(r'anzahl (\d+)', self.k.befehl('boulder naechte')):
                 break
             time.sleep(3)
+        # PEBBLES TAGESWECHSEL ABWARTEN: Die gestellte Uhr ist fuer Pebble ein anderer Tag, an der
+        # naechsten Minutengrenze schiebt es die Werte von heute nach gestern (activity_metrics.c).
+        # Vorher gesetzte Schritte stuenden dann auf gestern. Am selben Datum kommt die Zeile nicht.
+        self.k.warte(r'resetting metrics for new day', stand, max(0.0, gestellt + 90 - time.time()))
         for c in ['boulder spo2 40', 'boulder schritte 6230']:
             self.k.befehl(c)
 
