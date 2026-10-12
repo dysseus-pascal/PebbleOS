@@ -102,6 +102,9 @@ static void prv_detail_kopf_zeichnen(Layer *kopf, GContext *ctx) {
 
 static void prv_detail_inhalt_zeichnen(Layer *inhalt, GContext *ctx) {
   BhApp *app = prv_app();
+  if (app->bild_offen) {
+    BH_ZEIT("zeichnen");
+  }
   bh_detail_zeichnen(ctx, layer_get_bounds_by_value(inhalt).size.w, app->detail, &app->daten,
                      app->auswahl);
   if (app->bild_offen) {
@@ -166,6 +169,12 @@ static void prv_nachladen(void *kontext) {
 }
 
 static void prv_minute(struct tm *zeit, TimeUnits einheiten) {
+  // Pebble ruft den Handler gleich beim Anmelden und bei einem Wechsel 12/24 h mit 0 (applib/
+  // tick_timer_service.c). Beim Start hat Phase 1 eben gelesen; die Uhrzeit-Einstellung liest der
+  // naechste Minutentakt mit.
+  if (!(einheiten & MINUTE_UNIT)) {
+    return;
+  }
   BhApp *app = prv_app();
   BH_ZEIT("auffrischen");
   bh_daten_auffrischen(&app->daten);
@@ -252,7 +261,10 @@ static void prv_detail_oeffnen(BhApp *app, BhDetail detail) {
   }
   layer_add_child(wurzel, app->detail_kopf);
   app->bild_offen = true;
-  app_window_stack_push(app->detail_fenster, true /* animiert */);
+  // OHNE UEBERGANG (L2, AP8): Mit Pebbles Schiebe-Animation zeichnet das Detail erst nach rund
+  // 40 ms das erste Bild (QEMU, qemu_health.py), ohne sie nach hoechstens 18 ms. Das Zeichnen
+  // selbst braucht beide Male unter 15 ms.
+  app_window_stack_push(app->detail_fenster, false /* animiert */);
 }
 
 // --- Karten ---

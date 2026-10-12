@@ -37,20 +37,20 @@ int16_t bh_textbreite(const char *text, BhSchriftart art) {
   return groesse.w;
 }
 
-int16_t bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahmen,
-                     GTextAlignment ausrichtung, GColor farbe) {
+void bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahmen,
+                  GTextAlignment ausrichtung, GColor farbe) {
   graphics_context_set_text_color(ctx, farbe);
   graphics_draw_text(ctx, text, bh_schrift(art), rahmen, GTextOverflowModeTrailingEllipsis,
                      ausrichtung, NULL);
-  return bh_textbreite(text, art);
 }
 
 void bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit, BhSchriftart art,
                          GPoint ort, GColor farbe) {
   const int16_t hoehe = s_grundlinie[art] + 12;
-  const int16_t breite =
-      bh_schreiben(ctx, zahl, art, GRect(ort.x, ort.y, 190, hoehe), GTextAlignmentLeft, farbe);
+  bh_schreiben(ctx, zahl, art, GRect(ort.x, ort.y, 190, hoehe), GTextAlignmentLeft, farbe);
   if (einheit) {
+    // Die Breite nur hier: Ein Layout je Text kostet beim Zeichnen so viel wie das Zeichnen selbst.
+    const int16_t breite = bh_textbreite(zahl, art);
     const int16_t y = ort.y + s_grundlinie[art] - s_grundlinie[BhSchriftG18Fett];
     bh_schreiben(ctx, einheit, BhSchriftG18Fett, GRect(ort.x + breite + 3, y, 80, 24),
                  GTextAlignmentLeft, farbe);

@@ -24,6 +24,12 @@
 // die Uhr laeuft weiter.
 #define BH_PROBE_FEHLER 0x42480002u
 
+// L6 (AP8): Die App ruft jeden Syscall ihrer Daten 100-mal hintereinander und meldet die Ticks
+// ("bh syscall <name> <ticks fuer 100>"). Ein einzelner Aufruf liegt unter der Aufloesung der Ticks
+// (1/1024 s); hundert machen ihn messbar.
+#define BH_PROBE_SYSCALLS   0x42480003u
+#define BH_PROBE_SYSCALLS_N 100
+
 // S4 aus der App ohne Systemrechte (AP2, T6.1 in QEMU): Die App setzt die Messstufe n (1-5) wie
 // spaeter die Karte Settings und endet. Argument BH_PROBE_STUFE + n.
 #define BH_PROBE_STUFE 0x42480010u

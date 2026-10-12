@@ -47,11 +47,12 @@ static char s_reihe[512]; //< die Aufrufe in ihrer Reihenfolge, je ein Buchstabe
 static Layer *s_kind;     //< was layer_add_child an die Wurzel des ersten Fensters haengt
 static GColor s_hintergrund;
 static bool s_animiert;
-static void *s_zustand;     //< app_state_set_user_data
-static void *s_heap;        //< app_zalloc_check
-static int s_offen;         //< Bloecke im Heap der App
-static bool s_neu_zeichnen; //< layer_mark_dirty seit dem letzten Zeichnen
-static bool s_alle_weg;     //< app_window_stack_pop_all
+static int s_details_animiert; //< Detailfenster, die mit Uebergang geschoben wurden
+static void *s_zustand;        //< app_state_set_user_data
+static void *s_heap;           //< app_zalloc_check
+static int s_offen;            //< Bloecke im Heap der App
+static bool s_neu_zeichnen;    //< layer_mark_dirty seit dem letzten Zeichnen
+static bool s_alle_weg;        //< app_window_stack_pop_all
 static char s_protokoll[64][96];
 static int s_zeilen;
 static unsigned long s_ticks;
@@ -119,8 +120,8 @@ static int s_offene_punkte;
 static int s_bilder;
 
 // Die Eingaben, die die Ereignisschleife zwischen den Bildern macht: 'o' Oben, 'u' Unten,
-// 's' Select, 'x' Zurueck, 'm' eine Minute, 'n' der Timer des Nachladens, 'q' der Timer, der den
-// Puls live beendet.
+// 's' Select, 'x' Zurueck, 'm' eine Minute, 'M' ein Takt ohne Minute, 'n' der Timer des Nachladens,
+// 'q' der Timer, der den Puls live beendet.
 static const char *s_druecke;
 
 static void prv_merke(char c) {
@@ -294,6 +295,8 @@ void app_window_stack_push(Window *window, bool animated) {
   s_stapel[s_stapel_n++] = nr;
   if (nr == 0) {
     s_animiert = animated;
+  } else if (animated) {
+    s_details_animiert++;
   }
   prv_anmelden(nr);
   s_neu_zeichnen = true;
@@ -502,10 +505,11 @@ void app_event_loop(void) {
   for (const char *t = s_druecke; t && *t; t++) {
     prv_merke(*t);
     const int oben = s_stapel[s_stapel_n - 1];
-    if (*t == 'm') {
+    if (*t == 'm' || *t == 'M') {
+      // 'M': der Aufruf, den Pebble beim Anmelden und bei 12/24 h macht, ohne MINUTE_UNIT.
       cl_assert(s_minute != NULL);
       struct tm zeit = {0};
-      s_minute(&zeit, MINUTE_UNIT);
+      s_minute(&zeit, (*t == 'm') ? MINUTE_UNIT : 0);
     } else if (*t == 'n') {
       prv_timer_ab(BH_NACHLADEN_MS);
     } else if (*t == 'q') {
@@ -582,6 +586,7 @@ void test_bh_app__initialize(void) {
   s_kind = NULL;
   s_hintergrund = GColorClear;
   s_animiert = false;
+  s_details_animiert = 0;
   s_zustand = NULL;
   s_heap = NULL;
   s_offen = 0;
@@ -760,6 +765,13 @@ void test_bh_app__auffrischen_im_minutentakt(void) {
   cl_assert_equal_s(ohne_zeit, "eodmFdudmFdXULWf");
 }
 
+// Pebbles erster Takt nach dem Anmelden (ohne MINUTE_UNIT) liest nichts: Phase 1 hat eben gelesen.
+void test_bh_app__erster_takt_liest_nichts(void) {
+  s_druecke = "M";
+  prv_starten();
+  cl_assert(strchr(s_reihe, 'F') == NULL);
+}
+
 // Phase 2: Fehlt nach dem Start etwas, fragt ein Timer im Sekundenabstand nach, bis es da ist,
 // hoechstens BH_NACHFRAGEN mal. Danach laeuft kein Timer mehr.
 void test_bh_app__nachladen(void) {
@@ -819,6 +831,8 @@ void test_bh_app__details(void) {
     prv_starten();
     cl_assert_equal_i(s_detail_gezeichnet, faelle[i].detail);
     cl_assert_equal_s(s_detail_titel, faelle[i].titel);
+    // L2: ohne Uebergang, sonst kommt das erste Bild erst nach Pebbles Animation.
+    cl_assert_equal_i(s_details_animiert, 0);
     // Nach Zurueck zeichnet wieder die Karte.
     cl_assert_equal_i(s_inhalt_karte, (BhKarte)(strlen(faelle[i].weg) - 1));
     cl_assert_equal_i(s_fenster_offen, 0);

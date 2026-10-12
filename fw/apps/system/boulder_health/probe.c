@@ -293,11 +293,11 @@ static void prv_daten(BhProbe *probe) {
   // Zwei Zeilen: Pebbles Protokoll kuerzt eine lange Zeile.
   APP_LOG(APP_LOG_LEVEL_INFO, "bh probe lage fassung=%d tracking=%d stufe=%d ziele=%d/%d",
           l->fassung, l->tracking, l->messstufe, l->ziel_schritte, l->ziel_schlaf_min);
-  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe lage2 maxpuls=%d ruhepuls=%d spo2=%d stand=%lu",
-          l->maxpuls, l->ruhepuls_median, l->spo2_takt_min, (unsigned long)l->stand_utc);
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh probe lage2 maxpuls=%d ruhepuls=%d spo2=%d stand=%lu", l->maxpuls,
+          l->ruhepuls_median, l->spo2_takt_min, (unsigned long)l->stand_utc);
   probe->spo2 = app_malloc_check(SPO2_WERTE_MAX * sizeof(Spo2Wert));
-  const uint32_t spo2 = sys_boulder_spo2(jetzt - 24 * 60 * 60, jetzt + 1, probe->spo2,
-                                         SPO2_WERTE_MAX);
+  const uint32_t spo2 =
+      sys_boulder_spo2(jetzt - 24 * 60 * 60, jetzt + 1, probe->spo2, SPO2_WERTE_MAX);
   prv_benutzt(probe, BhSpo2, (int32_t)spo2);
   APP_LOG(APP_LOG_LEVEL_INFO, "bh probe spo2 %lu letzter=%d", (unsigned long)spo2,
           spo2 ? probe->spo2[spo2 - 1].prozent : -1);
@@ -429,11 +429,9 @@ static void prv_menue_zeile(GContext *ctx, const Layer *zelle, MenuIndex *index,
   BhProbe *probe = kontext;
   // Die Namen der Stufen aus dem Flash (messstufe.h, AP2), die geltende zuerst.
   const uint8_t stufe = probe->lage.messstufe ? probe->lage.messstufe : MESSSTUFE_VORGABE;
-  const char *name =
-      BOULDER_MESSSTUFE_NAMEN[(stufe - MESSSTUFE_MIN + index->row) % MESSSTUFE_MAX];
-  graphics_draw_text(ctx, name, probe->schriften[2],
-                     layer_get_bounds_by_value(zelle), GTextOverflowModeTrailingEllipsis,
-                     GTextAlignmentLeft, NULL);
+  const char *name = BOULDER_MESSSTUFE_NAMEN[(stufe - MESSSTUFE_MIN + index->row) % MESSSTUFE_MAX];
+  graphics_draw_text(ctx, name, probe->schriften[2], layer_get_bounds_by_value(zelle),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
   prv_benutzt(probe, BhMenue, index->row);
 }
 
@@ -555,6 +553,73 @@ static void prv_fehler(void) {
   window_destroy(fenster);
 }
 
+// --- L6: Zeit je Syscall ---
+
+// Dieselben Aufrufe wie daten.c, mit denselben Puffern im Heap der App. Gemessen wird die Zeit vom
+// Aufruf bis zur Rueckkehr in die App, also samt Wechsel in den Kern und Pruefung der Puffer.
+static void prv_syscalls(void) {
+  NachtBild *nacht = app_malloc_check(sizeof(NachtBild));
+  BoulderLage *lage = app_malloc_check(sizeof(BoulderLage));
+  BoulderNaechte *naechte = app_malloc_check(sizeof(BoulderNaechte));
+  BoulderHerz *herz = app_malloc_check(sizeof(BoulderHerz));
+  BoulderWoche *woche = app_malloc_check(sizeof(BoulderWoche));
+  Spo2Wert *spo2 = app_malloc_check(SPO2_WERTE_MAX * sizeof(Spo2Wert));
+  ActivitySession *sitzungen =
+      app_malloc_check(ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT * sizeof(ActivitySession));
+  const time_t jetzt = sys_get_time();
+  for (int art = 0; art < 9; art++) {
+    static const char *const namen[9] = {
+      "sys_boulder_lage",        "sys_boulder_nacht",         "sys_boulder_naechte",
+      "sys_boulder_herz",        "sys_boulder_woche",         "sys_boulder_spo2",
+      "sys_activity_get_metric", "sys_activity_get_sessions", "sys_get_time",
+    };
+    const uint64_t vorher = sys_get_ticks();
+    for (int i = 0; i < BH_PROBE_SYSCALLS_N; i++) {
+      int32_t wert = 0;
+      uint32_t anzahl = ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT;
+      switch (art) {
+        case 0:
+          sys_boulder_lage(lage);
+          break;
+        case 1:
+          sys_boulder_nacht(nacht);
+          break;
+        case 2:
+          sys_boulder_naechte(naechte);
+          break;
+        case 3:
+          sys_boulder_herz(herz);
+          break;
+        case 4:
+          sys_boulder_woche(woche);
+          break;
+        case 5:
+          sys_boulder_spo2(jetzt - 24 * 60 * 60, jetzt + 1, spo2, SPO2_WERTE_MAX);
+          break;
+        case 6:
+          sys_activity_get_metric(ActivityMetricStepCount, 1, &wert);
+          break;
+        case 7:
+          sys_activity_get_sessions(&anzahl, sitzungen);
+          break;
+        default:
+          sys_get_time();
+          break;
+      }
+    }
+    APP_LOG(APP_LOG_LEVEL_INFO, "bh syscall %s %lu", namen[art],
+            (unsigned long)(sys_get_ticks() - vorher));
+  }
+  APP_LOG(APP_LOG_LEVEL_INFO, "bh syscall fertig %d", BH_PROBE_SYSCALLS_N);
+  task_free(sitzungen);
+  task_free(spo2);
+  task_free(woche);
+  task_free(herz);
+  task_free(naechte);
+  task_free(lage);
+  task_free(nacht);
+}
+
 // --- S4 aus der App ---
 
 // Nur der Syscall: Den Auftrag fuehrt KernelBG aus, auch wenn die App gleich endet (die Schlange
@@ -580,6 +645,9 @@ bool bh_probe(void) {
       return true;
     case BH_PROBE_FEHLER:
       prv_fehler();
+      return true;
+    case BH_PROBE_SYSCALLS:
+      prv_syscalls();
       return true;
     default:
       return false;

@@ -133,6 +133,7 @@ static int prv_stapel(const struct pbl_shell *sh, size_t argc, char **argv) {
 
 #if defined(CONFIG_BOULDER_HEALTH_APP)
 #include "apps/system/boulder_health/probe.h"
+#include "pbl/services/activity/activity.h"
 #include "process_management/app_manager.h"
 #include "shell/system_app_ids.auto.h"
 
@@ -154,6 +155,41 @@ static int prv_probe(const struct pbl_shell *sh, size_t argc, char **argv) {
 
 static int prv_fehlerprobe(const struct pbl_shell *sh, size_t argc, char **argv) {
   return prv_health_probe(sh, BH_PROBE_FEHLER, "der Fehlerprobe");
+}
+
+// Oeffnet die Health-App wie "Open App" aus einem Pin mit dem Kartentyp <n> (0 Activity, 1 Night):
+// derselbe Weg wie ein echter Pin, ohne einen anzulegen. Fuer die Starts von L1 (AP8).
+static int prv_start(const struct pbl_shell *sh, size_t argc, char **argv) {
+  return prv_health_probe(sh, (uint32_t)atoi(argv[1]), "einem Pin");
+}
+
+// Schaltet Health Tracking ein wie Settings -> Health (settings/health.c): QEMU startet mit einem
+// frischen Flash, auf dem es aus ist.
+static int prv_tracking(const struct pbl_shell *sh, size_t argc, char **argv) {
+  activity_prefs_tracking_set_enabled(true);
+  activity_start_tracking(false /* test_mode */);
+  pbl_shell_print(sh, "Health Tracking an");
+  return 0;
+}
+
+// L6 (AP8): die App misst ihre Syscalls (probe.h, BH_PROBE_SYSCALLS).
+static int prv_syscalls(const struct pbl_shell *sh, size_t argc, char **argv) {
+  return prv_health_probe(sh, BH_PROBE_SYSCALLS, "der Zeit je Syscall");
+}
+
+#include "pbl/services/hrm/hrm_manager.h"
+#include "process_state/app_state/app_state.h"
+
+// AP8: Heap der laufenden App (Groesse, belegt, Hoechststand) und ob ein Abo den Puls im
+// Sekundentakt haelt. Der Zeiger auf den Zustand der App ist global (app_state.c), also auch
+// aus dem Pruefbefehl lesbar; nur gueltig, solange eine App laeuft.
+static int prv_app(const struct pbl_shell *sh, size_t argc, char **argv) {
+  const Heap *heap = app_state_get_heap();
+  pbl_shell_print(sh, "App-Heap: %u B, belegt %u, Hoechststand %u",
+                  (unsigned)heap_size(heap), (unsigned)heap->current_size,
+                  (unsigned)heap->high_water_mark);
+  pbl_shell_print(sh, "Puls im Sekundentakt: %d", (int)hrm_manager_has_continuous_green_subscriber());
+  return 0;
 }
 
 // Die App ohne Systemrechte setzt die Messstufe ueber S4 (Schritt 3, AP2; T6.1 in QEMU).
@@ -364,6 +400,10 @@ static const struct pbl_shell_cmd sub_boulder[] = {
 #if defined(CONFIG_BOULDER_HEALTH_APP)
   PBL_SHELL_CMD(probe, NULL, "Health-App: Probe der Bausteine", prv_probe),
   PBL_SHELL_CMD(fehlerprobe, NULL, "Health-App: Fehlerprobe in Kernel-RAM", prv_fehlerprobe),
+  PBL_SHELL_CMD(syscalls, NULL, "Health-App: Zeit je Syscall (L6)", prv_syscalls),
+  PBL_SHELL_CMD_ARG(start, NULL, "Health-App wie aus einem Pin <kartentyp>", prv_start, 2, 0),
+  PBL_SHELL_CMD(tracking, NULL, "Health Tracking einschalten", prv_tracking),
+  PBL_SHELL_CMD(app, NULL, "Heap der App, Puls im Sekundentakt", prv_app),
   PBL_SHELL_CMD(pins, NULL, "Pins der Insights mit Open App", prv_pins),
   PBL_SHELL_CMD_ARG(stufe, NULL, "Health-App setzt die Messstufe ueber S4 <1-5|6>", prv_stufe,
                     2, 0),

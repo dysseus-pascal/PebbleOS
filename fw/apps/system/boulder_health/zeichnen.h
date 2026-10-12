@@ -36,9 +36,9 @@ typedef enum {
 
 GFont bh_schrift(BhSchriftart art);
 
-// Text in einem Rahmen; Rueckgabe: die gezeichnete Breite.
-int16_t bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahmen,
-                     GTextAlignment ausrichtung, GColor farbe);
+// Text in einem Rahmen.
+void bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahmen,
+                  GTextAlignment ausrichtung, GColor farbe);
 
 // Breite eines Texts in einer Schrift (einzeilig).
 int16_t bh_textbreite(const char *text, BhSchriftart art);
