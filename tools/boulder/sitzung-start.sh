@@ -31,6 +31,10 @@ if [ "${#fehlend[@]}" -gt 0 ]; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${fehlend[@]}" >/dev/null
 fi
 
+# DUMA legt je Zuteilung eigene Seiten an; mit den 65530 Zuordnungen des Containers
+# bricht test_kieselsport nach ~20 s mit "mprotect() failed" (SIGILL) ab.
+sysctl -qw vm.max_map_count=1048576 2>/dev/null || true
+
 if [ ! -x "$sdk/arm-none-eabi/bin/arm-none-eabi-gcc" ]; then
     tmp="$(mktemp -d)"
     curl -LsSf -o "$tmp/installer.sh" \
