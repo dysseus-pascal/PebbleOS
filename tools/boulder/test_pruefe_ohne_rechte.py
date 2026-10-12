@@ -34,11 +34,15 @@ def uebersetze(tmp, name, quelle, extra=()):
     return pfad
 
 
+# Die Syscalls, die die Proben rufen; im Bau kommen sie aus pebbleos.elf (syscalls_im_abbild).
+SYSCALLS = {'sys_activity_get_metric', 'sys_boulder_lage', 'sys_activity_get_minute_history'}
+
+
 def befunde(*quellen, extra=()):
     """Alle Meldungen ueber ein oder mehrere Objekte (eine App aus mehreren Dateien)."""
     with tempfile.TemporaryDirectory() as tmp:
         objekte = [uebersetze(tmp, f'o{i}', q, extra) for i, q in enumerate(quellen)]
-        alle, gebaut = pruefe_ohne_rechte.pruefe(objekte, SDK)
+        alle, gebaut = pruefe_ohne_rechte.pruefe(objekte, SDK, SYSCALLS)
         return [m for o in objekte for m in alle[o]], gebaut
 
 
@@ -51,7 +55,7 @@ def gruen(*quellen, ruft=()):
     """Gruen, und die Objekte rufen wirklich `ruft` (sonst waere die Probe leer gruen)."""
     with tempfile.TemporaryDirectory() as tmp:
         objekte = [uebersetze(tmp, f'o{i}', q) for i, q in enumerate(quellen)]
-        alle, gebaut = pruefe_ohne_rechte.pruefe(objekte, SDK)
+        alle, gebaut = pruefe_ohne_rechte.pruefe(objekte, SDK, SYSCALLS)
         offen = {n for o in objekte for n, ndx, _, _ in pruefe_ohne_rechte.lies_elf(o)[1]
                  if n and ndx == pruefe_ohne_rechte.SHN_UNDEF}
     meldungen = [m for o in objekte for m in alle[o]]
@@ -109,6 +113,10 @@ def proben():
         aufruf('menu_cell_basic_draw', 'void', 'void *'), 'liest mit System-ID Kernel-RAM')
     yield 'localtime (statischer Puffer)', rot(aufruf('localtime', 'void *', 'const void *'),
                                                'nicht erlaubt: localtime')
+    # Gegenpruefung A9: sys_* ohne DEFINE_SYSCALL ist eine Kernfunktion (im obelix-Abbild 2 von 191).
+    yield 'sys_* ohne Syscall (sys_msg_protocol_msg_callback)', rot(
+        aufruf('sys_msg_protocol_msg_callback', 'void', 'void *'),
+        'kein Syscall: sys_msg_protocol_msg_callback')
 
     # Gruen: was die App ruft, und Konstanten im Flash.
     yield 'erlaubt: SDK nach implName, sys_*, Helfer, libc, Konstanten', gruen(
@@ -142,9 +150,17 @@ def proben():
     yield from proben_bauordner()
 
 
-def bauordner(quelle, mit_app=True):
+# Statt des Abbilds eine Objektdatei mit den Syscalls in ihren Abschnitten, wie DEFINE_SYSCALL sie
+# anlegt; syscalls_im_abbild liest beides.
+ABBILD = ''.join(f'__attribute__((section(".syscall_text.{n}"))) void {n}(void) {{}}\n'
+                 for n in sorted(SYSCALLS))
+
+
+def bauordner(quelle, mit_app=True, abbild=ABBILD):
     """main() an einem Bauordner: build.ninja linkt das Objekt (oder nicht) in pebbleos.elf."""
     with tempfile.TemporaryDirectory() as tmp:
+        if abbild is not None:
+            os.replace(uebersetze(tmp, 'abbild', abbild), os.path.join(tmp, 'pebbleos.elf'))
         rel = 'fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health'
         os.makedirs(os.path.join(tmp, rel))
         uebersetze(os.path.join(tmp, rel), 'x', quelle)
@@ -163,6 +179,30 @@ def proben_bauordner():
         'int health_app_get_info(void) { return 1; }\n') == 0
     yield 'Bauordner: gelinktes Objekt rot', bauordner(aufruf('boulder_nacht_letzte')) == 1
     yield 'Bauordner: App nicht gelinkt', bauordner('int x(void) { return 1; }\n', False) == 1
+    yield 'Bauordner: Syscall aus dem Abbild gruen', bauordner(
+        aufruf('sys_boulder_lage', 'int', 'void *')) == 0
+    yield 'Bauordner: ohne Abbild rot', bauordner(
+        aufruf('sys_boulder_lage', 'int', 'void *'), abbild=None) == 1
+    yield 'Abbild: Syscalls zwischen den Marken', prv_abbild_marken()
+
+
+def prv_abbild_marken():
+    """Ein gelinktes Abbild: Was zwischen __syscall_text_start__ und __syscall_text_end__ liegt,
+    ist ein Syscall, eine Funktion davor nicht."""
+    quelle = ('void sys_kern(void) {}\n'
+              '__attribute__((section(".syscall_text.sys_echt"))) void sys_echt(void) {}\n'
+              'void _start(void) { sys_kern(); sys_echt(); }\n')
+    skript = ('SECTIONS { .text : { *(.text*) __syscall_text_start__ = .; *(.syscall_text.*) '
+              '__syscall_text_end__ = .; } }\n')
+    with tempfile.TemporaryDirectory() as tmp:
+        objekt = uebersetze(tmp, 'abbild', quelle)
+        with open(os.path.join(tmp, 'abbild.ld'), 'w') as f:
+            f.write(skript)
+        elf = os.path.join(tmp, 'pebbleos.elf')
+        subprocess.run([GCC, '-nostdlib', '-mthumb', '-mcpu=cortex-m33', '-T',
+                        os.path.join(tmp, 'abbild.ld'), '-o', elf, objekt], check=True)
+        namen = pruefe_ohne_rechte.syscalls_im_abbild(elf)
+    return namen == {'sys_echt'}
 
 
 def main():

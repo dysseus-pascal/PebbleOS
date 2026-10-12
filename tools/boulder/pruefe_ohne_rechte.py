@@ -12,8 +12,11 @@ pebbleos.elf gelinkt werden, und prueft jedes. Rot (Rueckgabe 1), wenn
     .kernel_bss, das die App nicht schreiben darf (BP 6.2);
   - die App ein Symbol ruft oder anspricht, das sie nicht selbst definiert und das nicht erlaubt
     ist. Erlaubt sind die Applib nach implName aus tools/generate_native_sdk/exported_symbols.json
-    (was SDK-Apps tatsaechlich rufen), sys_* (Syscalls, auch sys_boulder_*), libc ohne Zustand
-    und die feste Liste HELFER;
+    (was SDK-Apps tatsaechlich rufen), die Syscalls des Abbilds, libc ohne Zustand und die feste
+    Liste HELFER. Ein Syscall ist eine Funktion aus DEFINE_SYSCALL: in pebbleos.elf zwischen
+    __syscall_text_start__ und __syscall_text_end__ (fw/linker/sections/text.ld). Ein sys_*
+    ausserhalb ist eine Kernfunktion, die ohne Rechte faellt (etwa
+    sys_msg_protocol_msg_callback);
   - die App etwas von der roten Liste (L5) ruft, auch wenn es sonst erlaubt waere;
   - die App eine SDK-Funktion ruft, die fuer eine App mit System-ID Kernel-RAM liest (SYSTEM_ID);
   - keine Objektdatei der App gelinkt ist oder keine ein Symbol definiert.
@@ -74,7 +77,7 @@ SYSTEM_ID = {'menu_cell_basic_draw'}
 SHF_WRITE, SHF_ALLOC = 0x1, 0x2
 SHT_SYMTAB = 2
 SHN_UNDEF, SHN_COMMON = 0, 0xfff2
-STT_SECTION, STT_FILE = 3, 4
+STT_FUNC, STT_SECTION, STT_FILE = 2, 3, 4
 
 
 def sdk_namen(repo):
@@ -96,11 +99,12 @@ def sdk_namen(repo):
     return namen
 
 
-def lies_elf(pfad):
-    """(Abschnitte, Symbole) einer ELF32-Objektdatei (little endian).
+def lies_elf(pfad, mit_wert=False):
+    """(Abschnitte, Symbole) einer ELF32-Datei (little endian).
 
-    Abschnitte: [(name, flags, groesse)]; Symbole: [(name, abschnitt_index, typ, global)].
-    Eigener Leser statt readelf: Das Ergebnis haengt nicht am Format eines Werkzeugs."""
+    Abschnitte: [(name, flags, groesse)]; Symbole: [(name, abschnitt_index, typ, global)], mit
+    `mit_wert` dazu der Wert (die Adresse). Eigener Leser statt readelf: Das Ergebnis haengt nicht am
+    Format eines Werkzeugs."""
     b = pathlib.Path(pfad).read_bytes()
     if b[:4] != b'\x7fELF' or b[4] != 1 or b[5] != 1:
         raise ValueError(f'{pfad}: keine ELF32-Datei (little endian)')
@@ -117,23 +121,44 @@ def lies_elf(pfad):
         if k[1] != SHT_SYMTAB:
             continue
         for i in range(k[5] // 16):
-            name, _wert, _groesse, info, _other, ndx = struct.unpack_from('<IIIBBH', b, k[4] + i * 16)
-            symbole.append((text(k[6], name) if name else '', ndx, info & 0xf, (info >> 4) != 0))
+            name, wert, _groesse, info, _other, ndx = struct.unpack_from('<IIIBBH', b, k[4] + i * 16)
+            eintrag = (text(k[6], name) if name else '', ndx, info & 0xf, (info >> 4) != 0)
+            symbole.append(eintrag + (wert,) if mit_wert else eintrag)
     return abschnitte, symbole
 
 
-def erlaubt(name, sdk):
+def syscalls_im_abbild(elf):
+    """Die Namen der echten Syscalls: Funktionen in Abschnitten .syscall_text.<name> (eine
+    Objektdatei), im gelinkten Abbild zwischen __syscall_text_start__ und __syscall_text_end__."""
+    abschnitte, symbole = lies_elf(elf, mit_wert=True)
+    werte = {name: wert for name, _ndx, _typ, _glob, wert in symbole if name}
+    start, ende = werte.get('__syscall_text_start__'), werte.get('__syscall_text_end__')
+    namen = set()
+    for name, ndx, typ, _glob, wert in symbole:
+        if typ != STT_FUNC or not name:
+            continue
+        im_abschnitt = ndx < len(abschnitte) and abschnitte[ndx][0].startswith('.syscall_text.')
+        # Thumb: Das unterste Bit der Adresse einer Funktion ist gesetzt.
+        im_bereich = start is not None and ende is not None and start <= (wert & ~1) < ende
+        if im_abschnitt or im_bereich:
+            namen.add(name)
+    return namen
+
+
+def erlaubt(name, sdk, syscalls):
     if ROT.match(name):
         return False, 'rote Liste (L5)'
     if name in SYSTEM_ID:
         return False, 'liest mit System-ID Kernel-RAM'
-    if name in sdk or name.startswith('sys_') or name in HELFER or name in LIBC or (
+    if name.startswith('sys_') and name not in syscalls:
+        return False, 'kein Syscall'
+    if name in sdk or name in syscalls or name in HELFER or name in LIBC or (
             EABI.match(name) and not EABI_NEIN.match(name)):
         return True, ''
     return False, 'nicht erlaubt'
 
 
-def pruefe(objekte, sdk):
+def pruefe(objekte, sdk, syscalls):
     """Befunde je Objekt: {pfad: [meldung, ...]}; dazu, ob irgendein Objekt Symbole definiert."""
     befunde, definiert, offen = {}, set(), {}
     for o in objekte:
@@ -160,7 +185,7 @@ def pruefe(objekte, sdk):
             meldungen.append(f'beschreibbar: {", ".join(namen) or "ohne Namen"} in {name} ({groesse} B)')
     for o, namen in offen.items():
         for name in sorted(namen - definiert):
-            ok, grund = erlaubt(name, sdk)
+            ok, grund = erlaubt(name, sdk, syscalls)
             if not ok:
                 befunde[o].append(f'{grund}: {name}')
     return befunde, bool(definiert) or any(offen.values())
@@ -185,7 +210,12 @@ def main(argv):
     if not objekte:
         print(f'ROT {bau}: keine Objektdatei der Health-App in pebbleos.elf gelinkt')
         return 1
-    befunde, gebaut = pruefe(objekte, sdk_namen(repo))
+    elf = pathlib.Path(bau) / 'pebbleos.elf'
+    syscalls = syscalls_im_abbild(elf) if elf.exists() else set()
+    if not syscalls:
+        print(f'ROT {bau}: keine Syscalls in pebbleos.elf gefunden')
+        return 1
+    befunde, gebaut = pruefe(objekte, sdk_namen(repo), syscalls)
     if not gebaut:
         print(f'ROT {bau}: die Objekte der Health-App sind leer (Schalter aus?)')
         return 1
