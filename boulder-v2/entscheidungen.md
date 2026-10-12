@@ -142,3 +142,13 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   - F8 A: Pulsband und Zonen von heute führt die Variante laufend mit, die App liest keinen Minutenverlauf.
   - F9 A: eigene kleine Wochen-Liste der Schritte auf der Uhr, nicht Pebbles Verlauf.
   - F10 A: Die Ziele kommen über die BlobDB Health (`boulder_ziele`, 8 B), ohne Pebble-Code. Ohne Telefon gilt der zuletzt empfangene Wert, sonst die Vorgabe.
+
+## Schritt 3, Rest (12.10.2026, Spezifikation `schritt3-rest-spezifikation.md`)
+- Der alte PC ist zurückgesetzt; gebaut wird in der Cloud (Zweig `v2`, Start-Hook `tools/boulder/sitzung-start.sh`), Notizen im Zweig `notizen`.
+- **F11–F16 wie empfohlen:**
+  - F11 A: Taste Oben blättert wie bei Pebble zur nächsten Karte.
+  - F12 A: Today hat kein Detail, Select tut dort nichts.
+  - F13 A: „Last nights“ im Night-Detail entfällt.
+  - F14: Kartenfarben Today Orange, Night Indigo, Heart Folly, Activity DarkGreen, Settings DarkGray.
+  - F15: Abnahmekriterien Schritt 3 wie in Abschnitt 7 der Spezifikation.
+  - F16: Ladeziele L1–L6 wie rekonstruiert (L4 Auffrischen ≤ 30 ms).
