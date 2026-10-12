@@ -40,7 +40,6 @@ typedef enum {
 typedef struct {
   // Uhr und Einstellungen
   time_t jetzt;
-  int32_t utc_zu_ort; //!< Sekunden, Sommerzeit inbegriffen (tm_gmtoff)
   uint16_t heute;     //!< Tage seit 1.1.2000, Ortszeit
   uint16_t minute;    //!< Minute des Tages, Ortszeit
   uint8_t wochentag;  //!< 0 = Montag
@@ -83,11 +82,35 @@ void bh_daten_laden(BhDaten *d);
 bool bh_daten_nachladen(BhDaten *d);
 
 // Im Minutentakt: Uhrzeit, Lage, Herz, Woche, SpO2, Metriken und Sitzungen neu; Nacht (S1) und
-// Naechte (S5) nur, wenn die Lage eine neue Nacht meldet.
+// Naechte (S5), wenn die Lage eine neue Nacht meldet, und solange die Nacht fertig, aber nicht
+// endgueltig ist (sie kann dann noch wachsen, ohne dass die Lage es zeigt).
 void bh_daten_auffrischen(BhDaten *d);
 
 // Nur der Puls jetzt (Health-Ereignis, Puls live auf Heart).
 void bh_daten_puls(BhDaten *d);
 
-// Die Naechte als BhNachtTag fuer rechnung.c, in der Reihenfolge des Rings. Rueckgabe: wie viele.
+// Der Versatz von UTC zur Ortszeit im Zeitpunkt `utc`, Sommerzeit inbegriffen: wie Boulder mit der
+// Zone im Zeitpunkt selbst. Die Nacht traegt nur den Versatz ihres Fensterbeginns; in der Nacht
+// der Zeitumstellung stimmte damit jede Uhrzeit danach um eine Stunde nicht.
+int32_t bh_ortsversatz(time_t utc);
+
+// --- Die Naechte (nachttage.c, nur Rechnung) ---
+
+// Die letzte Nacht ist da (S1 "da").
+bool bh_nacht_da(const BhDaten *d);
+// Wachtag der Nacht: Ortsdatum des Aufwachens, Tage seit 1.1.2000.
+uint16_t bh_nacht_wachtag(const NachtBild *n);
+// Minute des Tages (Ortszeit) einer Minute der Nacht.
+uint16_t bh_nacht_uhrzeit(const NachtBild *n, uint16_t minute);
+
+// Die Naechte als BhNachtTag fuer rechnung.c, der juengste Wachtag zuerst, wie Boulder sie am
+// selben Morgen sieht: die Liste (S5) und dazu die zuletzt gerechnete Nacht (S1). Die kommt erst
+// zwei Stunden nach dem Aufwachen endgueltig in die Liste (nacht.c), ans Telefon aber schon, wenn
+// sie fertig ist; ihr Wachtag gilt darum hier schon jetzt, nach denselben Regeln wie beim
+// Eintragen (naechte.c: die laengste Nacht des Tages, die HRV aus der laengsten mit HRV).
+// Rueckgabe: wie viele.
 uint8_t bh_daten_nachttage(const BhDaten *d, BhNachtTag aus[NAECHTE_MAX]);
+
+// Der Schlaf des Wachtags `tag` nach denselben Regeln: die Minuten der laengsten Nacht und ob sie
+// fertig ist (eine endgueltige aus der Liste ist es). false ohne Nacht an diesem Tag.
+bool bh_daten_schlaf(const BhDaten *d, uint16_t tag, uint16_t *minuten, bool *fertig);

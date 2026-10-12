@@ -26,6 +26,11 @@
 static char s_texte[128][48];
 static int s_anzahl;
 
+// Ortszeit wie die Pruefdaten: Mitteleuropa im Sommer (daten.c rechnet sie mit sys_localtime_r).
+int32_t bh_ortsversatz(time_t utc) {
+  return 2 * 60 * 60;
+}
+
 void graphics_draw_text(GContext *ctx, const char *text, GFont const font, const GRect box,
                         const GTextOverflowMode overflow_mode, const GTextAlignment alignment,
                         GTextAttributes *text_attributes) {
@@ -64,7 +69,6 @@ static BhDaten s_d;
 static void prv_erkennbar(BhDaten *d) {
   memset(d, 0, sizeof(*d));
   d->jetzt = JETZT;
-  d->utc_zu_ort = 7200;
   d->heute = HEUTE;
   d->h24 = true;
   d->lage_da = true;
@@ -235,4 +239,58 @@ void test_bh_grundsatz__ohne_quelle_kein_wert(void) {
   }
   prv_detail(BhKarteHeart);
   cl_assert(!prv_steht("111"));
+}
+
+// --- Gegenpruefung Schritt 3 ---
+
+// C3: Heart zeigt Ruhepuls und HRV des heutigen Wachtags wie Today. Wurde die Uhr letzte Nacht
+// nicht getragen, ist S1 zwei Tage alt: dann steht weder auf Today noch auf Heart ein Wert davon.
+void test_bh_grundsatz__heart_ohne_alte_nacht(void) {
+  s_d.nacht.beginn_utc -= 2 * 24 * 60 * 60;
+  s_d.nacht.ruhepuls = 71;
+  s_d.nacht.hrv = 88;
+  s_d.naechte.tage[0].tag = HEUTE - 2;
+  prv_karte(BhKarteHeart);
+  cl_assert(!prv_steht("71"));
+  cl_assert(!prv_steht("88"));
+  prv_karte(BhKarteToday);
+  cl_assert(!prv_steht("71"));
+  cl_assert(!prv_steht("88"));
+}
+
+// C3 und C2: Heart und Today zeigen fuer heute dieselben Werte, auch wenn S1 und die Liste
+// verschieden sind (die Liste traegt die laengste Nacht).
+void test_bh_grundsatz__heart_und_today_gleich(void) {
+  s_d.naechte.min_ruhe = 500;
+  s_d.naechte.min_hrv = 500;
+  s_d.naechte.tage[0].ruhepuls = 48;
+  s_d.naechte.tage[0].hrv = 66;
+  prv_karte(BhKarteHeart);
+  STEHT("48");
+  STEHT("66 ms");
+  cl_assert(!prv_steht("49"));
+  prv_karte(BhKarteToday);
+  STEHT("48");
+  STEHT("66");
+  STEHT("8:20"); // die laengere Nacht aus der Liste
+}
+
+// A8: Solange die Nacht nicht fertig ist, urteilt Today nicht ("so far" wie Night).
+void test_bh_grundsatz__today_ohne_urteil_fuer_unfertige_nacht(void) {
+  s_d.nacht.fertig = false;
+  prv_karte(BhKarteToday);
+  STEHT("so far");
+  static const char *const urteile[] = {
+    "Well rested", "Short night", "Very short night", "as usual", "in range", "above", "below",
+  };
+  for (size_t i = 0; i < sizeof(urteile) / sizeof(urteile[0]); i++) {
+    cl_assert(!prv_steht(urteile[i]));
+  }
+}
+
+// C8: Zonenminuten mit Tausendertrenner wie Boulder ("%,d").
+void test_bh_grundsatz__zonen_mit_tausendern(void) {
+  s_d.herz.zonen_min[0] = 1100;
+  prv_detail(BhKarteHeart);
+  STEHT("1,100 min");
 }

@@ -43,9 +43,20 @@ void bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahme
 // Breite eines Texts in einer Schrift (einzeilig).
 int16_t bh_textbreite(const char *text, BhSchriftart art);
 
-// Zahl in grosser Schrift, die Einheit klein in GOTHIC dahinter auf der Grundlinie.
-void bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit, BhSchriftart art,
-                         GPoint ort, GColor farbe);
+// Zahl in grosser Schrift, die Einheit klein in GOTHIC dahinter auf der Grundlinie. Rueckgabe: die
+// x-Koordinate rechts von der Einheit; ohne Einheit ort.x (die Zahl wird dann nicht vermessen).
+int16_t bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit, BhSchriftart art,
+                            GPoint ort, GColor farbe);
+
+// Ein Urteil rechts neben einer Zahl mit Einheit (Today, Night, Heart), rechtsbuendig bis
+// `rechts`: in GOTHIC 18 fett in einer Zeile ab `oben`, wenn es rechts von `frei_ab` Platz hat,
+// sonst umbrochen, die zweite Zeile dort, wo die eine stuende; braucht es dann mehr als zwei
+// Zeilen, in GOTHIC 14 fett. Eine lange Dauer ("10:59 h") neben "Very short night" passt nicht in
+// eine Zeile.
+GRect bh_urteil_rahmen(const char *text, int16_t frei_ab, int16_t rechts, int16_t oben,
+                       BhSchriftart *art);
+void bh_urteil(GContext *ctx, const char *text, int16_t frei_ab, int16_t rechts, int16_t oben,
+               GColor farbe);
 
 void bh_rechteck(GContext *ctx, GRect r, GColor farbe);
 void bh_linie(GContext *ctx, GPoint a, GPoint b, GColor farbe);

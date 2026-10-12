@@ -17,13 +17,6 @@ void bh_inhalt_zeichnen(GContext *ctx, GRect flaeche, BhKarte karte, const BhDat
 
 // --- Gemeinsam mit den Details ---
 
-// Die letzte Nacht ist da (S1 "da").
-bool bh_nacht_da(const BhDaten *d);
-// Wachtag der Nacht: Ortsdatum des Aufwachens, Tage seit 1.1.2000.
-uint16_t bh_nacht_wachtag(const NachtBild *n);
-// Minute des Tages (Ortszeit) einer Minute der Nacht.
-uint16_t bh_nacht_uhrzeit(const NachtBild *n, uint16_t minute);
-
 // Die Nacht als ein Block mit vier Bahnen (Awake, REM, Light, Deep), vom Beginn des ersten bis zum
 // Ende des letzten Abschnitts ueber die ganze Breite von `r`.
 void bh_nacht_block(GContext *ctx, GRect r, const NachtBild *n);

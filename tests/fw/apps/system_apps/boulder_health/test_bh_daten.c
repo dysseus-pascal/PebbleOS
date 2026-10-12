@@ -5,6 +5,8 @@
 
 #include "apps/system/boulder_health/daten.h"
 
+#include "pbl/services/activity/boulder/nacht.h"
+
 #include "pbl/services/clock.h"
 #include "shell/prefs_syscalls.h"
 #include "syscall/syscall.h"
@@ -43,6 +45,8 @@ static uint32_t s_spo2_anzahl;
 static time_t s_spo2_von, s_spo2_bis;
 static time_t s_jetzt;
 static int s_gmtoff;
+static time_t s_umstellung; //!< ab hier eine Stunde weniger Versatz (Ende der Sommerzeit), 0 = nie
+static NachtBild s_bild;
 static UnitsDistance s_einheit;
 static bool s_h24;
 
@@ -53,8 +57,7 @@ bool sys_boulder_lage(BoulderLage *aus) {
 }
 BoulderLesen sys_boulder_nacht(NachtBild *aus) {
   s_gelesen[Nacht]++;
-  memset(aus, 0, sizeof(*aus));
-  aus->schlaf_minuten = 472;
+  *aus = s_bild;
   return s_nacht_antwort;
 }
 uint32_t sys_boulder_spo2(time_t von, time_t bis, Spo2Wert *aus, uint32_t max) {
@@ -131,7 +134,7 @@ struct tm *sys_localtime_r(const time_t *timep, struct tm *result) {
   result->tm_yday = 284;
   result->tm_hour = 14;
   result->tm_min = 5;
-  result->tm_gmtoff = s_gmtoff;
+  result->tm_gmtoff = (s_umstellung && *timep >= s_umstellung) ? s_gmtoff - 3600 : s_gmtoff;
   return result;
 }
 bool clock_is_24h_style(void) {
@@ -157,6 +160,9 @@ void test_bh_daten__initialize(void) {
   s_spo2_anzahl = 3;
   s_jetzt = 1791807900;
   s_gmtoff = 2 * 60 * 60;
+  s_umstellung = 0;
+  memset(&s_bild, 0, sizeof(s_bild));
+  s_bild.schlaf_minuten = 472;
   s_einheit = UnitsDistance_KM;
   s_h24 = true;
 }
@@ -197,7 +203,6 @@ void test_bh_daten__laden(void) {
   cl_assert_equal_i(s_spo2_bis, s_jetzt + 1);
   // Uhr und Einstellungen
   cl_assert_equal_i(d.jetzt, s_jetzt);
-  cl_assert_equal_i(d.utc_zu_ort, 7200);
   cl_assert_equal_i(d.heute, bh_tag(126, 284));
   cl_assert_equal_i(d.minute, 14 * 60 + 5);
   cl_assert_equal_i(d.wochentag, 0); // Montag, 12.10.2026
@@ -360,4 +365,156 @@ void test_bh_daten__puls(void) {
   cl_assert_equal_i(s_gelesen[Metrik], 2);
   prv_gelesen(0, 0, 0, 0, 0, 0);
   cl_assert_equal_i(d.puls, 61);
+}
+
+// --- Gegenpruefung Schritt 3 ---
+
+#define HEUTE        9781       // 12.10.2026
+#define NACHT_BEGINN 1791748800 // 11.10.2026 20:00 UTC = 22:00 MESZ
+
+// Eine Nacht als S1: aufgewacht um 07:00 Ortszeit des 12.10. (Wachtag HEUTE).
+static void prv_bild(uint16_t schlaf, uint16_t hrv, uint8_t ruhepuls, bool fertig) {
+  memset(&s_bild, 0, sizeof(s_bild));
+  s_bild.beginn_utc = NACHT_BEGINN;
+  s_bild.utc_to_local = 2 * 60 * 60;
+  s_bild.einschlafen = 17;
+  s_bild.aufwachen = 540;
+  s_bild.schlaf_minuten = schlaf;
+  s_bild.hrv = hrv;
+  s_bild.ruhepuls = ruhepuls;
+  s_bild.fertig = fertig;
+  s_bild.anzahl = 1;
+  s_bild.abschnitte[0] = (NachtDlsAbschnitt){.von = 17, .bis = 540, .phase = 1};
+}
+
+// Die Liste mit zwei Wachtagen bis `neu`; der juengste mit `min` Minuten Schlaf.
+static void prv_liste(uint16_t neu, uint16_t hrv, uint8_t ruhepuls, uint16_t min_ruhe,
+                      uint16_t min_hrv) {
+  s_naechte.fassung = BOULDER_NAECHTE_FASSUNG;
+  s_naechte.anzahl = 2;
+  s_naechte.neu = 1;
+  s_naechte.tage[0] = (BoulderNachtEintrag){.tag = neu - 1, .hrv = 51, .ruhepuls = 53};
+  s_naechte.tage[1] = (BoulderNachtEintrag){.tag = neu, .hrv = hrv, .ruhepuls = ruhepuls};
+  s_naechte.min_ruhe = min_ruhe;
+  s_naechte.min_hrv = min_hrv;
+}
+
+// C2: Eine fertige Nacht steht erst zwei Stunden nach dem Aufwachen endgueltig in der Liste; bis
+// dahin gilt ihr Wachtag schon, wie bei Boulder, das sie bei "fertig" bekommt.
+void test_bh_daten__nachttage_mit_der_fertigen_nacht(void) {
+  prv_liste(HEUTE - 1, 50, 54, 470, 470);
+  prv_bild(430, 61, 50, true);
+  BhDaten d;
+  bh_daten_laden(&d);
+  BhNachtTag tage[NAECHTE_MAX];
+  cl_assert_equal_i(bh_daten_nachttage(&d, tage), 3);
+  cl_assert_equal_i(tage[0].tag, HEUTE);
+  cl_assert_equal_i(tage[0].hrv, 61);
+  cl_assert_equal_i(tage[0].ruhepuls, 50);
+  cl_assert_equal_i(tage[1].tag, HEUTE - 1);
+  uint16_t schlaf = 0;
+  bool fertig = false;
+  cl_assert(bh_daten_schlaf(&d, HEUTE, &schlaf, &fertig));
+  cl_assert_equal_i(schlaf, 430);
+  cl_assert(fertig);
+  cl_assert(!bh_daten_schlaf(&d, HEUTE - 2, &schlaf, &fertig));
+}
+
+// C4: Nach einer Folgenacht gilt fuer den Tag die laengste Nacht (Boulders jeTag), auch wenn S1
+// die kuerzere ist; ist S1 laenger, gilt S1.
+void test_bh_daten__folgenacht_die_laengste_gilt(void) {
+  prv_liste(HEUTE, 55, 49, 450, 450);
+  prv_bild(105, 70, 58, true);
+  BhDaten d;
+  bh_daten_laden(&d);
+  BhNachtTag tage[NAECHTE_MAX];
+  cl_assert_equal_i(bh_daten_nachttage(&d, tage), 2);
+  cl_assert_equal_i(tage[0].hrv, 55);
+  cl_assert_equal_i(tage[0].ruhepuls, 49);
+  uint16_t schlaf = 0;
+  bool fertig = false;
+  cl_assert(bh_daten_schlaf(&d, HEUTE, &schlaf, &fertig));
+  cl_assert_equal_i(schlaf, 450);
+  cl_assert(fertig);
+
+  test_bh_daten__initialize();
+  prv_liste(HEUTE, 55, 49, 450, 450);
+  prv_bild(500, 70, 58, false);
+  bh_daten_laden(&d);
+  cl_assert_equal_i(bh_daten_nachttage(&d, tage), 2);
+  cl_assert_equal_i(tage[0].hrv, 70);
+  cl_assert_equal_i(tage[0].ruhepuls, 58);
+  cl_assert(bh_daten_schlaf(&d, HEUTE, &schlaf, &fertig));
+  cl_assert_equal_i(schlaf, 500);
+  cl_assert(!fertig); // S1 waechst noch
+}
+
+// Die HRV aus der laengsten Nacht mit HRV (jeTagMitHrv), der Ruhepuls aus der laengsten.
+void test_bh_daten__hrv_aus_der_laengsten_nacht_mit_hrv(void) {
+  prv_liste(HEUTE, 0, 49, 450, 0);
+  prv_bild(120, 66, 58, true);
+  BhDaten d;
+  bh_daten_laden(&d);
+  BhNachtTag tage[NAECHTE_MAX];
+  bh_daten_nachttage(&d, tage);
+  cl_assert_equal_i(tage[0].hrv, 66);
+  cl_assert_equal_i(tage[0].ruhepuls, 49);
+}
+
+// Eine Nacht, die aelter ist als der juengste Tag der Liste, aendert nichts.
+void test_bh_daten__aeltere_nacht_aendert_nichts(void) {
+  prv_liste(HEUTE + 1, 55, 49, 450, 450);
+  prv_bild(500, 70, 58, true);
+  BhDaten d;
+  bh_daten_laden(&d);
+  BhNachtTag tage[NAECHTE_MAX];
+  cl_assert_equal_i(bh_daten_nachttage(&d, tage), 2);
+  cl_assert_equal_i(tage[0].tag, HEUTE + 1);
+  cl_assert_equal_i(tage[0].hrv, 55);
+}
+
+// C5: In der Nacht der Zeitumstellung gilt fuer jede Uhrzeit die Zone in ihrem Zeitpunkt, wie bei
+// Boulder - nicht der Versatz des Fensterbeginns, den die Nacht traegt.
+void test_bh_daten__uhrzeit_in_der_nacht_der_umstellung(void) {
+  // 24./25.10.2026: um 03:00 MESZ (01:00 UTC) wird es 02:00 MEZ.
+  s_umstellung = 1792890000;
+  prv_bild(430, 61, 50, true);
+  s_bild.beginn_utc = 1792872000; // 24.10. 20:00 UTC = 22:00 MESZ
+  s_bild.aufwachen = 570;         // 25.10. 05:30 UTC = 06:30 MEZ
+  BhDaten d;
+  bh_daten_laden(&d);
+  cl_assert_equal_i(bh_nacht_uhrzeit(&d.nacht, 17), 22 * 60 + 17);
+  cl_assert_equal_i(bh_nacht_uhrzeit(&d.nacht, 570), 6 * 60 + 30);
+  cl_assert_equal_i(bh_nacht_wachtag(&d.nacht), HEUTE + 13);
+}
+
+// C6: Das Night-Detail braucht SpO2 der ganzen letzten Nacht, auch wenn sie mehr als 24 h zurueck
+// begann (abends am Tag danach).
+void test_bh_daten__spo2_ab_dem_beginn_der_nacht(void) {
+  prv_bild(430, 61, 50, true);
+  s_jetzt = NACHT_BEGINN + 25 * 60 * 60;
+  BhDaten d;
+  bh_daten_laden(&d);
+  cl_assert_equal_i(s_spo2_von, NACHT_BEGINN + 17 * 60);
+  // Liegt die Nacht in den 24 h, bleibt es bei ihnen.
+  s_jetzt = NACHT_BEGINN + 12 * 60 * 60;
+  bh_daten_laden(&d);
+  cl_assert_equal_i(s_spo2_von, s_jetzt - 24 * 60 * 60);
+}
+
+// K6: Eine fertige Nacht kann bis "endgueltig" wachsen, ohne dass sich die Stufe der Lage aendert.
+// Solange liest der Minutentakt S1 und S5 jedes Mal, sonst nicht.
+void test_bh_daten__auffrischen_liest_die_fertige_nacht(void) {
+  s_lage.nacht_stufe = NachtFertig;
+  BhDaten d;
+  bh_daten_laden(&d);
+  memset(s_gelesen, 0, sizeof(s_gelesen));
+  bh_daten_auffrischen(&d);
+  bh_daten_auffrischen(&d);
+  cl_assert_equal_i(s_gelesen[Nacht], 2);
+  cl_assert_equal_i(s_gelesen[Naechte], 2);
+  s_lage.nacht_stufe = NachtOffen;
+  bh_daten_auffrischen(&d); // die Stufe aendert sich: einmal
+  bh_daten_auffrischen(&d);
+  cl_assert_equal_i(s_gelesen[Nacht], 3);
 }

@@ -16,26 +16,9 @@
 
 #define BREITE         200
 #define INNEN          (BREITE - 2 * BH_RAND)
-#define TAGE_1970_2000 10957
 #define S_JE_TAG       (24 * 60 * 60)
 
 // --- Gemeinsam ---
-
-bool bh_nacht_da(const BhDaten *d) {
-  return d->nacht_lesen == BoulderLesenDa && d->nacht.anzahl > 0;
-}
-
-static int64_t prv_ort(const NachtBild *n, uint16_t minute) {
-  return (int64_t)n->beginn_utc + (int64_t)minute * 60 + n->utc_to_local;
-}
-
-uint16_t bh_nacht_wachtag(const NachtBild *n) {
-  return (uint16_t)(prv_ort(n, n->aufwachen) / S_JE_TAG - TAGE_1970_2000);
-}
-
-uint16_t bh_nacht_uhrzeit(const NachtBild *n, uint16_t minute) {
-  return (uint16_t)((prv_ort(n, minute) % S_JE_TAG) / 60);
-}
 
 GColor bh_phasenfarbe(uint8_t phase) {
   switch (phase) {
@@ -178,10 +161,10 @@ static void prv_zeile(GContext *ctx, int16_t y, BhText label, const char *zahl, 
                       const char *urteil, bool gut) {
   bh_schreiben(ctx, bh_text(label), BhSchriftG14, GRect(BH_RAND, y - 2, INNEN, 16),
                GTextAlignmentLeft, BH_GRAU);
-  bh_zahl_mit_einheit(ctx, zahl, einheit, BhSchriftL26, GPoint(BH_RAND, y + 12), GColorBlack);
+  const int16_t ende =
+      bh_zahl_mit_einheit(ctx, zahl, einheit, BhSchriftL26, GPoint(BH_RAND, y + 12), GColorBlack);
   if (urteil) {
-    bh_schreiben(ctx, urteil, BhSchriftG18Fett, GRect(BH_RAND, y + 18, INNEN, 22),
-                 GTextAlignmentRight, prv_urteilsfarbe(gut));
+    bh_urteil(ctx, urteil, ende, BH_RAND + INNEN, y + 18, prv_urteilsfarbe(gut));
   }
 }
 
@@ -240,48 +223,61 @@ static void prv_tracking_aus(GContext *ctx, GRect flaeche) {
 
 // --- Today ---
 
+// Der Wachtag heute, wie Boulder ihn am selben Morgen sieht (bh_daten_nachttage): Ruhepuls und HRV
+// des Tages, 0 ohne.
+static BhNachtTag prv_heute(const BhNachtTag *tage, uint8_t anzahl, uint16_t heute) {
+  return (anzahl > 0 && tage[0].tag == heute) ? tage[0] : (BhNachtTag){0};
+}
+
 static void prv_today(GContext *ctx, const BhDaten *d) {
   char zahl[16], urteil[16];
   const char *fehlt = bh_fehlt(BhSchriftLeco);
-  const bool heute = bh_nacht_da(d) && bh_nacht_wachtag(&d->nacht) == d->heute;
   BhNachtTag tage[NAECHTE_MAX];
   const uint8_t anzahl = bh_daten_nachttage(d, tage);
+  const BhNachtTag tag = prv_heute(tage, anzahl, d->heute);
+  // Sleep: die laengste Nacht des Tages, wie Boulder. Urteile erst, wenn sie fertig ist - bis dahin
+  // sagt Night "so far", und Boulder hat sie noch nicht.
+  uint16_t schlaf = 0;
+  bool fertig = false;
+  const bool heute = bh_daten_schlaf(d, d->heute, &schlaf, &fertig);
 
-  // Sleep
   if (heute) {
     BhAngabe dauer;
-    bh_dauer(d->nacht.schlaf_minuten, &dauer);
-    const BhSchlafurteil u = bh_schlafurteil(d->nacht.schlaf_minuten, d->lage.ziel_schlaf_min);
-    prv_zeile(ctx, 32, BhTSleep, dauer.zahl, dauer.einheit, prv_schlafurteil(u),
-              u == BhSchlafAusgeruht);
+    bh_dauer(schlaf, &dauer);
+    const BhSchlafurteil u = bh_schlafurteil(schlaf, d->lage.ziel_schlaf_min);
+    if (fertig) {
+      prv_zeile(ctx, 32, BhTSleep, dauer.zahl, dauer.einheit, prv_schlafurteil(u),
+                u == BhSchlafAusgeruht);
+    } else {
+      prv_zeile(ctx, 32, BhTSleep, dauer.zahl, dauer.einheit, bh_text(BhTSoFar), false);
+    }
   } else {
     prv_zeile(ctx, 32, BhTSleep, fehlt, NULL, NULL, false);
   }
 
   // Resting
-  if (heute && d->nacht.ruhepuls) {
-    snprintf(zahl, sizeof(zahl), "%u", d->nacht.ruhepuls);
+  if (heute && tag.ruhepuls) {
+    snprintf(zahl, sizeof(zahl), "%u", tag.ruhepuls);
     uint8_t abstand = 0;
-    const BhVergleich v = bh_ruhepuls_urteil(d->nacht.ruhepuls, tage, anzahl, d->heute, &abstand);
+    const BhVergleich v = bh_ruhepuls_urteil(tag.ruhepuls, tage, anzahl, d->heute, &abstand);
     prv_zeile(ctx, 76, BhTResting, zahl, bh_text(BhTBpm),
-              prv_ruhe_text(v, abstand, urteil, sizeof(urteil)), v == BhVergleichWieImmer);
+              fertig ? prv_ruhe_text(v, abstand, urteil, sizeof(urteil)) : NULL,
+              v == BhVergleichWieImmer);
   } else {
     prv_zeile(ctx, 76, BhTResting, fehlt, NULL, NULL, false);
   }
 
-  // HRV: nur mit der Nacht von heute, wie Sleep und Resting. Der Wert des Wachtags kommt aus der
-  // Liste (laengste Nacht mit HRV, wie Boulder), sonst aus der Nacht.
+  // HRV: der Wert des Wachtags (laengste Nacht mit HRV), sein Band aus den 30 Tagen davor.
   BhBandtag woche[BH_WOCHE_TAGE];
   bh_hrv_woche(tage, anzahl, d->heute, woche);
-  const uint16_t hrv =
-      !heute ? 0 : (woche[BH_WOCHE_TAGE - 1].wert ? woche[BH_WOCHE_TAGE - 1].wert : d->nacht.hrv);
-  if (hrv) {
-    snprintf(zahl, sizeof(zahl), "%u", hrv);
+  const BhBandtag *hrv = &woche[BH_WOCHE_TAGE - 1];
+  if (heute && hrv->wert) {
+    snprintf(zahl, sizeof(zahl), "%u", hrv->wert);
     const char *u = NULL;
     BhVergleich v = BhVergleichKeiner;
-    if (woche[BH_WOCHE_TAGE - 1].wert && bh_band_urteilt(&woche[BH_WOCHE_TAGE - 1])) {
+    if (fertig && bh_band_urteilt(hrv)) {
       uint16_t abstand = 0;
-      v = bh_band_urteil(&woche[BH_WOCHE_TAGE - 1], &abstand);
+      v = bh_band_urteil(hrv, &abstand);
       u = prv_band_text(v);
     }
     prv_zeile(ctx, 120, BhTHrv, zahl, bh_text(BhTMs), u, v == BhVergleichWieImmer);
@@ -310,15 +306,14 @@ static void prv_night(GContext *ctx, GRect flaeche, const BhDaten *d) {
   const NachtBild *n = &d->nacht;
   BhAngabe dauer;
   bh_dauer(n->schlaf_minuten, &dauer);
-  bh_zahl_mit_einheit(ctx, dauer.zahl, dauer.einheit, BhSchriftL38, GPoint(BH_RAND, 30),
-                      GColorBlack);
+  const int16_t ende = bh_zahl_mit_einheit(ctx, dauer.zahl, dauer.einheit, BhSchriftL38,
+                                           GPoint(BH_RAND, 30), GColorBlack);
   if (n->fertig) {
     const BhSchlafurteil u = bh_schlafurteil(n->schlaf_minuten, d->lage.ziel_schlaf_min);
-    bh_schreiben(ctx, prv_schlafurteil(u), BhSchriftG18Fett, GRect(BH_RAND, 50, INNEN, 22),
-                 GTextAlignmentRight, prv_urteilsfarbe(u == BhSchlafAusgeruht));
+    bh_urteil(ctx, prv_schlafurteil(u), ende, BH_RAND + INNEN, 50,
+              prv_urteilsfarbe(u == BhSchlafAusgeruht));
   } else {
-    bh_schreiben(ctx, bh_text(BhTSoFar), BhSchriftG18Fett, GRect(BH_RAND, 50, INNEN, 22),
-                 GTextAlignmentRight, BH_GRAU);
+    bh_urteil(ctx, bh_text(BhTSoFar), ende, BH_RAND + INNEN, 50, BH_GRAU);
   }
 
   char von[12], bis[12], zeile[32];
@@ -368,17 +363,16 @@ static void prv_heart(GContext *ctx, const BhDaten *d) {
   char zahl[16], alter[24];
   if (d->puls > 0) {
     snprintf(zahl, sizeof(zahl), "%ld", (long)d->puls);
-    bh_zahl_mit_einheit(ctx, zahl, bh_text(BhTBpm), BhSchriftL38, GPoint(BH_RAND, 30), GColorBlack);
+    const int16_t ende = bh_zahl_mit_einheit(ctx, zahl, bh_text(BhTBpm), BhSchriftL38,
+                                             GPoint(BH_RAND, 30), GColorBlack);
     if (bh_puls_frisch(d->puls_zeit, d->jetzt)) {
-      bh_schreiben(ctx, bh_text(BhTNow), BhSchriftG18Fett, GRect(BH_RAND, 50, INNEN, 22),
-                   GTextAlignmentRight, BH_GUT);
+      bh_urteil(ctx, bh_text(BhTNow), ende, BH_RAND + INNEN, 50, BH_GUT);
     } else {
       BhAngabe a;
       const time_t s = (d->jetzt > d->puls_zeit) ? d->jetzt - d->puls_zeit : 0;
       bh_dauer((uint16_t)((s / 60 < 0xFFFF) ? s / 60 : 0xFFFF), &a);
       snprintf(alter, sizeof(alter), "%s %s", a.zahl, a.einheit ? a.einheit : "");
-      bh_schreiben(ctx, alter, BhSchriftG18Fett, GRect(BH_RAND, 50, INNEN, 22), GTextAlignmentRight,
-                   BH_GRAU);
+      bh_urteil(ctx, alter, ende, BH_RAND + INNEN, 50, BH_GRAU);
     }
   } else {
     bh_schreiben(ctx, bh_fehlt(BhSchriftLeco), BhSchriftL38, GRect(BH_RAND, 30, INNEN, 50),
@@ -394,24 +388,29 @@ static void prv_heart(GContext *ctx, const BhDaten *d) {
   bh_pulsband(ctx, GRect(BH_RAND, 86, INNEN, 64), d, d->jetzt - S_JE_TAG, d->jetzt, schatten_von,
               schatten_bis);
 
+  // Resting und HRV des heutigen Wachtags, dieselben wie auf Today: eine alte Nacht (Uhr nachts
+  // nicht getragen) zeigt keinen Wert.
   const char *fehlt = bh_fehlt(BhSchriftGothic);
   char ruhe[12], hrv[12], spo2[12];
-  const bool nacht = bh_nacht_da(d);
-  if (nacht && d->nacht.ruhepuls) {
-    snprintf(ruhe, sizeof(ruhe), "%u", d->nacht.ruhepuls);
+  BhNachtTag tage[NAECHTE_MAX];
+  const BhNachtTag tag = prv_heute(tage, bh_daten_nachttage(d, tage), d->heute);
+  if (tag.ruhepuls) {
+    snprintf(ruhe, sizeof(ruhe), "%u", tag.ruhepuls);
   }
-  if (nacht && d->nacht.hrv) {
-    snprintf(hrv, sizeof(hrv), "%u ms", d->nacht.hrv);
+  if (tag.hrv) {
+    snprintf(hrv, sizeof(hrv), "%u ms", tag.hrv);
   }
-  if (d->spo2_anzahl) {
+  // Der letzte SpO2-Wert der letzten 24 h; die Liste reicht fuer das Night-Detail weiter zurueck.
+  const bool spo2_da = d->spo2_anzahl && d->spo2[d->spo2_anzahl - 1].zeit >= d->jetzt - S_JE_TAG;
+  if (spo2_da) {
     bh_prozent(d->spo2[d->spo2_anzahl - 1].prozent, spo2, sizeof(spo2));
   }
-  prv_spalte(ctx, 0, BhTResting, (nacht && d->nacht.ruhepuls) ? ruhe : fehlt);
-  prv_spalte(ctx, 1, BhTHrv, (nacht && d->nacht.hrv) ? hrv : fehlt);
-  prv_spalte(ctx, 2, BhTSpo2,
-             // "off" nur mit Lage: Vor der ersten Lage heisst 0 "unbekannt", nicht "aus".
-             (d->lage_da && d->lage.spo2_takt_min == 0) ? bh_text(BhTOff)
-                                                        : (d->spo2_anzahl ? spo2 : fehlt));
+  prv_spalte(ctx, 0, BhTResting, tag.ruhepuls ? ruhe : fehlt);
+  prv_spalte(ctx, 1, BhTHrv, tag.hrv ? hrv : fehlt);
+  prv_spalte(
+      ctx, 2, BhTSpo2,
+      // "off" nur mit Lage: Vor der ersten Lage heisst 0 "unbekannt", nicht "aus".
+      (d->lage_da && d->lage.spo2_takt_min == 0) ? bh_text(BhTOff) : (spo2_da ? spo2 : fehlt));
 }
 
 // --- Activity ---

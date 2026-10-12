@@ -44,17 +44,60 @@ void bh_schreiben(GContext *ctx, const char *text, BhSchriftart art, GRect rahme
                      ausrichtung, NULL);
 }
 
-void bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit, BhSchriftart art,
-                         GPoint ort, GColor farbe) {
+int16_t bh_zahl_mit_einheit(GContext *ctx, const char *zahl, const char *einheit, BhSchriftart art,
+                            GPoint ort, GColor farbe) {
   const int16_t hoehe = s_grundlinie[art] + 12;
   bh_schreiben(ctx, zahl, art, GRect(ort.x, ort.y, 190, hoehe), GTextAlignmentLeft, farbe);
-  if (einheit) {
-    // Die Breite nur hier: Ein Layout je Text kostet beim Zeichnen so viel wie das Zeichnen selbst.
-    const int16_t breite = bh_textbreite(zahl, art);
-    const int16_t y = ort.y + s_grundlinie[art] - s_grundlinie[BhSchriftG18Fett];
-    bh_schreiben(ctx, einheit, BhSchriftG18Fett, GRect(ort.x + breite + 3, y, 80, 24),
-                 GTextAlignmentLeft, farbe);
+  if (!einheit) {
+    return ort.x;
   }
+  // Die Breiten nur hier: Ein Layout je Text kostet beim Zeichnen so viel wie das Zeichnen selbst.
+  const int16_t x = ort.x + bh_textbreite(zahl, art) + 3;
+  const int16_t y = ort.y + s_grundlinie[art] - s_grundlinie[BhSchriftG18Fett];
+  bh_schreiben(ctx, einheit, BhSchriftG18Fett, GRect(x, y, 80, 24), GTextAlignmentLeft, farbe);
+  return x + bh_textbreite(einheit, BhSchriftG18Fett);
+}
+
+// GOTHIC 18 fett: Hoehe einer Zeile im Layout (am Bild ausgemessen, test_bh_karten) und die des
+// Rahmens, in dem das Urteil vorher in einer Zeile stand.
+#define URTEIL_ZEILE  18
+#define URTEIL_RAHMEN 22
+#define URTEIL_LUECKE 6 //!< zwischen Einheit und Urteil
+
+static int16_t prv_hoehe(const char *text, BhSchriftart art, int16_t breite) {
+  return app_graphics_text_layout_get_content_size(text, bh_schrift(art), GRect(0, 0, breite, 100),
+                                                   GTextOverflowModeWordWrap, GTextAlignmentRight)
+      .h;
+}
+
+GRect bh_urteil_rahmen(const char *text, int16_t frei_ab, int16_t rechts, int16_t oben,
+                       BhSchriftart *art) {
+  const int16_t links = frei_ab + URTEIL_LUECKE;
+  const int16_t breite = rechts - links;
+  // Der haeufige Fall kostet ein Layout: eine Zeile.
+  *art = BhSchriftG18Fett;
+  if (bh_textbreite(text, BhSchriftG18Fett) <= breite) {
+    return GRect(links, oben, breite, URTEIL_RAHMEN);
+  }
+  // Zwei Zeilen: die zweite dort, wo die eine stuende.
+  const int16_t hoehe = prv_hoehe(text, BhSchriftG18Fett, breite);
+  if (hoehe <= 2 * URTEIL_ZEILE) {
+    return GRect(links, oben + URTEIL_ZEILE - hoehe, breite, hoehe);
+  }
+  // Sonst GOTHIC 14 fett, unten buendig mit dem Rahmen der einen Zeile: hoeher kaeme es in den
+  // Kopfbalken (Night: "10:59 h" mit "Very short night" in drei Zeilen).
+  *art = BhSchriftG14Fett;
+  const int16_t klein = prv_hoehe(text, BhSchriftG14Fett, breite);
+  return GRect(links, oben + URTEIL_RAHMEN - klein, breite, klein);
+}
+
+void bh_urteil(GContext *ctx, const char *text, int16_t frei_ab, int16_t rechts, int16_t oben,
+               GColor farbe) {
+  BhSchriftart art;
+  const GRect r = bh_urteil_rahmen(text, frei_ab, rechts, oben, &art);
+  graphics_context_set_text_color(ctx, farbe);
+  graphics_draw_text(ctx, text, bh_schrift(art), r, GTextOverflowModeWordWrap, GTextAlignmentRight,
+                     NULL);
 }
 
 void bh_rechteck(GContext *ctx, GRect r, GColor farbe) {

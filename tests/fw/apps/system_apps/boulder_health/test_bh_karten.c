@@ -13,6 +13,7 @@
 #include "applib/graphics/framebuffer.h"
 #include "applib/graphics/graphics.h"
 #include "pbl/services/activity/boulder/messstufe.h"
+#include "pbl/util/size.h"
 
 #include "fake_spi_flash.h"
 #include "fixtures/load_test_resources.h"
@@ -35,6 +36,7 @@
 
 #include "fw/graphics/util.h"
 
+#include <stdio.h>
 #include <string.h>
 
 // Karten und Details der Health-App, gezeichnet mit Pebbles echter Grafik und Schrift und mit
@@ -47,6 +49,11 @@
 static GContext s_ctx;
 static FrameBuffer s_fb;
 static BhDaten s_d;
+
+// Ortszeit wie die Pruefdaten: Mitteleuropa im Sommer (daten.c rechnet sie mit sys_localtime_r).
+int32_t bh_ortsversatz(time_t utc) {
+  return 2 * 60 * 60;
+}
 
 GContext *graphics_context_get_current_context(void) {
   return &s_ctx;
@@ -93,7 +100,6 @@ static void prv_nacht(NachtBild *n) {
 static void prv_voll(BhDaten *d) {
   memset(d, 0, sizeof(*d));
   d->jetzt = JETZT;
-  d->utc_zu_ort = 2 * 60 * 60;
   d->heute = HEUTE;
   d->minute = 14 * 60 + 5;
   d->wochentag = bh_wochentag(HEUTE);
@@ -206,7 +212,6 @@ static void prv_voll(BhDaten *d) {
 static void prv_leer(BhDaten *d) {
   memset(d, 0, sizeof(*d));
   d->jetzt = JETZT;
-  d->utc_zu_ort = 2 * 60 * 60;
   d->heute = HEUTE;
   d->h24 = true;
   d->lage = (BoulderLage){
@@ -391,6 +396,79 @@ void test_bh_karten__detail_precision(void) {
 void test_bh_karten__detail_night_leer(void) {
   prv_leer(&s_d);
   prv_detail(BhKarteNight, 0, false);
+  PRUEFE_BILD();
+}
+
+// --- Urteile neben der Zahl (Spezifikation 2.5, Gegenpruefung C1) ---
+
+// Die laengsten Zahlen mit den laengsten Urteilen, die zusammen vorkommen: Jedes Urteil beginnt
+// rechts der Einheit, jedes Wort hat in seiner Zeile Platz, und es braucht hoechstens zwei Zeilen.
+// "Very short night" gibt es bis 10:59 h (Ziel hoechstens 12 h), "Short night" bis 11:59 h, eine
+// Nacht hat hoechstens 15 h; der Puls hoechstens 255 bpm, sein Alter bis 1092:15 h.
+void test_bh_karten__urteile_passen_neben_die_zahl(void) {
+  char minus[8];
+  bh_vorzeichen(-99, minus, sizeof(minus));
+  const struct {
+    const char *zahl, *einheit, *urteil;
+  } paare[] = {
+    {"10:59", "h", "Very short night"},
+    {"11:59", "h", "Short night"},
+    {"15:00", "h", "Well rested"},
+    {"15:00", "h", "so far"},
+    {"255", "bpm", "now"},
+    {"255", "bpm", "1092:15 h"},
+    {"255", "bpm", "as usual"},
+    {"255", "bpm", "+99"},
+    {"255", "bpm", minus},
+    {"999", "ms", "in range"},
+    {"999", "ms", "above"},
+    {"999", "ms", "below"},
+  };
+  const BhSchriftart schriften[] = {BhSchriftL26, BhSchriftL38};
+  for (size_t s_nr = 0; s_nr < ARRAY_LENGTH(schriften); s_nr++) {
+    for (size_t i = 0; i < ARRAY_LENGTH(paare); i++) {
+      const int16_t ende = bh_zahl_mit_einheit(&s_ctx, paare[i].zahl, paare[i].einheit,
+                                               schriften[s_nr], GPoint(BH_RAND, 30), GColorBlack);
+      BhSchriftart art;
+      const GRect r = bh_urteil_rahmen(paare[i].urteil, ende, DISP_COLS - BH_RAND, 50, &art);
+      const GSize g = app_graphics_text_layout_get_content_size(
+          paare[i].urteil, bh_schrift(art), GRect(0, 0, r.size.w, 100), GTextOverflowModeWordWrap,
+          GTextAlignmentRight);
+      printf("\n%s %s neben \"%s\": ab x=%d, %d x %d px, Text %d px hoch%s", paare[i].zahl,
+             paare[i].einheit, paare[i].urteil, r.origin.x, r.size.w, r.size.h, g.h,
+             (art == BhSchriftG14Fett) ? " (GOTHIC 14)" : "");
+      cl_assert(r.origin.x > ende);
+      char wort[32];
+      for (const char *w = paare[i].urteil; *w;) {
+        const size_t n = strcspn(w, " ");
+        snprintf(wort, sizeof(wort), "%.*s", (int)n, w);
+        cl_assert(bh_textbreite(wort, art) <= r.size.w);
+        w += n + (w[n] == ' ');
+      }
+      cl_assert(g.h <= r.size.h);
+      // Nicht in den Kopfbalken.
+      cl_assert(r.origin.y >= BH_KOPF_H);
+    }
+  }
+}
+
+// Die haeufigste Nacht unter dem Ziel und die laengste mit "Very short night": Das Urteil steht
+// rechts der Einheit, notfalls in zwei Zeilen.
+void test_bh_karten__night_sehr_kurz(void) {
+  s_d.nacht.schlaf_minuten = 6 * 60 + 30;
+  prv_karte(BhKarteNight);
+  PRUEFE_BILD();
+}
+void test_bh_karten__night_ziel_hoch(void) {
+  s_d.lage.ziel_schlaf_min = 720;
+  s_d.nacht.schlaf_minuten = 10 * 60 + 59;
+  prv_karte(BhKarteNight);
+  PRUEFE_BILD();
+}
+void test_bh_karten__today_ziel_hoch(void) {
+  s_d.lage.ziel_schlaf_min = 720;
+  s_d.nacht.schlaf_minuten = 10 * 60 + 59;
+  prv_karte(BhKarteToday);
   PRUEFE_BILD();
 }
 

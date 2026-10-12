@@ -63,8 +63,11 @@ static void prv_wertzeile(GContext *ctx, int16_t breite, int16_t y, BhText label
 static void prv_night(GContext *ctx, int16_t breite, const BhDaten *d) {
   const int16_t innen = breite - 2 * BH_RAND;
   if (!bh_nacht_da(d)) {
-    bh_schreiben(ctx, bh_text(BhTNoNight), BhSchriftG18Fett, GRect(BH_RAND, 20, innen, 24),
-                 GTextAlignmentCenter, BH_GRAU);
+    // Wie die Karte: "-", solange die Nacht nach dem Boot erst geladen wird.
+    bh_schreiben(
+        ctx,
+        (d->nacht_lesen == BoulderLesenSpaeter) ? bh_fehlt(BhSchriftGothic) : bh_text(BhTNoNight),
+        BhSchriftG18Fett, GRect(BH_RAND, 20, innen, 24), GTextAlignmentCenter, BH_GRAU);
     return;
   }
   const NachtBild *n = &d->nacht;
@@ -140,13 +143,14 @@ static void prv_heart(GContext *ctx, int16_t breite, const BhDaten *d) {
     BhTZoneLight, BhTZoneModerate, BhTZoneVigorous, BhTZonePeak
   };
   const bool heute = d->herz_da && d->herz.zonen_tag == d->heute;
-  char wert[16];
+  char zahl[16], wert[24];
   for (int i = 0; i < BH_ZONEN; i++) {
     const int16_t y = 22 + i * 22;
     bh_rechteck(ctx, GRect(BH_RAND, y + 5, 10, 10), bh_zonenfarbe((uint8_t)i));
     bh_schreiben(ctx, bh_text(zonen[i]), BhSchriftG18, GRect(BH_RAND + 16, y, innen - 16, 22),
                  GTextAlignmentLeft, GColorBlack);
-    snprintf(wert, sizeof(wert), "%u %s", heute ? d->herz.zonen_min[i] : 0, bh_text(BhTMin));
+    bh_zahl(heute ? d->herz.zonen_min[i] : 0, BhSchriftGothic, zahl, sizeof(zahl));
+    snprintf(wert, sizeof(wert), "%s %s", zahl, bh_text(BhTMin));
     bh_schreiben(ctx, wert, BhSchriftG18Fett, GRect(BH_RAND, y, innen, 22), GTextAlignmentRight,
                  GColorBlack);
   }
@@ -279,7 +283,9 @@ static void prv_sessions(GContext *ctx, int16_t breite, const BhDaten *d) {
     }
     bh_schreiben(ctx, bh_text(art), BhSchriftG18Fett, GRect(BH_RAND, y, innen, 22),
                  GTextAlignmentLeft, GColorBlack);
-    const int64_t ort = (int64_t)s->start_utc + d->utc_zu_ort;
+    // Mit dem Versatz im Beginn der Sitzung: am Tag der Zeitumstellung gilt fuer den Morgen ein
+    // anderer als jetzt.
+    const int64_t ort = (int64_t)s->start_utc + bh_ortsversatz(s->start_utc);
     bh_uhrzeit((uint16_t)((ort % (24 * 60 * 60)) / 60), d->h24, zeit, sizeof(zeit));
     bh_schreiben(ctx, zeit, BhSchriftG18, GRect(BH_RAND, y, innen, 22), GTextAlignmentRight,
                  GColorBlack);

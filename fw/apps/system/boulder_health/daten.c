@@ -5,13 +5,15 @@
 
 #include "daten.h"
 
+#include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/clock.h"
 #include "shell/prefs_syscalls.h"
 #include "syscall/syscall.h"
 
 #include <string.h>
 
-// SpO2 der letzten 24 h: Heart zeigt den letzten Wert, das Detail die Punkte.
+// SpO2 der letzten 24 h: Heart zeigt den letzten Wert, das Detail die Punkte. Dazu die ganze letzte
+// Nacht fuer das Night-Detail, auch wenn sie frueher begann (abends am Tag danach).
 #define SPO2_FENSTER_S (24 * 60 * 60)
 
 static int32_t prv_metrik(ActivityMetric metrik) {
@@ -23,7 +25,6 @@ static void prv_uhr(BhDaten *d) {
   d->jetzt = sys_get_time();
   struct tm ort = {0};
   sys_localtime_r(&d->jetzt, &ort);
-  d->utc_zu_ort = ort.tm_gmtoff;
   d->heute = bh_tag(ort.tm_year, ort.tm_yday);
   d->minute = (uint16_t)(ort.tm_hour * 60 + ort.tm_min);
   d->wochentag = bh_wochentag(d->heute);
@@ -66,8 +67,12 @@ static void prv_woche(BhDaten *d) {
 }
 
 static void prv_spo2(BhDaten *d) {
-  d->spo2_anzahl =
-      sys_boulder_spo2(d->jetzt - SPO2_FENSTER_S, d->jetzt + 1, d->spo2, SPO2_WERTE_MAX);
+  time_t von = d->jetzt - SPO2_FENSTER_S;
+  if (bh_nacht_da(d)) {
+    const time_t nacht = (time_t)d->nacht.beginn_utc + (time_t)d->nacht.abschnitte[0].von * 60;
+    von = (nacht < von) ? nacht : von;
+  }
+  d->spo2_anzahl = sys_boulder_spo2(von, d->jetzt + 1, d->spo2, SPO2_WERTE_MAX);
 }
 
 static void prv_pebble(BhDaten *d) {
@@ -80,6 +85,12 @@ static void prv_pebble(BhDaten *d) {
     d->sitzungen_anzahl = 0;
   }
   bh_daten_puls(d);
+}
+
+int32_t bh_ortsversatz(time_t utc) {
+  struct tm ort = {0};
+  sys_localtime_r(&utc, &ort);
+  return ort.tm_gmtoff;
 }
 
 void bh_daten_puls(BhDaten *d) {
@@ -123,16 +134,17 @@ bool bh_daten_nachladen(BhDaten *d) {
 }
 
 void bh_daten_auffrischen(BhDaten *d) {
-  // WARUM S1 UND S5 NUR BEI NEUER NACHT: Sie aendern sich nur, wenn eine Nacht beginnt oder
-  // endet, und das meldet die Lage (nacht_stufe, fenster_utc). So bleibt der Minutentakt bei den
-  // kleinen Kopien.
+  // WARUM S1 UND S5 MEIST NICHT: Sie aendern sich, wenn eine Nacht beginnt oder endet, und das
+  // meldet die Lage (nacht_stufe, fenster_utc). Nur eine fertige Nacht kann bis "endgueltig" noch
+  // wachsen oder sich verschieben, ohne dass sich die Stufe aendert (nacht.c rechnet sie alle
+  // 15 Minuten neu). So bleibt der Minutentakt sonst bei den kleinen Kopien.
   const uint8_t stufe = d->lage.nacht_stufe;
   const uint32_t fenster = d->lage.fenster_utc;
   const bool war_da = d->lage_da;
   prv_uhr(d);
   prv_lage(d);
   if (!war_da || d->lage.nacht_stufe != stufe || d->lage.fenster_utc != fenster ||
-      (d->offen & (BhQuelleNacht | BhQuelleNaechte))) {
+      d->lage.nacht_stufe == NachtFertig || (d->offen & (BhQuelleNacht | BhQuelleNaechte))) {
     prv_nacht(d);
     prv_naechte(d);
   }
