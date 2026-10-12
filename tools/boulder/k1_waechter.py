@@ -42,6 +42,8 @@ EIGENE_ORDNER = (
     # Boulders Health-App (Schritt 3); Pebbles fw/apps/system/health/ bleibt Pebble-Code.
     'fw/apps/system/boulder_health/',
     'tests/fw/apps/system_apps/boulder_health/',
+    # Kein Firmware-Code: meldet tools/boulder/sitzung-start.sh als Start-Hook der Cloud-Sitzungen an.
+    '.claude/settings.json',
 )
 
 # Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht). Die Kachel
