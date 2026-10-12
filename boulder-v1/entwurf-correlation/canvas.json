@@ -1,0 +1,26 @@
+{
+  "v": 3,
+  "title": "Boulder Correlation",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Correlation-Health.dc.html": {"x": 0, "y": 200, "w": 412, "h": 830, "title": "1 Health · Einstieg", "is_interactive": true},
+    "Correlation-Liste.dc.html": {"x": 492, "y": 200, "w": 412, "h": 1230, "title": "2 Correlation · eigene Karten", "is_interactive": true},
+    "Correlation-Leer.dc.html": {"x": 984, "y": 200, "w": 412, "h": 915, "title": "3 Leerzustand", "is_interactive": true},
+    "Correlation-Neu.dc.html": {"x": 1476, "y": 200, "w": 412, "h": 1420, "title": "4 New card · Werte wählen", "is_interactive": true},
+    "Correlation-Koffein-Puls.dc.html": {"x": 1968, "y": 200, "w": 412, "h": 1070, "title": "5 Timeline · Koffein + Puls 24 h", "is_interactive": true},
+    "Correlation-Magnesium.dc.html": {"x": 2460, "y": 200, "w": 412, "h": 920, "title": "6 Compare · Magnesium ja/nein", "is_interactive": true}
+  },
+  "order": [
+    "Correlation-Health.dc.html",
+    "Correlation-Liste.dc.html",
+    "Correlation-Leer.dc.html",
+    "Correlation-Neu.dc.html",
+    "Correlation-Koffein-Puls.dc.html",
+    "Correlation-Magnesium.dc.html"
+  ],
+  "notes": {
+    "titel": {"x": 0, "y": 40, "text": "Correlation ersetzt alle Trends · Entwurf 08.10.2026 · Konzept: correlation-konzept.md", "kind": "title1", "maxW": 2870}
+  },
+  "designSystems": []
+}

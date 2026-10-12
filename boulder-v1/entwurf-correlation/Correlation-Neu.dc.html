@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Roboto:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Roboto,system-ui,sans-serif;background:#333333}
+a{color:#7DBB8A}a:hover{color:#9BD0A6}
+</style>
+</helmet>
+<div style="width: 412px; height: 1420px; background: #333333; color: #E6E0E9; font-family: Roboto, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;">
+  <div style="display: flex; align-items: center; gap: 4px; padding: 20px 12px 12px 6px; flex-shrink: 0;">
+    <a href="Correlation-Liste.dc.html" aria-label="Back" style="text-decoration: none; width: 48px; height: 48px; color: #E6E0E9; display: flex; align-items: center; justify-content: center; border-radius: 24px; flex: none;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; flex: 1; font-family: Inter, sans-serif; font-weight: 400; font-size: 28px; line-height: 40px; color: #7DBB8A;">New card</h1>
+  </div>
+  <div style="flex: 1; overflow: hidden; padding: 0 12px 12px 12px; display: flex; flex-direction: column; gap: 10px;">
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+  <div style="background: #262626; border: 1px solid rgba(73,69,78,0.6); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><span style="font-size: 12px; font-weight: 500; letter-spacing: 0.8px;">TYPE</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+      <sc-for list="{{typen}}" as="t" hint-placeholder-count="3">
+        <div onClick="{{t.pick}}" role="button" aria-label="{{t.name}}" style="cursor: pointer; height: 64px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; {{t.stil}}">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="{{t.glyph}}" fill="none" stroke="{{t.farbe}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span style="font-size: 13px; font-weight: 500; color: {{t.farbe}};">{{t.name}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{mitTeilung}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 8px;">
+        <sc-for list="{{teilungen}}" as="c" hint-placeholder-count="2">
+          <span onClick="{{c.pick}}" role="button" style="cursor: pointer; height: 32px; padding: 0 14px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; {{c.stil}}">{{c.name}}</span>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="background: #262626; border: 1px solid rgba(73,69,78,0.6); border-radius: 12px; padding: 4px 0;">
+    <sc-for list="{{slots}}" as="s" hint-placeholder-count="2">
+      <div style="{{s.rand}}">
+        <div onClick="{{s.toggle}}" role="button" aria-label="{{s.rolle}}: {{s.wert}}" style="cursor: pointer; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 12px 8px 14px;">
+          <span style="width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; flex: none; background: {{s.flaeche}};">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="{{s.glyph}}" fill="none" stroke="{{s.farbe}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 16px; font-weight: 500;">{{s.wert}}</span>
+            <span style="font-size: 13px; color: #CAC4CF;">{{s.rolle}}</span>
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="{{s.pfeil}}" fill="none" stroke="#CAC4CF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </div>
+        <sc-if value="{{s.offen}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 0 14px 8px 64px; display: flex; flex-direction: column;">
+            <sc-for list="{{s.gruppen}}" as="g" hint-placeholder-count="3">
+              <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.8px; color: #938F99; padding: 10px 0 2px 0;">{{g.name}}</div>
+              <sc-for list="{{g.werte}}" as="w" hint-placeholder-count="3">
+                <div onClick="{{w.pick}}" role="button" aria-label="{{w.name}}" style="cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 40px; {{w.stil}}">
+                  <span style="width: 8px; height: 8px; border-radius: 4px; flex: none; background: {{w.farbe}};"></span>
+                  <span style="flex: 1; font-size: 14px;">{{w.name}}</span>
+                  <span style="font-size: 12px; color: #938F99;">{{w.rechts}}</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="{{w.haken}}" fill="none" stroke="#9BD0A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+              </sc-for>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background: #262626; border: 1px solid rgba(73,69,78,0.6); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><span style="font-size: 12px; font-weight: 500; letter-spacing: 0.8px;">WINDOW</span></div>
+    <div style="display: flex; gap: 8px;">
+      <sc-for list="{{fenster}}" as="c" hint-placeholder-count="2">
+        <span onClick="{{c.pick}}" role="button" style="cursor: pointer; height: 32px; padding: 0 14px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; {{c.stil}}">{{c.name}}</span>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background: #262626; border: 1px solid rgba(73,69,78,0.6); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><span style="font-size: 12px; font-weight: 500; letter-spacing: 0.8px;">{{titel}} <span style="font-weight: 400; letter-spacing: 0; color: #CAC4CF;">· {{zusatz}}</span></span></div>
+    <sc-if value="{{istZeit}}" hint-placeholder-val="{{ false }}">
+      <svg width="358" height="112" viewBox="0 0 358 112" style="display: block;" aria-hidden="true">
+        <rect x="140" y="4" width="92" height="56" fill="rgba(230,224,233,0.08)"></rect>
+        <rect x="140" y="70" width="92" height="34" fill="rgba(230,224,233,0.08)"></rect>
+        <line x1="0" x2="326" y1="20" y2="20" stroke="rgba(73,69,78,0.6)"></line><line x1="0" x2="326" y1="44" y2="44" stroke="rgba(73,69,78,0.6)"></line>
+        <line x1="0" x2="326" y1="104" y2="104" stroke="rgba(73,69,78,0.6)"></line><line x1="0" x2="326" y1="80" y2="80" stroke="rgba(73,69,78,0.6)"></line>
+        <path d="M0 30 C30 26 50 34 80 22 S120 34 150 42 S200 50 232 46 S270 20 300 30 L326 32" fill="none" stroke="{{farbeA}}" stroke-width="2.2"></path>
+        <path d="M0 104 L0 96 C20 90 30 82 46 82 L46 76 C80 86 120 96 160 99 S230 102 250 100 L250 84 C280 90 300 96 326 98 L326 104 Z" fill="{{farbeB}}" fill-opacity="0.28" stroke="{{farbeB}}" stroke-width="2"></path>
+        <line x1="326" x2="326" y1="4" y2="104" stroke="#7DBB8A" stroke-width="2"></line>
+      </svg>
+    </sc-if>
+    <sc-if value="{{istVergleich}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center;">
+          <span style="font-size: 13px; color: #CAC4CF;">{{gruppeA}}</span><span style="font-size: 13px; color: #938F99;">{{mengeA}}</span>
+          <div style="grid-column: 1 / 3; height: 10px; border-radius: 5px; background: #333333;"><div style="width: 72%; height: 10px; border-radius: 5px; background: {{farbeB}};"></div></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center;">
+          <span style="font-size: 13px; color: #CAC4CF;">{{gruppeB}}</span><span style="font-size: 13px; color: #938F99;">{{mengeB}}</span>
+          <div style="grid-column: 1 / 3; height: 10px; border-radius: 5px; background: #333333;"><div style="width: 58%; height: 10px; border-radius: 5px; background: {{farbeB}}; opacity: 0.55;"></div></div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{istTage}}" hint-placeholder-val="{{ false }}">
+      <svg width="358" height="96" viewBox="0 0 358 96" style="display: block;" aria-hidden="true">
+        <line x1="0" x2="326" y1="40" y2="40" stroke="rgba(73,69,78,0.6)"></line><line x1="0" x2="326" y1="90" y2="90" stroke="rgba(73,69,78,0.6)"></line>
+        <path d="{{saeulenPfad}}" fill="{{farbeA}}"></path>
+        <path d="{{punktePfad}}" fill="{{farbeB}}"></path>
+      </svg>
+    </sc-if>
+  </div>
+
+  <a href="Correlation-Liste.dc.html" style="height: 48px; border-radius: 24px; background: rgba(125,187,138,0.24); color: #90C59C; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; text-decoration: none;">Add card</a>
+</div>
+  </div>
+
+  <nav style="height: 80px; flex-shrink: 0; background: #262626; border-top: 1px solid rgba(73,69,78,0.6); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;">
+    <a href="Correlation-Health.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #7DBB8A; font-size: 12px; min-height: 56px; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"></path></svg>
+      <span>Health</span>
+    </a>
+    <a href="#apps" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #CAC4CF; font-size: 12px; min-height: 56px; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg>
+      <span>Apps</span>
+    </a>
+    <a href="#devices" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #CAC4CF; font-size: 12px; min-height: 56px; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="6" width="10" height="12" rx="3"></rect><path d="M9 6l1-3h4l1 3M9 18l1 3h4l1-3"></path></svg>
+      <span>Devices</span>
+    </a>
+    <a href="#notifications" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #CAC4CF; font-size: 12px; min-height: 56px; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+      <span>Notifications</span>
+    </a>
+    <a href="#settings" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #CAC4CF; font-size: 12px; min-height: 56px; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg>
+      <span>Settings</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":412,"height":1420}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { typ: 'vergleich', a: 'mg', b: 'tief', offen: 'b', fenster: 0, teilung: 'mit' };
+  }
+
+  renderVals() {
+    // Farben.kt, dunkles Schema - je Groesse eine Farbe
+    const F = { puls: '#E8776C', koffein: '#D09A62', schlaf: '#7FA7D9', hrv: '#C98BD6', bewegung: '#9BD0A6',
+      wasser: '#6FA9DC', praep: '#7DBB8A', spo2: '#2E7C8A', koerper: '#B39DDB', neutral: '#CAC4CF' };
+    const G = { herz: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z', tropfen: 'M12 3.5s-6 6.6-6 10.5a6 6 0 0 0 12 0c0-3.9-6-10.5-6-10.5z', tasse: 'M5 9h11v4.5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 13.5z M16 10.5h1.2a2.3 2.3 0 0 1 0 4.6H16 M8.5 3.5v2.5 M12 3.5v2.5', kapsel: 'M6.3 17.7a3.5 3.5 0 0 1 0-5l6.4-6.4a3.5 3.5 0 0 1 5 5l-6.4 6.4a3.5 3.5 0 0 1-5 0z M9.5 9.5l5 5', mond: 'M18.5 14.5A7 7 0 0 1 9.5 5.5a7 7 0 1 0 9 9z', laeufer: 'M14 4.5a1.6 1.6 0 1 0 0.01 0 M7 11l3.5-3 3.5 2 2.5 3 M11 8.5l-1.5 5 3 3-1 4.5 M9.5 13.5L6.5 18', welle: 'M3 12h4l2-5 3 10 2-5h7', ring: 'M12 4a8 8 0 1 0 0.01 0 M12 9a3 3 0 1 0 0.01 0', waage: 'M5 5h14v14H5z M9 9.5h6l-1 3h-4z', kalender: 'M5 6h14v13H5z M5 10h14 M9 4v4 M15 4v4', plus: 'M12 5v14 M5 12h14', korrelation: 'M3 17c4.5 0 4.5-10 9-10s4.5 10 9 10 M3 7c4.5 0 4.5 10 9 10s4.5-10 9-10', linie: 'M3 17l5-6 4 3 4-7 5 5', balken: 'M4 8h13 M4 16h8', saeulen: 'M5 19v-6 M9.7 19v-10 M14.3 19v-4 M19 19v-12', stift: 'M5 19l1-4 9.5-9.5 3 3L9 18z M13.5 7.5l3 3' };
+    const W = {
+      // Zeitreihen (Timeline)
+      puls: ['Heart rate', 'puls', 'herz', 'HEART'], spo2: ['SpO2', 'spo2', 'ring', 'HEART'],
+      phasen: ['Sleep stages', 'schlaf', 'mond', 'SLEEP'], schritte: ['Steps', 'bewegung', 'laeufer', 'MOVEMENT'],
+      training: ['Workouts', 'bewegung', 'laeufer', 'MOVEMENT'], koffein: ['Caffeine', 'koffein', 'tasse', 'STACK'],
+      praep: ['Supplements', 'praep', 'kapsel', 'STACK'], wasser: ['Water', 'wasser', 'tropfen', 'WATER'],
+      // Bedingungen (Compare)
+      mg: ['Magnesium', 'praep', 'kapsel', 'STACK'], zink: ['Zinc', 'praep', 'kapsel', 'STACK'], d3: ['D3', 'praep', 'kapsel', 'STACK'],
+      multi: ['Multivitamin', 'praep', 'kapsel', 'STACK'], k200: ['Caffeine 200+ mg', 'koffein', 'tasse', 'STACK'],
+      kspaet: ['Caffeine after 2 PM', 'koffein', 'tasse', 'STACK'], tag_training: ['Workout', 'bewegung', 'laeufer', 'MOVEMENT'],
+      s10k: ['Steps 10k+', 'bewegung', 'laeufer', 'MOVEMENT'], wziel: ['Water goal', 'wasser', 'tropfen', 'WATER'],
+      kurz: ['Night under 7 h', 'schlaf', 'mond', 'SLEEP'], spaet: ['Asleep after 11 PM', 'schlaf', 'mond', 'SLEEP'],
+      we: ['Weekend', 'neutral', 'kalender', 'CALENDAR'], datum: ['A date', 'neutral', 'kalender', 'CALENDAR'],
+      // Ergebnisse und Tageswerte
+      tief: ['Deep sleep', 'schlaf', 'mond', 'SLEEP'], schlaf: ['Sleep', 'schlaf', 'mond', 'SLEEP'], rem: ['REM', 'schlaf', 'mond', 'SLEEP'],
+      wach: ['Awake', 'schlaf', 'mond', 'SLEEP'], bett: ['Asleep at', 'schlaf', 'mond', 'SLEEP'],
+      ruhe: ['Resting HR', 'puls', 'herz', 'HEART'], nachtpuls: ['Heart rate, night', 'puls', 'herz', 'HEART'],
+      hrv: ['HRV', 'hrv', 'welle', 'HEART'], spo2t: ['SpO2, lowest', 'spo2', 'ring', 'HEART'], bd: ['Blood pressure', 'puls', 'herz', 'HEART'],
+      aktiv: ['Active minutes', 'bewegung', 'laeufer', 'MOVEMENT'], tmin: ['Workout minutes', 'bewegung', 'laeufer', 'MOVEMENT'],
+      kmg: ['Caffeine', 'koffein', 'tasse', 'STACK'], kbett: ['Caffeine at sleep', 'koffein', 'tasse', 'STACK'],
+      wml: ['Water', 'wasser', 'tropfen', 'WATER'], gewicht: ['Weight', 'koerper', 'waage', 'BODY'],
+    };
+    // Tage mit Wert im Fenster (30 Tage); 0 = keine Daten
+    const TAGE = { bd: 12, gewicht: 4, spo2t: 27, hrv: 27, ruhe: 27, nachtpuls: 27, tief: 27, schlaf: 28, rem: 27, wach: 27, bett: 28,
+      schritte: 30, aktiv: 30, tmin: 30, kmg: 30, kbett: 30, wml: 30 };
+    const NACHT = ['tief', 'schlaf', 'rem', 'wach', 'bett', 'ruhe', 'nachtpuls', 'hrv', 'spo2t'];
+    const LISTEN = {
+      zeit: { a: ['puls', 'spo2', 'phasen', 'schritte', 'training', 'koffein', 'praep', 'wasser'],
+              b: ['puls', 'spo2', 'phasen', 'schritte', 'training', 'koffein', 'praep', 'wasser'] },
+      vergleich: { a: ['mg', 'zink', 'd3', 'multi', 'k200', 'kspaet', 'tag_training', 's10k', 'wziel', 'kurz', 'spaet', 'we'],
+                   b: ['tief', 'schlaf', 'rem', 'wach', 'ruhe', 'nachtpuls', 'hrv', 'spo2t', 'bd', 'schritte', 'aktiv', 'gewicht'] },
+      vorher: { a: ['mg', 'zink', 'd3', 'multi', 'datum'],
+                b: ['tief', 'schlaf', 'rem', 'wach', 'ruhe', 'nachtpuls', 'hrv', 'spo2t', 'bd', 'schritte', 'aktiv', 'gewicht'] },
+      tage: { a: ['kmg', 'kbett', 'wml', 'schritte', 'aktiv', 'tmin', 'schlaf', 'tief', 'bett', 'ruhe', 'hrv', 'spo2t', 'bd', 'gewicht'],
+              b: ['kmg', 'kbett', 'wml', 'schritte', 'aktiv', 'tmin', 'schlaf', 'tief', 'bett', 'ruhe', 'hrv', 'spo2t', 'bd', 'gewicht'] },
+    };
+    const VORGABE = { zeit: ['koffein', 'puls'], vergleich: ['mg', 'tief'], tage: ['kbett', 'hrv'] };
+    const st = this.state;
+    const liste = st.typ === 'vergleich' && st.teilung === 'vorher' ? LISTEN.vorher : LISTEN[st.typ];
+    const name = (id) => W[id][0];
+    const farbe = (id) => F[W[id][1]];
+    const flaeche = (id) => farbe(id) + '38';
+    const wahl = 'background: rgba(125,187,138,0.22); color: #9BD0A6; font-weight: 500;';
+    const frei = 'border: 1px solid #49454E; color: #CAC4CF;';
+
+    const typen = [['zeit', 'Timeline', G.linie], ['vergleich', 'Compare', G.balken], ['tage', 'Day by day', G.saeulen]].map(([id, n, g]) => ({
+      name: n, glyph: g,
+      farbe: st.typ === id ? '#9BD0A6' : '#CAC4CF',
+      stil: st.typ === id ? 'background: rgba(125,187,138,0.22);' : 'border: 1px solid #49454E;',
+      pick: () => this.setState({ typ: id, a: VORGABE[id][0], b: VORGABE[id][1], offen: null, fenster: 0, teilung: 'mit' }),
+    }));
+    const teilungen = [['mit', 'With / without'], ['vorher', 'Before / after']].map(([id, n]) => ({
+      name: n, stil: st.teilung === id ? wahl : frei,
+      pick: () => this.setState({ teilung: id, a: id === 'vorher' ? 'zink' : 'mg', offen: null }),
+    }));
+
+    const rollen = st.typ === 'vergleich'
+      ? (st.teilung === 'vorher' ? ['Since', 'Outcome'] : ['Days with', 'Outcome'])
+      : ['First', 'Second'];
+    const bNacht = NACHT.includes(st.b);
+    const zaehler = (id) => {
+      if (st.typ === 'zeit') return '';
+      if (!(id in TAGE)) return '';
+      const n = st.fenster === 1 ? Math.round(TAGE[id] * 3) : TAGE[id];
+      return n === 0 ? 'no data' : n + ' days';
+    };
+    const slots = ['a', 'b'].map((slot, k) => {
+      const id = st[slot];
+      const anderer = st[slot === 'a' ? 'b' : 'a'];
+      const gruppen = [];
+      liste[slot].forEach((w) => {
+        let g = gruppen.find((x) => x.name === W[w][3]);
+        if (!g) { g = { name: W[w][3], werte: [] }; gruppen.push(g); }
+        const belegt = w === anderer;
+        g.werte.push({
+          name: name(w), farbe: farbe(w),
+          rechts: belegt ? 'in use' : zaehler(w),
+          haken: w === id ? 'M5 12.5l4.5 4.5L19 7.5' : '',
+          stil: belegt ? 'opacity: 0.4;' : '',
+          pick: () => { if (!belegt) this.setState({ [slot]: w, offen: null }); },
+        });
+      });
+      let wert = name(id);
+      if (st.typ === 'vergleich' && st.teilung === 'vorher' && slot === 'a') wert = id === 'datum' ? 'Oct 4' : name(id) + ' · from Oct 4';
+      return {
+        rolle: rollen[k], wert, farbe: farbe(id), flaeche: flaeche(id), glyph: G[W[id][2]],
+        offen: st.offen === slot, gruppen,
+        pfeil: st.offen === slot ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+        rand: k ? 'border-top: 1px solid rgba(73,69,78,0.6); margin-left: 64px;' : '',
+        toggle: () => this.setState({ offen: st.offen === slot ? null : slot }),
+      };
+    });
+    // die zweite Zeile ohne Einzug ihres Inhalts: der Rand beginnt bei 64, der Inhalt nicht
+    slots[1].rand = 'border-top: 1px solid rgba(73,69,78,0.6);';
+
+    const fensterNamen = st.typ === 'zeit' ? ['24 hours', '7 days'] : ['30 days', '90 days'];
+    const fenster = fensterNamen.map((n, i) => ({ name: n, stil: st.fenster === i ? wahl : frei, pick: () => this.setState({ fenster: i }) }));
+
+    const titel = (name(st.a) + ' & ' + name(st.b)).toUpperCase();
+    let zusatz = st.typ === 'zeit' ? (st.fenster ? 'last 7 days' : 'last 24 hours') : 'last ' + fensterNamen[st.fenster];
+    if (st.typ === 'tage' && bNacht) zusatz = 'next night · ' + fensterNamen[st.fenster];
+    if (st.typ === 'vergleich' && st.teilung === 'vorher') zusatz = 'before / after Oct 4';
+    const einheit = bNacht ? 'Nights' : 'Days';
+    let gruppeA, gruppeB;
+    if (st.teilung === 'vorher' && st.typ === 'vergleich') { gruppeA = 'Since Oct 4'; gruppeB = 'Before'; }
+    else { gruppeA = (bNacht ? 'Nights after ' : 'Days with ') + name(st.a); gruppeB = einheit + ' without'; }
+
+    // Vorschau "Day by day": Saeulen und Punkte als je ein Pfad
+    const k = [12, 8, 45, 10, 5, 0, 18, 62, 9, 14, 7, 38, 11, 0, 6, 70, 13, 9, 15, 52, 8, 4, 10, 41, 12, 0, 7, 58, 9, 63];
+    const r = [1, -2, 0, 3, -1, 2, -3, 1, 2, -1, 0, 3, -2, 1, 2, -1, 0, -2, 3, 1, -1, 2, 0, -3, 1, 2, -1, 0, 2, -1];
+    let saeulenPfad = '', punktePfad = '';
+    for (let i = 0; i < 30; i++) {
+      const cx = 326 / 30 * (i + 0.5);
+      const h = 36 * k[i] / 80;
+      if (h > 0) saeulenPfad += `M${(cx - 3).toFixed(1)} 40v${(-h).toFixed(1)}h6v${h.toFixed(1)}z`;
+      const cy = 90 - 44 * ((52 + r[i] - 0.1 * k[i]) - 38) / 24;
+      punktePfad += `M${(cx - 2.8).toFixed(1)} ${cy.toFixed(1)}a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0z`;
+    }
+    return {
+      typen, teilungen, mitTeilung: st.typ === 'vergleich', slots, fenster, titel, zusatz,
+      istZeit: st.typ === 'zeit', istVergleich: st.typ === 'vergleich', istTage: st.typ === 'tage',
+      farbeA: farbe(st.a), farbeB: farbe(st.b), gruppeA, gruppeB,
+      mengeA: st.teilung === 'vorher' && st.typ === 'vergleich' ? '4 of 5 nights' : '', mengeB: '', saeulenPfad, punktePfad,
+    };
+  }
+}
+</script>
+</body>
+</html>
