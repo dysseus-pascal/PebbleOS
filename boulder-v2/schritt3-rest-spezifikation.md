@@ -265,3 +265,19 @@ nicht ihre Dauer.
 **F16 Ladeziele.** Die Nummern L1–L6 sind aus Code und Bau-Skript rekonstruiert; die Zahlen für L1, L2
 und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrischen ≤ 30 ms).
 - **Empfehlung: so übernehmen.**
+
+---
+
+## Stand nach AP6 (12.10.2026, `0c1b4736`)
+
+- Gebaut nach dieser Spezifikation. Abweichungen (im Commit begründet):
+  - Tracking aus: mittig „Tracking off“ statt eines Strichs in jedem Feld; Settings bleibt bedienbar.
+  - Die Nacht im Pulsband ist ein Streifen unter dem Band, kein Schatten.
+  - Precision ist eine eigene Ebene statt einer MenuLayer.
+  - L3 genauer: Eine Taste liest keine Daten; geschrieben wird an einer Taste nur der Puls-Takt (V3)
+    und die Messstufe (S4).
+- Prüfung: Host 407/407, Mutationen 15/15 rot, acht Bauten ohne Warnung, Heap obelix Release 72 736 B.
+- Korrektur zum Commit-Text: `test_bh_daten` hat 10 Fälle, nicht 11.
+- Belege: `belege-schritt3/ap6-qemu/`. Vorläufige Emulator-Skripte: `werkzeug/` (kommen mit AP8 als
+  `tools/boulder/qemu_health.py` ins Repo).
+- Nächster Schritt: AP8 (Abschnitt 4).
