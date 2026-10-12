@@ -30,11 +30,13 @@
 #include "kernel/pbl_malloc.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/schnittstelle.h"
+#include "pbl/services/hrm/hrm_manager.h"
 #include "process_management/pebble_process_md.h"
 #include "process_state/app_state/app_state.h"
 #include "pbl/services/i18n/i18n.h"
 #include "pbl/services/timeline/timeline.h"
 #include "resource/resource_ids.auto.h"
+#include "syscall/syscall.h"
 
 // Die Health-App der Boulder-Firmware, an der Stelle von Pebbles.
 //
@@ -47,8 +49,8 @@
 //
 // LADEN (Spezifikation Schritt 3, 2.6.2): Phase 0 liest den Start, Phase 1 alle Daten vor dem
 // ersten Bild, Phase 2 fehlendes nach. Danach liest nur der Minutentakt; eine Taste liest nichts
-// (L3). Die einzige Schreibung an einer Taste ist der Puls-Takt beim Wechsel auf oder weg von
-// Heart (V3) und das Setzen der Messstufe in Precision.
+// (L3). Die einzige Schreibung an einer Taste ist der Puls-Takt beim Wechsel auf die Karte Heart
+// oder weg von ihr (V3) und das Setzen der Messstufe in Precision.
 
 // V3: Puls im Sekundentakt nur auf Heart und hoechstens so lange.
 #define PULS_LIVE_MS (2 * 60 * 1000)
@@ -116,6 +118,14 @@ static void prv_detail_inhalt_zeichnen(Layer *inhalt, GContext *ctx) {
 static void prv_neu_zeichnen(BhApp *app) {
   app->bild_offen = true;
   layer_mark_dirty(app->flaeche);
+  if (app->rolle) {
+    // DIE HOEHE HAENGT AN DEN DATEN (Night ohne Nacht, neue Sitzungen): nach neuen Daten neu
+    // setzen, sonst schnitte die Ebene ab, was dazukam, und das Detail rollte nicht dorthin.
+    const int16_t breite = layer_get_bounds_by_value(app->detail_inhalt).size.w;
+    const int16_t hoehe = bh_detail_hoehe(app->detail, &app->daten);
+    layer_set_frame_by_value(app->detail_inhalt, GRect(0, 0, breite, hoehe));
+    scroll_layer_set_content_size(app->rolle, GSize(breite, hoehe));
+  }
   if (app->detail_inhalt) {
     layer_mark_dirty(app->detail_inhalt);
   }
@@ -137,6 +147,13 @@ static void prv_puls(BhApp *app, bool an) {
   }
   app->puls_live = an;
   health_service_set_heart_rate_sample_period(an ? 1 : 0 /* zurueck zur Vorgabe */);
+  if (an) {
+    // DER ABLAUF IM KERN: Endet die App nicht ueber prv_ende (Fehler, F7), gibt Pebble einem Abo
+    // ohne Ablauf noch eine Stunde (hrm_manager_process_cleanup); einen kuerzeren laesst es.
+    sys_hrm_manager_set_update_interval(
+        sys_hrm_manager_get_app_subscription(sys_app_manager_get_current_app_id()), 1,
+        PULS_LIVE_MS / 1000);
+  }
   if (app->puls_ende) {
     app_timer_cancel(app->puls_ende);
     app->puls_ende = NULL;
@@ -145,6 +162,11 @@ static void prv_puls(BhApp *app, bool an) {
     app->puls_ende = app_timer_register(PULS_LIVE_MS, prv_puls_ende, NULL);
   }
   BH_PROTOKOLL("puls %s", an ? "an" : "aus");
+}
+
+// V3: auf der Karte Heart, nicht in ihrem Detail, und nicht mit Tracking aus (2.1: dann "-").
+static bool prv_puls_gewollt(const BhApp *app) {
+  return app->karte == BhKarteHeart && !app->detail_fenster && app->daten.lage.tracking;
 }
 
 static void prv_ereignis(HealthEventType ereignis, void *kontext) {
@@ -185,10 +207,12 @@ static void prv_minute(struct tm *zeit, TimeUnits einheiten) {
 
 static void prv_detail_entladen(Window *fenster) {
   BhApp *app = prv_app();
+  // DAS KIND ZUERST: layer_destroy loest es von seiner Mutter, der Inhaltsebene in der ScrollLayer.
+  // Waere die schon frei, laese und schriebe es freigegebenen Speicher.
+  layer_destroy(app->detail_inhalt);
   if (app->rolle) {
     scroll_layer_destroy(app->rolle);
   }
-  layer_destroy(app->detail_inhalt);
   layer_destroy(app->detail_kopf);
   window_destroy(app->detail_fenster);
   app->detail_fenster = NULL;
@@ -280,7 +304,7 @@ static void prv_blaettern(ClickRecognizerRef anlass, void *kontext) {
       BH_PROTOKOLL("karte %s", bh_karte_titel(app->karte));
       app->bild_offen = true;
       layer_mark_dirty(app->flaeche);
-      prv_puls(app, app->karte == BhKarteHeart);
+      prv_puls(app, prv_puls_gewollt(app));
       break;
     case BhSchrittZifferblatt:
       BH_ZEIT("zifferblatt");
@@ -298,12 +322,22 @@ static void prv_auswaehlen(ClickRecognizerRef anlass, void *kontext) {
   BhApp *app = prv_app();
   BH_ZEIT("taste");
   const BhDetail detail = bh_detail_von(app->karte);
-  if (detail == BhDetailKeins) {
-    BH_ZEIT("nichts"); // Today hat kein Detail (F12)
+  // Today hat kein Detail (F12). Mit Tracking aus zeigt keine Karte Werte (2.1), also auch kein
+  // Detail; Precision bleibt bedienbar.
+  if (detail == BhDetailKeins || (!app->daten.lage.tracking && detail != BhDetailPrecision)) {
+    BH_ZEIT("nichts");
     return;
   }
   BH_PROTOKOLL("detail %s", bh_detail_titel(detail));
   prv_detail_oeffnen(app, detail);
+  prv_puls(app, prv_puls_gewollt(app));
+}
+
+// Die Karten erscheinen: nach dem Start und zurueck aus einem Detail, nicht beim Ende der App
+// (Pebble nimmt dort alle Fenster vom Stapel, ohne dass eins erscheint).
+static void prv_karten_erscheinen(Window *fenster) {
+  BhApp *app = prv_app();
+  prv_puls(app, prv_puls_gewollt(app));
 }
 
 static void prv_tasten(void *kontext) {
@@ -335,6 +369,8 @@ static void prv_start(void) {
   app->fenster = window_create();
   window_set_background_color(app->fenster, GColorWhite);
   window_set_click_config_provider(app->fenster, prv_tasten);
+  window_set_window_handlers_by_value(app->fenster,
+                                      (WindowHandlers){.appear = prv_karten_erscheinen});
   Layer *wurzel = window_get_root_layer(app->fenster);
   app->flaeche = layer_create(layer_get_bounds_by_value(wurzel));
   layer_set_update_proc(app->flaeche, prv_flaeche_zeichnen);
@@ -342,7 +378,6 @@ static void prv_start(void) {
   app_window_stack_push(app->fenster, true /* animiert */);
   tick_timer_service_subscribe(MINUTE_UNIT, prv_minute);
   health_service_events_subscribe(prv_ereignis, NULL);
-  prv_puls(app, app->karte == BhKarteHeart);
 }
 
 static void prv_ende(void) {

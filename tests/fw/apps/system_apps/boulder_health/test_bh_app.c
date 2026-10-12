@@ -21,6 +21,7 @@
 #include "applib/ui/scroll_layer.h"
 #include "applib/ui/window.h"
 #include "font_resource_keys.auto.h"
+#include "pbl/services/hrm/hrm_manager.h"
 #include "pbl/services/timeline/health_layout.h"
 #include "process_management/pebble_process_md.h"
 #include "resource/resource_ids.auto.h"
@@ -80,6 +81,12 @@ static int s_flaechen_offen;
 #define s_flaeche (s_ebenen[0])
 static ScrollLayer s_rolle;
 static int s_rollen_offen;
+// Wie Pebble: Die Inhaltsebene haengt an der ScrollLayer (scroll_layer.c, content_sublayer), und
+// layer_destroy loest eine Ebene von ihrer Mutter. Ist die Mutter schon frei, liest und schreibt
+// das freigegebenen Speicher.
+static int s_rollen_kind;      //< Ebene an der ScrollLayer, -1 = keine
+static int s_kind_ohne_mutter; //< Ebene, deren ScrollLayer frei ist, -1 = keine
+static GSize s_rollen_inhalt;  //< zuletzt gesetzte Inhaltsgroesse
 
 // Timer, Minutentakt, Health-Abo
 #define TIMER_MAX 4
@@ -93,9 +100,12 @@ static TickHandler s_minute;
 static HealthEventHandler s_ereignis;
 static uint32_t s_pulstakt;   //< zuletzt gesetzter Takt (0 = Vorgabe)
 static int s_pulstakt_setzen; //< wie oft gesetzt
+static uint32_t s_pulstakt_an; //< zuletzt gesetzter Takt ausser der Vorgabe
+static uint16_t s_puls_ablauf; //< Ablauf, den die App dem Abo im Kern gab (s)
 
 // Laden: was das nachgebaute daten.c liefert.
 static uint8_t s_offen_beim_laden; //< BhQuelle-Bits nach Phase 1
+static bool s_tracking;            //< Pebbles Schalter, wie die Lage ihn meldet
 static int s_nachfragen_bis_da;    //< nach so vielen Nachfragen ist alles da
 static uint8_t s_gesetzte_stufe;
 static BhKarte s_inhalt_karte;
@@ -243,8 +253,18 @@ static int prv_ebene_nr(const Layer *layer) {
 }
 void layer_destroy(Layer *layer) {
   prv_merke('L');
-  s_ebene_belegt[prv_ebene_nr(layer)] = false;
+  const int nr = prv_ebene_nr(layer);
+  if (nr == s_kind_ohne_mutter) {
+    cl_fail("Ebene nach ihrer ScrollLayer freigegeben: layer_destroy laese freien Speicher");
+  }
+  if (nr == s_rollen_kind) {
+    s_rollen_kind = -1;
+  }
+  s_ebene_belegt[nr] = false;
   s_flaechen_offen--;
+}
+void layer_set_frame_by_value(Layer *layer, GRect frame) {
+  prv_ebene_nr(layer);
 }
 void layer_set_update_proc(Layer *layer, LayerUpdateProc update_proc) {
   s_ebene_zeichnen[prv_ebene_nr(layer)] = update_proc;
@@ -267,13 +287,17 @@ ScrollLayer *scroll_layer_create(GRect frame) {
 }
 void scroll_layer_destroy(ScrollLayer *scroll_layer) {
   prv_merke('Y');
+  s_kind_ohne_mutter = s_rollen_kind;
+  s_rollen_kind = -1;
   s_rollen_offen--;
 }
 void scroll_layer_set_shadow_hidden(ScrollLayer *scroll_layer, bool hidden) {
 }
 void scroll_layer_set_content_size(ScrollLayer *scroll_layer, GSize size) {
+  s_rollen_inhalt = size;
 }
 void scroll_layer_add_child(ScrollLayer *scroll_layer, Layer *child) {
+  s_rollen_kind = prv_ebene_nr(child);
 }
 // Die ScrollLayer rollt mit Oben und Unten selbst; die App meldet dafuer nichts an.
 void scroll_layer_set_click_config_onto_window(ScrollLayer *scroll_layer, struct Window *window) {
@@ -299,15 +323,22 @@ void app_window_stack_push(Window *window, bool animated) {
     s_details_animiert++;
   }
   prv_anmelden(nr);
+  if (s_handler[nr].appear) {
+    s_handler[nr].appear(&s_fenster[nr]);
+  }
   s_neu_zeichnen = true;
 }
-// Wie Pebble: Das oberste Fenster geht vom Stapel, sein unload laeuft.
+// Wie Pebble: Das oberste Fenster geht vom Stapel, sein unload laeuft, und das darunter erscheint.
 Window *app_window_stack_pop(bool animated) {
   prv_merke('O');
   cl_assert(s_stapel_n > 1);
   const int nr = s_stapel[--s_stapel_n];
   if (s_handler[nr].unload) {
     s_handler[nr].unload(&s_fenster[nr]);
+  }
+  const int darunter = s_stapel[s_stapel_n - 1];
+  if (s_handler[darunter].appear) {
+    s_handler[darunter].appear(&s_fenster[darunter]);
   }
   s_neu_zeichnen = true;
   return &s_fenster[nr];
@@ -380,6 +411,25 @@ bool health_service_set_heart_rate_sample_period(uint16_t interval_sec) {
   prv_merke('H');
   s_pulstakt = interval_sec;
   s_pulstakt_setzen++;
+  if (interval_sec) {
+    s_pulstakt_an = interval_sec;
+  }
+  return true;
+}
+// Das Abo der App im Kern: es gibt eins, solange ein Takt gesetzt ist.
+AppInstallId sys_app_manager_get_current_app_id(void) {
+  return -82;
+}
+HRMSessionRef sys_hrm_manager_get_app_subscription(AppInstallId app_id) {
+  cl_assert_equal_i(app_id, -82);
+  return s_pulstakt ? 7 : HRM_INVALID_SESSION_REF;
+}
+bool sys_hrm_manager_set_update_interval(HRMSessionRef session, uint32_t update_interval_s,
+                                         uint16_t expire_s) {
+  prv_merke('V');
+  cl_assert_equal_i(session, 7);
+  cl_assert_equal_i(update_interval_s, s_pulstakt);
+  s_puls_ablauf = expire_s;
   return true;
 }
 bool sys_boulder_messstufe_setzen(uint8_t stufe) {
@@ -395,6 +445,7 @@ void bh_daten_laden(BhDaten *d) {
   memset(d, 0, sizeof(*d));
   d->offen = s_offen_beim_laden;
   d->lage.messstufe = 3;
+  d->lage.tracking = s_tracking;
 }
 bool bh_daten_nachladen(BhDaten *d) {
   prv_merke('N');
@@ -418,8 +469,9 @@ void bh_daten_puls(BhDaten *d) {
 void bh_inhalt_zeichnen(GContext *ctx, GRect flaeche, BhKarte karte, const BhDaten *d) {
   s_inhalt_karte = karte;
 }
+// Wie details.c: Night ohne Nacht ist kurz.
 int16_t bh_detail_hoehe(BhDetail detail, const BhDaten *d) {
-  return 300;
+  return (detail == BhDetailNight && (d->offen & BhQuelleNacht)) ? 60 : 332;
 }
 void bh_detail_zeichnen(GContext *ctx, int16_t breite, BhDetail detail, const BhDaten *d,
                         uint8_t auswahl) {
@@ -533,9 +585,13 @@ void app_event_loop(void) {
     }
   }
   prv_bild();
-  // Schliesst die App mit einem offenen Detail, nimmt Pebble es vorher vom Stapel.
+  // Schliesst die App mit einem offenen Detail, nimmt Pebble alle Fenster vom Stapel, ohne dass
+  // eins erscheint (app.c, prv_handle_deinit_event; window_stack_pop_all).
   while (s_stapel_n > 1) {
-    app_window_stack_pop(false);
+    const int nr = s_stapel[--s_stapel_n];
+    if (s_handler[nr].unload) {
+      s_handler[nr].unload(&s_fenster[nr]);
+    }
   }
 }
 
@@ -571,12 +627,18 @@ void test_bh_app__initialize(void) {
   memset(s_ebene_belegt, 0, sizeof(s_ebene_belegt));
   s_flaechen_offen = 0;
   s_rollen_offen = 0;
+  s_rollen_kind = -1;
+  s_kind_ohne_mutter = -1;
+  s_rollen_inhalt = GSize(0, 0);
   memset(s_timer, 0, sizeof(s_timer));
   s_minute = NULL;
   s_ereignis = NULL;
   s_pulstakt = 0;
   s_pulstakt_setzen = 0;
+  s_pulstakt_an = 0;
+  s_puls_ablauf = 0;
   s_offen_beim_laden = 0;
+  s_tracking = true;
   s_nachfragen_bis_da = 1;
   s_gesetzte_stufe = 0;
   s_inhalt_karte = BhKartenAnzahl;
@@ -896,6 +958,9 @@ void test_bh_app__puls_live(void) {
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 2); // an auf Heart, aus beim Schliessen
   cl_assert_equal_i(s_pulstakt, 0);
+  cl_assert_equal_i(s_pulstakt_an, 1); // Sekundentakt
+  // Das Abo im Kern laeuft nach zwei Minuten ab, auch wenn die App nicht ueber ihr Ende geht.
+  cl_assert_equal_i(s_puls_ablauf, 2 * 60);
 
   test_bh_app__initialize();
   s_druecke = "oou";
@@ -966,4 +1031,80 @@ void test_bh_app__zeitstempel(void) {
 #else
   cl_assert_equal_i(s_zeilen, 0);
 #endif
+}
+
+// Gegenpruefung A1: Beim Schliessen eines Details die Inhaltsebene vor ihrer ScrollLayer freigeben
+// (die Attrappe schlaegt sonst fehl, wie Pebble freien Speicher laese). Auch mit offenem Detail
+// beim Ende der App.
+void test_bh_app__detail_frei_in_der_richtigen_reihenfolge(void) {
+  s_druecke = "osx";
+  prv_starten();
+  cl_assert_equal_i(s_rollen_offen, 0);
+  test_bh_app__initialize();
+  s_druecke = "oos";
+  prv_starten();
+  cl_assert_equal_i(s_flaechen_offen, 0);
+}
+
+// Gegenpruefung A7: Puls live nur auf der Karte Heart - nicht in ihrem Detail, wieder zurueck auf
+// der Karte.
+void test_bh_app__puls_nur_auf_der_karte(void) {
+  s_druecke = "oos";
+  prv_starten();
+  // an auf Heart, aus im Detail; das Ende setzt nichts mehr.
+  cl_assert_equal_i(s_pulstakt_setzen, 2);
+  cl_assert_equal_i(s_pulstakt, 0);
+  test_bh_app__initialize();
+  s_druecke = "oosxM";
+  prv_starten();
+  // an, aus im Detail, an zurueck auf Heart, aus beim Schliessen
+  cl_assert_equal_i(s_pulstakt_setzen, 4);
+  cl_assert_equal_i(s_pulstakt, 0);
+}
+
+// Gegenpruefung A6 (2.1): Mit Tracking aus zeigt keine Karte Werte - Select oeffnet kein Detail
+// und Heart keinen Puls live; Precision bleibt bedienbar.
+void test_bh_app__tracking_aus(void) {
+  s_tracking = false;
+  s_druecke = "os";
+  prv_starten();
+  cl_assert_equal_i(s_detail_gezeichnet, BhDetailKeins);
+  cl_assert_equal_i(s_fenster_offen, 0);
+  test_bh_app__initialize();
+  s_tracking = false;
+  s_druecke = "oo";
+  prv_starten();
+  cl_assert_equal_i(s_pulstakt_setzen, 0);
+  test_bh_app__initialize();
+  s_tracking = false;
+  s_druecke = "oooos";
+  prv_starten();
+  cl_assert_equal_i(s_detail_gezeichnet, BhDetailPrecision);
+}
+
+// Gegenpruefung A4, L3 an allen Tasten: Auch Select, Zurueck und die Tasten von Precision lesen
+// nichts neu.
+void test_bh_app__alle_tasten_ohne_lesen(void) {
+  s_druecke = "osxosxosxosuus";
+  prv_starten();
+  const char *nach_dem_start = strchr(s_reihe, 'e');
+  cl_assert(nach_dem_start != NULL);
+  cl_assert(strpbrk(nach_dem_start, "RBQADNFP") == NULL);
+  cl_assert(strchr(nach_dem_start, 'S') != NULL); // Precision hat die Stufe gesetzt
+}
+
+// Gegenpruefung A5: Kommt die Nacht erst mit Phase 2, waechst das offene Night-Detail mit; sonst
+// schnitte die Ebene ab, was dazukam.
+void test_bh_app__detail_waechst_mit_den_daten(void) {
+  s_offen_beim_laden = BhQuelleNacht;
+  s_nachfragen_bis_da = 1;
+  s_druecke = "os";
+  prv_starten();
+  cl_assert_equal_i(s_rollen_inhalt.h, 60);
+  test_bh_app__initialize();
+  s_offen_beim_laden = BhQuelleNacht;
+  s_nachfragen_bis_da = 1;
+  s_druecke = "osn";
+  prv_starten();
+  cl_assert_equal_i(s_rollen_inhalt.h, 332);
 }
