@@ -6,36 +6,74 @@
 
 #include "karten.h"
 
-#include "applib/fonts/fonts.h"
-#include "applib/graphics/graphics.h"
-#include "applib/graphics/text.h"
+#include "texte.h"
+#include "zeichnen.h"
 
-#define KOPF_H        28 //< 0-27 px
-#define RAND          8
+#include "applib/graphics/graphics.h"
+
+#define KOPF_H        BH_KOPF_H
+#define RAND          BH_RAND
 #define PUNKT_R       3
 #define PUNKT_ABSTAND 10
 
-// Statisch und const in beiden Stufen: ein beschreibbares static laege in .kernel_bss.
-static const char *const s_titel[BhKartenAnzahl] = {
-  [BhKarteToday] = "Today",
-  [BhKarteNight] = "Night",
-  [BhKarteHeart] = "Heart",
-  [BhKarteActivity] = "Activity",
-  [BhKarteSettings] = "Settings",
-};
-
 const char *bh_karte_titel(BhKarte karte) {
-  return (karte < BhKartenAnzahl) ? s_titel[karte] : "";
+  // Die Titel stehen in der Texttabelle in der Reihenfolge der Karten (texte_tabelle.h).
+  return (karte < BhKartenAnzahl) ? bh_text((BhText)(BhTToday + karte)) : "";
+}
+
+GColor bh_karte_farbe(BhKarte karte) {
+  // Entscheid F14 (12.10.): Today, Night und Heart wie b25. Weiss auf jeder Farbe mindestens 3:1
+  // (Titel GOTHIC 18 fett), geprueft in test_bh_karten.
+  switch (karte) {
+    case BhKarteToday:
+      return GColorOrange;
+    case BhKarteNight:
+      return GColorIndigo;
+    case BhKarteHeart:
+      return GColorFolly;
+    case BhKarteActivity:
+      return GColorDarkGreen;
+    default:
+      return GColorDarkGray;
+  }
+}
+
+BhDetail bh_detail_von(BhKarte karte) {
+  switch (karte) {
+    case BhKarteNight:
+      return BhDetailNight;
+    case BhKarteHeart:
+      return BhDetailHeart;
+    case BhKarteActivity:
+      return BhDetailSessions;
+    case BhKarteSettings:
+      return BhDetailPrecision;
+    default:
+      return BhDetailKeins; // Today (F12)
+  }
+}
+
+const char *bh_detail_titel(BhDetail detail) {
+  switch (detail) {
+    case BhDetailNight:
+      return bh_text(BhTNight);
+    case BhDetailHeart:
+      return bh_text(BhTHeart);
+    case BhDetailSessions:
+      return bh_text(BhTSessions);
+    case BhDetailPrecision:
+      return bh_text(BhTPrecision);
+    default:
+      return "";
+  }
 }
 
 void bh_kopf_zeichnen(GContext *ctx, GRect flaeche, BhKarte karte) {
-  // VORERST IN DER FARBE DER APP (Startmenue, Registry -82). Die Farbe je Karte waehlt AP6 mit
-  // dem Kontrasttest (V10); Weiss auf diesem Rot hat 3,1:1.
-  graphics_context_set_fill_color(ctx, GColorSunsetOrange);
+  graphics_context_set_fill_color(ctx, bh_karte_farbe(karte));
   graphics_fill_round_rect_by_value(ctx, GRect(0, 0, flaeche.size.w, KOPF_H), 0, GCornerNone);
 
   graphics_context_set_text_color(ctx, GColorWhite);
-  graphics_draw_text(ctx, bh_karte_titel(karte), fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+  graphics_draw_text(ctx, bh_karte_titel(karte), bh_schrift(BhSchriftG18Fett),
                      GRect(RAND, 2, flaeche.size.w / 2, KOPF_H - 2),
                      GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 
@@ -54,4 +92,4 @@ void bh_kopf_zeichnen(GContext *ctx, GRect flaeche, BhKarte karte) {
   }
 }
 
-#endif  // CONFIG_BOULDER_HEALTH_APP
+#endif // CONFIG_BOULDER_HEALTH_APP

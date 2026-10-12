@@ -107,6 +107,11 @@ PEBBLE = {
         'CONFIG_BOULDER_HEALTH_APP', ('list(FILTER source EXCLUDE REGEX "/apps/system/health/")',))),
 }
 
+# Referenzbilder der eigenen Bildtests (test_bh_karten): Pebbles Testgeruest liest Bilder nur aus
+# tests/test_images/ (tests/CMakeLists.txt), darum liegen sie dort; der Name sagt, dass sie Boulders
+# sind. Pebble hat kein Bild mit diesem Praefix.
+EIGENE_BILDER = re.compile(r'^tests/test_images/test_bh_[^/]+\.png$')
+
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
 UNVERSIONIERT_FREI = re.compile(r'^build[^/]*/')
 
@@ -119,7 +124,7 @@ ENDIF = re.compile(r'#\s*endif\b')
 
 
 def eigen(pfad):
-    return pfad.startswith(EIGENE_ORDNER)
+    return pfad.startswith(EIGENE_ORDNER) or bool(EIGENE_BILDER.match(pfad))
 
 
 def ohne_kommentar(text, kommentar):

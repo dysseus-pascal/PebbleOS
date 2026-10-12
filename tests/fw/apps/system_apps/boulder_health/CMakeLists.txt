@@ -10,6 +10,7 @@ set(bh_app_quellen
   fw/apps/system/boulder_health/boulder_health.c
   fw/apps/system/boulder_health/einstieg.c
   fw/apps/system/boulder_health/karten.c
+  fw/apps/system/boulder_health/texte.c
   fw/applib/graphics/gcolor_definitions.c
 )
 pbl_clar_test(test_bh_app
@@ -20,6 +21,91 @@ pbl_clar_test(test_bh_app_zeiten
   SOURCE test_bh_app.c
   SOURCES ${bh_app_quellen}
   DEFINES CONFIG_BOULDER_HEALTH_APP CONFIG_BOULDER_HEALTH_ZEITEN
+)
+
+# 2.6.2: das Laden - Phase 1, Phase 2, Auffrischen im Minutentakt, der Ring der Naechte.
+pbl_clar_test(test_bh_daten
+  SOURCES
+    fw/apps/system/boulder_health/daten.c
+    fw/apps/system/boulder_health/nachttage.c
+    fw/apps/system/boulder_health/rechnung.c
+  DEFINES CONFIG_BOULDER_HEALTH_APP
+)
+
+# 2.1-2.3 (AP6): Karten und Details mit Pebbles echter Grafik und Schrift, gegen Bilder in
+# tests/test_images/ (test_bh_karten__*~obelix.png), dazu der Kontrast.
+pbl_clar_test(test_bh_karten
+  SOURCES
+    fw/applib/fonts/codepoint.c
+    fw/applib/graphics/@BITDEPTH@_bit/framebuffer.c
+    fw/applib/graphics/@BITDEPTH@_bit/bitblt_private.c
+    fw/applib/graphics/bitblt.c
+    fw/applib/graphics/framebuffer.c
+    fw/applib/graphics/gbitmap.c
+    fw/applib/graphics/gbitmap_png.c
+    fw/applib/graphics/gcolor_definitions.c
+    fw/applib/graphics/gpath.c
+    fw/applib/graphics/graphics.c
+    fw/applib/graphics/graphics_bitmap.c
+    fw/applib/graphics/graphics_circle.c
+    fw/applib/graphics/graphics_line.c
+    fw/applib/graphics/graphics_private.c
+    fw/applib/graphics/graphics_private_raw.c
+    fw/applib/graphics/gtypes.c
+    fw/applib/graphics/perimeter.c
+    fw/applib/graphics/text_layout.c
+    fw/applib/graphics/text_render.c
+    fw/applib/graphics/text_resources.c
+    fw/applib/graphics/utf8.c
+    fw/applib/graphics/bidi.c
+    fw/applib/graphics/arabic_shaping.c
+    fw/applib/vendor/tinflate/tinflate.c
+    fw/applib/vendor/uPNG/upng.c
+    fw/drivers/flash/flash_crc.c
+    fw/flash_region/filesystem_regions.c
+    fw/flash_region/flash_region.c
+    fw/resource/resource.c
+    fw/resource/resource_storage.c
+    fw/resource/resource_storage_builtin.c
+    fw/resource/resource_storage_file.c
+    fw/resource/resource_storage_flash.c
+    fw/services/filesystem/app_file.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/system/hexdump.c
+    tests/fakes/fake_applib_resource.c
+    tests/fakes/fake_display.c
+    tests/fakes/fake_gbitmap_get_data_row.c
+    tests/fakes/fake_rtc.c
+    tests/fakes/fake_spi_flash.c
+    tests/fakes/fake_fonts.c
+    tests/fixtures/resources/builtin_resources.auto.c
+    tests/fixtures/resources/pfs_resource_table.c
+    fw/apps/system/boulder_health/details.c
+    fw/apps/system/boulder_health/inhalt.c
+    fw/apps/system/boulder_health/karten.c
+    fw/apps/system/boulder_health/nachttage.c
+    fw/apps/system/boulder_health/rechnung.c
+    fw/apps/system/boulder_health/texte.c
+    fw/apps/system/boulder_health/zeichnen.c
+  PLATFORMS obelix
+  DEFINES CONFIG_BOULDER_HEALTH_APP USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
+  OVERRIDES dummy_board
+  TEST_IMAGES
+)
+
+# Kriterium 3 (Grundsatz): jede Zahl aus einer Quelle der Uhr, nichts vom Telefon.
+pbl_clar_test(test_bh_grundsatz
+  SOURCES
+    fw/apps/system/boulder_health/details.c
+    fw/apps/system/boulder_health/inhalt.c
+    fw/apps/system/boulder_health/karten.c
+    fw/apps/system/boulder_health/nachttage.c
+    fw/apps/system/boulder_health/rechnung.c
+    fw/apps/system/boulder_health/texte.c
+    fw/apps/system/boulder_health/zeichnen.c
+    fw/applib/graphics/gcolor_definitions.c
+  DEFINES CONFIG_BOULDER_HEALTH_APP
 )
 
 # T2.2: das Pruefskript der Objekte ohne Systemrechte (tools/boulder/pruefe_ohne_rechte.py) mit
@@ -110,6 +196,7 @@ pbl_clar_test(test_bh_startmenue
     fw/apps/system/boulder_health/boulder_health.c
     fw/apps/system/boulder_health/einstieg.c
     fw/apps/system/boulder_health/karten.c
+    fw/apps/system/boulder_health/texte.c
   DEFINES CONFIG_BOULDER_HEALTH_APP _GNU_SOURCE=1 ${bh_registry_obelix}
   OVERRIDES ../fw/apps/system_apps/boulder_health/registry
   DEPENDS bh_registry_obelix
@@ -140,6 +227,7 @@ pbl_clar_test(test_bh_einstiege
     fw/applib/graphics/gcolor_definitions.c
     fw/apps/system/boulder_health/einstieg.c
     fw/apps/system/boulder_health/karten.c
+    fw/apps/system/boulder_health/texte.c
     tests/fw/apps/system_apps/boulder_health/einstiege_umfeld.c
   DEFINES CONFIG_BOULDER_HEALTH_APP ${bh_registry_obelix}
   OVERRIDES ../fw/apps/system_apps/boulder_health/registry
