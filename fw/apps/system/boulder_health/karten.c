@@ -17,8 +17,20 @@
 #define PUNKT_ABSTAND 10
 
 const char *bh_karte_titel(BhKarte karte) {
-  // Die Titel stehen in der Texttabelle in der Reihenfolge der Karten (texte_tabelle.h).
-  return (karte < BhKartenAnzahl) ? bh_text((BhText)(BhTToday + karte)) : "";
+  switch (karte) {
+    case BhKarteToday:
+      return bh_text(BhTToday);
+    case BhKarteNight:
+      return bh_text(BhTNight);
+    case BhKarteHeart:
+      return bh_text(BhTHeart);
+    case BhKarteActivity:
+      return bh_text(BhTActivity);
+    case BhKarteSettings:
+      return bh_text(BhTSettings);
+    default:
+      return "";
+  }
 }
 
 GColor bh_karte_farbe(BhKarte karte) {

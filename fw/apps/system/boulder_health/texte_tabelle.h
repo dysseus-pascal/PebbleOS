@@ -8,7 +8,7 @@
 //
 //   TEXT(schluessel, englisch)
 
-// Titel der Karten (Reihenfolge wie BhKarte) und der Details
+// Titel der Karten und der Details
 TEXT(BhTToday, "Today")
 TEXT(BhTNight, "Night")
 TEXT(BhTHeart, "Heart")

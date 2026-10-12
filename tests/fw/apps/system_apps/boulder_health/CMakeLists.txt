@@ -233,3 +233,11 @@ pbl_clar_test(test_bh_einstiege
   OVERRIDES ../fw/apps/system_apps/boulder_health/registry
   DEPENDS bh_registry_obelix
 )
+
+# Tote Texte und Funktionen der App (tools/boulder/pruefe_unbenutzt.py), ohne den Testordner: Was
+# nur ein Test ruft, liegt tot im Abbild. Dazu die Gegenproben des Skripts.
+add_test(NAME test_bh_unbenutzt
+  COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/pruefe_unbenutzt.py
+          ${PBL_BASE}/fw/apps/system/boulder_health)
+add_test(NAME test_pruefe_unbenutzt_gegenproben
+  COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_pruefe_unbenutzt.py)

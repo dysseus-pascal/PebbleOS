@@ -5,8 +5,9 @@
 
 Aufruf: pruefe_unbenutzt.py <app-verzeichnis> [weitere Verzeichnisse ...]
 
-Rot (Rueckgabe 1), wenn eine STR-ID aus texte_tabelle.h ausserhalb der
-Tabelle nirgends vorkommt, oder eine in den Koepfen der App deklarierte
+Rot (Rueckgabe 1), wenn eine Text-ID aus texte_tabelle.h ausserhalb der
+Tabelle nirgends vorkommt (STR(STR_...) wie Kieselsport, TEXT(BhT...) wie
+die Health-App), oder eine in den Koepfen der App deklarierte
 Funktion ausser ihrer Definition nirgends. Gesucht wird in allen .c und .h
 der genannten Verzeichnisse - die weiteren sind die, die Teile der App
 mitbenutzen (etwa die Kachel im Startmenue).
@@ -41,7 +42,7 @@ def main():
 
     # Die Texte: jede ID muss ausserhalb der Tabelle vorkommen.
     for tabelle in app.glob('*texte_tabelle.h'):
-        ids = re.findall(r'^STR\((STR_[A-Z0-9_]+)', alle[tabelle], flags=re.M)
+        ids = re.findall(r'^(?:STR|TEXT)\((\w+)', alle[tabelle], flags=re.M)
         for i in ids:
             if not any(re.search(r'\b%s\b' % i, t) for p, t in alle.items() if p != tabelle):
                 fehler.append(f'{tabelle.name}: {i} wird nirgends benutzt')
