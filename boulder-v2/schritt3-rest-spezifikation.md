@@ -281,3 +281,19 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Belege: `belege-schritt3/ap6-qemu/`. Vorläufige Emulator-Skripte: `werkzeug/` (kommen mit AP8 als
   `tools/boulder/qemu_health.py` ins Repo).
 - Nächster Schritt: AP8 (Abschnitt 4).
+
+## Stand nach AP8 (12.10.2026, `d213119c`)
+
+- Messung mit `tools/boulder/qemu_health.py`, alle Ziele erfüllt (QEMU):
+  - L1: Median 7–8 ms, höchstens 32 ms (Ziel 50 ms).
+  - L2: Karte höchstens 13 ms, Detail höchstens 17 ms (Ziel 30 ms).
+  - L4: höchstens 8 ms (Ziel 30 ms).
+  - L6: rund 10 µs je Syscall (Ziel 1 ms).
+- Ressourcen: App-Heap höchstens 5,4 KB; Kernel-Heap nach 100 Starts ohne Wachstum (einmalig 68 B);
+  kein Puls-Abo nach dem Ende; Syscall-Stapel 1 368 B Reserve; kein Neustart, die Fehlerprobe
+  beendet nur die App.
+- Behoben, was die Messung fand: doppeltes Lesen beim Start (Pebbles erster Takt), Details erst
+  nach Pebbles Schiebe-Animation (jetzt ohne Übergang), doppeltes Layout je Text.
+- Ballast-Ziel des Prüfbaus jetzt 72 736 B.
+- Belege: `belege-schritt3/ap8-qemu/` (messung.json, Protokoll, Bilder).
+- Nächster Schritt: Gegenprüfung von Schritt 3, dann AP9 (Abschnitt 5).
