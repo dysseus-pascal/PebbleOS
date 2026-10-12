@@ -26,7 +26,8 @@
 // einer aelteren Halbstunde, die noch im Band liegt, zaehlt mit; ihr Mittel ist dann gerundet aus
 // dem alten Mittel, nicht genau (die genaue Summe kennt die Variante nur fuer die juengste
 // Halbstunde). Das naechste Nachrechnen macht es wieder genau. Eine Minute eines aelteren
-// Ortstags zaehlt in keiner Zone.
+// Ortstags zaehlt in keiner Zone. Liegt das Band nach der Uhr in der Zukunft (Uhr um mehr als eine
+// Halbstunde zurueck), stoesst der Takt das Nachrechnen an.
 
 #include "pbl/services/activity/boulder/schnittstelle.h"
 

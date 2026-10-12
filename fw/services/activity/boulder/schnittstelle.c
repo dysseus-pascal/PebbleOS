@@ -30,7 +30,6 @@
 #include <pbl/drivers/rtc.h>
 #include <pbl/logging/logging.h>
 
-#include <inttypes.h>
 #include <string.h>
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
@@ -186,7 +185,10 @@ DEFINE_SYSCALL(bool, sys_boulder_lage, BoulderLage *aus) {
     syscall_assert_userspace_buffer(aus, sizeof(*aus));
   }
   pbl_mutex_lock(&s_lage_sperre, PBL_FOREVER);
-  *aus = s_lage;
+  // MEMCPY STATT ZUWEISUNG: Fuer *aus = s_lage nimmt der Compiler LDM/STM, die eine Wortgrenze
+  // verlangen; die Pruefung des Puffers prueft keine. Ein schiefer Puffer der App endete sonst als
+  // UsageFault mit Systemrechten im Neustart. Ebenso S3 (spo2.c) und S7 (woche.c).
+  memcpy(aus, &s_lage, sizeof(*aus));
   const bool veroeffentlicht = s_lage.stand_utc != 0;
   pbl_mutex_unlock(&s_lage_sperre);
   // PEBBLES SCHALTER FRISCH, ausserhalb der Sperre: Mit Tracking aus laeuft kein Minutenteil, der
@@ -196,20 +198,18 @@ DEFINE_SYSCALL(bool, sys_boulder_lage, BoulderLage *aus) {
 }
 
 DEFINE_SYSCALL(uint32_t, sys_boulder_spo2, time_t von, time_t bis, Spo2Wert *aus, uint32_t max) {
-  if (max == 0) {
+  // ERST BEGRENZEN, DANN PRUEFEN: geprueft wird genau, was kopiert werden kann. Mit `max` selbst
+  // liefe das letzte Byte der Pruefung (buf + Bytes - 1, 32 Bit) fuer grosse Zahlen um, und ein
+  // Puffer am Ende des App-RAMs ginge fuer bis zu 96 Werte durch.
+  const uint32_t n = MIN(max, (uint32_t)SPO2_WERTE_MAX);
+  if (n == 0) {
     return 0;
   }
   if (PRIVILEGE_WAS_ELEVATED) {
-    // In 32 Bit gerechnet wie auf der Uhr: Eine Zahl, deren Bytes ueberlaufen, liesse sonst einen
-    // kleinen geprueften Puffer fuer ein grosses Kopieren durch.
-    if (max > UINT32_MAX / sizeof(*aus)) {
-      PBL_LOG_ERR("Boulder: SpO2, %" PRIu32 " Werte laufen ueber", max);
-      syscall_failed();
-    }
-    syscall_assert_userspace_buffer(aus, max * (uint32_t)sizeof(*aus));
+    syscall_assert_userspace_buffer(aus, n * sizeof(*aus));
   }
   // Der Ring kopiert unter seiner Sperre direkt in den Puffer (spo2.c).
-  return (uint32_t)boulder_spo2_werte(von, bis, aus, (int)MIN(max, (uint32_t)SPO2_WERTE_MAX));
+  return (uint32_t)boulder_spo2_werte(von, bis, aus, (int)n);
 }
 
 DEFINE_SYSCALL(bool, sys_boulder_naechte, BoulderNaechte *aus) {

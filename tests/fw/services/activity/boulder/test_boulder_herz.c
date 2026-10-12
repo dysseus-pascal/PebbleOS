@@ -337,6 +337,32 @@ void test_boulder_herz__spruenge_im_laufenden_betrieb(void) {
   prv_wie_orakel(r->name, &r->ergebnis);
 }
 
+// Gegenpruefung K5: Geht die Uhr mehr als 24 h zurueck (eine falsche Zukunftszeit wird richtig
+// gestellt), liegen Band und Zonen in der Zukunft, und bis die Uhr sie einholt, zaehlte keine
+// Minute. Der Takt merkt es und rechnet nach; danach zaehlt die richtige Zeit wieder.
+void test_boulder_herz__uhr_weit_zurueck_rechnet_nach(void) {
+  prv_kernel_bg();
+  cl_assert(boulder_herz_bereit());
+  const time_t zukunft = s_jetzt + 3 * PBL_SEC_PER_DAY;
+  const time_t beginn_z = zukunft - (zukunft % HERZ_HALBSTUNDE_S);
+  for (int m = 0; m < 30; m++) {
+    prv_minute(beginn_z, m, 2600, 80, true);
+  }
+  // Die Uhr wieder richtig: zwei Stunden mit Puls 120.
+  const time_t jetzt = s_jetzt - (s_jetzt % HERZ_HALBSTUNDE_S);
+  for (int m = 0; m < 120; m++) {
+    prv_minute(jetzt, m, 2600, 120, true);
+  }
+  cl_assert(prv_s6());
+  cl_assert_equal_i(s_app_herz->neueste, (uint32_t)((jetzt + 119 * 60) / HERZ_HALBSTUNDE_S));
+  cl_assert_equal_i(s_app_herz->zonen_tag, prv_tag(jetzt));
+  // Hoechstens die erste Minute fehlt: Sie kam vor dem Takt, der das Nachrechnen ausloeste, und
+  // liegt hier (ohne die Kopie) in keiner Datei.
+  const int summe = s_app_herz->zonen_min[0] + s_app_herz->zonen_min[1] + s_app_herz->zonen_min[2] +
+                    s_app_herz->zonen_min[3];
+  cl_assert(summe >= 119);
+}
+
 // Halbstunden ohne Puls (Uhr nicht am Arm, Sensor ohne Wert) zaehlen fuer das Band trotzdem: Die
 // juengste Halbstunde ist die der juengsten Minute. Nach 24 h ohne Puls ist das Band leer, nicht
 // mit Werten von gestern - im laufenden Betrieb wie nachgerechnet.

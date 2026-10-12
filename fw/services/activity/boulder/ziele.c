@@ -73,10 +73,10 @@ static void prv_lesen(void) {
 
 static bool prv_unser_schluessel(const PebbleBlobDBEvent *b) {
   const int n = (int)strlen(BOULDER_ZIELE_SCHLUESSEL);
-  // Mit oder ohne Nullbyte: libpebble3 schickt den Schluessel ohne (HealthStat.key()). Ein
-  // laengerer Schluessel, der nur so anfaengt, ist ein anderer.
-  return b->key && (b->key_len == n || (b->key_len == n + 1 && b->key[n] == '\0')) &&
-         memcmp(b->key, BOULDER_ZIELE_SCHLUESSEL, n) == 0;
+  // GENAU DER SCHLUESSEL, DEN prv_lesen LIEST, ohne Nullbyte wie libpebble3 Health-Schluessel
+  // schickt (HealthStat.key()). Mit Nullbyte ist es fuer healthdb ein anderer Schluessel; ein
+  // Auftrag dafuer laese den alten Wert.
+  return b->key && b->key_len == n && memcmp(b->key, BOULDER_ZIELE_SCHLUESSEL, n) == 0;
 }
 
 // KernelMain. EIN EIGENER FILTER, nicht der der Messstufe (messstufe.c): Der laesst nur ein

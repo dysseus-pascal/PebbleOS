@@ -115,7 +115,9 @@ bool boulder_woche_kopieren(BoulderWoche *aus) {
   // UNTER DER SPERRE NUR DIE KOPIE (3.1, Regel 3), direkt in den Puffer des Aufrufers.
   pbl_mutex_lock(&s_woche_sperre, PBL_FOREVER);
   const bool geladen = s_geladen;
-  *aus = geladen ? s_woche : WOCHE_LEER;
+  // memcpy: `aus` kann der schiefe Puffer einer App sein (S7, schnittstelle.c).
+  const BoulderWoche leer = WOCHE_LEER;
+  memcpy(aus, geladen ? &s_woche : &leer, sizeof(*aus));
   pbl_mutex_unlock(&s_woche_sperre);
   return geladen;
 }

@@ -194,7 +194,9 @@ bool sys_boulder_woche(BoulderWoche *aus);
 
 // KernelBG: die Lage neu veroeffentlichen. O(1), ohne Heap und ohne Datei; ruft nichts von
 // Pebble unter der Sperre. Der Minutenteil ruft es jede Minute, der Takt auch am Kabel, dazu
-// "Laden" nach dem Boot, das Setzen der Messstufe und das Lesen der Ziele.
+// "Laden" nach dem Boot, das Setzen der Messstufe und das Lesen der Ziele. Den Takt plant erst
+// "Laden", und das laeuft erst mit dem Tracking-Teil: Nach einem Boot am Kabel gibt es bis zum
+// Abstecken keine Lage (S2 false) und keine Naechte, kein Herz, keine Woche (S5-S7).
 void boulder_lage_veroeffentlichen(void);
 
 // Pruefbau und Tests: die zuletzt veroeffentlichte Lage, ohne den frischen Schalter.

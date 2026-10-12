@@ -52,18 +52,61 @@ void test_boulder_schnittstelle__puffer_ausserhalb_der_app_beenden_sie(void) {
   prv_app_ende();
 }
 
-// Die Zahl der SpO2-Werte laeuft in Bytes ueber (32 Bit wie auf der Uhr): Ein kleiner Puffer, der
-// die Pruefung mit dem uebergelaufenen Wert bestuende, darf nicht durchgehen.
-void test_boulder_schnittstelle__spo2_ueberlauf_beendet_die_app(void) {
-  const uint32_t ueber = (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)) + 1;
-  // 32 Bit: ueber * sizeof ergaebe 0 oder wenige Byte.
-  cl_assert((uint32_t)(ueber * sizeof(Spo2Wert)) < sizeof(Spo2Wert));
-  prv_app_beginn();
-  cl_assert_passert(sys_boulder_spo2(0, INT32_MAX, s_app_spo2, ueber));
-  prv_app_abbruch();
-  prv_app_beginn();
-  cl_assert_passert(sys_boulder_spo2(0, INT32_MAX, s_app_spo2, UINT32_MAX));
-  prv_app_abbruch();
+// Gegenpruefung K3: Ist die Schlange von KernelBG beim ersten init knapp, wartet "Laden" (takt.c).
+// Den Takt plant erst "Laden" selbst; holte der Minutenteil es nicht nach, bliebe die Variante bis
+// zum naechsten Neustart ohne Nacht, Naechte, Herz und Woche.
+void test_boulder_schnittstelle__laden_bei_knapper_schlange_holt_die_minute_nach(void) {
+  // Der Boot aus dem Umfeld geht verloren, bevor KernelBG laeuft; der naechste findet die Schlange
+  // fast voll.
+  activity_algorithm_deinit();
+  s_kern_n = 0;
+  boulder_dauerteil_test_neustart();
+  boulder_messstufe_test_zuruecksetzen();
+  boulder_naechte_test_neustart();
+  boulder_herz_test_neustart();
+  boulder_woche_test_neustart();
+  while (KERN_SCHLANGE - s_kern_n >= BOULDER_SCHLANGE_FREI) {
+    s_kern_schlange[s_kern_n++] = (Eintrag){prv_fremd_cb, NULL};
+  }
+  const uint32_t vorher = prv_laeufe("Boulder Laden");
+  cl_assert(activity_algorithm_init(&s_rate));
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_laeufe("Boulder Laden"), vorher);
+  cl_assert(!prv_s7());
+  // Die naechste Minute reiht es ein.
+  const time_t minute = s_jetzt - (s_jetzt % PBL_SEC_PER_MIN);
+  rtc_set_time(minute + PBL_SEC_PER_MIN);
+  boulder_dauerteil_minute(&(BoulderMinute){.utc = minute, .vmc = 1000, .puls = 70});
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_laeufe("Boulder Laden"), vorher + 1);
+  cl_assert(prv_s7());
+}
+
+// Grosse Zahlen (Gegenpruefung, Befund K1): Die Uhr rechnet das letzte Byte der Pruefung in 32 Bit
+// (buf + Bytes - 1). Mit max = UINT32_MAX / 8 waeren es 0xFFFFFFF8 Bytes, das letzte Byte laege
+// bei buf - 9 im App-RAM, und kopiert wuerden bis zu 96 Werte hinter sein Ende. Geprueft wird darum
+// genau, was kopiert wird: hoechstens SPO2_WERTE_MAX Werte.
+void test_boulder_schnittstelle__spo2_grosse_zahl_prueft_was_kopiert_wird(void) {
+  // Drei Werte in einem eigenen Fenster vor fuenf Tagen.
+  const time_t von = s_jetzt - 5 * PBL_SEC_PER_DAY;
+  for (int i = 0; i < 3; i++) {
+    boulder_spo2_merken(von + i * 600, (uint8_t)(95 + i));
+  }
+  Spo2Wert *einer = (Spo2Wert *)&s_app_ram[sizeof(s_app_ram) - sizeof(Spo2Wert)];
+  const uint32_t grenzen[] = {
+    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)),     // letztes Byte bei buf - 9
+    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)) + 1, // 0 Bytes
+    UINT32_MAX,
+  };
+  for (size_t i = 0; i < ARRAY_LENGTH(grenzen); i++) {
+    prv_app_beginn();
+    cl_assert_passert(sys_boulder_spo2(von, von + 1800, einer, grenzen[i]));
+    prv_app_abbruch();
+  }
+  // Mit Platz fuer alle 96 geht jede Zahl, und es kommen nur die Werte im Fenster.
+  for (size_t i = 0; i < ARRAY_LENGTH(grenzen); i++) {
+    cl_assert_equal_i(prv_s3(von, von + 1800, grenzen[i]), 3);
+  }
   // Ohne Wunsch keine Pruefung und keine Kopie.
   cl_assert_equal_i(prv_s3(0, INT32_MAX, 0), 0);
 }
@@ -467,13 +510,19 @@ void test_boulder_schnittstelle__andere_schluessel_loesen_nichts_aus(void) {
   cl_must_pass(blob_db_delete(BlobDBIdHealth, (const uint8_t *)"average_dailySteps", 18));
   prv_kernel_bg();
   cl_assert_equal_i(prv_laeufe("Boulder Ziele"), vorher);
-  // Positivprobe mit Nullbyte am Schluessel (wie Pebbles kanonische Schluessel): zaehlt.
+  // Mit Nullbyte ist es fuer healthdb ein anderer Schluessel (Gegenpruefung K4): kein Auftrag, und
+  // es gilt weiter der Wert unter dem Schluessel ohne.
+  cl_assert_equal_i(prv_ziele_schicken(1, 7500, 390, 8), S_SUCCESS);
+  cl_assert_equal_i(prv_nach_ereignis().ziel_schritte, 7500);
+  const uint32_t mit_wert = prv_laeufe("Boulder Ziele");
   const BoulderZieleSatz satz = { .fassung = 1, .schritte = 9000, .schlaf_min = 420 };
   cl_must_pass(blob_db_insert(BlobDBIdHealth, (const uint8_t *)BOULDER_ZIELE_SCHLUESSEL,
                               strlen(BOULDER_ZIELE_SCHLUESSEL) + 1, (const uint8_t *)&satz,
                               sizeof(satz)));
   prv_kernel_bg();
-  cl_assert_equal_i(prv_laeufe("Boulder Ziele"), vorher + 1);
+  cl_assert_equal_i(prv_laeufe("Boulder Ziele"), mit_wert);
+  cl_assert_equal_i(prv_lage().ziel_schritte, 7500);
+  cl_assert_equal_i(prv_lage().ziel_schlaf_min, 390);
 }
 
 // Die Ziele ueberstehen einen Neustart (healthdb); die Ablage liest sie zur Sicherheit nach.

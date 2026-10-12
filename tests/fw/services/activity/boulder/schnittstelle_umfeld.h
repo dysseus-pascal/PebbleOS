@@ -276,12 +276,16 @@ PBL_NORETURN void syscall_failed(void) {
   }
 }
 
+// Wie die Uhr (syscall_internal.c): Das erste und das letzte Byte muessen im App-RAM liegen, das
+// letzte in 32 Bit gerechnet (buf + num_bytes - 1 laeuft dort um). Relativ zum App-RAM gerechnet,
+// damit der Ueberlauf auf dem 64-Bit-Host derselbe ist wie auf der Uhr.
 void syscall_assert_userspace_buffer(const void *buf, size_t num_bytes) {
   s_puffer_geprueft++;
   const uintptr_t a = (uintptr_t)buf;
   const uintptr_t start = (uintptr_t)s_app_ram;
-  const uintptr_t ende = start + sizeof(s_app_ram);
-  if (a < start || a > ende || num_bytes > ende - a) {
+  const uint32_t groesse = sizeof(s_app_ram);
+  if (a < start || a - start >= groesse ||
+      (uint32_t)((uint32_t)(a - start) + (uint32_t)num_bytes - 1u) >= groesse) {
     syscall_failed();
   }
 }

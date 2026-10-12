@@ -290,6 +290,14 @@ void boulder_herz_nachrechnen(void) {
 }
 
 void boulder_herz_takt(void) {
+  // UHR ZURUECKGESTELLT: Liegen Band oder Zonen nach der echten Uhr in der Zukunft, zaehlte bis zum
+  // Einholen keine Minute (boulder_herz_minute) - das Nachrechnen liest nur Minuten bis jetzt. Die
+  // echte Uhr, nicht die Zeit des Takts: Pruefnaechte des Pruefbaus liegen in der Vergangenheit.
+  const time_t jetzt = rtc_get_time();
+  if (s_bereit && (s_herz.neueste > (uint32_t)(jetzt / HERZ_HALBSTUNDE_S) ||
+                   s_herz.zonen_tag > prv_tag(jetzt))) {
+    s_faellig = true;
+  }
   // Auch am Kabel, wo kein Minutenteil laeuft: Ein neuer Maximalpuls aendert die Grenzen dort
   // ebenso. Vor dem ersten Nachrechnen steht es ohnehin an.
   if (s_bereit) {

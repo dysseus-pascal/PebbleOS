@@ -7,7 +7,8 @@
 // Entscheid "Ziele", F10 = A).
 //
 // EINGESTELLT WIRD IN BOULDER, nicht auf der Uhr (V15): Das Telefon schreibt den Satz
-// BoulderZieleSatz (schnittstelle.h) unter "boulder_ziele" in die BlobDB Health. Pebbles
+// BoulderZieleSatz (schnittstelle.h) unter "boulder_ziele" (13 B, ohne Nullbyte) in die BlobDB
+// Health. Pebbles
 // healthdb speichert jeden Schluessel mit "_", und dieser aendert keine Metrik (health_db.c,
 // health_db_insert und prv_notify_health_listeners). So braucht der Weg keine Pebble-Zeile, und
 // libpebble3 gleicht die Zeile von selbst ab. Die Uhr schreibt die Ziele nie.

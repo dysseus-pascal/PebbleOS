@@ -232,6 +232,12 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   if (PRUEFLAUF_SPERRT()) {
     return;
   }
+  // "LADEN" NACHHOLEN: Der erste init reiht es nur ein, wenn die Schlange Platz hat (takt.c), und
+  // den Takt plant erst "Laden" selbst. Ohne diesen Versuch je Minute bliebe die Variante sonst bis
+  // zum naechsten Neustart ohne Nacht, Naechte, Herz und Woche.
+  if (s_laden_offen) {
+    boulder_aufgabe_einreihen(&s_aufgabe_laden);
+  }
   s_letzte_minute_utc = minute->utc;
   boulder_wecker_minute(minute->utc, minute->vmc);
   // Lebt Pebbles Lauf noch? Nur ein Merker hier, die Arbeit auf KernelBG (wecklauf.h).
