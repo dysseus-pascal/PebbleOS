@@ -386,3 +386,13 @@ Gerätetest eingefroren.**
   - das geänderte Verhalten beim Umstellen eines laufenden Smart Alarms;
   - der Pulsdienst beim Aus- und Einschalten des Sensors durch die Messstufe (Upstreams Korrektur
     `21a43337`).
+- *Nachtrag, SDK 0.1.11:* v4.41.0 verlangt SDK 0.1.11 mit GCC 15.2 (`SDK_VERSION`). Die Prüfung oben
+  lief noch mit 0.1.10 (GCC 14.2). Wiederholt mit 0.1.11, alle Bauordner neu angelegt:
+  - Acht Bauten ohne Warnung, Host 437/437, alle Werkzeuge grün.
+  - K2 (`mehrwort.sh`): kein Mehrwort-Speichern in den Kopierwegen von S1–S7.
+  - Mutationen 43/43 rot.
+  - QEMU zweimal grün. L1 höchstens 17,6 ms; der erste Start unter `-icount` brauchte 19,5 und
+    20,5 ms, mit GCC 14 waren es 16,6–17,6 ms.
+  - Die Werkzeuge nehmen das SDK jetzt aus `SDK_VERSION`. Der Sitzungs-Hook nennt GCC 15 nicht mehr
+    als Hindernis (`10b0d9d8`).
+  - Belege: `belege-vorab/sdk-0.1.11/`.

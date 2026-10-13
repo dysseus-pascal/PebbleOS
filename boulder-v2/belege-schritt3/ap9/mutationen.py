@@ -10,7 +10,8 @@ import subprocess
 import sys
 
 R = pathlib.Path('/home/user/pebbleos-v2')
-SDK = pathlib.Path('/root/pebbleos-sdk-0.1.10')
+# Das SDK, mit dem der Stand baut (seit v4.41.0 0.1.11 mit GCC 15).
+SDK = pathlib.Path.home() / f"pebbleos-sdk-{(R / 'SDK_VERSION').read_text().strip()}"
 ENV = dict(os.environ)
 ENV['PATH'] = f'{R}/.venv/bin:{SDK}/arm-none-eabi/bin:' + ENV['PATH']
 APP = 'fw/apps/system/boulder_health/'

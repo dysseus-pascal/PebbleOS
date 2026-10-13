@@ -1,0 +1,18 @@
+# Alle acht Bauordner mit SDK 0.1.11 (GCC 15.2) neu angelegt (neu_konfigurieren.sh), dann sauber gebaut.
+== build-obelix 13:39:08
+rc=0 warnungen=0 fehler=0
+== build-obelixrel 13:40:16
+rc=0 warnungen=0 fehler=0
+== build 13:41:22
+rc=0 warnungen=0 fehler=0
+== build-asterix 13:42:12
+rc=0 warnungen=0 fehler=0
+== build-getafix 13:43:05
+rc=0 warnungen=0 fehler=0
+== build-flint 13:44:04
+rc=0 warnungen=0 fehler=0
+== build-gabbro 13:44:38
+rc=0 warnungen=0 fehler=0
+== build-pruef 13:45:25
+rc=0 warnungen=0 fehler=0
+== fertig 13:46:14
