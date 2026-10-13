@@ -335,3 +335,18 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Bericht: `schritt3-abnahme.md`, Abschnitt 8. Belege: `belege-vorab/upstream-v4.40.0/`.
 - Neu zu entscheiden: F18 Upstream v4.41.0 (Abnahme, Abschnitt 7). Nächster Schritt danach: Punkt 2
   (Wechsel b26 → V2).
+
+## Stand nach Upstream v4.41.0 (13.10.2026, `273728a3`)
+
+- F17 B umgesetzt (`f2753ba4`): Der erste Start nach dem Boot zählt unter `-icount`.
+- F18 A: v4.41.0 nachgezogen. **Der Upstream-Stand ist jetzt bis nach dem Gerätetest eingefroren.**
+- Nachgezogen:
+  - Konflikte an sortierten Includes.
+  - Die Kraepelin-Kopie per `git merge-file`.
+  - C23-Attribute und `-Werror` im Host-Bau.
+  - Ein eigener Stub für den Beschleunigungsdienst.
+  - Der Weckertest: Umstellen beendet jetzt den laufenden Smart Alarm (Upstream).
+- Prüfung: acht Bauten ohne Warnung, Host 437/437, Werkzeuge grün, Mutationen 43/43 rot, QEMU
+  zweimal grün.
+- Bericht: `schritt3-abnahme.md`, Abschnitt 9. Belege: `belege-vorab/upstream-v4.41.0/`.
+- Nächster Schritt: Punkt 2 aus Abschnitt 6 (Wechsel b26 → V2).

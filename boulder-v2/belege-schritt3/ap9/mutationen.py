@@ -118,8 +118,10 @@ G = [
      '  layer_destroy(app->detail_inhalt);\n  if (app->rolle) {\n    scroll_layer_destroy(app->rolle);\n  }\n',
      '  if (app->rolle) {\n    scroll_layer_destroy(app->rolle);\n  }\n  layer_destroy(app->detail_inhalt);\n',
      ctest('^test_bh_app$')),
+    # Seit v4.41.0 baut der Host mit -Werror: Der Aufruf faellt mit if (false) weg, ein Komma-
+    # Ausdruck ohne Wirkung baut nicht mehr.
     ('G-A2', 'Gegenpruefung', 'Puls-Abo ohne Ablauf im Kern (A2)', APP + 'boulder_health.c',
-     '    sys_hrm_manager_set_update_interval(\n', '    (void)sys_hrm_manager_set_update_interval;\n    (\n',
+     '    sys_hrm_manager_set_update_interval(\n', '    if (false) sys_hrm_manager_set_update_interval(\n',
      ctest('^test_bh_app$')),
     ('G-A4a', 'Gegenpruefung', 'Select liest neu (A4 a)', APP + 'boulder_health.c',
      '  BH_PROTOKOLL("detail %s", bh_detail_titel(detail));\n',

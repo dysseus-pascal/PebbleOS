@@ -259,7 +259,7 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
 
 1. Upstream v4.40.0 nachziehen (`kopie_nachziehen` war rot); danach die Probe ohne Systemrechte, die
    QEMU-Messung und `pruefe_ohne_rechte` wiederholen (MPU und Syscalls umgebaut).
-   *Erledigt am 13.10. (`0510648c`), siehe Abschnitt 8.*
+   *Erledigt am 13.10. (`0510648c`), siehe Abschnitt 8; dazu v4.41.0 (F18), Abschnitt 9.*
 2. Wechsel b26 → V2 testen (bisher mit einem b25-Abbild).
 3. Boulder 0.53: Seite „Goals“ schreibt `boulder_ziele` (8 B, **Schlüssel ohne Nullbyte**, Befund K4),
    V2 als Firmware erkennen, Gravel 0.3.4.
@@ -270,7 +270,7 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
 7. Ruff: 45 ältere Befunde in den Boulder-Werkzeugen (`tools/boulder/`, zwei Testhelfer). Upstreams
    Python ist sauber, und die CI von PebbleOS prüft Ruff bei Pull Requests.
 
-### Zu entscheiden
+### Entschieden am 13.10.: F17 B, F18 A
 
 **F17 Erster Start in QEMU.** In Echtzeit-QEMU zählt beim ersten Start nach dem Boot QEMUs Übersetzen
 mit. Dieser Anteil schwankt mit dem Host, darum kam der Start in AP9 auf 30–54 ms. Die übrigen 59 Starts
@@ -281,6 +281,7 @@ lagen in den Schlussläufen bei höchstens 27,3 ms.
   Boot. Dort zählt nur, was die App ausführt (heute 17,6 ms). In Echtzeit zählen alle übrigen Starts wie
   bisher.
 - **Empfehlung: B.** Es misst die Bauart (2.6.3) statt des Emulators, und das Ergebnis ist wiederholbar.
+- **Entschieden: B** (13.10.), umgesetzt in `f2753ba4`. Belege: `belege-vorab/f17/`.
 - *Nachtrag 13.10. (v4.40.0):* Wieder dasselbe Bild. In Echtzeit kam der erste Start auf 39,1 und
   52,7 ms, ein Lauf wurde an L1 rot. Unter `-icount` waren es 16,6 und 17,6 ms wie in AP9, die übrigen
   59 Starts lagen bei höchstens 24,4 ms. Die App ist nicht langsamer geworden.
@@ -307,6 +308,8 @@ lagen in den Schlussläufen bei höchstens 27,3 ms.
   Uhr, aber der Gerätetest prüft eine Basis, die danach wechselt.
 - **Empfehlung: A.** Die Korrektur im Pulsdienst betrifft genau, was der Gerätetest prüft (7 Nächte
   ohne Absturz), und der Aufwand ist überschaubar.
+- **Entschieden: A** (13.10.). Nachgezogen in Abschnitt 9; der Upstream-Stand bleibt bis nach dem
+  Gerätetest eingefroren.
 
 ## 8. Upstream v4.40.0 (13.10.2026, `0510648c`)
 
@@ -343,3 +346,43 @@ Punkt 1 aus Abschnitt 7. Belege: `belege-vorab/upstream-v4.40.0/`.
     nicht, der Syscall-Stapel hat 1 368 B Reserve, und es gab keinen Neustart.
 - **Offen:** Upstream ist schon bei v4.41.0 (F18). Gegen `upstream/main` ist `kopie_nachziehen` deshalb
   wieder rot.
+
+## 9. Upstream v4.41.0 (13.10.2026, `273728a3`)
+
+F18 A. Belege: `belege-vorab/upstream-v4.41.0/`. **Der Upstream-Stand bleibt jetzt bis nach dem
+Gerätetest eingefroren.**
+
+- **Merge:** Tag v4.41.0 (216 Commits nach v4.40.0). Drei Konflikte in Pebble-Dateien mit Boulder-Stellen,
+  alle neben Boulders Blöcken: sortierte Includes und `NULL` → `nullptr`. Boulders Stellen sind
+  inhaltlich gleich geblieben.
+- **Kraepelin-Kopie:** Upstreams Stiländerungen an den Originalen kamen per `git merge-file` in die
+  Kopie. Die Includes der Blöcke D0, D2 und D10 stehen jetzt in Upstreams sortierter Liste.
+  `HERKUNFT` nennt v4.41.0 mit den neuen SHA-256.
+- **C23 und `-Werror` im Host-Bau:**
+  - `PBL_UNUSED` und `PBL_NORETURN` gibt es nicht mehr; Boulder nutzt jetzt `[[maybe_unused]]` und
+    `[[noreturn]]`.
+  - `kontext.c`: `prv_kcal_t` gibt es nur noch mit `CONFIG_BOULDER_KIESELSPORT`, wie ihre Aufrufer.
+  - In den Tests sind nie gerufene Helfer aus `test_activity.c` entfernt, `wtf()` ist `[[noreturn]]`.
+    Upstream hat `stubs_accel_manager.h` gelöscht, Boulders Tests haben dafür einen eigenen Stub mit
+    den neuen Signaturen.
+- **Wecker, geändertes Verhalten (Upstream `62e8d0a8`):** Jede Änderung an Zeit, Art oder Tagen beendet
+  den laufenden Smart Alarm. Wer im Fenster die Weckzeit verstellt und wieder zurückstellt, wird an
+  diesem Morgen nicht mehr geweckt, mit und ohne Neustart. Boulders Weckregel folgt dem. Der
+  Weckertest erwartet das jetzt so und kennt den neuen Zustand `s_snooze_generation` von `alarm.c`.
+- **Prüfung:**
+  - Acht Bauten sauber ohne Warnung, die Firmware übersetzt als C23.
+  - Host 437/437; Upstream bringt 4 neue Tests mit.
+  - Alle Werkzeuge grün; K1 misst jetzt gegen v4.41.0. Upstreams Syscall-Prüfung ist grün.
+  - Mutationen 43/43 rot. G-A2 musste umgeformt werden, weil ein Komma-Ausdruck ohne Wirkung unter
+    `-Werror` nicht mehr baut; danach rot.
+- **QEMU mit F17 B, zwei Läufe grün:**
+  - L1 höchstens 13,7 ms.
+  - Erster Start unter `-icount`: 16,6 und 17,6 ms. In Echtzeit waren es 50,8 und 51,8 ms; nach der
+    alten Regel wären beide Läufe rot gewesen.
+  - L2 15,6 ms, L4 6,8 ms, L6 0,01 ms.
+  - Der Kernel-Heap wächst nicht, der Syscall-Stapel hat 1 368 B Reserve, die Fehlerprobe beendet nur
+    die App, und es gab keinen Neustart.
+- **Für den Gerätetest (Punkt 6):**
+  - das geänderte Verhalten beim Umstellen eines laufenden Smart Alarms;
+  - der Pulsdienst beim Aus- und Einschalten des Sensors durch die Messstufe (Upstreams Korrektur
+    `21a43337`).

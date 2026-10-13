@@ -9,7 +9,7 @@ Bericht: `../../schritt3-abnahme.md`. Endstand: `v2` bei `ecb6b739`.
 | `werkzeuge/` | Ausgaben aller Werkzeuge im Schlusslauf (`ergebnis.txt`: Rückgabewerte) |
 | `qemu-a/`, `qemu-b/`, `qemu-c/` | drei QEMU-Schlussläufe: messung.json, Protokoll, Ausgabe, Bilder |
 | `qemu-mutation/` | QEMU-Mutation für L1 und Kernel-Heap: Skript und Ergebnis |
-| `mutationen.py`, `mutationen.txt` | 43 Mutationen auf dem Endstand; `mutationen_vorlauf.txt`: Vorlauf (Abschnitt 4). S1-3 in `mutationen.py` seit 13.10. auf `4ea6fb64` angepasst (30 → 20), `mutationen.txt` zeigt den Lauf von AP9 |
+| `mutationen.py`, `mutationen.txt` | 43 Mutationen auf dem Endstand; `mutationen_vorlauf.txt`: Vorlauf (Abschnitt 4). S1-3 in `mutationen.py` seit 13.10. auf `4ea6fb64` angepasst (30 → 20), G-A2 auf v4.41.0 (`-Werror`); `mutationen.txt` zeigt den Lauf von AP9 |
 | `kaltstart/` | Untersuchung des ersten Starts nach dem Boot (Reihen, Kalibrierung, `-icount`) |
 | `k2/` | Mehrwort-Speichern an der Syscall-Grenze (objdump), Befund K2 |
 | `gegenpruefung-proben/` | Proben der drei Prüfer der Gegenprüfung (kern, app, inhalt) |

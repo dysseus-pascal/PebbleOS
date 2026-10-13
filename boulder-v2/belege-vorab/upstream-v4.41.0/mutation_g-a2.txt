@@ -1,0 +1,5 @@
+rot        G-A2  Gegenpruefung Puls-Abo ohne Ablauf im Kern (A2) (fw/apps/system/boulder_health/boulder_health.c)
+           | 1/1 Test #52: test_bh_app ......................***Failed    0.01 sec
+1/1 rot
+rc=0
+273728a3 Boulder V2: Upstream v4.41.0 nachgezogen

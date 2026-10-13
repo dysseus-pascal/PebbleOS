@@ -1,0 +1,20 @@
+# Sauberer Bau aller acht Ordner (clean + build) auf dem Merge-Commit 273728a3, Firmware als C23;
+# jeder Bau lief Upstreams Syscall-Pruefung ("Checking syscall privilege checks").
+Stand 273728a3, Arbeitsbaum 0 Aenderungen
+== build-obelix 13:24:04
+rc=0 warnungen=0 fehler=0
+== build-obelixrel 13:25:13
+rc=0 warnungen=0 fehler=0
+== build 13:26:17
+rc=0 warnungen=0 fehler=0
+== build-asterix 13:27:08
+rc=0 warnungen=0 fehler=0
+== build-getafix 13:28:01
+rc=0 warnungen=0 fehler=0
+== build-flint 13:29:01
+rc=0 warnungen=0 fehler=0
+== build-gabbro 13:29:38
+rc=0 warnungen=0 fehler=0
+== build-pruef 13:30:25
+rc=0 warnungen=0 fehler=0
+== fertig 13:31:14
