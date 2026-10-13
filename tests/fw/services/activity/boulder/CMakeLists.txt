@@ -145,6 +145,13 @@ pbl_clar_test(test_boulder_vertraege_ohne_kieselsport
     fw/services/activity/boulder/vertraege.c
 )
 
+# Die Schlafrechnung selbst, aus b26 (main a7d8b16e1) uebernommen: die Naechte neben einem Fitbit
+# und die Regeln an gebauten Naechten.
+pbl_clar_test(test_boulder_schlaf
+  SOURCES
+    fw/services/activity/boulder/schlafanalyse.c
+)
+
 # Der Schlafkern (AP2): b26-Rechnung im Nachlauf, Satz 0x4001 wie b26 auf allen
 # Referenznaechten.
 pbl_clar_test(test_boulder_schlafkern
