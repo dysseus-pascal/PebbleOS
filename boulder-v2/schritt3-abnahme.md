@@ -261,6 +261,7 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
    QEMU-Messung und `pruefe_ohne_rechte` wiederholen (MPU und Syscalls umgebaut).
    *Erledigt am 13.10. (`0510648c`), siehe Abschnitt 8; dazu v4.41.0 (F18), Abschnitt 9.*
 2. Wechsel b26 → V2 testen (bisher mit einem b25-Abbild).
+   *Erledigt am 13.10. (`b6a4b3df`), siehe Abschnitt 10.*
 3. Boulder 0.53: Seite „Goals“ schreibt `boulder_ziele` (8 B, **Schlüssel ohne Nullbyte**, Befund K4),
    V2 als Firmware erkennen, Gravel 0.3.4.
 4. Kieselstrasse nach V2 portieren (F6).
@@ -396,3 +397,26 @@ Gerätetest eingefroren.**
   - Die Werkzeuge nehmen das SDK jetzt aus `SDK_VERSION`. Der Sitzungs-Hook nennt GCC 15 nicht mehr
     als Hindernis (`10b0d9d8`).
   - Belege: `belege-vorab/sdk-0.1.11/`.
+
+## 10. Wechsel b26 → V2 (13.10.2026, `b6a4b3df`)
+
+Punkt 2 aus Abschnitt 7. Belege und Ablauf: `belege-vorab/wechsel-b26/`.
+
+- **Bezug b26 statt b25:** b25 und b26 unterscheiden sich in `src/` nur in der Schlafrechnung.
+  `umzug_pruefen.py` vergleicht jetzt beide mit V2 (`b6a4b3df`); alle 15 Definitionen sind gleich.
+- **Echter Wechsel in QEMU:**
+  - b26 (`main` `a7d8b16e1`) lief für `qemu_emery` und erzeugte Zustand über die Tasten: Health
+    Tracking, Kilometer, Messstufe Detailed, zwei Wecker (einer smart), ein gespeichertes
+    Kieselsport-Training, das noch aufs Telefon wartet.
+  - Dann schrieb ich V2s System-Ressourcen ins selbe Flash, wie bei einem Update, und startete V2.
+- **Ergebnis:**
+  - Alles ist übernommen: Einstellungen, Messstufe 4, beide Wecker, die Sitzung, die drei
+    Datalogging-Spools und das wartende Training.
+  - Nichts ist doppelt. Der Umzug lief nur beim ersten Start. Der zweite Start war stabil.
+  - Keine Fehler.
+- **Für die Release-Notiz:**
+  - Nach dem Wechsel zeigt die Uhr Pebbles Standard-Zifferblatt, weil TimeStyle Bedrock nicht mehr
+    in der Firmware ist. TimeStyle aus dem Store installieren.
+  - Die alte Kieselsport-Store-App einmal löschen, falls sie doppelt erscheint (V9).
+- **Nicht in QEMU prüfbar:** Nächte und Movement-Sitzungen (keine Sensordaten). Dafür stehen die
+  Host-Tests T8.1–T8.3 und der Gerätetest.

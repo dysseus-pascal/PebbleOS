@@ -1,0 +1,323 @@
+== bereit 14:37:43
+>> version
+   Running FW:
+     ts:1791899527
+     tag:v4.41.0-54-gb6a4b3df
+     short:b6a4b3d
+     recov:0
+     platform:245
+   Recovery FW:
+     ts:1791899527
+     tag:v4.41.0-54-gb6a4b3df
+     short:b6a4b3d
+     recov:1
+     platform:245
+   Build Id:c3a11d1aeca71892586cba8826c50a15fc7218a4
+   MCU Serial: 51454d5530303030
+   Boot:0x00000000
+   HW:
+   SN:
+   System Resources:
+     CRC:0xb0c5ff20
+     Valid:yes
+== ok 14:37:45
+>> !bild v2_start
+== ok 14:37:46
+>> help
+   Commands:
+     alarm      Fire an alarm event
+     als        Ambient light sensor
+     analytics  Analytics
+     app        Installed apps
+     backlight  Backlight control
+     battery    Battery
+     boulder    Boulder-Kraepelin
+     bt         Bluetooth
+     button     Buttons
+     dls        Data logging
+     flash      Flash
+     help       List commands
+     hrm        Heart rate monitor
+     imu        IMU drivers
+     input      Input events
+     log        Logging
+     music      Show what the music player plays
+     notif      Notifications
+     pfs        Filesystem
+     ping       Send a ping to the phone
+     sys        System control
+     temp       Read the temperature
+     time       Time and timezone
+     touch      Touch
+     ui         User interface debugging
+     version    Show firmware and hardware versions
+     vibe       Vibrate at <strength 0-100>
+     voice      Voice dictation
+     wdt        Task watchdog
+     worker     Background workers
+   Run '<command> -h' for details.
+== ok 14:37:57
+>> log
+   log - Logging
+   Subcommands:
+     dump   Dump flash logs
+     level  Get or set the log level [level]
+     spam   Fill the flash log with junk
+== ok 14:38:05
+>> dls
+   dls - Data logging
+   Subcommands:
+     list  List the sessions
+     wipe  Erase all sessions
+     send  Send all sessions to the phone
+== ok 14:38:05
+>> pfs
+   pfs - Filesystem
+   Subcommands:
+     crc     Print the CRC of a file <name>
+     format  Format <erase_headers:0|1>
+     hdr     Dump a page header <page>
+     litter  Fragment the filesystem <files> <size>
+     ls      List files
+     rm      Remove a file <name>
+== ok 14:38:06
+>> log dump
+   dump - Dump flash logs
+   Subcommands:
+     current  Dump the current boot log
+     last     Dump the previous boot log
+     gen      Dump a boot log generation <n>
+== ok 14:38:12
+>> log dump current
+   I Tue Oct 13 14:38:19 2026 :0> Build ID: c3a11d1aeca71892586cba8826c50a15fc7218a4
+   * Tue Oct 13 14:37:27 2026 debug.c:168> Firmware version: v4.41.0-54-gb6a4b3df
+   * Tue Oct 13 14:37:27 2026 debug.c:169> Platform: 245, hw: , sn: 
+   * Tue Oct 13 14:37:27 2026 debug.c:175> BUILD ID: c3a11d1aeca71892586cba8826c50a15fc7218a4
+   W Tue Oct 13 14:37:27 2026 reboot_reason.c:127> We don't know why we Dangerously rebooted.
+   I Tue Oct 13 14:37:27 2026 reboot_reason.c:135> MCU reset reason mask: 0x4
+   W Tue Oct 13 14:37:27 2026 pfs.c:551> service_filesystem: Couldn't resolve last written pg
+   I Tue Oct 13 14:37:28 2026 storage_flash.c:51> Checking bank 0 for system resources
+   I Tue Oct 13 14:37:28 2026 storage_flash.c:53> Valid system resources found!
+   I Tue Oct 13 14:37:28 2026 app_db.c:253> service_blob_db: Found 0 apps. Next ID: 1 
+   I Tue Oct 13 14:37:28 2026 alarm.c:348> service_alarms: Scheduling alarm 0 to go off at 14:20 (1791987600) (smart:0)
+   I Tue Oct 13 14:37:28 2026 alarm.c:348> service_alarms: Scheduling alarm 1 to go off at 7:21 (1791960660) (smart:1)
+   I Tue Oct 13 14:37:28 2026 vity_sessions.c:637> service_activity: Restored 1 activities from storage
+   E Tue Oct 13 14:37:28 2026 ather_service.c:144> service_weather: No SerializedWeatherAppPrefs available!
+   I Tue Oct 13 14:37:28 2026 event_loop.c:645> Starting Launcher
+   W Tue Oct 13 14:37:28 2026 ocess_manager.c:606> Dropped app event! Type: 27
+   I Tue Oct 13 14:37:28 2026 services.c:28> Setting runlevel to 4
+   I Tue Oct 13 14:37:28 2026 _addr_storage.c:43> bt: Generated identity address DF:59:96:36:B1:F5
+   I Tue Oct 13 14:37:28 2026 local_addr.c:98> service_bluetooth: Pinned address: 00:00:00:00:00:00
+   I Tue Oct 13 14:37:28 2026 local_addr.c:109> service_bluetooth: No bondings found that require address pinning!
+   I Tue Oct 13 14:37:28 2026 session.c:152> service_comm_session: Session event: is_open=1, destination=H, app_uuid={NULL UUID}
+   I Tue Oct 13 14:37:28 2026 activity.c:1238> service_activity: Activity tracking started
+   I Tue Oct 13 14:37:28 2026 local_addr.c:27> service_bluetooth: Pausing address cycling (pinned_addr=00:00:00:00:00:00)
+   I Tue Oct 13 14:37:28 2026 gap_le_advert.c:425> bt: Scheduling advertising job: DIS
+   I Tue Oct 13 14:37:28 2026 naechte.c:175> service_activity: Boulder: 0 Naechte geladen
+   I Tue Oct 13 14:37:28 2026 woche.c:146> service_activity: Boulder: Woche bis Tag 0, Spiegel Tag 0 mit 0 Schritten
+   I Tue Oct 13 14:37:28 2026 speicher.c:434> service_activity: Boulder: kein Kopf in boulder_v2
+   I Tue Oct 13 14:37:28 2026 speicher.c:455> service_activity: Boulder: geladen (neu, Buch fest bis 0)
+   I Tue Oct 13 14:37:28 2026 umzug_prefs.c:57> service_activity: Boulder: 1 b25-Prefs aus shellpref geloescht
+   I Tue Oct 13 14:37:28 2026 herz.c:283> service_activity: Boulder: Herz nachgerechnet, 15 Minuten, Grenzen 111/136/162
+   W Tue Oct 13 14:38:00 2026 lin_algorithm.c:2169> service_activity: Resetting state due to time travel
+   I Tue Oct 13 14:38:01 2026 messstufe.c:180> service_activity: Boulder: Messstufe 4
+== ok 14:38:21
+>> pfs ls
+   Page:	Filename	File Size	File Info	Erase Count
+     0:	gap_bonding_db	 8074		0xfe	              1
+    12:	appcache	 8080		0xfe	              1
+    14:	  alarms	 4014		0xfe	              1
+    15:	  wakeup	12150		0xfe	              1
+    18:	activity	20284		0xfe	              1
+    23:	insights	 8080		0xfe	              1
+    33:	notifpref	 4011		0xfe	              1
+    34:	shellpref	 4011		0xfe	              1
+    39:	ps6c386250a6d74a19a48552541b5d7c0d	 8054		0xfe	              1
+    41:	   pindb	12151		0xfe	              1
+    44:	   appdb	 8083		0xfe	              1
+    46:	reminderdb	12146		0xfe	              1
+    51:	weatherdb	 8079		0xfe	              1
+    53:	iosnotifprefdb	 8074		0xfe	              1
+    57:	contactsdb	 8078		0xfe	              1
+    59:	watch_app_prefs	 8073		0xfe	              1
+    64:	healthdb	12148		0xfe	              1
+    69:	appglancedb	 8077		0xfe	              1
+    71:	activity_sleep	158590		0xfe	              1
+   110:	dls_storage_158	 4096		0xfe	              1
+   112:	dls_storage_77	 4096		0xfe	              1
+   114:	dls_storage_90	 4096		0xfe	              1
+   116:	boulder_nacht	 4007		0xfe	              1
+   117:	app_comm	 4012		0xfe	              1
+   118:	boulder_wecker	 4006		0xfe	              1
+   119:	notifstr	30720		0xfe	              1
+   127:	boulder_v2	12146		0xfe	              1
+   ---
+   99 / 5264 pages in use (16400 kB available)
+== ok 14:38:45
+>> dls list
+   session_id : 77, tag: 84, bytes: 27, write_offset: 57
+   session_id : 90, tag: 81, bytes: 279, write_offset: 311
+   session_id : 158, tag: 85, bytes: 300, write_offset: 332
+== ok 14:38:46
+>> boulder zeiten
+   Arbeit                       Laeufe  max ms Mittel us
+   Boulder Laden                     1       9      9000
+   Boulder Umzug                     1       2      2000
+   Boulder Herz nachrechnen          1       2      2000
+   Boulder Minute Variante           1      12     12000
+   Boulder Minutenteil               1      14     14000
+   Kieselsport Nachsenden            1       1      1000
+   Boulder Nachlauf                  1      22     22000
+   Boulder Messstufe                 2       3      1500
+   Boulder Puls                      2       0         0
+   Boulder Ziele                     2       1      1000
+   Boulder Ablage                    1       3      3000
+   Boulder Takt                      1       1      1000
+   Heap: 131068 B gesamt, 111436 frei, groesster Block 76892, Niedrigstand 79168
+   Tag 20739: laengster Schritt 22 ms (Nachlauf), Minutenteil 14 ms, Heap min 79168, Schlange min 25, Neustarts 1
+== ok 14:38:47
+>> help
+   Commands:
+     alarm      Fire an alarm event
+     als        Ambient light sensor
+     analytics  Analytics
+     app        Installed apps
+     backlight  Backlight control
+     battery    Battery
+     boulder    Boulder-Kraepelin
+     bt         Bluetooth
+     button     Buttons
+     dls        Data logging
+     flash      Flash
+     help       List commands
+     hrm        Heart rate monitor
+     imu        IMU drivers
+     input      Input events
+     log        Logging
+     music      Show what the music player plays
+     notif      Notifications
+     pfs        Filesystem
+     ping       Send a ping to the phone
+     sys        System control
+     temp       Read the temperature
+     time       Time and timezone
+     touch      Touch
+     ui         User interface debugging
+     version    Show firmware and hardware versions
+     vibe       Vibrate at <strength 0-100>
+     voice      Voice dictation
+     wdt        Task watchdog
+     worker     Background workers
+   Run '<command> -h' for details.
+== ok 14:39:02
+>> click
+   error: click: command not found, try 'help'
+== ok 14:39:03
+>> button
+   button - Buttons
+   Subcommands:
+     click  Click a button <btn>
+     hold   Press a button for a while <btn> <hold_ms>
+     multi  Press a button repeatedly <btn> <count> <hold_ms> <delay_ms>
+     raw    Report a raw event <btn> <0=up|1=down>
+== ok 14:39:08
+>> button click 2
+== ok 14:39:15
+>> button click 3
+== ok 14:39:17
+>> button click 3
+== ok 14:39:17
+>> button click 3
+== ok 14:39:17
+>> button click 3
+== ok 14:39:18
+>> button click 3
+== ok 14:39:18
+>> button click 3
+== ok 14:39:18
+>> button click 3
+== ok 14:39:19
+>> button click 3
+== ok 14:39:19
+>> !bild e1
+== ok 14:39:21
+>> !bild e2
+== ok 14:39:37
+>> button click 0
+== ok 14:39:53
+>> !bild e3
+== ok 14:39:55
+>> button click 0
+== ok 14:40:05
+>> !bild e4
+== ok 14:40:08
+>> button click 2
+== ok 14:40:26
+>> !bild e5
+== ok 14:40:29
+>> button click 3
+== ok 14:40:39
+>> button click 2
+== ok 14:40:39
+>> button multi 3 8 50 150
+== ok 14:40:41
+>> !bild e6
+== ok 14:40:43
+>> button click 2
+== ok 14:40:51
+>> !bild e7
+== ok 14:40:53
+>> button click 0
+== ok 14:41:03
+>> button click 0
+== ok 14:41:04
+>> !bild e8
+== ok 14:41:06
+>> button multi 3 3 50 150
+== ok 14:41:14
+>> button click 2
+== ok 14:41:16
+>> !bild e9
+== ok 14:41:18
+>> button click 0
+== ok 14:41:30
+>> app launch -82
+   OK
+== ok 14:41:31
+>> !bild h_today
+== ok 14:41:35
+>> button click 3
+== ok 14:41:35
+>> !bild h_night
+== ok 14:41:37
+>> button click 3
+== ok 14:41:38
+>> !bild h_heart
+== ok 14:41:40
+>> button click 3
+== ok 14:41:40
+>> !bild h_activity
+== ok 14:41:42
+>> button click 3
+== ok 14:41:43
+>> !bild h_settings
+== ok 14:41:45
+>> sys
+   sys - System control
+   Subcommands:
+     audit_delay    Audit the accuracy of delay_us
+     bootbit        Set a boot bit <bit> <0|1>
+     crash          Reset as if the launcher panicked
+     crash_hard     Hard reset as if the firmware failed to start
+     croak          Trigger a croak
+     factory_reset  Factory reset [fast]
+     mpu            Dump the MPU regions
+     reset          Reset the system
+     runlevel       Set the runlevel <n|list>
+     rx_disable     Disable the console RX <seconds>
+     scheduler      Scheduler idle control
+     waste_time     Busy-wait on the timer task <count> <delay_ms>
+== ok 14:42:00
+>> button click 0
+== ok 14:42:08
+>> sys reset

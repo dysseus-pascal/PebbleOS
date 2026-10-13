@@ -1,0 +1,55 @@
+>> version
+   Running FW:
+     ts:1791899527
+     tag:v4.41.0-54-gb6a4b3df
+     short:b6a4b3d
+     recov:0
+     platform:245
+   Recovery FW:
+     ts:1791899527
+     tag:v4.41.0-54-gb6a4b3df
+     short:b6a4b3d
+     recov:1
+     platform:245
+   Build Id:c3a11d1aeca71892586cba8826c50a15fc7218a4
+   MCU Serial: 51454d5530303030
+   Boot:0x00000000
+   HW:
+   SN:
+   System Resources:
+     CRC:0xb0c5ff20
+     Valid:yes
+>> log dump current
+   I Tue Oct 13 14:45:55 2026 :0> Build ID: c3a11d1aeca71892586cba8826c50a15fc7218a4
+   * Tue Oct 13 14:42:09 2026 debug.c:168> Firmware version: v4.41.0-54-gb6a4b3df
+   * Tue Oct 13 14:42:09 2026 debug.c:169> Platform: 245, hw: , sn: 
+   * Tue Oct 13 14:42:09 2026 debug.c:175> BUILD ID: c3a11d1aeca71892586cba8826c50a15fc7218a4
+   W Tue Oct 13 14:42:09 2026 reboot_reason.c:127> Safely rebooted due to Serial
+   I Tue Oct 13 14:42:09 2026 reboot_reason.c:135> MCU reset reason mask: 0x8
+   W Tue Oct 13 14:42:09 2026 pfs.c:551> service_filesystem: Couldn't resolve last written pg
+   I Tue Oct 13 14:42:09 2026 debug.c:191> Last launched app: <System_App>
+   I Tue Oct 13 14:42:09 2026 storage_flash.c:51> Checking bank 0 for system resources
+   I Tue Oct 13 14:42:10 2026 storage_flash.c:53> Valid system resources found!
+   I Tue Oct 13 14:42:10 2026 app_db.c:253> service_blob_db: Found 0 apps. Next ID: 1 
+   I Tue Oct 13 14:42:10 2026 alarm.c:348> service_alarms: Scheduling alarm 0 to go off at 14:20 (1791987600) (smart:0)
+   I Tue Oct 13 14:42:10 2026 alarm.c:348> service_alarms: Scheduling alarm 1 to go off at 7:21 (1791960660) (smart:1)
+   I Tue Oct 13 14:42:10 2026 vity_sessions.c:637> service_activity: Restored 1 activities from storage
+   E Tue Oct 13 14:42:10 2026 ather_service.c:144> service_weather: No SerializedWeatherAppPrefs available!
+   I Tue Oct 13 14:42:10 2026 event_loop.c:645> Starting Launcher
+   W Tue Oct 13 14:42:10 2026 ocess_manager.c:606> Dropped app event! Type: 27
+   I Tue Oct 13 14:42:10 2026 services.c:28> Setting runlevel to 4
+   I Tue Oct 13 14:42:10 2026 local_addr.c:98> service_bluetooth: Pinned address: 00:00:00:00:00:00
+   I Tue Oct 13 14:42:10 2026 local_addr.c:109> service_bluetooth: No bondings found that require address pinning!
+   I Tue Oct 13 14:42:10 2026 session.c:152> service_comm_session: Session event: is_open=1, destination=H, app_uuid={NULL UUID}
+   I Tue Oct 13 14:42:10 2026 activity.c:1238> service_activity: Activity tracking started
+   I Tue Oct 13 14:42:10 2026 local_addr.c:27> service_bluetooth: Pausing address cycling (pinned_addr=00:00:00:00:00:00)
+   I Tue Oct 13 14:42:10 2026 gap_le_advert.c:425> bt: Scheduling advertising job: DIS
+   I Tue Oct 13 14:42:10 2026 naechte.c:175> service_activity: Boulder: 0 Naechte geladen
+   I Tue Oct 13 14:42:10 2026 woche.c:146> service_activity: Boulder: Woche bis Tag 0, Spiegel Tag 9782 mit 0 Schritten
+   I Tue Oct 13 14:42:10 2026 nacht.c:497> service_activity: Boulder: Nacht geladen, Stufe 2, Minute 899
+   I Tue Oct 13 14:42:10 2026 speicher.c:455> service_activity: Boulder: geladen (Kopf, Buch fest bis 0)
+   I Tue Oct 13 14:42:10 2026 herz.c:283> service_activity: Boulder: Herz nachgerechnet, 15 Minuten, Grenzen 111/136/162
+   W Tue Oct 13 14:43:00 2026 lin_algorithm.c:2169> service_activity: Resetting state due to time travel
+   W Tue Oct 13 14:43:00 2026 service.c:167> service_regular_timer: Large time jump detected. Previous ts: 0, Now ts: 333
+   I Tue Oct 13 14:43:00 2026 messstufe.c:180> service_activity: Boulder: Messstufe 4
+   W Tue Oct 13 14:45:10 2026 hrm_manager.c:414> service_hrm: HRM on for 120s without a valid reading, deferring subscribers

@@ -1,0 +1,12 @@
+[14:38:01] [14:38:01.009] W - 14:38:00.009 lin_algorithm.c:2169> service_activity: Resetting state due to time travel
+[14:38:01] [14:38:01.010] I - 14:38:01.058 messstufe.c:180> service_activity: Boulder: Messstufe 4
+[14:39:01] [14:39:01.157] I - 14:39:01.162 telefon.c:442> Zusammenfassung geht ans Telefon
+[14:39:11] [14:39:11.761] W - 14:39:11.766 telefon.c:309> Nachricht abgelehnt: 2
+[14:39:23] [14:39:23.760] W - 14:39:23.766 telefon.c:309> Nachricht abgelehnt: 2
+[14:39:35] [14:39:35.722] W - 14:39:35.769 telefon.c:309> Nachricht abgelehnt: 2
+[14:39:47] [14:39:47.723] W - 14:39:47.770 telefon.c:309> Nachricht abgelehnt: 2
+[14:39:59] [14:39:59.765] W - 14:39:59.770 telefon.c:309> Nachricht abgelehnt: 2
+[14:40:28] [14:40:28.393] W - 14:40:28.399 hrm_manager.c:414> service_hrm: HRM on for 120s without a valid reading, deferring subscribers
+[14:42:09] [14:42:09.837] I - 14:42:09.843 services.c:28> Setting runlevel to 0
+[14:42:09] [14:42:09.838] I - 14:42:09.845 gap_le_advert.c:461> bt: Unscheduling advertising job: DIS
+[14:42:09] [14:42:09.839] I - 14:42:09.846 session.c:152> service_comm_session: Session event: is_open=0, destination=H, app_uuid={NULL UUID}

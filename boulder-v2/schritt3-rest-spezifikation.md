@@ -350,3 +350,13 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
   zweimal grün.
 - Bericht: `schritt3-abnahme.md`, Abschnitt 9. Belege: `belege-vorab/upstream-v4.41.0/`.
 - Nächster Schritt: Punkt 2 aus Abschnitt 6 (Wechsel b26 → V2).
+
+## Stand nach dem Wechseltest b26 → V2 (13.10.2026, `b6a4b3df`)
+
+- Punkt 2 aus Abschnitt 6 erledigt. Der echte Wechsel in QEMU hat alles übernommen und nichts
+  verdoppelt; die Wechselprüfung vergleicht jetzt mit b25 und b26.
+- Nebenbei nachgeholt: Die ganze Prüfung läuft jetzt mit SDK 0.1.11 (GCC 15), wie v4.41.0 es
+  verlangt.
+- Bericht: `schritt3-abnahme.md`, Abschnitt 10 (Wechsel) und Abschnitt 9, Nachtrag (SDK).
+- Nächster Schritt: Punkt 3 (Boulder 0.53: Seite „Goals“, V2 erkennen, Gravel 0.3.4) oder Punkt 4
+  (Kieselstrasse nach V2).

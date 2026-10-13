@@ -1,0 +1,49 @@
+>> dls list
+   session_id : 77, tag: 84, bytes: 27, write_offset: 57
+   session_id : 90, tag: 81, bytes: 279, write_offset: 311
+   session_id : 158, tag: 85, bytes: 300, write_offset: 332
+>> pfs ls
+   Page:	Filename	File Size	File Info	Erase Count
+     0:	gap_bonding_db	 8074		0xfe	              1
+    12:	appcache	 8080		0xfe	              1
+    14:	  alarms	 4014		0xfe	              1
+    15:	  wakeup	12150		0xfe	              1
+    18:	activity	20284		0xfe	              1
+    23:	insights	 8080		0xfe	              1
+    33:	notifpref	 4011		0xfe	              1
+    34:	shellpref	 4011		0xfe	              1
+    39:	ps6c386250a6d74a19a48552541b5d7c0d	 8054		0xfe	              1
+    41:	   pindb	12151		0xfe	              1
+    44:	   appdb	 8083		0xfe	              1
+    46:	reminderdb	12146		0xfe	              1
+    51:	weatherdb	 8079		0xfe	              1
+    53:	iosnotifprefdb	 8074		0xfe	              1
+    57:	contactsdb	 8078		0xfe	              1
+    59:	watch_app_prefs	 8073		0xfe	              1
+    64:	healthdb	12148		0xfe	              1
+    69:	appglancedb	 8077		0xfe	              1
+    71:	activity_sleep	158590		0xfe	              1
+   110:	dls_storage_158	 4096		0xfe	              1
+   112:	dls_storage_77	 4096		0xfe	              1
+   114:	dls_storage_90	 4096		0xfe	              1
+   116:	boulder_nacht	 4007		0xfe	              1
+   118:	boulder_wecker	 4006		0xfe	              1
+   127:	boulder_v2	12146		0xfe	              1
+   146:	app_comm	 4012		0xfe	              1
+   147:	notifstr	30720		0xfe	              1
+   ---
+   99 / 5264 pages in use (16400 kB available)
+>> boulder zeiten
+   Arbeit                       Laeufe  max ms Mittel us
+   Boulder Laden                     1       5      5000
+   Boulder Umzug                     1       2      2000
+   Boulder Herz nachrechnen          1       0         0
+   Boulder Minute Variante           4       0         0
+   Boulder Minutenteil               4       0         0
+   Boulder Messstufe                 1       1      1000
+   Boulder Puls                      1       0         0
+   Boulder Ziele                     1       0         0
+   Kieselsport Nachsenden            4      31      8250
+   Boulder Takt                      4       0         0
+   Heap: 131068 B gesamt, 111504 frei, groesster Block 76892, Niedrigstand 79168
+   Tag 20739: laengster Schritt 31 ms (Kieselsport Nac), Minutenteil 0 ms, Heap min 79168, Schlange min 22, Neustarts 2
