@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "applib/graphics/gpath.h"
+#include <applib/graphics/gpath.h>
 
 void gpath_init(GPath *path, const GPathInfo *init) {
 }
@@ -15,6 +15,13 @@ void gpath_draw_stroke(GContext *ctx, GPath *path, bool open) {
 }
 
 void gpath_draw_filled(GContext *ctx, GPath *path) {
+}
+
+void gpath_fill_internal(GContext *ctx, const GPointUnaligned *points, size_t num_points) {
+}
+
+void gpath_draw_outline_internal(GContext *ctx, const GPointUnaligned *points, size_t num_points,
+                                 bool open) {
 }
 
 void gpath_fill_precise_internal(GContext *ctx, GPointPrecise *points, size_t num_points) {

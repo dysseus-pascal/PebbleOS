@@ -1,15 +1,17 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/vibe.h>
-#include "board/board.h"
+#include <string.h>
+
 #include <pbl/drivers/gpio.h>
 #include <pbl/drivers/i2c.h>
+#include <pbl/drivers/vibe.h>
 #include <pbl/logging/logging.h>
 #include <pbl/util/bits.h>
-#include "system/passert.h"
-#include "kernel/util/sleep.h"
-#include <string.h>
+
+#include <board/board.h>
+#include <kernel/util/sleep.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_vibe_aw86225, CONFIG_DRIVER_VIBE_LOG_LEVEL);
 
@@ -118,9 +120,9 @@ static bool s_playing = false;
 #define AW862XX_OUTPUT_FULL_SCALE_MV \
   (AW862XX_VBAT_REFER_MV * CONFIG_VIBE_AW86225_OUTPUT_GAIN_PERCENT / 100U)
 
-_Static_assert(CONFIG_VIBE_AW86225_RATED_VOLTAGE_MV *AW862XX_RMS_TO_PEAK_MILLI / 1000U <=
-                   AW862XX_OUTPUT_FULL_SCALE_MV,
-               "rated voltage exceeds the full-scale output");
+static_assert(CONFIG_VIBE_AW86225_RATED_VOLTAGE_MV * AW862XX_RMS_TO_PEAK_MILLI / 1000U <=
+                  AW862XX_OUTPUT_FULL_SCALE_MV,
+              "rated voltage exceeds the full-scale output");
 
 //! One full-scale LRA cycle at 12 kS/s.
 static const uint8_t s_sine_cycle[] = {
@@ -604,6 +606,6 @@ static int prv_cmd_vibe(const struct pbl_shell *sh, size_t argc, char **argv) {
   return 0;
 }
 
-PBL_SHELL_CMD_ARG_REGISTER(vibe, NULL, "Vibrate at <strength 0-100>, or <cal> to calibrate",
+PBL_SHELL_CMD_ARG_REGISTER(vibe, nullptr, "Vibrate at <strength 0-100>, or <cal> to calibrate",
                            prv_cmd_vibe, 2, 0);
 #endif

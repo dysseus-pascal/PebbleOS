@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
-#include "shell/prefs.h"
+
+#include <shell/prefs.h>
 
 /**
  * @defgroup services_light Backlight

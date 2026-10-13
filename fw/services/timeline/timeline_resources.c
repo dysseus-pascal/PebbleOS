@@ -1,19 +1,19 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/timeline/timeline_resources.h"
+#include <pbl/services/timeline/timeline_resources.h>
+#include <pbl/util/byteorder.h>
+#include <pbl/util/testing.h>
+#include <pbl/util/uuid.h>
 
-#include "applib/graphics/gdraw_command_private.h"
-#include "applib/ui/kino/kino_reel.h"
-#include "kernel/pbl_malloc.h"
-#include "process_management/app_install_manager.h"
-#include "resource/resource_ids.auto.h"
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
-#include "system/passert.h"
-#include "pbl/util/byteorder.h"
-#include "pbl/util/uuid.h"
-#include "pbl/util/testing.h"
+#include <applib/graphics/gdraw_command_private.h>
+#include <applib/ui/kino/kino_reel.h>
+#include <kernel/pbl_malloc.h>
+#include <process_management/app_install_manager.h>
+#include <resource/resource_ids.auto.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 #define RESOURCE_MAX_SIZE (700)
 
@@ -174,7 +174,7 @@ void timeline_resources_get_id(const TimelineResourceInfo *timeline_res, Timelin
 
 fail:
   if (!prv_get_sys_resource(timeline_res->fallback_id, size, res_info_out)) {
-    *res_info_out = (AppResourceInfo){0};
+    *res_info_out = (AppResourceInfo){};
   }
 }
 
@@ -186,7 +186,7 @@ DEFINE_SYSCALL(void, sys_timeline_resources_get_id, const TimelineResourceInfo *
   }
   if (!timeline_res || !res_info || (size >= TimelineResourceSizeCount)) {
     if (res_info) {
-      *res_info = (AppResourceInfo){0};
+      *res_info = (AppResourceInfo){};
     }
     return;
   }

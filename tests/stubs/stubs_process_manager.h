@@ -3,14 +3,15 @@
 
 #pragma once
 
-#include "applib/platform.h"
-#include "process_management/process_manager.h"
-#include "stubs_compiled_with_legacy2_sdk.h"
-#include "pbl/kernel/compiler.h"
 #include "stubs_compiled_with_legacy2_sdk.h"
 
+#include <pbl/kernel/compiler.h>
+
+#include <applib/platform.h>
+#include <process_management/process_manager.h>
+
 const PebbleProcessMd *PBL_WEAK sys_process_manager_get_current_process_md(void) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK sys_process_manager_get_current_process_uuid(Uuid *uuid_out) {
@@ -30,7 +31,7 @@ void PBL_WEAK process_manager_put_kill_process_event(PebbleTask task, bool grace
 }
 
 const void *PBL_WEAK process_manager_get_current_process_args(void) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK process_manager_send_event_to_process(PebbleTask task, PebbleEvent *e) {

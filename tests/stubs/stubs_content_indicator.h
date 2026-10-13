@@ -3,17 +3,17 @@
 
 #pragma once
 
-#include "applib/ui/content_indicator.h"
+#include <applib/ui/content_indicator.h>
 
 void content_indicator_init_buffer(ContentIndicatorsBuffer *content_indicators_buffer) {
 }
 
 ContentIndicator *content_indicator_get_for_scroll_layer(ScrollLayer *scroll_layer) {
-  return NULL;
+  return nullptr;
 }
 
 ContentIndicator *content_indicator_get_or_create_for_scroll_layer(ScrollLayer *scroll_layer) {
-  return NULL;
+  return nullptr;
 }
 
 void content_indicator_destroy_for_scroll_layer(ScrollLayer *scroll_layer) {

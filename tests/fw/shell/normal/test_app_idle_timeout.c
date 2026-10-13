@@ -1,20 +1,17 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
-
-#include "shell/normal/app_idle_timeout.h"
-
-#include "kernel/event_loop.h"
-#include "shell/normal/watchface.h"
-#include "shell/system_shell.h"
+#include <clar.h>
+#include <kernel/event_loop.h>
+#include <shell/normal/app_idle_timeout.h>
+#include <shell/normal/watchface.h>
+#include <shell/system_shell.h>
 
 // Stubs
 /////////////////////////////////////////////////////////////////////////
-#include "stubs_logging.h"
-#include "stubs_passert.h"
-
-#include "fake_new_timer.h"
+#include <fake_new_timer.h>
+#include <stubs_logging.h>
+#include <stubs_passert.h>
 
 static int s_watchface_launch_count;
 
@@ -39,7 +36,7 @@ static void prv_run_deferred(void) {
 
 const CompositorTransition *shell_get_watchface_compositor_animation(
     bool watchface_is_destination) {
-  return NULL;
+  return nullptr;
 }
 
 void watchface_launch_default(const CompositorTransition *animation) {

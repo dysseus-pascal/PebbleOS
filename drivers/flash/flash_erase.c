@@ -3,20 +3,18 @@
 
 #include <pbl/drivers/flash.h>
 #include <pbl/drivers/flash/flash_internal.h>
-
-#include "flash_region/flash_region.h"
-#include "pbl/services/new_timer/new_timer.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/kernel/sem.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/kernel/compiler.h"
-#include "pbl/util/testing.h"
-#include "pbl/util/math.h"
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/util/math.h>
+#include <pbl/util/testing.h>
 
-#include "pbl/kernel/sem.h"
+#include <flash_region/flash_region.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(driver_flash, CONFIG_DRIVER_FLASH_LOG_LEVEL);
 
-static PBL_SEM_DEFINE(s_erase_mutex, 0, 1);
 static struct FlashRegionEraseState {
   uint32_t next_erase_addr;
   uint32_t end_addr;
@@ -29,6 +27,8 @@ static void prv_erase_next_async(void *ignored);
 PBL_T_STATIC void prv_lock_erase_mutex(void);
 PBL_T_STATIC void prv_unlock_erase_mutex(void);
 #if !UNITTEST
+static PBL_SEM_DEFINE(s_erase_mutex, 0, 1);
+
 void flash_erase_init(void) {
   pbl_sem_give(&s_erase_mutex);
 }
@@ -47,7 +47,7 @@ static void prv_async_erase_done_cb(void *ignored, status_t result) {
     // Chain the next erase from a new callback to prevent recursion (and the
     // potential for a stack overflow) if the flash_erase_sector calls the
     // completion callback asynchronously.
-    if (!new_timer_add_work_callback(prv_erase_next_async, NULL)) {
+    if (!new_timer_add_work_callback(prv_erase_next_async, nullptr)) {
       PBL_LOG_ERR("Failed to enqueue callback; aborting erase");
       prv_unlock_erase_mutex();
       s_erase_state.on_complete(s_erase_state.on_complete_context, E_INTERNAL);
@@ -62,12 +62,12 @@ static void prv_erase_next_async(void *ignored) {
   uint32_t addr = s_erase_state.next_erase_addr;
   if ((addr & ~SECTOR_ADDR_MASK) == 0 && addr + SECTOR_SIZE_BYTES <= s_erase_state.end_addr) {
     s_erase_state.next_erase_addr += SECTOR_SIZE_BYTES;
-    flash_erase_sector(addr, prv_async_erase_done_cb, NULL);
+    flash_erase_sector(addr, prv_async_erase_done_cb, nullptr);
   } else {
     // Fall back to a subsector erase
     s_erase_state.next_erase_addr += SUBSECTOR_SIZE_BYTES;
     PBL_ASSERTN(s_erase_state.next_erase_addr <= s_erase_state.end_addr);
-    flash_erase_subsector(addr, prv_async_erase_done_cb, NULL);
+    flash_erase_subsector(addr, prv_async_erase_done_cb, nullptr);
   }
 }
 
@@ -120,5 +120,5 @@ void flash_erase_optimal_range(uint32_t min_start, uint32_t max_start, uint32_t 
     .on_complete_context = context,
   };
 
-  prv_erase_next_async(NULL);
+  prv_erase_next_async(nullptr);
 }

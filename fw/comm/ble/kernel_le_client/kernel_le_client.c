@@ -4,32 +4,31 @@
 #include "kernel_le_client.h"
 
 #if defined(CONFIG_BT_ANCS_CLIENT)
-#include "ancs/ancs_definition.h"
+#include <comm/ble/kernel_le_client/ancs/ancs_definition.h>
 #endif
 #if defined(CONFIG_BT_AMS_CLIENT)
-#include "ams/ams_definition.h"
+#include <comm/ble/kernel_le_client/ams/ams_definition.h>
 #endif
-#include "app_launch/app_launch_definition.h"
-#include "dis/dis_definition.h"
-#include "ppogatt/ppogatt_definition.h"
+#include <comm/ble/kernel_le_client/app_launch/app_launch_definition.h>
+#include <comm/ble/kernel_le_client/dis/dis_definition.h>
+#include <comm/ble/kernel_le_client/ppogatt/ppogatt_definition.h>
 #if UNITTEST
-#include "test/test_definition.h"
+#include <comm/ble/kernel_le_client/test/test_definition.h>
 #endif
 
-#include "kernel/event_loop.h"
-#include "kernel/events.h"
-#include "kernel/pbl_malloc.h"
-
+#include <pbl/kernel/compiler.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/kernel/compiler.h"
 
-#include "comm/ble/gap_le_connect.h"
-#include "comm/ble/gap_le_slave_reconnect.h"
-#include "comm/ble/gatt_client_accessors.h"
-#include "comm/ble/gatt_client_discovery.h"
-#include "comm/ble/gatt_client_operations.h"
-#include "comm/ble/gatt_client_subscriptions.h"
+#include <comm/ble/gap_le_connect.h>
+#include <comm/ble/gap_le_slave_reconnect.h>
+#include <comm/ble/gatt_client_accessors.h>
+#include <comm/ble/gatt_client_discovery.h>
+#include <comm/ble/gatt_client_operations.h>
+#include <comm/ble/gatt_client_subscriptions.h>
+#include <kernel/event_loop.h>
+#include <kernel/events.h>
+#include <kernel/pbl_malloc.h>
+#include <system/passert.h>
 
 #define MAX_SERVICE_INSTANCES (8)
 
@@ -118,7 +117,7 @@ static const KernelLEClient s_clients[KernelLEClientNum] = {
         .handle_service_removed = ppogatt_handle_service_removed,
         .invalidate_all_references = ppogatt_invalidate_all_references,
         .can_handle_characteristic = ppogatt_can_handle_characteristic,
-        .handle_write_response = NULL,
+        .handle_write_response = nullptr,
         .handle_subscribe = ppogatt_handle_subscribe,
         .handle_read_or_notification = ppogatt_handle_read_or_notification,
       },
@@ -164,7 +163,7 @@ static const KernelLEClient s_clients[KernelLEClientNum] = {
         .handle_service_removed = app_launch_handle_service_removed,
         .invalidate_all_references = app_launch_invalidate_all_references,
         .can_handle_characteristic = app_launch_can_handle_characteristic,
-        .handle_read_or_notification = NULL,
+        .handle_read_or_notification = nullptr,
       },
   [KernelLEClientDIS] = {
     .debug_name = "DIS",
@@ -174,8 +173,8 @@ static const KernelLEClient s_clients[KernelLEClientNum] = {
     .handle_service_discovered = dis_handle_service_discovered,
     .handle_service_removed = dis_handle_service_removed,
     .invalidate_all_references = dis_invalidate_all_references,
-    .can_handle_characteristic = NULL,
-    .handle_read_or_notification = NULL,
+    .can_handle_characteristic = nullptr,
+    .handle_read_or_notification = nullptr,
   },
 #endif // UNITTEST
 };
@@ -279,7 +278,7 @@ static const KernelLEClient *prv_client_for_characteristic(pbl_bt_characteristic
       return client;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 typedef void (*ConsumeFuncPtr)(pbl_bt_characteristic_t characteristic_ref, uint8_t *value_out,
@@ -291,7 +290,7 @@ typedef void (*ReadNotifyHandler)(pbl_bt_characteristic_t characteristic, const 
 static void prv_consume_read_response(const PebbleBLEGATTClientEvent *event,
                                       const KernelLEClient *client) {
   const uint16_t value_length = event->value_length;
-  uint8_t *buffer = NULL;
+  uint8_t *buffer = nullptr;
 
   if (value_length) {
     // This is ugly and causes double-copying the data...
@@ -336,8 +335,12 @@ static void prv_consume_notifications(const PebbleBLEGATTClientEvent *event) {
       return;
     }
 
+    pbl_bt_characteristic_t characteristic;
+    uint16_t value_length = header.value_length;
     const uint16_t next_value_length = gatt_client_subscriptions_consume_notification(
-        &header.characteristic, buffer, &header.value_length, GAPLEClientKernel, &has_more);
+        &characteristic, buffer, &value_length, GAPLEClientKernel, &has_more);
+    header.characteristic = characteristic;
+    header.value_length = value_length;
 
     const KernelLEClient *const client = prv_client_for_characteristic(header.characteristic);
     if (client->handle_read_or_notification) {
@@ -366,7 +369,7 @@ static void prv_handle_gatt_event(const PebbleBLEGATTClientEvent *event) {
   if (!client) {
     // Read responses still need to be consumed, even if the client has disappeared:
     if (event->subtype == PebbleBLEGATTClientEventTypeCharacteristicRead && event->value_length) {
-      gatt_client_consume_read_response(event->object_ref, NULL, event->value_length,
+      gatt_client_consume_read_response(event->object_ref, nullptr, event->value_length,
                                         GAPLEClientKernel);
     }
     goto log_error;
@@ -479,13 +482,6 @@ static void prv_connect_gateway_bonding(pbl_bt_bonding_id_t gateway_bonding) {
 }
 
 // -------------------------------------------------------------------------------------------------
-static void prv_cancel_connect_gateway_bonding(pbl_bt_bonding_id_t gateway_bonding) {
-  gap_le_slave_reconnect_stop();
-  // FIXME: Redundant? since gap_le_connect will also clean up?
-  gap_le_connect_cancel_by_bonding(gateway_bonding, GAPLEClientKernel);
-}
-
-// -------------------------------------------------------------------------------------------------
 static void prv_cleanup_clients_kernel_main_cb(void *unused) {
 #if defined(CONFIG_BT_ANCS_CLIENT)
   ancs_destroy();
@@ -497,12 +493,15 @@ static void prv_cleanup_clients_kernel_main_cb(void *unused) {
 
 // -------------------------------------------------------------------------------------------------
 void kernel_le_client_handle_bonding_change(pbl_bt_bonding_id_t bonding, BtPersistBondingOp op) {
-  if (bt_persistent_storage_is_ble_ancs_bonding(bonding)) {
-    if (op == BtPersistBondingOpWillDelete) {
-      prv_cancel_connect_gateway_bonding(bonding);
-    } else if (op == BtPersistBondingOpDidAdd) {
-      prv_connect_gateway_bonding(bonding);
+  if (op == BtPersistBondingOpWillDelete) {
+    // The bonding is already gone from storage, so its type cannot be read back.
+    if (!bt_persistent_storage_has_active_ble_gateway_bonding() &&
+        !bt_persistent_storage_has_ble_ancs_bonding()) {
+      gap_le_slave_reconnect_stop();
     }
+    gap_le_connect_cancel_by_bonding(bonding, GAPLEClientKernel);
+  } else if (op == BtPersistBondingOpDidAdd && bt_persistent_storage_is_ble_ancs_bonding(bonding)) {
+    prv_connect_gateway_bonding(bonding);
   }
 }
 
@@ -520,7 +519,7 @@ void kernel_le_client_init(void) {
 // -------------------------------------------------------------------------------------------------
 void kernel_le_client_deinit(void) {
   // Cleanup clients: their code must execute on KernelMain, so add callback:
-  launcher_task_add_callback(prv_cleanup_clients_kernel_main_cb, NULL);
+  launcher_task_add_callback(prv_cleanup_clients_kernel_main_cb, nullptr);
 
   gap_le_slave_reconnect_stop();
   gap_le_connect_cancel_all(GAPLEClientKernel);

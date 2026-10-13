@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include "kernel/pebble_tasks.h"
-#include "system/passert.h"
-
-#include <stdio.h>
-#include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+
+#include <kernel/pebble_tasks.h>
+#include <system/passert.h>
 
 static bool s_syscall_did_fail;
 
@@ -16,7 +15,7 @@ void stubs_syscall_init(void) {
   s_syscall_did_fail = false;
 }
 
-PBL_NORETURN void syscall_failed(void) {
+[[noreturn]] void syscall_failed(void) {
   s_syscall_did_fail = true;
   printf("Warning: Syscall failed!\n");
 

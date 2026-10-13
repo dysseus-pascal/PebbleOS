@@ -1,10 +1,10 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "board/board.h"
-
 #include <pbl/drivers/mic/qemu/mic_definitions.h>
 #include <pbl/drivers/uart/posix.h>
+
+#include <board/board.h>
 
 static UARTDeviceState s_dbg_uart_state;
 
@@ -23,6 +23,17 @@ static const struct UARTDevice s_qemu_uart = {
 };
 
 UARTDevice *const QEMU_UART = &s_qemu_uart;
+
+#ifdef CONFIG_BT_HCI_UART
+static UARTDeviceState s_bt_hci_uart_state;
+
+static const struct UARTDevice s_bt_hci_uart = {
+  .state = &s_bt_hci_uart_state,
+  .channel = 2,
+};
+
+UARTDevice *const BT_HCI_UART = &s_bt_hci_uart;
+#endif
 
 static const PosixDisplayDevice s_display = {
   .width = PBL_DISPLAY_WIDTH,
@@ -51,10 +62,10 @@ const BoardConfig BOARD_CONFIG = {
 
 const BoardConfigButton BOARD_CONFIG_BUTTON = {
   .buttons = {
-    [BUTTON_ID_BACK] = {"Back"},
-    [BUTTON_ID_UP] = {"Up"},
-    [BUTTON_ID_SELECT] = {"Select"},
-    [BUTTON_ID_DOWN] = {"Down"},
+    [BUTTON_ID_BACK] = {"Back", PBL_INPUT_KEY_BACK},
+    [BUTTON_ID_UP] = {"Up", PBL_INPUT_KEY_UP},
+    [BUTTON_ID_SELECT] = {"Select", PBL_INPUT_KEY_SELECT},
+    [BUTTON_ID_DOWN] = {"Down", PBL_INPUT_KEY_DOWN},
   },
 };
 

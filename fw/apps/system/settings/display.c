@@ -2,24 +2,25 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "display.h"
+
 #include "menu.h"
 #include "notifications_private.h"
 #include "option_menu.h"
 #include "window.h"
 
-#include "applib/ui/ui.h"
-#include <pbl/drivers/ambient_light.h>
-#include "kernel/pbl_malloc.h"
-#include "process_state/app_state/app_state.h"
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/services/light.h"
-#include "shell/prefs.h"
-#include "shell/system_theme.h"
-#include "system/passert.h"
-#include "pbl/util/size.h"
-
-#include <stdbool.h>
 #include <stdio.h>
+
+#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/services/light.h>
+#include <pbl/util/size.h>
+
+#include <applib/ui/ui.h>
+#include <kernel/pbl_malloc.h>
+#include <process_state/app_state/app_state.h>
+#include <shell/prefs.h>
+#include <shell/system_theme.h>
+#include <system/passert.h>
 
 // Forward decl so the parent menu can push the Backlight submenu.
 static void prv_backlight_submenu_push(void);
@@ -399,8 +400,8 @@ static void prv_backlight_select_click_cb(SettingsCallbacks *context, uint16_t r
 static void prv_backlight_draw_row_cb(SettingsCallbacks *context, GContext *ctx,
                                       const Layer *cell_layer, uint16_t row, bool selected) {
   SettingsBacklightData *data = (SettingsBacklightData *)context;
-  const char *title = NULL;
-  const char *subtitle = NULL;
+  const char *title = nullptr;
+  const char *subtitle = nullptr;
   switch (prv_backlight_item_from_row(row)) {
     case SettingsBacklightMode:
       title = i18n_noop("Backlight");
@@ -464,7 +465,7 @@ static void prv_backlight_draw_row_cb(SettingsCallbacks *context, GContext *ctx,
     default:
       WTF;
   }
-  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), NULL);
+  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), nullptr);
 }
 
 static uint16_t prv_backlight_num_rows_cb(SettingsCallbacks *context) {
@@ -504,7 +505,7 @@ static void prv_backlight_hide_cb(SettingsCallbacks *context) {
   SettingsBacklightData *data = (SettingsBacklightData *)context;
   if (data->update_timer) {
     app_timer_cancel(data->update_timer);
-    data->update_timer = NULL;
+    data->update_timer = nullptr;
   }
   if (data->als_primed) {
     ambient_light_release();
@@ -516,7 +517,7 @@ static void prv_backlight_deinit_cb(SettingsCallbacks *context) {
   SettingsBacklightData *data = (SettingsBacklightData *)context;
   if (data->update_timer) {
     app_timer_cancel(data->update_timer);
-    data->update_timer = NULL;
+    data->update_timer = nullptr;
   }
   if (data->als_primed) {
     ambient_light_release();
@@ -640,8 +641,8 @@ static void prv_display_select_click_cb(SettingsCallbacks *context, uint16_t row
 static void prv_display_draw_row_cb(SettingsCallbacks *context, GContext *ctx,
                                     const Layer *cell_layer, uint16_t row, bool selected) {
   SettingsDisplayData *data = (SettingsDisplayData *)context;
-  const char *title = NULL;
-  const char *subtitle = NULL;
+  const char *title = nullptr;
+  const char *subtitle = nullptr;
   switch (prv_display_item_from_row(row)) {
     case SettingsDisplayBacklight:
       title = i18n_noop("Backlight");
@@ -688,7 +689,7 @@ static void prv_display_draw_row_cb(SettingsCallbacks *context, GContext *ctx,
     default:
       WTF;
   }
-  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), NULL);
+  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), nullptr);
 }
 
 static uint16_t prv_display_num_rows_cb(SettingsCallbacks *context) {

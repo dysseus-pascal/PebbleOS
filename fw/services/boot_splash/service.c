@@ -1,18 +1,19 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/kernel/thread.h"
-#include "pbl/services/boot_splash.h"
+#include <pbl/kernel/thread.h>
+#include <pbl/services/boot_splash.h>
 
 #if defined(CONFIG_PBLBOOT) || defined(CONFIG_QEMU) || defined(CONFIG_SOC_POSIX)
 
-#include "board/display.h"
-#include "board/splash.h"
-#include <pbl/drivers/display/display.h>
-#include "kernel/pbl_malloc.h"
-#include "kernel/util/sleep.h"
-
 #include <string.h>
+
+#include <pbl/drivers/display/display.h>
+
+#include <board/display.h>
+#include <board/splash.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/util/sleep.h>
 
 // Platform-specific colors: PebbleOS uses ARGB2222 (GColor8), not raw RGB332
 #if defined(CONFIG_QEMU) || defined(CONFIG_SOC_POSIX)
@@ -138,9 +139,9 @@ static void prv_boot_splash_task(void *param) {
 
   // Cleanup
   kernel_free(fb);
-  s_boot_splash_fb = NULL;
-  s_boot_splash_task = NULL;
-  pbl_thread_abort(NULL);
+  s_boot_splash_fb = nullptr;
+  s_boot_splash_task = nullptr;
+  pbl_thread_abort(nullptr);
 }
 
 void boot_splash_start(void) {
@@ -169,10 +170,10 @@ void boot_splash_start(void) {
 }
 
 void boot_splash_stop(void) {
-  if (s_boot_splash_running && s_boot_splash_task != NULL) {
+  if (s_boot_splash_running && s_boot_splash_task != nullptr) {
     s_boot_splash_running = false;
     // Wait for the splash task to finish (max ~10ms delay due to short sleep intervals)
-    while (s_boot_splash_task != NULL) {
+    while (s_boot_splash_task != nullptr) {
       psleep(10);
     }
 

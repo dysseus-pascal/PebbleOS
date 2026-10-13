@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "process_management/app_manager.h"
-#include "process_management/pebble_process_md.h"
-#include "process_management/process_manager.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <process_management/app_manager.h>
+#include <process_management/pebble_process_md.h>
+#include <process_management/process_manager.h>
 
 bool PBL_WEAK app_manager_is_initialized(void) {
   return true;
@@ -25,7 +26,7 @@ void PBL_WEAK app_manager_put_launch_app_event(const AppLaunchEventConfig *confi
 }
 
 ProcessContext *PBL_WEAK app_manager_get_task_context(void) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK app_manager_close_current_app(bool gracefully) {
@@ -57,7 +58,7 @@ ButtonId PBL_WEAK app_manager_get_launch_button(void) {
 }
 
 const PebbleProcessMd *PBL_WEAK app_manager_get_current_app_md(void) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK app_manager_is_app_supported(const PebbleProcessMd *app_md) {

@@ -3,11 +3,12 @@
 
 #include "ble_ibeacon.h"
 
-#include "applib/applib_malloc.auto.h"
-#include "pbl/util/byteorder.h"
-
 #include <string.h>
-#include "pbl/kernel/compiler.h"
+
+#include <pbl/kernel/compiler.h>
+#include <pbl/util/byteorder.h>
+
+#include <applib/applib_malloc.auto.h>
 
 // -----------------------------------------------------------------------------
 //! Apple's iBeacon AD DATA format.
@@ -64,7 +65,7 @@ BLEiBeacon *ble_ibeacon_create_from_ad_data(const struct pbl_bt_ad_data *ad, int
   if (ibeacon && !ble_ibeacon_parse(ad, rssi, ibeacon)) {
     // Failed to parse.
     applib_free(ibeacon);
-    ibeacon = NULL;
+    ibeacon = nullptr;
   }
   return ibeacon;
 }

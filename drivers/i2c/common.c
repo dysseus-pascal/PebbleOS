@@ -4,17 +4,17 @@
 #include <pbl/drivers/i2c.h>
 #include <pbl/drivers/i2c/definitions.h>
 #include <pbl/drivers/i2c/hal.h>
-
-#include "board/board.h"
-#include "pbl/services/analytics/analytics.h"
 #include <pbl/drivers/rtc.h>
-#include "pbl/kernel/types.h"
-#include "kernel/util/sleep.h"
-#include "pbl/kernel/mutex.h"
-#include "pbl/kernel/sem.h"
+#include <pbl/kernel/mutex.h>
+#include <pbl/kernel/sem.h>
+#include <pbl/kernel/types.h>
 #include <pbl/logging/logging.h>
-#include "pbl/mcu/cache.h"
-#include "system/passert.h"
+#include <pbl/mcu/cache.h>
+#include <pbl/services/analytics/analytics.h>
+
+#include <board/board.h>
+#include <kernel/util/sleep.h>
+#include <system/passert.h>
 
 #ifdef CONFIG_PMIC
 #include <pbl/drivers/pmic.h>
@@ -90,7 +90,7 @@ static void prv_bus_reset(I2CBus *bus) {
 void i2c_init(I2CBus *bus) {
   PBL_ASSERTN(bus);
 
-  *bus->state = (I2CBusState){0};
+  *bus->state = (I2CBusState){};
   pbl_sem_init(&bus->state->event_semaphore, 0, 1);
   pbl_mutex_init(&bus->state->bus_mutex);
 

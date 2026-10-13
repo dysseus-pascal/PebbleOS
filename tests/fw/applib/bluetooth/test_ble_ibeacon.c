@@ -1,20 +1,20 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/bluetooth/ble_ibeacon.h"
 #include <pbl/btutil/bt_device.h>
 
-#include "clar.h"
+#include <applib/bluetooth/ble_ibeacon.h>
+#include <clar.h>
 
 // Stubs
 ///////////////////////////////////////////////////////////
 
-#include "stubs_logging.h"
-#include "stubs_passert.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_pebble_tasks.h"
-#include "stubs_rand_ptr.h"
-#include "stubs_ble_syscalls.h"
+#include <stubs_ble_syscalls.h>
+#include <stubs_logging.h>
+#include <stubs_passert.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_pebble_tasks.h>
+#include <stubs_rand_ptr.h>
 
 // The test data and descriptions in this file are captured using the FrontLine
 // Bluetooth sniffer.
@@ -110,7 +110,7 @@ static struct pbl_bt_ad_data *create_too_short_ad_data(void) {
 
 void test_ble_ibeacon__ibeacon_data_too_short(void) {
   struct pbl_bt_ad_data *too_short_to_ibeacon = create_too_short_ad_data();
-  bool is_ibeacon = ble_ibeacon_parse(too_short_to_ibeacon, 0, NULL);
+  bool is_ibeacon = ble_ibeacon_parse(too_short_to_ibeacon, 0, nullptr);
   cl_assert(!is_ibeacon);
   free(too_short_to_ibeacon);
 }

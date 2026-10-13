@@ -37,7 +37,7 @@
 // Die Namen der Stufen 1-5, sparsam zuerst (aus b25). IM FLASH, als Feld konstanter Zeiger auf
 // Literale: Die Health-App ohne Systemrechte (Schritt 3, Karte Settings) liest sie hier selbst.
 // Ein Feld im Kernel-.data oder ein Aufruf in die Variante bliebe ihr verschlossen (3.6, 3.7).
-static const char *const BOULDER_MESSSTUFE_NAMEN[MESSSTUFE_MAX] PBL_UNUSED = {
+[[maybe_unused]] static const char *const BOULDER_MESSSTUFE_NAMEN[MESSSTUFE_MAX] = {
   "Battery Saver", "Light", "Balanced", "Detailed", "Precise",
 };
 

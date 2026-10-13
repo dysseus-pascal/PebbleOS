@@ -1,41 +1,36 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
+#include <pbl/services/comm_session/session.h>
+#include <pbl/services/comm_session/session_remote_os.h>
+#include <pbl/services/music.h>
+#include <pbl/services/music_endpoint.h>
+#include <pbl/services/music_endpoint_types.h>
+#include <pbl/services/music_internal.h>
+#include <pbl/util/size.h>
 
-#include "pbl/services/music.h"
-#include "pbl/services/music_endpoint.h"
-#include "pbl/services/music_endpoint_types.h"
-#include "pbl/services/music_internal.h"
-
-#include "applib/graphics/gtypes.h"
-
-#include "pbl/services/comm_session/session.h"
-#include "pbl/services/comm_session/session_remote_os.h"
-
-#include "kernel/events.h"
-
-#include "pbl/util/size.h"
+#include <applib/graphics/gtypes.h>
+#include <clar.h>
+#include <kernel/events.h>
 
 // Stubs & Fakes
 ///////////////////////////////////////////////////////////
 
-#include "fake_events.h"
-#include "fake_rtc.h"
-#include "fake_session.h"
-#include "fake_system_task.h"
-
-#include "stubs_app_manager.h"
-#include "stubs_app_install_manager.h"
-#include "stubs_passert.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_bt_lock.h"
-#include "stubs_hexdump.h"
-#include "stubs_imaging.h"
-#include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_serial.h"
-#include "stubs_tick.h"
+#include <fake_events.h>
+#include <fake_rtc.h>
+#include <fake_session.h>
+#include <fake_system_task.h>
+#include <stubs_app_install_manager.h>
+#include <stubs_app_manager.h>
+#include <stubs_bt_lock.h>
+#include <stubs_hexdump.h>
+#include <stubs_imaging.h>
+#include <stubs_logging.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_serial.h>
+#include <stubs_tick.h>
 
 void ams_music_disconnect(void) {
 }
@@ -64,7 +59,7 @@ static void prv_receive_app_event(bool is_open) {
 
 static void prv_receive_pp_data(const uint8_t *data, uint16_t length) {
   fake_event_clear_last();
-  music_protocol_msg_callback(NULL, data, length);
+  music_protocol_msg_callback(nullptr, data, length);
 }
 
 static void prv_receive_and_assert_now_playing(bool expect_is_handled) {
@@ -226,7 +221,7 @@ void test_music_endpoint__initialize(void) {
   fake_comm_session_init();
   music_init();
 
-  s_transport = fake_transport_create(TransportDestinationSystem, NULL, NULL);
+  s_transport = fake_transport_create(TransportDestinationSystem, nullptr, nullptr);
   fake_transport_set_connected(s_transport, true /* connected */);
 
   // Simulate connecting Pebble mobile app:
@@ -243,7 +238,7 @@ void test_music_endpoint__cleanup(void) {
 }
 
 void test_music_endpoint__coalesce_untaken_events(void) {
-  fake_event_set_callback(NULL);
+  fake_event_set_callback(nullptr);
   fake_event_reset_count();
 
   music_update_now_playing("one", 3, "artist", 6, "album", 5);
@@ -257,7 +252,7 @@ void test_music_endpoint__coalesce_untaken_events(void) {
   cl_assert_equal_i(fake_event_get_count(), 2);
 
   char title[MUSIC_BUFFER_LENGTH];
-  music_get_now_playing(title, NULL, NULL);
+  music_get_now_playing(title, nullptr, nullptr);
   cl_assert_equal_s(title, "three");
   uint32_t track_position, track_duration;
   music_get_pos(&track_position, &track_duration);
@@ -270,7 +265,7 @@ void test_music_endpoint__coalesce_untaken_events(void) {
 }
 
 void test_music_endpoint__post_again_once_taken(void) {
-  fake_event_set_callback(NULL);
+  fake_event_set_callback(nullptr);
   fake_event_reset_count();
 
   music_update_now_playing("one", 3, "artist", 6, "album", 5);
@@ -296,7 +291,7 @@ void test_music_endpoint__post_again_once_taken(void) {
 void test_music_endpoint__album_art_transfer_failure_does_not_latch(void) {
   music_update_now_playing("one", 3, "artist", 6, "album", 5);
   const uint8_t first_generation = music_get_now_playing_generation();
-  music_set_album_art(NULL, first_generation);
+  music_set_album_art(nullptr, first_generation);
   cl_assert(music_album_art_is_current());
 
   music_update_now_playing("two", 3, "artist", 6, "album", 5);
@@ -314,7 +309,7 @@ void test_music_endpoint__no_art_response_latches_generation(void) {
   music_update_now_playing("no art", 6, "artist", 6, "album", 5);
   const uint8_t generation = music_get_now_playing_generation();
   fake_event_clear_last();
-  music_set_album_art(NULL, generation);
+  music_set_album_art(nullptr, generation);
 
   cl_assert(music_album_art_is_current());
   const PebbleEvent event = fake_event_get_last();
@@ -328,12 +323,12 @@ void test_music_endpoint__held_art_is_released_when_transfer_starts(void) {
   const uint8_t generation = music_get_now_playing_generation();
 
   music_update_now_playing("second", 6, "artist", 6, "album", 5);
-  cl_assert(music_album_art_lock() != NULL);
+  cl_assert(music_album_art_lock() != nullptr);
   music_album_art_unlock();
 
-  cl_assert(s_imaging_will_receive_handlers[ImagingImageTypeAlbumArt] != NULL);
+  cl_assert(s_imaging_will_receive_handlers[ImagingImageTypeAlbumArt] != nullptr);
   s_imaging_will_receive_handlers[ImagingImageTypeAlbumArt](generation);
-  cl_assert(music_album_art_lock() == NULL);
+  cl_assert(music_album_art_lock() == nullptr);
   music_album_art_unlock();
 }
 
@@ -569,5 +564,5 @@ void test_music_endpoint__player_name_not_available(void) {
   // Android app connects:
   prv_receive_app_info_event(true /* is_android */);
 
-  cl_assert_equal_b(music_get_player_name(NULL), false);
+  cl_assert_equal_b(music_get_player_name(nullptr), false);
 }

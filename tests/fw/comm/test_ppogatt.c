@@ -1,39 +1,38 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "comm/ble/kernel_le_client/ppogatt/ppogatt.h"
-#include "comm/ble/kernel_le_client/ppogatt/ppogatt_internal.h"
-#include "pbl/services/comm_session/session_transport.h"
-#include "pbl/services/regular_timer.h"
-
+#include <pbl/services/comm_session/session_transport.h>
+#include <pbl/services/regular_timer.h>
 #include <pbl/util/size.h>
 
-#include "clar.h"
+#include <clar.h>
+#include <comm/ble/kernel_le_client/ppogatt/ppogatt.h>
+#include <comm/ble/kernel_le_client/ppogatt/ppogatt_internal.h>
 
 // Stubs
 ///////////////////////////////////////////////////////////
 
-#include "stubs_analytics.h"
-#include "stubs_bt_conn_mgr.h"
-#include "stubs_bt_lock.h"
-#include "stubs_logging.h"
-#include "stubs_mfg_info.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_print.h"
-#include "stubs_rand_ptr.h"
-#include "stubs_rtc.h"
-#include "stubs_serial.h"
+#include <stubs_analytics.h>
+#include <stubs_bt_conn_mgr.h>
+#include <stubs_bt_lock.h>
+#include <stubs_logging.h>
+#include <stubs_mfg_info.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <stubs_print.h>
+#include <stubs_rand_ptr.h>
+#include <stubs_rtc.h>
+#include <stubs_serial.h>
 
 // Fakes
 ///////////////////////////////////////////////////////////
 
-#include "fake_gatt_client_operations.h"
-#include "fake_gatt_client_subscriptions.h"
-#include "fake_new_timer.h"
-#include "fake_pbl_malloc.h"
-#include "fake_session.h"
-#include "fake_system_task.h"
+#include <fake_gatt_client_operations.h>
+#include <fake_gatt_client_subscriptions.h>
+#include <fake_new_timer.h>
+#include <fake_pbl_malloc.h>
+#include <fake_session.h>
+#include <fake_system_task.h>
 
 #define MTU_SIZE         (158)
 #define MAX_PAYLOAD_SIZE (MTU_SIZE - 3 /* ATT Header size */ - 1 /* PPoGATT Packet Header */)
@@ -49,16 +48,16 @@ uint16_t gap_le_connection_get_gatt_mtu(const struct pbl_bt_device_internal *dev
 }
 
 GAPLEConnection *gap_le_connection_get_gateway(void) {
-  return NULL;
+  return nullptr;
 }
 
 GAPLEConnection *gap_le_connection_by_device(const struct pbl_bt_device_internal *device) {
-  return NULL;
+  return nullptr;
 }
 
 GAPLEConnection *gatt_client_characteristic_get_connection(
     pbl_bt_characteristic_t characteristic_ref) {
-  return NULL;
+  return nullptr;
 }
 
 // The bt_lock-held write path (see prv_send_next_packets) is only taken when
@@ -113,18 +112,18 @@ extern uint32_t ppogatt_client_count(void);
 extern void ppogatt_trigger_rx_ack_send_timeout(void);
 extern TransportDestination ppogatt_get_destination(Transport *transport);
 
-static const uint8_t s_num_service_instances = 2;
-static pbl_bt_characteristic_t s_characteristics[s_num_service_instances]
-                                                [PPoGATTCharacteristicNum] = {
-                                                  [0] =
-                                                      {
-                                                        [PPoGATTCharacteristicData] = 01,
-                                                        [PPoGATTCharacteristicMeta] = 02,
-                                                      },
-                                                  [1] = {
-                                                    [PPoGATTCharacteristicData] = 11,
-                                                    [PPoGATTCharacteristicMeta] = 12,
-                                                  },
+#define NUM_SERVICE_INSTANCES 2
+static pbl_bt_characteristic_t s_characteristics[NUM_SERVICE_INSTANCES][PPoGATTCharacteristicNum] =
+    {
+      [0] =
+          {
+            [PPoGATTCharacteristicData] = 01,
+            [PPoGATTCharacteristicMeta] = 02,
+          },
+      [1] = {
+        [PPoGATTCharacteristicData] = 11,
+        [PPoGATTCharacteristicMeta] = 12,
+      },
 };
 
 static const pbl_bt_characteristic_t s_unknown_characteristics = 0x55;
@@ -162,11 +161,6 @@ static const PPoGATTMetaV1 s_meta_v1_app_inferred = {
   .app_uuid = UuidMake(0xA4, 0x83, 0x2A, 0x0E, 0x74, 0x54, 0x45, 0x32, 0xB2, 0xA2, 0x4E, 0x6F, 0x8F,
                        0x7B, 0x68, 0x6F),
   .pp_session_type = PPoGATTSessionType_InferredFromUuid,
-};
-
-static PPoGATTPacket s_reset_complete = (const PPoGATTPacket){
-  .sn = 0,
-  .type = PPoGATTPacketTypeResetComplete,
 };
 
 static PPoGATTPacket s_server_reset_request = (const PPoGATTPacket){
@@ -342,13 +336,13 @@ void test_ppogatt__cleanup(void) {
 }
 
 void prv_notify_services_discovered(int num_services_to_register) {
-  for (int i = 0; i < s_num_service_instances && i < num_services_to_register; i++) {
+  for (int i = 0; i < NUM_SERVICE_INSTANCES && i < num_services_to_register; i++) {
     ppogatt_handle_service_discovered(s_characteristics[i]);
   }
 }
 
 void test_ppogatt__find_pebble_app_and_3rd_party_app(void) {
-  prv_notify_services_discovered(s_num_service_instances);
+  prv_notify_services_discovered(NUM_SERVICE_INSTANCES);
 
   // Assert GATT reads requests to Meta characteristics happened:
   fake_gatt_client_op_assert_read(s_characteristics[0][PPoGATTCharacteristicMeta],
@@ -369,7 +363,7 @@ void test_ppogatt__find_pebble_app_and_3rd_party_app(void) {
 }
 
 void test_ppogatt__handles_unknown_read_response(void) {
-  uint8_t data;
+  uint8_t data = 0;
   ppogatt_handle_read_or_notification(s_unknown_characteristics, &data, sizeof(data),
                                       PBL_BT_GATT_ERROR_SUCCESS);
   // No crashes / asserts etc.
@@ -457,7 +451,6 @@ void test_ppogatt__deletes_existing_client_after_rediscovery(void) {
   // Client created:
   cl_assert_equal_i(ppogatt_client_count(), 1);
   cl_assert_equal_b(ppogatt_has_client_for_uuid(&s_meta_v0_system.app_uuid), true);
-  Transport *client = ppogatt_client_for_uuid(&s_meta_v0_system.app_uuid);
 
   // Rediscovery:
   ppogatt_invalidate_all_references();
@@ -472,7 +465,6 @@ void test_ppogatt__deletes_existing_client_after_rediscovery(void) {
   // Still one client:
   cl_assert_equal_i(ppogatt_client_count(), 1);
   cl_assert_equal_b(ppogatt_has_client_for_uuid(&s_meta_v0_system.app_uuid), true);
-  Transport *client2 = ppogatt_client_for_uuid(&s_meta_v0_system.app_uuid);
 }
 
 void test_ppogatt__invalidate_characteristic_refs_immediately_after_update(void) {
@@ -515,13 +507,13 @@ void test_ppogatt__cleanup_client_when_meta_read_gets_error_response(void) {
 
   // A failing meta read is now retriable (commit 8651be8fb): the first failure
   // schedules a retry rather than deleting the client.
-  ppogatt_handle_read_or_notification(meta, NULL, 0, PBL_BT_GATT_ERROR_INVALID_HANDLE);
+  ppogatt_handle_read_or_notification(meta, nullptr, 0, PBL_BT_GATT_ERROR_INVALID_HANDLE);
   cl_assert_equal_i(ppogatt_client_count(), 1);
 
   // Exhaust the remaining retries; the client is deleted only after
   // PPOGATT_META_READ_RETRY_COUNT_MAX failures.
   for (int i = 1; i < PPOGATT_META_READ_RETRY_COUNT_MAX; i++) {
-    prv_fail_meta_read_retry(meta, NULL, 0, PBL_BT_GATT_ERROR_INVALID_HANDLE);
+    prv_fail_meta_read_retry(meta, nullptr, 0, PBL_BT_GATT_ERROR_INVALID_HANDLE);
   }
   cl_assert_equal_i(ppogatt_client_count(), 0);
 }
@@ -766,7 +758,7 @@ void test_ppogatt__ignore_data_during_reset(void) {
 
 void test_ppogatt__ignore_zero_length_notification(void) {
   test_ppogatt__open_session_when_found_pebble_app();
-  ppogatt_handle_read_or_notification(s_characteristics[0][PPoGATTCharacteristicData], NULL, 0,
+  ppogatt_handle_read_or_notification(s_characteristics[0][PPoGATTCharacteristicData], nullptr, 0,
                                       PBL_BT_GATT_ERROR_SUCCESS);
   // No crash etc, client still alive:
   cl_assert_equal_i(ppogatt_client_count(), 1);
@@ -794,7 +786,7 @@ void test_ppogatt__close(void) {
 
   ppogatt_close(client);
 
-  cl_assert_equal_p(NULL, ppogatt_client_for_uuid(&s_meta_v0_system.app_uuid));
+  cl_assert_equal_p(nullptr, ppogatt_client_for_uuid(&s_meta_v0_system.app_uuid));
 }
 
 void test_ppogatt__missing_inbound_packet(void) {

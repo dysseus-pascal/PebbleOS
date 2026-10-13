@@ -4,13 +4,17 @@
 #include "text_render.h"
 
 #include "gcontext.h"
-#include "process_state/app_state/app_state.h"
-#include "syscall/syscall.h"
-#include "system/passert.h"
 #include "text_resources.h"
-#include "pbl/util/bitops.h"
-#include "pbl/util/math.h"
-#include "pbl/util/testing.h"
+
+#include <pbl/util/bitops.h>
+#include <pbl/util/math.h>
+#include <pbl/util/testing.h>
+
+#include <process_state/app_state/app_state.h>
+#include <syscall/syscall.h>
+#include <system/passert.h>
+
+typedef uint32_t GlyphBlock PBL_ALIGNED(1);
 
 #if !defined(__clang__)
 #pragma GCC optimize("O2")
@@ -162,7 +166,7 @@ static void prv_render_color_glyph(GContext *ctx, const GlyphData *glyph,
     }
     const bool row_visible = (dest_y >= clipped->origin.y);
     const GBitmapDataRowInfo row =
-        row_visible ? gbitmap_get_data_row_info(dest_bitmap, dest_y) : (GBitmapDataRowInfo){0};
+        row_visible ? gbitmap_get_data_row_info(dest_bitmap, dest_y) : (GBitmapDataRowInfo){};
 
     // Raw rows are byte-aligned
     d.bits_left = 0;
@@ -290,7 +294,7 @@ void render_glyph(GContext *const ctx, const uint32_t codepoint, FontInfo *const
   uint8_t dest_shift = dest_shift_at_line_begin;
 
   // The glyph bitmap starts the block after the metrics data:
-  uint32_t const *glyph_block = glyph->data;
+  const GlyphBlock *glyph_block = glyph->data;
 
   // Set up the first piece of source glyph bitmap:
   int8_t glyph_block_bits_left = 32;

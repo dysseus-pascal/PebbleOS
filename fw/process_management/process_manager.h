@@ -3,19 +3,18 @@
 
 #pragma once
 
-#include "pbl/kernel/msgq.h"
-#include "pbl/kernel/thread.h"
 #include "launch_config.h"
 
-#include "applib/app_exit_reason.h"
-#include "applib/platform.h"
-#include "kernel/events.h"
-#include "process_management/app_install_types.h"
-#include "process_management/pebble_process_md.h"
-#include "pbl/services/accel_manager.h"
-#include "pbl/services/compositor/compositor.h"
+#include <pbl/kernel/msgq.h>
+#include <pbl/kernel/thread.h>
+#include <pbl/services/accel_manager.h>
+#include <pbl/services/compositor/compositor.h>
 
-#include <stdbool.h>
+#include <applib/app_exit_reason.h>
+#include <applib/platform.h>
+#include <kernel/events.h>
+#include <process_management/app_install_types.h>
+#include <process_management/pebble_process_md.h>
 
 // Used to identify invalid or system app when using app_bank calls
 #define INVALID_BANK_ID    ~0
@@ -120,7 +119,7 @@ void process_manager_launch_process(const ProcessLaunchConfig *config);
 void process_manager_close_process(PebbleTask task, bool gracefully);
 
 //! Called from the task itself, as it exits and reenters privileged mode
-PBL_NORETURN void process_manager_task_exit(void);
+[[noreturn]] void process_manager_task_exit(void);
 
 //! Prod the given process into exiting. Returns true if it is safe to kill that task and clean it
 //! up using

@@ -1,16 +1,17 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "board/board.h"
+#include <inttypes.h>
+
 #include <pbl/drivers/ambient_light.h>
 #include <pbl/drivers/i2c.h>
-#include "kernel/util/sleep.h"
-#include "pbl/kernel/mutex.h"
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
 #include <pbl/util/bits.h>
-#include "system/passert.h"
 
-#include <inttypes.h>
+#include <board/board.h>
+#include <kernel/util/sleep.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_ambient_w1160, CONFIG_DRIVER_AMBIENT_LOG_LEVEL);
 
@@ -309,5 +310,5 @@ static int prv_cmd_als_read(const struct pbl_shell *sh, size_t argc, char **argv
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_als, read, NULL, "Read the raw light level", prv_cmd_als_read, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_als, read, nullptr, "Read the raw light level", prv_cmd_als_read, 0, 0);
 #endif

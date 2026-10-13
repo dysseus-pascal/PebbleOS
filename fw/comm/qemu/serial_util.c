@@ -1,16 +1,14 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "kernel/pbl_malloc.h"
-
 #include <pbl/drivers/rtc.h>
-#include "comm/qemu/serial.h"
-#include "comm/qemu/serial_private.h"
-
 #include <pbl/logging/logging.h>
+#include <pbl/util/byteorder.h>
+#include <pbl/util/math.h>
 
-#include "pbl/util/math.h"
-#include "pbl/util/byteorder.h"
+#include <comm/qemu/serial.h>
+#include <comm/qemu/serial_private.h>
+#include <kernel/pbl_malloc.h>
 
 // -----------------------------------------------------------------------------------------
 void qemu_serial_private_init_state(QemuSerialGlobals *state) {
@@ -164,7 +162,7 @@ uint8_t *qemu_serial_private_assemble_message(QemuSerialGlobals *state, uint32_t
     *protocol = state->hdr.protocol;
     return state->msg_buffer;
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 

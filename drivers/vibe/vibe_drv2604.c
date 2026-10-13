@@ -1,15 +1,15 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/vibe.h>
+#include <string.h>
 
-#include "board/board.h"
 #include <pbl/drivers/gpio.h>
 #include <pbl/drivers/i2c.h>
+#include <pbl/drivers/vibe.h>
 #include <pbl/logging/logging.h>
 #include <pbl/util/bits.h>
 
-#include <string.h>
+#include <board/board.h>
 
 PBL_LOG_MODULE_DEFINE(driver_vibe_drv2604, CONFIG_DRIVER_VIBE_LOG_LEVEL);
 
@@ -227,7 +227,7 @@ static int prv_cmd_vibe(const struct pbl_shell *sh, size_t argc, char **argv) {
   return 0;
 }
 
-PBL_SHELL_CMD_ARG_REGISTER(vibe, NULL,
+PBL_SHELL_CMD_ARG_REGISTER(vibe, nullptr,
                            "Vibrate at <strength 0-100>, <cal> to calibrate or <reg> to dump",
                            prv_cmd_vibe, 2, 0);
 #endif

@@ -1,14 +1,15 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "board/board.h"
 #include <pbl/drivers/gpio.h>
 #include <pbl/drivers/i2c.h>
 #include <pbl/drivers/vibe.h>
-#include "kernel/util/sleep.h"
 #include <pbl/logging/logging.h>
 #include <pbl/util/bits.h>
-#include "system/passert.h"
+
+#include <board/board.h>
+#include <kernel/util/sleep.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_vibe_aw8623x, CONFIG_DRIVER_VIBE_LOG_LEVEL);
 
@@ -261,6 +262,6 @@ static int prv_cmd_vibe(const struct pbl_shell *sh, size_t argc, char **argv) {
   return 0;
 }
 
-PBL_SHELL_CMD_ARG_REGISTER(vibe, NULL, "Vibrate at <strength -100-100>, or <cal> to calibrate",
+PBL_SHELL_CMD_ARG_REGISTER(vibe, nullptr, "Vibrate at <strength -100-100>, or <cal> to calibrate",
                            prv_cmd_vibe, 2, 0);
 #endif

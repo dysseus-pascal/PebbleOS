@@ -86,14 +86,6 @@ void prefs_sync_init(void) {
 #include "fake_spi_flash.h"
 #include "fake_system_task.h"
 
-// We start time out at 5pm on Jan 1, 2015 for all of these tests
-static const struct tm s_init_time_tm = {
-  // Thursday, Jan 1, 2015, 5:pm
-  .tm_hour = 17,
-  .tm_mday = 1,
-  .tm_mon = 0,
-  .tm_year = 115
-};
 
 #define ACTIVITY_FIXTURE_PATH "activity"
 
@@ -112,9 +104,6 @@ void prv_minute_system_task_cb(void *data);
 
 void hrm_manager_handle_prefs_changed(void) {
 }
-
-#define ASSERT_EQUAL_I(i1, i2, file, line) \
-  clar__assert_equal_i((i1), (i2), file, line, #i1 " != " #i2, 1)
 
 // ======================================================================================
 // Misc stubs
@@ -246,11 +235,6 @@ static bool s_dls_activity_sessions_created;
 static int s_num_dls_activity_records;
 static ActivitySessionDataLoggingRecord s_dls_activity_records[100];
 
-static void prv_reset_captured_dls_data(void) {
-  s_num_dls_accel_records = 0;
-  s_num_dls_activity_records = 0;
-}
-
 DataLoggingResult dls_log(DataLoggingSession *logging_session, const void *data,
                           uint32_t num_items) {
   if (logging_session == (DataLoggingSession *)DataLoggingSession_AccelSamples) {
@@ -322,120 +306,6 @@ bool protobuf_log_hr_add_sample(ProtobufLogRef ref, time_t now_utc, uint8_t bpm,
                                 HRMQuality quality) {
   return true;
 }
-
-// =============================================================================================
-// Assertion utilities
-// --------------------------------------------------------------------------------------
-static void prv_assert_equal_metric_history(ActivityMetric metric,
-                                            const uint32_t expected[ACTIVITY_HISTORY_DAYS],
-                                            char *file, int line) {
-  int32_t actual[ACTIVITY_HISTORY_DAYS];
-  activity_get_metric(metric, ACTIVITY_HISTORY_DAYS, actual);
-  for (int i = 0; i < ACTIVITY_HISTORY_DAYS; i++) {
-    ASSERT_EQUAL_I(actual[i], expected[i], file, line);
-  }
-}
-
-#define ASSERT_EQUAL_METRIC_HISTORY(metric, expected) \
-  prv_assert_equal_metric_history((metric), (expected), __FILE__, __LINE__)
-
-static void prv_assert_dls_activity_record_present(ActivitySessionDataLoggingRecord *record,
-                                                   char *file, int line) {
-  for (int i = 0; i < s_num_dls_activity_records; i++) {
-    if (!memcmp(record, &s_dls_activity_records[i], sizeof(*record))) {
-      return;
-    }
-  }
-  printf("\nFound records:");
-  for (int i = 0; i < s_num_dls_activity_records; i++) {
-    printf("\ntype: %d, start_utc: %" PRIu32 ", elapsed: %" PRIu32 ", utc_to_local: %" PRIu32 " ",
-           (int)s_dls_activity_records[i].activity, (uint32_t)s_dls_activity_records[i].start_utc,
-           s_dls_activity_records[i].elapsed_sec, s_dls_activity_records[i].utc_to_local);
-  }
-  printf("\nLooking for: type: %d, start_utc: %" PRIu32 ", elapsed: %" PRIu32
-         ", "
-         "utc_to_local: %" PRIu32 " ",
-         (int)record->activity, (uint32_t)record->start_utc, record->elapsed_sec,
-         record->utc_to_local);
-  clar__assert(false, file, line, "Missing activity record", "", true);
-}
-
-#define ASSERT_ACTIVITY_DLS_RECORD_PRESENT(record) \
-  prv_assert_dls_activity_record_present((record), __FILE__, __LINE__)
-
-// Assert that given number of activity sessions are present
-static void prv_assert_num_activities(uint32_t num_expected, char *file, int line) {
-  ActivitySession sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT];
-  uint32_t num_sessions = ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT;
-  activity_get_sessions(&num_sessions, sessions);
-  if (num_sessions != num_expected) {
-    printf("Expected %" PRIu32 " activities, but found %" PRIu32 ".\n", num_expected, num_sessions);
-  }
-  clar__assert(num_sessions == num_expected, file, line, "wrong number of activities", "", true);
-}
-
-// Assert that a particular step activity session is present in the sessions list
-static void prv_assert_step_activity_present(ActivitySession *exp_session, char *file, int line) {
-  ActivitySession sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT];
-  uint32_t num_sessions = ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT;
-  activity_get_sessions(&num_sessions, sessions);
-  for (int i = 0; i < num_sessions; i++) {
-    if (sessions[i].type == exp_session->type && sessions[i].start_utc == exp_session->start_utc &&
-        sessions[i].length_min == exp_session->length_min &&
-        sessions[i].step_data.active_kcalories == exp_session->step_data.active_kcalories &&
-        sessions[i].step_data.resting_kcalories == exp_session->step_data.resting_kcalories &&
-        sessions[i].step_data.distance_meters == exp_session->step_data.distance_meters &&
-        sessions[i].step_data.steps == exp_session->step_data.steps) {
-      return;
-    }
-  }
-  printf("\nFound activities:");
-  for (int i = 0; i < num_sessions; i++) {
-    printf("\nFound:       type: %d, start_utc: %d, len: %" PRIu16 ", steps: %" PRIu16
-           ", "
-           "rest_cal: %" PRIu32 ", active_cal: %" PRIu32 ", dist: %" PRIu32 " ",
-           (int)sessions[i].type, (int)sessions[i].start_utc, sessions[i].length_min,
-           sessions[i].step_data.steps, sessions[i].step_data.resting_kcalories,
-           sessions[i].step_data.active_kcalories, sessions[i].step_data.distance_meters);
-  }
-  printf("\nLooking for: type: %d, start_utc: %d, len: %" PRIu16 ", steps: %" PRIu16
-         ", "
-         "rest_cal: %" PRIu32 ", active_cal: %" PRIu32 ", dist: %" PRIu32 " ",
-         (int)exp_session->type, (int)exp_session->start_utc, exp_session->length_min,
-         exp_session->step_data.steps, exp_session->step_data.resting_kcalories,
-         exp_session->step_data.active_kcalories, exp_session->step_data.distance_meters);
-  clar__assert(false, file, line, "Missing activity record", "", true);
-}
-
-// Assert that a particular sleep activity session is present in the sessions list
-static void prv_assert_sleep_activity_present(ActivitySession *exp_session, char *file, int line) {
-  ActivitySession sessions[ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT];
-  uint32_t num_sessions = ACTIVITY_MAX_ACTIVITY_SESSIONS_COUNT;
-  activity_get_sessions(&num_sessions, sessions);
-  for (int i = 0; i < num_sessions; i++) {
-    if (sessions[i].type == exp_session->type && sessions[i].start_utc == exp_session->start_utc &&
-        sessions[i].length_min == exp_session->length_min) {
-      return;
-    }
-  }
-  printf("\nFound activities:");
-  for (int i = 0; i < num_sessions; i++) {
-    printf("\nFound:       type: %d, start_utc: %d, len: %" PRIu16 " ", (int)sessions[i].type,
-           (int)sessions[i].start_utc, sessions[i].length_min);
-  }
-  printf("\nLooking for: type: %d, start_utc: %d, len: %" PRIu16 " ", (int)exp_session->type,
-         (int)exp_session->start_utc, exp_session->length_min);
-  clar__assert(false, file, line, "Missing sleep activity record", "", true);
-}
-
-#define ASSERT_STEP_ACTIVITY_SESSION_PRESENT(session) \
-  prv_assert_step_activity_present((session), __FILE__, __LINE__)
-
-#define ASSERT_SLEEP_ACTIVITY_SESSION_PRESENT(session) \
-  prv_assert_sleep_activity_present((session), __FILE__, __LINE__)
-
-#define ASSERT_NUM_ACTIVITY_SESSIONS(num_sessions) \
-  prv_assert_num_activities((num_sessions), __FILE__, __LINE__)
 
 // =============================================================================================
 // Activity algorithm stub

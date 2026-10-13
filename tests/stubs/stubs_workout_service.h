@@ -3,12 +3,10 @@
 
 #pragma once
 
-#include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/hr_util.h"
+#include <pbl/services/activity/activity.h>
+#include <pbl/services/activity/hr_util.h>
 
-#include "kernel/events.h"
-
-#include <stdbool.h>
+#include <kernel/events.h>
 
 void workout_service_init(void) {
 }

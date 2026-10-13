@@ -1,16 +1,16 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
-#include "pbl/services/comm_session/app_session_capabilities.h"
-#include "pbl/services/comm_session/session.h"
-#include "process_management/pebble_process_md.h"
-#include "pbl/services/settings/settings_file.h"
-#include "system/status_codes.h"
+#include <pbl/services/comm_session/app_session_capabilities.h>
+#include <pbl/services/comm_session/session.h>
+#include <pbl/services/settings/settings_file.h>
 
-#include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
+#include <clar.h>
+#include <process_management/pebble_process_md.h>
+#include <stubs_logging.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <system/status_codes.h>
 
 static const CommSessionCapability s_live_capabilities = (CommSessionInfiniteLogDumping);
 
@@ -83,7 +83,7 @@ static CommSession *s_fake_app_session = (CommSession *)~0;
 static uint64_t s_unwritten_value = ~0;
 
 void test_app_session_capabilities__initialize(void) {
-  s_app_session_ptr = NULL;
+  s_app_session_ptr = nullptr;
   s_close_called = false;
   s_get_called = false;
   s_open_status = S_SUCCESS;

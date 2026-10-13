@@ -5,16 +5,17 @@
 
 #include "display.h"
 
-#include <cmsis_core.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #include <pbl/drivers/button_id.h>
+#include <pbl/input/input.h>
+
+#include <cmsis_core.h>
 
 // Compatibility type for gpio.h (QEMU has no real GPIO peripheral struct)
 typedef void GPIO_TypeDef;
 
-#define GPIO_Port_NULL NULL
+#define GPIO_Port_NULL nullptr
 #define GPIO_Pin_NULL  0U
 
 typedef enum {
@@ -79,6 +80,7 @@ typedef struct {
   uint8_t pin;
   GPIOPuPd_TypeDef pull;
   bool active_high;
+  uint16_t code;
 } ButtonConfig;
 
 typedef struct {

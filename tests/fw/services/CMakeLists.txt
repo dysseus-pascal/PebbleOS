@@ -39,7 +39,7 @@ pbl_clar_test(test_put_bytes
     tests/fakes/fake_resource_storage.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   OVERRIDES dummy_board
 )
 
@@ -93,6 +93,11 @@ pbl_clar_test(test_music_endpoint
     tests/fakes/fake_rtc.c
     fw/services/music/endpoint.c
     fw/services/music/service.c
+)
+
+pbl_clar_test(test_ping
+  SOURCES
+    fw/services/ping/service.c
 )
 
 pbl_clar_test(test_imaging

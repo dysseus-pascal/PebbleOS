@@ -2,11 +2,11 @@
 # commit <Upstream-Commit des Originals>
 # kopie <Kopie> <Original> <SHA-256 des Originals zum Commit>
 # abweichung <Dn> <Beschreibung>
-commit acc6dd23670695c7669c5850ceab2db3b8fd623c
-kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c b0058be1e7cfabc49cebb33202d4283fbe12a68994766b76e4e852a211c02920
-kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c bf45c3a148609a8dfa828576250c3b59f800c58775f36d3d32e9fc3017b31d5a
-kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h c924ec7512fb84920b56ebfdc607c60f3266b4ca11d04842ee8f22e0700125a3
-kopie include/pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h include/pbl/services/activity/kraepelin/kraepelin_algorithm.h e27cb65208447d8101b44278d9849e3e07a4e858902153df664d639d30b14156
+commit daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
+kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c b5442140345256c27bb33cb3259ae0587863c4b25b440f3dc27160ec90a5fdb0
+kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c 2bd08ba51370c17846d9e1f9781c749bbd626914cd4fef26e1f3c013caf2fa6d
+kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h 83b51cec41429c50e26b45bf10c45fe8a6ab721203e4d6c9cd78076ac28b31b7
+kopie include/pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h include/pbl/services/activity/kraepelin/kraepelin_algorithm.h f99811eb901f11a0175a66b67c065e1e205fce52b3ff38644f63c8d071c931b2
 abweichung D0 Herkunftsblock, Includes auf die Kopie, eigene Namen fuer kalg_* (namen.h)
 abweichung D1 Kraepelins Schlafsitzungen verworfen, Gehfilter fuer Walk/Run (Entscheid beim ersten Melden), Meldungen erst nach prv_unlock()
 abweichung D2 Activity-Sperre nur vor/nach der Kraepelin-Sperre (SpO2, nicht am Arm, reset_hr_stats); Minutensatz an den Dauerteil

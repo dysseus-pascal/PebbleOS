@@ -3,10 +3,9 @@
 
 #pragma once
 
-#include "pbl/services/imu/units.h"
-
-#include <stdbool.h>
 #include <stdint.h>
+
+#include <pbl/services/imu/units.h>
 
 /**
  * @defgroup drivers_accel Accelerometer
@@ -107,7 +106,8 @@ uint32_t accel_get_sampling_interval(void);
 /**
  * @brief Set the maximum number of samples the driver may batch.
  *
- * - 0: the driver must not call accel_cb_new_sample().
+ * - 0: the driver must not call accel_cb_new_sample(), apart from a sample already being handed
+ *   over.
  * - 1: the driver calls accel_cb_new_sample() for every sample as soon as it is acquired.
  * - n > 1: the driver may queue up to n samples and then deliver them in rapid succession,
  *   the last one being the most recently acquired. This is only an upper bound, which the

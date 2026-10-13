@@ -1,12 +1,12 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
+
 #include <pbl/drivers/display/display.h>
 
-#include "board/board.h"
-#include "system/passert.h"
-
-#include <string.h>
+#include <board/board.h>
+#include <system/passert.h>
 
 #define REG32(addr) (*(volatile uint32_t *)(addr))
 
@@ -87,8 +87,8 @@ bool display_update_in_progress(void) {
 }
 
 void display_update(NextRowCallback nrcb, UpdateCompleteCallback uccb) {
-  PBL_ASSERTN(nrcb != NULL);
-  PBL_ASSERTN(uccb != NULL);
+  PBL_ASSERTN(nrcb != nullptr);
+  PBL_ASSERTN(uccb != nullptr);
 
   uint32_t fb_addr = DISPLAY->fb_addr;
   uint16_t width = DISPLAY->width;

@@ -42,7 +42,8 @@ static int fixture_minuten_lesen(const char *pfad, FixMinute *aus, int anzahl, i
 }
 
 // Haengt die Beschleunigungswerte der Datei an `aus` (ab `anzahl`), Rueckgabe: neue Anzahl.
-static int fixture_accel_lesen(const char *pfad, AccelRawData *aus, int anzahl, int max) {
+[[maybe_unused]] static int fixture_accel_lesen(const char *pfad, AccelRawData *aus, int anzahl,
+                                                int max) {
   FILE *f = fopen(pfad, "r");
   if (!f) {
     printf("Fixture fehlt: %s\n", pfad);

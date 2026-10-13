@@ -2,14 +2,15 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "delay.h"
-#include "pbl/kernel/compiler.h"
+
+#include <pbl/kernel/compiler.h>
 
 #ifdef CONFIG_SOC_NRF52
 #include <drivers/nrfx_common.h>
 #include <soc/nrfx_coredep.h>
-#elif defined(CONFIG_SOC_SF32LB52)
+#elifdef CONFIG_SOC_SF32LB52
 #include <bf0_hal.h>
-#elif defined(CONFIG_SOC_POSIX)
+#elifdef CONFIG_SOC_POSIX
 #include <unistd.h>
 #endif
 
@@ -21,7 +22,7 @@ void PBL_NOINLINE delay_us(uint32_t us) {
 void delay_init(void) {
 }
 
-#elif defined(CONFIG_SOC_SF32LB52)
+#elifdef CONFIG_SOC_SF32LB52
 void PBL_NOINLINE delay_us(uint32_t us) {
   HAL_Delay_us(us);
 }
@@ -29,7 +30,7 @@ void PBL_NOINLINE delay_us(uint32_t us) {
 void delay_init(void) {
 }
 
-#elif defined(CONFIG_QEMU)
+#elifdef CONFIG_QEMU
 #include <cmsis_core.h>
 
 void PBL_NOINLINE delay_us(uint32_t us) {
@@ -47,7 +48,7 @@ void delay_init(void) {
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
-#elif defined(CONFIG_SOC_POSIX)
+#elifdef CONFIG_SOC_POSIX
 void PBL_NOINLINE delay_us(uint32_t us) {
   usleep(us);
 }

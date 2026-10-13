@@ -1,25 +1,23 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
-
-#include "pbl/services/speaker/speaker_service.h"
+#include <string.h>
 
 #include <pbl/drivers/audio.h>
 #include <pbl/drivers/rtc.h>
+#include <pbl/services/speaker/speaker_service.h>
 
-#include <string.h>
-
-#include "stubs_logging.h"
-#include "stubs_passert.h"
-#include "stubs_analytics.h"
-#include "stubs_rtc.h"
-#include "stubs_do_not_disturb.h"
-#include "fake_mutex.h"
-#include "fake_pbl_malloc.h"
-#include "fake_system_task.h"
-#include "fake_events.h"
-#include "fake_pebble_tasks.h"
+#include <clar.h>
+#include <fake_events.h>
+#include <fake_mutex.h>
+#include <fake_pbl_malloc.h>
+#include <fake_pebble_tasks.h>
+#include <fake_system_task.h>
+#include <stubs_analytics.h>
+#include <stubs_do_not_disturb.h>
+#include <stubs_logging.h>
+#include <stubs_passert.h>
+#include <stubs_rtc.h>
 
 // Alerts preferences: speaker unmuted, no volume cap
 bool alerts_preferences_get_speaker_muted(void) {
@@ -76,7 +74,7 @@ void audio_set_volume(AudioDevice *device, int volume) {
 
 void audio_stop(AudioDevice *device) {
   s_stop_count++;
-  s_trans_cb = NULL;
+  s_trans_cb = nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +94,7 @@ static void prv_pump_until_idle(void) {
 void test_speaker_service__initialize(void) {
   fake_system_task_callbacks_cleanup();
   fake_event_init();
-  s_trans_cb = NULL;
+  s_trans_cb = nullptr;
   s_start_count = 0;
   s_stop_count = 0;
   s_samples_written = 0;
@@ -450,7 +448,7 @@ void test_speaker_service__upsampling_underrun_runs_silence_through_the_filter(v
 
 void test_speaker_service__stream_write_keeps_16bit_samples_aligned(void) {
   cl_assert(speaker_service_stream_open(SpeakerPriorityApp, 50, SpeakerPcmFormat_8kHz_16bit));
-  const uint8_t bytes[3] = {0};
+  const uint8_t bytes[3] = {};
   cl_assert_equal_i(speaker_service_stream_write(bytes, 3), 2);
   cl_assert_equal_i(speaker_service_stream_write(bytes, 1), 0);
   speaker_service_stop();
@@ -472,7 +470,7 @@ void test_speaker_service__volume_change_cannot_affect_a_preempting_stream(void)
 
 void test_speaker_service__refill_catches_up_to_driver_capacity(void) {
   cl_assert(speaker_service_stream_open(SpeakerPriorityApp, 50, SpeakerPcmFormat_16kHz_16bit));
-  int16_t input[1536] = {0};
+  int16_t input[1536] = {};
   cl_assert_equal_i(speaker_service_stream_write(input, sizeof(input)), sizeof(input));
 
   uint32_t space = 1024 * sizeof(int16_t);

@@ -18,19 +18,11 @@ define_property(GLOBAL PROPERTY PBL_TEST_OBJECTS
 
 set(PBL_TEST_PLATFORMS default obelix gabbro asterix)
 
-# The tests build for the host with clang, at -O0 with symbols, and
-# promote nothing to an error: they exercise code paths the firmware
-# build never sees.
+# The tests build for the host with clang, at -O0 with symbols.
 set(PBL_TEST_C_FLAGS
-  -std=c11
+  -std=c23
   -Wall
   -Werror
-  -Wno-error=unused-variable
-  -Wno-error=unused-function
-  -Wno-error=missing-braces
-  -Wno-error=unused-const-variable
-  -Wno-error=address-of-packed-member
-  -Wno-enum-conversion
   -g3
   -gdwarf-4
   -O0
@@ -39,9 +31,6 @@ set(PBL_TEST_C_FLAGS
   -fno-common
   -ffp-contract=off
   -fexcess-precision=standard
-  # clang errors on the true == true assertions some tests compile.
-  -Wno-tautological-compare
-  -Wno-error
 )
 
 # Headers every test sees, in the order the compiler must find them:
@@ -94,12 +83,14 @@ function(_pbl_test_platform_defines platform out_defines out_bitdepth)
     set(defines CONFIG_FLASH_GD25LQ255E=1 CONFIG_PLATFORM_FLINT=1 CONFIG_BOARD_ASTERIX=1)
   elseif(platform STREQUAL "obelix")
     set(bitdepth 8)
-    set(defines CONFIG_FLASH_GD25Q256E=1 CONFIG_PLATFORM_EMERY=1 CONFIG_BOARD_OBELIX=1)
+    set(defines CONFIG_FLASH_GD25Q256E=1 CONFIG_PBLBOOT=1 CONFIG_FIRMWARE_SLOT=0
+                CONFIG_PLATFORM_EMERY=1 CONFIG_BOARD_OBELIX=1)
   elseif(platform STREQUAL "gabbro")
     # The round-display getafix board is the gabbro platform's closest
     # real-board analog.
     set(bitdepth 8)
-    set(defines CONFIG_FLASH_GD25Q256E=1 CONFIG_PLATFORM_GABBRO=1 CONFIG_BOARD_GETAFIX=1)
+    set(defines CONFIG_FLASH_GD25Q256E=1 CONFIG_PBLBOOT=1 CONFIG_FIRMWARE_SLOT=0
+                CONFIG_PLATFORM_GABBRO=1 CONFIG_BOARD_GETAFIX=1)
   else()
     message(FATAL_ERROR "Unknown test platform '${platform}'")
   endif()

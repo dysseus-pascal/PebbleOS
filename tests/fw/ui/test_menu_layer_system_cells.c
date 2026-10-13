@@ -1,28 +1,28 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/graphics/framebuffer.h"
-#include "applib/graphics/graphics.h"
-#include "applib/ui/menu_layer.h"
-#include "applib/ui/status_bar_layer.h"
-#include "kernel/pebble_tasks.h"
-#include "process_management/app_install_types.h"
-#include "resource/resource.h"
-#include "resource/resource_ids.auto.h"
-#include "shell/system_theme.h"
-#include "applib/graphics/raw_image.h"
-#include "pbl/util/size.h"
-
-#include "clar.h"
-
 #include <stdio.h>
+
+#include <pbl/util/size.h>
+
+#include <applib/graphics/framebuffer.h>
+#include <applib/graphics/graphics.h>
+#include <applib/graphics/raw_image.h>
+#include <applib/ui/menu_layer.h>
+#include <applib/ui/status_bar_layer.h>
+#include <clar.h>
+#include <kernel/pebble_tasks.h>
+#include <process_management/app_install_types.h>
+#include <resource/resource.h>
+#include <resource/resource_ids.auto.h>
+#include <shell/system_theme.h>
 
 // Fakes
 /////////////////////
 
-#include "fake_resource_syscalls.h"
-#include "fake_spi_flash.h"
-#include "fixtures/load_test_resources.h"
+#include <fake_resource_syscalls.h>
+#include <fake_spi_flash.h>
+#include <fixtures/load_test_resources.h>
 
 static bool s_cell_is_highlighted = false;
 
@@ -40,18 +40,18 @@ PebbleTask pebble_task_get_current(void) {
 }
 
 struct pbl_thread *pebble_task_get_thread(PebbleTask task) {
-  return NULL;
+  return nullptr;
 }
 
 const char *pebble_task_get_name(PebbleTask task) {
-  return NULL;
+  return nullptr;
 }
 
 void pebble_task_unregister(PebbleTask task) {
 }
 
 struct pbl_thread *pebble_task_create(PebbleTask pebble_task, struct pbl_thread_attr *attr) {
-  return NULL;
+  return nullptr;
 }
 
 //! System install ids are negative, app-db (third-party) install ids are positive
@@ -64,31 +64,31 @@ AppInstallId sys_process_manager_get_current_process_id(void) {
 // Stubs
 /////////////////////
 
-#include "stubs_analytics.h"
-#include "stubs_app_install_manager.h"
-#include "stubs_app_state.h"
-#include "stubs_bootbits.h"
-#include "stubs_compiled_with_legacy2_sdk.h"
-#include "stubs_content_indicator.h"
-#include "stubs_heap.h"
-#include "stubs_logging.h"
-#include "stubs_memory_layout.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_print.h"
-#include "stubs_process_manager.h"
-#include "stubs_serial.h"
-#include "stubs_shell_prefs.h"
-#include "stubs_sleep.h"
+#include <stubs_analytics.h>
+#include <stubs_app_install_manager.h>
+#include <stubs_app_state.h>
+#include <stubs_bootbits.h>
+#include <stubs_compiled_with_legacy2_sdk.h>
+#include <stubs_content_indicator.h>
+#include <stubs_heap.h>
+#include <stubs_logging.h>
+#include <stubs_memory_layout.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_print.h>
+#include <stubs_process_manager.h>
+#include <stubs_serial.h>
+#include <stubs_shell_prefs.h>
+#include <stubs_sleep.h>
 // Hide the PBL_WEAK stub so the controllable strong definition above owns the real symbol
 #define sys_process_manager_get_current_process_id \
   prv_stubbed_sys_process_manager_get_current_process_id
-#include "stubs_syscalls.h"
+#include <stubs_syscalls.h>
 #undef sys_process_manager_get_current_process_id
-#include "stubs_task_wdt.h"
-#include "stubs_ui_window.h"
-#include "stubs_unobstructed_area.h"
+#include <stubs_task_wdt.h>
+#include <stubs_ui_window.h>
+#include <stubs_unobstructed_area.h>
 
 void window_long_click_subscribe(ButtonId button_id, uint16_t delay_ms, ClickHandler down_handler,
                                  ClickHandler up_handler) {
@@ -153,13 +153,13 @@ void test_menu_layer_system_cells__initialize(void) {
 
 void test_menu_layer_system_cells__cleanup(void) {
   free(fb);
-  fb = NULL;
+  fb = nullptr;
 
   gbitmap_deinit(&s_tictoc_icon_bitmap);
   gbitmap_deinit(&s_smart_alarm_icon_bitmap);
 
   gbitmap_destroy(s_dest_bitmap);
-  s_dest_bitmap = NULL;
+  s_dest_bitmap = nullptr;
 }
 
 // Helpers
@@ -173,7 +173,7 @@ typedef struct {
 } MenuLayerSystemCellTestColumnData;
 
 static const MenuLayerSystemCellTestColumnData s_menu_system_basic_cell_test_column_data[] = {
-  {NULL, NULL, NULL}, // Use the default fonts
+  {nullptr, nullptr, nullptr}, // Use the default fonts
 };
 
 static const MenuLayerSystemCellTestColumnData s_menu_system_cell_layer_test_column_data[] = {
@@ -197,16 +197,16 @@ typedef struct {
 #define DEFAULT_ICON_ALIGN PBL_IF_RECT_ELSE(MenuCellLayerIconAlign_Left, MenuCellLayerIconAlign_Top)
 
 static const MenuLayerSystemCellTestRowData s_menu_system_cell_test_row_data[] = {
-  {"Star Wars", NULL, NULL, NULL, DEFAULT_ICON_ALIGN},
-  {"The Lord of the Rings", "The Fellowship of the Ring", NULL, NULL, DEFAULT_ICON_ALIGN},
-  {"The Lord of the Rings", NULL, NULL, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN},
-  {"The Matrix", "Revolutions", NULL, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN},
-  {"8:00 AM", "Weekdays", "OFF", NULL, DEFAULT_ICON_ALIGN},
-  {"8:00 AM", "Weekdays", NULL, &s_tictoc_icon_bitmap, MenuCellLayerIconAlign_Right},
+  {"Star Wars", nullptr, nullptr, nullptr, DEFAULT_ICON_ALIGN},
+  {"The Lord of the Rings", "The Fellowship of the Ring", nullptr, nullptr, DEFAULT_ICON_ALIGN},
+  {"The Lord of the Rings", nullptr, nullptr, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN},
+  {"The Matrix", "Revolutions", nullptr, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN},
+  {"8:00 AM", "Weekdays", "OFF", nullptr, DEFAULT_ICON_ALIGN},
+  {"8:00 AM", "Weekdays", nullptr, &s_tictoc_icon_bitmap, MenuCellLayerIconAlign_Right},
   {"8:00 AM", "Weekdays", "OFF", &s_smart_alarm_icon_bitmap, MenuCellLayerIconAlign_TopLeft, false,
    &(GBoxModel){.offset = {0, 5}, .margin = {6, 0}}, PBL_IF_ROUND_ELSE(-6, 0), true},
-  {"The Lord of the Rings", NULL, NULL, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN, true},
-  {"The Matrix", "Revolutions", NULL, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN, true},
+  {"The Lord of the Rings", nullptr, nullptr, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN, true},
+  {"The Matrix", "Revolutions", nullptr, &s_tictoc_icon_bitmap, DEFAULT_ICON_ALIGN, true},
 };
 
 // We render all of the row data's for each of the following heights
@@ -297,10 +297,12 @@ static void prv_draw_cell(MenuCellType cell_type, const GRect *cell_bounds,
   s_cell_is_highlighted = is_selected;
 
   const MenuCellLayerConfig config = {
-    .title_font = column_data->title_font ? fonts_get_system_font(column_data->title_font) : NULL,
+    .title_font =
+        column_data->title_font ? fonts_get_system_font(column_data->title_font) : nullptr,
     .subtitle_font =
-        column_data->subtitle_font ? fonts_get_system_font(column_data->subtitle_font) : NULL,
-    .value_font = column_data->value_font ? fonts_get_system_font(column_data->value_font) : NULL,
+        column_data->subtitle_font ? fonts_get_system_font(column_data->subtitle_font) : nullptr,
+    .value_font =
+        column_data->value_font ? fonts_get_system_font(column_data->value_font) : nullptr,
     .title = row_data->title,
     .subtitle = row_data->subtitle,
     .value = row_data->value,
@@ -535,9 +537,31 @@ void test_menu_layer_system_cells__third_party_app_keeps_platform_default(void) 
   system_theme_set_content_size(PreferredContentSizeDefault);
 }
 
+void test_menu_layer_system_cells__system_cell_heights(void) {
+  const int16_t expected_heights[NumPreferredContentSizes] = {
+    PBL_IF_RECT_ELSE(42, 44),
+    44,
+#if defined(CONFIG_PLATFORM_FLINT)
+    60,
+#elifdef CONFIG_PLATFORM_EMERY
+    61,
+#else
+    PBL_IF_RECT_ELSE(50, 61),
+#endif
+    PBL_IF_RECT_ELSE(64, 85),
+  };
+  for (PreferredContentSize size = PreferredContentSizeSmall; size < NumPreferredContentSizes;
+       size++) {
+    system_theme_set_content_size(size);
+    cl_assert_equal_i(menu_cell_basic_cell_height(), expected_heights[size]);
+  }
+  system_theme_set_content_size(PreferredContentSizeDefault);
+}
+
 static unsigned int prv_count_basic_cell_foreground(int16_t cell_height, const char *title,
                                                     const char *subtitle, GFont subtitle_font,
-                                                    GBitmap *icon, bool selected) {
+                                                    GBitmap *icon, bool selected,
+                                                    GRect *foreground_bounds) {
   const int16_t width = 144;
   GBitmap *bitmap = gbitmap_create_blank(GSize(width, 128),
                                          PBL_IF_COLOR_ELSE(GBitmapFormat8Bit, GBitmapFormat1Bit));
@@ -558,16 +582,30 @@ static unsigned int prv_count_basic_cell_foreground(int16_t cell_height, const c
   Layer layer;
   layer_init(&layer, &s_ctx.draw_state.clip_box);
   layer.is_highlighted = selected;
-  menu_cell_basic_draw_custom(&s_ctx, &layer, NULL, title, NULL, NULL, subtitle_font, subtitle,
-                              icon, false, GTextOverflowModeFill);
+  menu_cell_basic_draw_custom(&s_ctx, &layer, nullptr, title, nullptr, nullptr, subtitle_font,
+                              subtitle, icon, false, GTextOverflowModeFill);
 
   unsigned int foreground_pixels = 0;
+  int16_t min_x = width;
+  int16_t min_y = bitmap->bounds.size.h;
+  int16_t max_x = -1;
+  int16_t max_y = -1;
   for (int16_t y = 0; y < bitmap->bounds.size.h; y++) {
     const uint8_t *row = (uint8_t *)bitmap->addr + y * bitmap->row_size_bytes;
     for (int16_t x = 0; x < width; x++) {
-      foreground_pixels +=
-          PBL_IF_COLOR_ELSE(row[x] == GColorBlackARGB8, !((row[x / 8] >> (x % 8)) & 1));
+      if (PBL_IF_COLOR_ELSE(row[x] == GColorBlackARGB8, !((row[x / 8] >> (x % 8)) & 1))) {
+        foreground_pixels++;
+        min_x = MIN(min_x, x);
+        min_y = MIN(min_y, y);
+        max_x = MAX(max_x, x);
+        max_y = MAX(max_y, y);
+      }
     }
+  }
+
+  if (foreground_bounds) {
+    *foreground_bounds =
+        foreground_pixels ? GRect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1) : GRectZero;
   }
 
   s_ctx.dest_bitmap = previous_bitmap;
@@ -583,11 +621,11 @@ void test_menu_layer_system_cells__basic_height_preserves_accents_and_descenders
        size++) {
     system_theme_set_content_size(size);
     for (int selected = 0; selected <= 1; selected++) {
-      GBitmap *icon = PBL_IF_RECT_ELSE(&s_tictoc_icon_bitmap, NULL);
-      const unsigned int reference_pixels =
-          prv_count_basic_cell_foreground(128, titles[size], "ÿģĳ,", NULL, icon, selected);
+      GBitmap *icon = PBL_IF_RECT_ELSE(&s_tictoc_icon_bitmap, nullptr);
+      const unsigned int reference_pixels = prv_count_basic_cell_foreground(
+          128, titles[size], "ÿģĳ,", nullptr, icon, selected, nullptr);
       const unsigned int actual_pixels = prv_count_basic_cell_foreground(
-          menu_cell_basic_cell_height(), titles[size], "ÿģĳ,", NULL, icon, selected);
+          menu_cell_basic_cell_height(), titles[size], "ÿģĳ,", nullptr, icon, selected, nullptr);
       cl_assert(reference_pixels > 0);
       cl_assert_equal_i(actual_pixels, reference_pixels);
     }
@@ -604,13 +642,28 @@ void test_menu_layer_system_cells__caption_rows_preserve_accents_and_descenders(
     GFont subtitle_font = system_theme_get_font(TextStyleFont_MenuCellSubtitle);
     const int16_t saved_height =
         MAX(0, fonts_get_font_height(subtitle_font) - fonts_get_font_height(caption_font));
-    const unsigned int reference_pixels =
-        prv_count_basic_cell_foreground(128, titles[size], "ÿgj,", caption_font, NULL, true);
+    const unsigned int reference_pixels = prv_count_basic_cell_foreground(
+        128, titles[size], "ÿgj,", caption_font, nullptr, true, nullptr);
     const unsigned int actual_pixels =
         prv_count_basic_cell_foreground(menu_cell_basic_cell_height() - saved_height, titles[size],
-                                        "ÿgj,", caption_font, NULL, true);
+                                        "ÿgj,", caption_font, nullptr, true, nullptr);
     cl_assert(reference_pixels > 0);
     cl_assert_equal_i(actual_pixels, reference_pixels);
   }
   system_theme_set_content_size(PreferredContentSizeDefault);
+}
+
+void test_menu_layer_system_cells__larger_two_line_cell_has_matching_padding(void) {
+#ifdef CONFIG_PLATFORM_FLINT
+  system_theme_set_content_size(PreferredContentSizeLarge);
+  const int16_t height = menu_cell_basic_cell_height();
+  GRect foreground;
+  prv_count_basic_cell_foreground(height, "Backlight", "Standard", nullptr, nullptr, true,
+                                  &foreground);
+  cl_assert(foreground.size.h > 0);
+  cl_assert(foreground.origin.x >= menu_cell_basic_horizontal_inset());
+  cl_assert_equal_i(foreground.origin.y, foreground.origin.x);
+  cl_assert_equal_i(height - foreground.origin.y - foreground.size.h, foreground.origin.x);
+  system_theme_set_content_size(PreferredContentSizeDefault);
+#endif
 }

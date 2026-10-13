@@ -3,20 +3,21 @@
 
 #pragma once
 
-#include "applib/ui/window_stack_private.h"
-#include "kernel/ui/modals/modal_manager.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/ui/window_stack_private.h>
+#include <kernel/ui/modals/modal_manager.h>
 
 WindowStack *PBL_WEAK modal_manager_get_window_stack(ModalPriority priority) {
-  return NULL;
+  return nullptr;
 }
 
 Window *PBL_WEAK modal_manager_get_top_window(void) {
-  return NULL;
+  return nullptr;
 }
 
 ClickManager *PBL_WEAK modal_manager_get_click_manager(void) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK modal_manager_pop_all(void) {

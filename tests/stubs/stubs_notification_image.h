@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "pbl/services/notifications/notification_image.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/notifications/notification_image.h>
 
 void PBL_WEAK notification_image_service_init(void) {
 }
@@ -14,7 +14,7 @@ bool PBL_WEAK notification_image_claim(const Uuid *item_id, uint8_t *token_out) 
 }
 
 const struct GBitmap *PBL_WEAK notification_image_lock(const Uuid *item_id) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK notification_image_unlock(void) {

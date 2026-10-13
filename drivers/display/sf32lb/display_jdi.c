@@ -1,27 +1,25 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/display/sf32lb/display_jdi.h>
-
-#include "board/board.h"
 #include <pbl/drivers/display/display.h>
+#include <pbl/drivers/display/sf32lb/display_jdi.h>
 #include <pbl/drivers/gpio.h>
-#include "kernel/events.h"
-#include "kernel/util/delay.h"
-#include "pbl/soc/sf32lb/sleep.h"
 #include <pbl/drivers/rtc.h>
-#include "pbl/kernel/irq.h"
-#include "pbl/mcu/cache.h"
-#include "pbl/services/new_timer/new_timer.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/kernel/irq.h>
+#include <pbl/kernel/sem.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
+#include <pbl/mcu/cache.h>
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/soc/sf32lb/sleep.h>
 
-#include "pbl/kernel/compiler.h"
-#include "pbl/kernel/sem.h"
-
-#include "bf0_hal_lcdc.h"
-#include "bf0_hal_lptim.h"
-#include "bf0_hal_rtc.h"
+#include <bf0_hal_lcdc.h>
+#include <bf0_hal_lptim.h>
+#include <bf0_hal_rtc.h>
+#include <board/board.h>
+#include <kernel/events.h>
+#include <kernel/util/delay.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_display_jdi, CONFIG_DRIVER_DISPLAY_LOG_LEVEL);
 
@@ -465,11 +463,11 @@ void display_update(NextRowCallback nrcb, UpdateCompleteCallback uccb) {
   // completion path; the kickoff-failure path below stops it via the same
   // terminate call.
   new_timer_start(s_silent_loss_timer, DISPLAY_SILENT_LOSS_TIMEOUT_MS, prv_silent_loss_handler,
-                  NULL, 0);
+                  nullptr, 0);
   HAL_StatusTypeDef status = prv_display_update_start();
   if (status != HAL_OK) {
     prv_handle_send_failure("update", status);
-    prv_display_update_terminate(NULL);
+    prv_display_update_terminate(nullptr);
   }
 }
 

@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "pbl/services/blob_db/pin_db.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/blob_db/pin_db.h>
 
 bool PBL_WEAK pin_db_has_entry_expired(time_t pin_end_timestamp) {
   return false;
@@ -70,7 +70,7 @@ status_t PBL_WEAK pin_db_is_dirty(bool *is_dirty_out) {
 }
 
 BlobDBDirtyItem *PBL_WEAK pin_db_get_dirty_list(void) {
-  return NULL;
+  return nullptr;
 }
 
 status_t PBL_WEAK pin_db_mark_synced(const uint8_t *key, int key_len) {

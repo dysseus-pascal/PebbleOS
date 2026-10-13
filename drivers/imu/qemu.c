@@ -42,14 +42,14 @@
 //! without speeding up or slowing down the signal during replay.
 
 #include <pbl/drivers/accel.h>
-
-#include "comm/qemu/serial.h"
 #include <pbl/drivers/rtc.h>
-#include "pbl/kernel/mutex.h"
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
-#include "pbl/util/byteorder.h"
+#include <pbl/util/byteorder.h>
+#include <pbl/util/math.h>
+
+#include <comm/qemu/serial.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(imu, CONFIG_DRIVER_IMU_LOG_LEVEL);
 
@@ -99,6 +99,9 @@ static void prv_stop_timer(void) {
 // frequency. It feeds samples at the right rate into the s_latest_reading
 // global (for peek mode) and into the accel driver.
 static void prv_timer_cb(void *data) {
+  AccelDriverSample sample;
+  bool deliver;
+
   pbl_mutex_lock(&s_accel_mutex, PBL_FOREVER);
 
   if (s_current_rcv_sample < s_num_rcv_samples) {
@@ -106,11 +109,9 @@ static void prv_timer_cb(void *data) {
   }
 
   // Keep it simple; this accelerometer has no FIFO.
-  if (s_num_fifo_samples > 0) {
-    AccelDriverSample sample;
+  deliver = s_num_fifo_samples > 0;
+  if (deliver) {
     prv_construct_driver_sample(&sample);
-    PBL_LOG_VERBOSE("Accel sample to manager: %d, %d, %d", sample.x, sample.y, sample.z);
-    accel_cb_new_sample(&sample);
   }
 
   if (s_num_fifo_samples == 0 && s_current_rcv_sample >= s_num_rcv_samples) {
@@ -118,12 +119,18 @@ static void prv_timer_cb(void *data) {
   }
 
   pbl_mutex_unlock(&s_accel_mutex);
+
+  // Handed over unlocked, since the manager locks its mutex before calling into this driver
+  if (deliver) {
+    PBL_LOG_VERBOSE("Accel sample to manager: %d, %d, %d", sample.x, sample.y, sample.z);
+    accel_cb_new_sample(&sample);
+  }
 }
 
 // Start/reschedule the timer that feeds the FIFO/s_latest_reading out of the
 // samples received from the host
 static void prv_reschedule_timer(void) {
-  bool success = new_timer_start(s_timer_id, s_sampling_interval_ms, prv_timer_cb, NULL,
+  bool success = new_timer_start(s_timer_id, s_sampling_interval_ms, prv_timer_cb, nullptr,
                                  TIMER_START_FLAG_REPEATING);
   PBL_ASSERTN(success);
   s_timer_running = true;

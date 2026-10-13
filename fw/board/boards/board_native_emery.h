@@ -8,6 +8,9 @@
 
 extern UARTDevice *const DBG_UART;
 extern UARTDevice *const QEMU_UART;
+#ifdef CONFIG_BT_HCI_UART
+extern UARTDevice *const BT_HCI_UART;
+#endif
 extern DisplayDevice *const DISPLAY;
 extern MicDevice *const MIC;
 extern const BoardConfigPower BOARD_CONFIG_POWER;
@@ -19,5 +22,5 @@ static const BoardConfigAccel BOARD_CONFIG_ACCEL = {
 };
 
 static const BoardConfigMag BOARD_CONFIG_MAG = {
-  .mag_config = {{0}},
+  .mag_config = {},
 };

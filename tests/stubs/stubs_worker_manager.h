@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "process_management/pebble_process_md.h"
-#include "process_management/process_manager.h"
+#include <process_management/pebble_process_md.h>
+#include <process_management/process_manager.h>
 
 // Worker management functions
 void worker_manager_init(void) {
@@ -18,7 +18,7 @@ void worker_manager_close_current_worker(bool gracefully) {
 }
 
 const PebbleProcessMd *worker_manager_get_current_worker_md(void) {
-  return NULL;
+  return nullptr;
 }
 
 static ProcessContext s_worker_task_context;

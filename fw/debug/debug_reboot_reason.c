@@ -3,12 +3,13 @@
 
 #include "debug.h"
 
-#include "comm/ble/gatt_service_changed.h"
-#include "kernel/core_dump.h"
-#include "kernel/event_loop.h"
-#include "popups/crashed_ui.h"
 #include <pbl/logging/logging.h>
-#include "system/reboot_reason.h"
+
+#include <comm/ble/gatt_service_changed.h>
+#include <kernel/core_dump.h>
+#include <kernel/event_loop.h>
+#include <popups/crashed_ui.h>
+#include <system/reboot_reason.h>
 
 static RebootReasonCode s_last_reboot_reason_code = RebootReasonCode_Unknown;
 RebootReasonCode reboot_reason_get_last_reboot_reason(void) {
@@ -29,7 +30,7 @@ void debug_reboot_reason_print(McuRebootReason mcu_reboot_reason) {
   }
 
   // Leave this NULL to do your own printing.
-  const char *reason_string = NULL;
+  const char *reason_string = nullptr;
   switch (reason.code) {
     // Normal stuff
     case RebootReasonCode_Unknown:

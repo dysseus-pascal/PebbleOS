@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "applib/accel_service_private.h"
+#include <applib/accel_service_private.h>
 
 void accel_service_state_init(AccelServiceState *state) {
 }
@@ -18,7 +18,7 @@ void accel_data_service_unsubscribe(void) {
 }
 
 AccelServiceState *accel_service_private_get_session(PebbleTask task) {
-  return NULL;
+  return nullptr;
 }
 
 void accel_service_cleanup_task_session(PebbleTask task) {

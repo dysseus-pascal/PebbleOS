@@ -3,21 +3,21 @@
 
 #include <inttypes.h>
 
-#include "drivers/flash.h"
-#include "drivers/rtc.h"
-#include "kernel/util/idle.h"
-#include "pbl/services/analytics/analytics.h"
-#include "pbl/soc/nrf/sleep.h"
+#include <pbl/services/analytics/analytics.h>
+#include <pbl/soc/nrf/sleep.h>
+
+#include <drivers/flash.h>
+#include <drivers/rtc.h>
+#include <kernel/util/idle.h>
 
 #ifdef CONFIG_SHELL
 #include <pbl/shell/shell.h>
 #endif
 
+#include <pbl/kernel/idle.h>
+
 #include <cmsis_core.h>
-
 #include <hal/nrf_nvmc.h>
-
-#include "pbl/kernel/idle.h"
 
 static RtcTicks s_analytics_sleep_ticks = 0;
 static RtcTicks s_analytics_full_sleep_ticks = 0;
@@ -133,5 +133,6 @@ static int prv_cmd_cpustats(const struct pbl_shell *sh, size_t argc, char **argv
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_sys, cpustats, NULL, "Show CPU sleep statistics", prv_cmd_cpustats, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, cpustats, nullptr, "Show CPU sleep statistics", prv_cmd_cpustats, 0,
+                     0);
 #endif

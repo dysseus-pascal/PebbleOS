@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "process_management/app_install_manager.h"
-#include "process_management/app_install_types.h"
-#include "pbl/kernel/compiler.h"
-#include "pbl/util/uuid.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/util/uuid.h>
+
+#include <process_management/app_install_manager.h>
+#include <process_management/app_install_types.h>
 
 AppInstallId PBL_WEAK app_install_get_id_for_uuid(const Uuid *uuid) {
   return 1;
@@ -54,7 +55,7 @@ bool PBL_WEAK app_install_entry_is_SDK_compatible(const AppInstallEntry *entry) 
 }
 
 const PBL_WEAK PebbleProcessMd *app_install_get_md(AppInstallId id, bool worker) {
-  return NULL;
+  return nullptr;
 }
 
 ResAppNum PBL_WEAK app_install_get_app_icon_bank(const AppInstallEntry *entry) {

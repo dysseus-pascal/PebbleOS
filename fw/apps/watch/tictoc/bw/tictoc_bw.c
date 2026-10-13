@@ -1,17 +1,18 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/app.h"
-#include "applib/tick_timer_service.h"
-#include "applib/ui/ui.h"
-#include "applib/unobstructed_area_service.h"
-#include "kernel/pbl_malloc.h"
-#include "process_state/app_state/app_state.h"
-#include "pbl/services/clock.h"
-#include "pbl/services/i18n/i18n.h"
+#include <locale.h>
 #include <time.h>
 
-#include <locale.h>
+#include <pbl/services/clock.h>
+#include <pbl/services/i18n/i18n.h>
+
+#include <applib/app.h>
+#include <applib/tick_timer_service.h>
+#include <applib/ui/ui.h>
+#include <applib/unobstructed_area_service.h>
+#include <kernel/pbl_malloc.h>
+#include <process_state/app_state/app_state.h>
 
 typedef struct {
   Window window;
@@ -130,7 +131,7 @@ static void prv_init(void) {
 
   // Subscribe to unobstructed area changes
   UnobstructedAreaHandlers unobstructed_handlers = {.change = prv_unobstructed_area_change_handler};
-  app_unobstructed_area_service_subscribe(unobstructed_handlers, NULL);
+  app_unobstructed_area_service_subscribe(unobstructed_handlers, nullptr);
 
   // Set initial positions based on unobstructed area
   prv_update_layer_positions();

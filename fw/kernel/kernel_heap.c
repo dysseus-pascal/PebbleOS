@@ -2,9 +2,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "kernel_heap.h"
-#include "pbl/mcu/interrupts.h"
-#include "pbl/services/analytics/analytics.h"
-#include "pbl/util/heap.h"
+
+#include <pbl/mcu/interrupts.h>
+#include <pbl/services/analytics/analytics.h>
+#include <pbl/util/heap.h>
 
 #ifndef CONFIG_ARCH_POSIX
 #include <cmsis_core.h>
@@ -93,7 +94,8 @@ static int prv_cmd_heap_kernel(const struct pbl_shell *sh, size_t argc, char **a
 }
 
 PBL_SHELL_SUBCMD_SET_CREATE(sub_sys_heap);
-PBL_SHELL_SUBCMD_ADD(sub_sys, heap, sub_sys_heap, "Dump heap allocations", NULL, 0, 0);
-PBL_SHELL_SUBCMD_ADD(sub_sys_heap, kernel, NULL, "Dump the kernel heap", prv_cmd_heap_kernel, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, heap, sub_sys_heap, "Dump heap allocations", nullptr, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys_heap, kernel, nullptr, "Dump the kernel heap", prv_cmd_heap_kernel, 0,
+                     0);
 #endif
 #endif

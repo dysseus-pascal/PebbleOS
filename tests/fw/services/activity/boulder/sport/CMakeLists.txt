@@ -104,6 +104,8 @@ pbl_clar_test(test_kieselsport_abo
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
   DEFINES CONFIG_HRM CONFIG_BOULDER_KIESELSPORT
+  # stubs_accel_manager.h liegt seit v4.41.0 bei Boulders Tests (Upstream hat ihn geloescht).
+  INCLUDES tests/fw/services/activity/boulder
   OVERRIDES dummy_board
 )
 

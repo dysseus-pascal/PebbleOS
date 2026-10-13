@@ -1,31 +1,31 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "process_state/app_state/app_state.h"
+#include <pbl/drivers/button_id.h>
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/touch/touch.h>
 
-#include "applib/app_message/app_message_internal.h"
-#include "applib/event_service_client.h"
-#include "applib/graphics/framebuffer.h"
-#include "applib/graphics/graphics.h"
-#include "applib/pbl_std/locale.h"
-#include "applib/ui/animation_private.h"
-#include "applib/ui/app_window_stack.h"
-#include "applib/ui/layer.h"
-#include "applib/ui/recognizer/recognizer_list.h"
-#include "applib/ui/recognizer/recognizer_manager.h"
-#include "applib/ui/recognizer/touch_nav.h"
-#include "applib/ui/click_internal.h"
-#include "applib/ui/window_stack.h"
-#include "applib/touch_service_private.h"
-#include "pbl/services/touch/touch.h"
-#include "pbl/drivers/button_id.h"
-#include "kernel/util/segment.h"
-#include "process_management/app_install_types.h"
-#include "process_management/app_manager.h"
-#include "process_management/process_loader.h"
-#include "system/passert.h"
-#include "pbl/kernel/compiler.h"
-#include "tinymt32.h"
+#include <applib/app_message/app_message_internal.h>
+#include <applib/event_service_client.h>
+#include <applib/graphics/framebuffer.h>
+#include <applib/graphics/graphics.h>
+#include <applib/pbl_std/locale.h>
+#include <applib/touch_service_private.h>
+#include <applib/ui/animation_private.h>
+#include <applib/ui/app_window_stack.h>
+#include <applib/ui/click_internal.h>
+#include <applib/ui/layer.h>
+#include <applib/ui/recognizer/recognizer_list.h>
+#include <applib/ui/recognizer/recognizer_manager.h>
+#include <applib/ui/recognizer/touch_nav.h>
+#include <applib/ui/window_stack.h>
+#include <kernel/util/segment.h>
+#include <process_management/app_install_types.h>
+#include <process_management/app_manager.h>
+#include <process_management/process_loader.h>
+#include <process_state/app_state/app_state.h>
+#include <system/passert.h>
+#include <tinymt32.h>
 
 #if defined(CONFIG_MALLOC_INSTRUMENTATION) && defined(CONFIG_SHELL)
 #include <pbl/shell/shell.h>
@@ -89,8 +89,6 @@ typedef struct {
 
   LocaleInfo locale_info;
 
-  ContentIndicatorsBuffer content_indicators_buffer;
-
   bool app_framebuffer_render_pending;
 
   AppFocusState app_focus_state;
@@ -134,13 +132,15 @@ typedef struct {
   TimelineItemActionSource current_timeline_item_action_source;
 
   GBitmap *legacy2_framebuffer;
+
+  ContentIndicatorsBuffer content_indicators_buffer;
 } AppState;
 
 KERNEL_READONLY_DATA static AppState *s_app_state_ptr;
 
 bool app_state_configure(MemorySegment *app_state_ram, ProcessAppSDKType sdk_type,
                          int16_t obstruction_origin_y) {
-  s_app_state_ptr = memory_segment_split(app_state_ram, NULL, sizeof(AppState));
+  s_app_state_ptr = memory_segment_split(app_state_ram, nullptr, sizeof(AppState));
   if (!s_app_state_ptr) {
     return false;
   }
@@ -157,13 +157,13 @@ bool app_state_configure(MemorySegment *app_state_ram, ProcessAppSDKType sdk_typ
     // 3.x basalt platforms.
 
     s_app_state_ptr->legacy2_framebuffer =
-        memory_segment_split(app_state_ram, NULL, sizeof(GBitmap));
+        memory_segment_split(app_state_ram, nullptr, sizeof(GBitmap));
     if (!s_app_state_ptr->legacy2_framebuffer) {
       return false;
     }
 
     uint16_t row_size = gbitmap_format_get_row_size_bytes(LEGACY_2X_DISP_COLS, GBitmapFormat1Bit);
-    void *fb_data = memory_segment_split(app_state_ram, NULL, row_size * LEGACY_2X_DISP_ROWS);
+    void *fb_data = memory_segment_split(app_state_ram, nullptr, row_size * LEGACY_2X_DISP_ROWS);
     if (!fb_data) {
       return false;
     }
@@ -204,12 +204,13 @@ static bool prv_app_touch_nav_top_bridge_disabled(void *ctx) {
   // touch service layer, not this slot. So a set raw_handler means the app owns touch and must not
   // also receive synthesized buttons.
   const TouchServiceState *touch_state = app_state_get_touch_service_state();
-  const bool app_has_raw_subscriber = touch_state && (touch_state->raw_handler != NULL);
+  const bool app_has_raw_subscriber = touch_state && (touch_state->raw_handler != nullptr);
   return touch_nav_app_bridge_disabled(window_opt_out, app_has_raw_subscriber);
 }
 
 static void prv_app_touch_nav_pop_top(void *ctx) {
-  window_stack_pop_with_transition(app_state_get_window_stack(), NULL /* default pop transition */);
+  window_stack_pop_with_transition(app_state_get_window_stack(),
+                                   nullptr /* default pop transition */);
 }
 
 static void prv_app_touch_nav_emit_button(void *ctx, ButtonId button) {
@@ -225,7 +226,7 @@ static const TouchNavOps s_app_touch_nav_ops = {
   .top_bridge_disabled = prv_app_touch_nav_top_bridge_disabled,
   .pop_top = prv_app_touch_nav_pop_top,
   .emit_button = prv_app_touch_nav_emit_button,
-  .idle_refresh = NULL, // the app task has no idle-timeout refresh; that is the kernel's job
+  .idle_refresh = nullptr, // the app task has no idle-timeout refresh; that is the kernel's job
 };
 
 // Twin subscription effects for the app task. The subscribe/reconcile state machine lives in
@@ -250,7 +251,7 @@ static void prv_app_twin_install_handler(void *ctx) {
 static void prv_app_twin_remove_handler(void *ctx) {
   touch_set_app_nav_active(false);
   recognizer_manager_cancel_and_reset(&s_app_state_ptr->recognizer_manager);
-  touch_service_set_system_handler(NULL, NULL);
+  touch_service_set_system_handler(nullptr, nullptr);
 }
 
 static const TouchNavTwinOps s_app_twin_ops = {
@@ -535,7 +536,7 @@ void app_touch_nav_subscribe(void) {
 }
 
 void app_touch_nav_unsubscribe(void) {
-  prv_app_twin_remove_handler(NULL);
+  prv_app_twin_remove_handler(nullptr);
 }
 
 void app_touch_nav_resync(void) {
@@ -606,5 +607,5 @@ static int prv_cmd_heap_app(const struct pbl_shell *sh, size_t argc, char **argv
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_sys_heap, app, NULL, "Dump the app heap", prv_cmd_heap_app, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys_heap, app, nullptr, "Dump the app heap", prv_cmd_heap_app, 0, 0);
 #endif

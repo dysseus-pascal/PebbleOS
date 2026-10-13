@@ -28,19 +28,25 @@ jobs:
             src:
               - '.github/actions/**'
               - '.github/workflows/build-firmware.yml'
+              - 'apps/**'
               - 'boards/**'
-              - 'platform/**'
+              - 'cmake/**'
+              - 'drivers/**'
+              - 'fw/**'
+              - 'include/**'
+              - 'kernel/**'
+              - 'lib/**'
               - 'resources/**'
               - 'sdk/**'
               - 'soc/**'
-              - 'drivers/**'
-              - 'fw/**'
-              - 'stored_apps/**'
-              - 'tools/**'
+              - 'subsys/**'
               - 'third_party/**'
-              - 'cmake/**'
+              - 'tools/**'
               - 'CMakeLists.txt'
               - 'Kconfig'
+              - 'SDK_VERSION'
+              - 'pbl.yml'
+              - 'requirements.txt'
 
   build-firmware:
     needs: changes-firmware
@@ -48,7 +54,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     container:
-      image: ghcr.io/coredevices/pebbleos-docker:v8
+      image: ghcr.io/coredevices/pebbleos-docker:v10
 
     strategy:
       matrix:

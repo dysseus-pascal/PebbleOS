@@ -3,17 +3,17 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include <pbl/drivers/i2c.h>
-#include <pbl/drivers/mag.h>
-#include "kernel/events.h"
-#include "kernel/util/sleep.h"
-#include "pbl/kernel/mutex.h"
-#include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/services/new_timer/new_timer.h"
-#include "pbl/util/math.h"
-
 #include <pbl/drivers/imu/mmc5603nj/mmc5603nj.h>
 #include <pbl/drivers/imu/mmc5603nj/registers.h>
+#include <pbl/drivers/mag.h>
+#include <pbl/kernel/mutex.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/util/math.h>
+
+#include <kernel/events.h>
+#include <kernel/util/sleep.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_mag_mmc5603nj, CONFIG_DRIVER_IMU_LOG_LEVEL);
 
@@ -283,7 +283,7 @@ static bool prv_configure_polling(void) {
       PBL_LOG_ERR("MMC5603NJ: Failed to create polling timer");
       return false;
     }
-    new_timer_start(s_polling_timer, polling_interval_ms, prv_mmc5603nj_polling_callback, NULL,
+    new_timer_start(s_polling_timer, polling_interval_ms, prv_mmc5603nj_polling_callback, nullptr,
                     TIMER_START_FLAG_REPEATING);
   }
   s_polling_interval_ms = polling_interval_ms;

@@ -3,7 +3,7 @@
 
 #include "fake_gatt_client_subscriptions.h"
 
-#include "clar_asserts.h"
+#include <clar_asserts.h>
 
 typedef struct {
   ListNode node;
@@ -65,7 +65,7 @@ void fake_gatt_client_subscriptions_deinit(void) {
     free(subscribe);
     subscribe = next;
   }
-  s_subscribe_head = NULL;
+  s_subscribe_head = nullptr;
 }
 
 void fake_gatt_client_subscriptions_set_subscribe_return_value(enum pbl_bt_errno e) {

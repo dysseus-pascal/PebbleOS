@@ -3,15 +3,15 @@
 
 #pragma once
 
-#include "pbl/services/compositor/compositor_transitions.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/compositor/compositor_transitions.h>
 
 const CompositorTransition *PBL_WEAK compositor_slide_transition_timeline_get(
     bool timeline_is_future, bool timeline_is_destination, bool timeline_is_empty) {
-  return NULL;
+  return nullptr;
 }
 
 const CompositorTransition *PBL_WEAK
 compositor_dot_transition_timeline_get(bool timeline_is_future, bool timeline_is_destination) {
-  return NULL;
+  return nullptr;
 }

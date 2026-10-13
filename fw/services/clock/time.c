@@ -1,16 +1,18 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/kernel/types.h"
-#include <pbl/drivers/rtc.h>
-#include "syscall/syscall_internal.h"
-#include "pbl/services/time.h"
-#include "pbl/util/units.h"
 #include <string.h>
-#include "pbl/util/time.h"
+
+#include <pbl/drivers/rtc.h>
+#include <pbl/kernel/types.h>
+#include <pbl/services/time.h>
+#include <pbl/util/time.h>
+#include <pbl/util/units.h>
+
+#include <syscall/syscall_internal.h>
 
 // timezone abbreviation
-static char s_timezone_abbr[TZ_LEN] = {0}; // longest timezone abbreviation is 5 char + null
+static char s_timezone_abbr[TZ_LEN] = {}; // longest timezone abbreviation is 5 char + null
 static int32_t s_timezone_gmtoffset = 0;
 static int32_t s_dst_adjust = PBL_SEC_PER_HOUR;
 static time_t s_dst_start = 0;

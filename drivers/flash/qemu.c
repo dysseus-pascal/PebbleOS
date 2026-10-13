@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <string.h>
+
 #include <pbl/drivers/flash.h>
 #include <pbl/drivers/flash/flash_impl.h>
 
-#include "board/board.h"
-#include "system/passert.h"
-#include "system/status_codes.h"
-
-#include <string.h>
+#include <board/board.h>
+#include <system/passert.h>
+#include <system/status_codes.h>
 
 #define REG32(addr) (*(volatile uint32_t *)(addr))
 
@@ -248,7 +248,7 @@ status_t flash_impl_write_security_register(uint32_t addr, uint8_t val) {
 }
 
 static const FlashSecurityRegisters s_security_regs = {
-  .sec_regs = NULL,
+  .sec_regs = nullptr,
   .num_sec_regs = 0,
   .sec_reg_size = 0,
 };

@@ -1,25 +1,25 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
-#include "comm/ble/gap_le_advert.h"
-#include "comm/ble/gap_le_task.h"
-#include "comm/ble/gatt_client_subscriptions.h"
-#include "comm/ble/kernel_le_client/kernel_le_client.h"
-#include "comm/ble/kernel_le_client/test/test_definition.h"
-#include "kernel/events.h"
-#include "pbl/util/size.h"
+#include <pbl/util/size.h>
+
+#include <clar.h>
+#include <comm/ble/gap_le_advert.h>
+#include <comm/ble/gap_le_task.h>
+#include <comm/ble/gatt_client_subscriptions.h>
+#include <comm/ble/kernel_le_client/kernel_le_client.h>
+#include <comm/ble/kernel_le_client/test/test_definition.h>
+#include <kernel/events.h>
 
 // Stubs
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "fake_system_task.h"
-
-#include "stubs_logging.h"
-#include "stubs_passert.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_rand_ptr.h"
-#include "stubs_rtc.h"
+#include <fake_system_task.h>
+#include <stubs_logging.h>
+#include <stubs_passert.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_rand_ptr.h>
+#include <stubs_rtc.h>
 
 void ams_create(void) {
 }
@@ -44,6 +44,16 @@ bool bt_persistent_storage_is_ble_ancs_bonding(pbl_bt_bonding_id_t bonding) {
   return true;
 }
 
+static bool s_has_gateway_bonding;
+
+bool bt_persistent_storage_has_active_ble_gateway_bonding(void) {
+  return s_has_gateway_bonding;
+}
+
+bool bt_persistent_storage_has_ble_ancs_bonding(void) {
+  return s_has_gateway_bonding;
+}
+
 void gap_le_advert_unschedule_job_types(GAPLEAdvertisingJobTag *tag_types, size_t num_types) {
 }
 
@@ -64,7 +74,10 @@ enum pbl_bt_errno gap_le_connect_connect_by_bonding(pbl_bt_bonding_id_t bonding_
 void gap_le_slave_reconnect_start(void) {
 }
 
+static int s_reconnect_stop_count;
+
 void gap_le_slave_reconnect_stop(void) {
+  ++s_reconnect_stop_count;
 }
 
 enum pbl_bt_errno gatt_client_discovery_discover_all(const struct pbl_bt_device_internal *device) {
@@ -230,7 +243,9 @@ void test_kernel_le_client__initialize(void) {
   s_reschedule_count = 0;
   s_kernel_events_free = 14;
   s_notifications_handled = 0;
+  s_has_gateway_bonding = true;
   kernel_le_client_init();
+  s_reconnect_stop_count = 0;
 }
 
 void test_kernel_le_client__cleanup(void) {
@@ -332,3 +347,14 @@ void test_kernel_le_client__service_added(void) {
 }
 
 // FIXME: PBL-27751: Improve test coverage of kernel_le_client.c
+
+void test_kernel_le_client__deleting_last_bonding_stops_reconnecting(void) {
+  s_has_gateway_bonding = false;
+  kernel_le_client_handle_bonding_change(1, BtPersistBondingOpWillDelete);
+  cl_assert_equal_i(s_reconnect_stop_count, 1);
+}
+
+void test_kernel_le_client__deleting_other_bonding_keeps_reconnecting(void) {
+  kernel_le_client_handle_bonding_change(2, BtPersistBondingOpWillDelete);
+  cl_assert_equal_i(s_reconnect_stop_count, 0);
+}

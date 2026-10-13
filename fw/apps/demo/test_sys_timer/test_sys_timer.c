@@ -3,18 +3,18 @@
 
 #undef CONFIG_LOG_HASHED
 
-#include "applib/app.h"
-#include "applib/ui/ui.h"
-#include "kernel/pbl_malloc.h"
-#include "kernel/util/sleep.h"
-#include "process_management/pebble_process_md.h"
-#include "process_management/pebble_process_md.h"
-#include "process_state/app_state/app_state.h"
-#include "pbl/services/new_timer/new_timer.h"
-#include "pbl/services/regular_timer.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/size.h"
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/services/regular_timer.h>
+#include <pbl/util/size.h>
+
+#include <applib/app.h>
+#include <applib/ui/ui.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/util/sleep.h>
+#include <process_management/pebble_process_md.h>
+#include <process_state/app_state/app_state.h>
+#include <system/passert.h>
 
 #define NUM_MAX_TIMERS 10
 
@@ -114,17 +114,17 @@ static void menu_callback_prefix(int index, void *ctx) {
     }
   }
 
-  if (s_app_data->app_timer != NULL) {
+  if (s_app_data->app_timer != nullptr) {
     app_timer_cancel(s_app_data->app_timer);
     s_app_data->app_timer = 0;
   }
 
   // Cancel and delete old regular timers if present
   for (int i = 0; i < NUM_MAX_TIMERS; i++) {
-    if (s_app_data->reg_timers[i].cb != NULL) {
+    if (s_app_data->reg_timers[i].cb != nullptr) {
       PBL_LOG_DBG("STT deleting previous regular timer %d", i);
       regular_timer_remove_callback(&s_app_data->reg_timers[i]);
-      s_app_data->reg_timers[i].cb = NULL;
+      s_app_data->reg_timers[i].cb = nullptr;
     }
   }
 }
@@ -374,7 +374,7 @@ static void prv_window_load(Window *window) {
   GRect bounds = window_layer->bounds;
 
   data->menu_layer =
-      simple_menu_layer_create(bounds, data->window, sections, ARRAY_LENGTH(sections), NULL);
+      simple_menu_layer_create(bounds, data->window, sections, ARRAY_LENGTH(sections), nullptr);
   layer_add_child(window_layer, simple_menu_layer_get_layer(data->menu_layer));
 }
 
@@ -391,7 +391,7 @@ static void handle_init(void) {
   s_app_data = data;
 
   data->window = window_create();
-  if (data->window == NULL) {
+  if (data->window == nullptr) {
     return;
   }
   window_init(data->window, "");

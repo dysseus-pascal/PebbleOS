@@ -16,7 +16,8 @@ FLASH_IMAGE = "native_flash.bin"
 
 class NativeAdapter(DeviceAdapter):
     """The firmware as a native host process, headless, on a fresh flash.
-    It serves its console and the QEMU serial protocol on TCP ports."""
+    It serves its console and the QEMU serial protocol on TCP ports, and
+    connects its Bluetooth HCI UART to a controller."""
 
     type = "native"
 
@@ -27,6 +28,7 @@ class NativeAdapter(DeviceAdapter):
         self.pebble_port = _free_port()
         self._process = None
         self._log = None
+        self._bt_hci = None
 
     def _command_line(self):
         return [
@@ -34,6 +36,7 @@ class NativeAdapter(DeviceAdapter):
             "-f", os.path.join(self.workdir, FLASH_IMAGE),
             "-c", str(self.console_port),
             "-p", str(self.pebble_port),
+            *(["-b", str(self._bt_hci)] if self._bt_hci else []),
         ]  # fmt: skip
 
     def _start(self):
@@ -48,7 +51,10 @@ class NativeAdapter(DeviceAdapter):
             stdout=self._log,
             stderr=subprocess.STDOUT,
         )
-        deadline = time.monotonic() + 10
+        self._wait_console(10)
+
+    def _wait_console(self, timeout):
+        deadline = time.monotonic() + timeout
         while True:
             if self._process.poll() is not None:
                 raise HarnessError(
@@ -64,6 +70,17 @@ class NativeAdapter(DeviceAdapter):
                         "the firmware did not open its console port"
                     ) from None
                 time.sleep(0.05)
+
+    def connect(self):
+        # A firmware restarting itself re-executes: its ports close a moment.
+        deadline = time.monotonic() + self.config.base_timeout
+        while True:
+            try:
+                return super().connect()
+            except OSError:
+                if self._process is None or time.monotonic() > deadline:
+                    raise
+                self._wait_console(max(deadline - time.monotonic(), 0))
 
     def _stop(self):
         if self._process is None:
@@ -84,6 +101,7 @@ class NativeAdapter(DeviceAdapter):
         flash = os.path.join(self.workdir, FLASH_IMAGE)
         if os.path.exists(flash):
             os.unlink(flash)
+        self._bt_hci = self._start_bluetooth()
         self._log = open(os.path.join(self.workdir, "native.log"), "a")  # noqa: SIM115
         self._start()
 
@@ -92,14 +110,17 @@ class NativeAdapter(DeviceAdapter):
         if self._log is not None:
             self._log.close()
             self._log = None
+        self._stop_bluetooth()
 
     def _hard_reset(self):
         self._stop()
+        self._power_cycle_bluetooth()
         self._start()
         return True
 
     def default_connections(self):
-        return [
-            f"serial:socket://127.0.0.1:{self.console_port}",
-            f"qemu:127.0.0.1:{self.pebble_port}",
-        ]
+        console = f"serial:socket://127.0.0.1:{self.console_port}"
+        # With a Bluetooth controller, the phone holds the protocol session.
+        if self.build.config.get("CONFIG_BT_HCI_UART"):
+            return [console]
+        return [console, f"qemu:127.0.0.1:{self.pebble_port}"]

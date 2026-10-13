@@ -13,18 +13,21 @@
 // support, and is practically useless, we don't support it. I don't think this will break
 // anything, but it's worth noting.
 
+#include "timelocal.h"
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "time.h"
-#include "timelocal.h"
-#include "applib/i18n.h"
-#include "pbl/services/i18n/i18n.h"
-#include "syscall/syscall.h"
-#include "pbl/util/math.h"
-#include "pbl/util/time.h"
-#include "pbl/util/units.h"
+#include <time.h>
+
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/util/math.h>
+#include <pbl/util/time.h>
+#include <pbl/util/units.h>
+
+#include <applib/i18n.h>
+#include <syscall/syscall.h>
 
 #define INTFMT_PADSPACE (0)
 #define INTFMT_PADZERO  (1)
@@ -126,7 +129,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
   while (left) {
     // Copy up to the next '%'
     char *ptr = strchr(fmt, '%');
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
       // Get the ending \0 of the string
       // Equivalent to ptr = fmt + strlen(fmt), but a bit faster/smaller
       ptr = strchr(fmt, '\0');
@@ -172,7 +175,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
 // Helper macros to make goto stuff look cleaner
 #define FMT_STRCOPY(V) \
   do {                 \
-    i18nstr = NULL;    \
+    i18nstr = nullptr; \
     cpystr = V;        \
     goto _fmt_strcopy; \
   } while (0)
@@ -192,7 +195,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
 
 #define FMT_RECURSE(FMT) \
   do {                   \
-    i18nstr = NULL;      \
+    i18nstr = nullptr;   \
     cpystr = FMT;        \
     goto _fmt_recurse;   \
   } while (0)
@@ -203,7 +206,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
   } while (0)
 
     // Terrible local state for goto hell
-    const char *cpystr = NULL;
+    const char *cpystr = nullptr;
     const char *i18nstr;
     int cpyint_val;
     size_t cpyint_len;
@@ -217,7 +220,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
         if (!use_i18n && i18nstr) {
           cpystr = strchr(i18nstr, '\4');
           cpystr = cpystr ? cpystr + 1 : i18nstr;
-          i18nstr = NULL;
+          i18nstr = nullptr;
         }
         if (i18nstr) {
           length = sys_i18n_get_length(i18nstr);
@@ -250,7 +253,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
       _fmt_recurse:
         if (!use_i18n && i18nstr) {
           cpystr = i18nstr;
-          i18nstr = NULL;
+          i18nstr = nullptr;
         }
         if (i18nstr) {
           cpystr = i18n_get(i18nstr, dest_str);
@@ -275,7 +278,7 @@ size_t localized_strftime(char *restrict dest_str, size_t maxsize, const char *r
           intfmt = "%*d";
         }
         width = MAX(width, cpyint_len);
-        length = snprintf(NULL, 0, intfmt, width, cpyint_val);
+        length = snprintf(nullptr, 0, intfmt, width, cpyint_val);
         if (left <= length) {
           goto _out_of_size;
         }
@@ -426,5 +429,5 @@ _out_of_size:
 
 size_t strftime(char *restrict s, size_t maxsize, const char *format, const struct tm *tim_p) {
   // Pass a NULL locale because firmware strftime is always localized
-  return localized_strftime(s, maxsize, format, tim_p, NULL);
+  return localized_strftime(s, maxsize, format, tim_p, nullptr);
 }

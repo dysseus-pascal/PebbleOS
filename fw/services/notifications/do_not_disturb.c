@@ -1,34 +1,32 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/notifications/do_not_disturb.h"
-#include "pbl/services/notifications/do_not_disturb_toggle.h"
-
-#include "applib/ui/action_toggle.h"
-#include "applib/ui/app_window_stack.h"
-#include "applib/ui/dialogs/actionable_dialog.h"
-#include "applib/ui/dialogs/dialog.h"
-#include "applib/ui/dialogs/expandable_dialog.h"
-#include "applib/ui/window_manager.h"
-#include <pbl/drivers/rtc.h>
-#include "kernel/events.h"
-#include "kernel/ui/modals/modal_manager.h"
-#include "process_state/app_state/app_state.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/services/system_task.h"
-#include "pbl/services/notifications/alerts_preferences.h"
-#include "pbl/services/notifications/alerts_preferences_private.h"
-#include "pbl/services/timeline/calendar.h"
-#include "syscall/syscall_internal.h"
-#include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
-#include "pbl/util/time.h"
-#include "pbl/util/units.h"
-
 #include <pbl/cron/cron.h>
-#include <stdbool.h>
+#include <pbl/drivers/rtc.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/services/notifications/alerts_preferences.h>
+#include <pbl/services/notifications/alerts_preferences_private.h>
+#include <pbl/services/notifications/do_not_disturb.h>
+#include <pbl/services/notifications/do_not_disturb_toggle.h>
+#include <pbl/services/system_task.h>
+#include <pbl/services/timeline/calendar.h>
+#include <pbl/util/math.h>
+#include <pbl/util/time.h>
+#include <pbl/util/units.h>
+
+#include <applib/ui/action_toggle.h>
+#include <applib/ui/app_window_stack.h>
+#include <applib/ui/dialogs/actionable_dialog.h>
+#include <applib/ui/dialogs/dialog.h>
+#include <applib/ui/dialogs/expandable_dialog.h>
+#include <applib/ui/window_manager.h>
+#include <kernel/events.h>
+#include <kernel/ui/modals/modal_manager.h>
+#include <process_state/app_state/app_state.h>
+#include <resource/resource_ids.auto.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(service_notifications, CONFIG_SERVICE_NOTIFICATIONS_LOG_LEVEL);
 
@@ -278,9 +276,9 @@ void do_not_disturb_toggle_manually_enabled(ManualDNDFirstUseSource source) {
     prv_push_manual_dnd_first_use_dialog(source);
   } else {
     if (source == ManualDNDFirstUseSourceSettingsMenu) {
-      prv_toggle_manual_dnd_from_settings_menu(NULL);
+      prv_toggle_manual_dnd_from_settings_menu(nullptr);
     } else {
-      prv_toggle_manual_dnd_from_action_menu(NULL);
+      prv_toggle_manual_dnd_from_action_menu(nullptr);
     }
   }
 }
@@ -293,7 +291,7 @@ void do_not_disturb_toggle_smart_dnd(void) {
   if (!alerts_preferences_check_and_set_first_use_complete(FirstUseSourceSmartDND)) {
     prv_push_smart_dnd_first_use_dialog();
   } else {
-    prv_toggle_smart_dnd(NULL);
+    prv_toggle_smart_dnd(nullptr);
   }
 }
 

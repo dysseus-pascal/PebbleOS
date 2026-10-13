@@ -3,78 +3,68 @@
 
 #include <stdio.h>
 
-#include "board/board.h"
-
-#include "console/dbgserial.h"
-#include "console/dbgserial_input.h"
-#include "console/pulse.h"
-
-#include <pbl/drivers/rtc.h>
-#include <pbl/drivers/flash.h>
-#include <pbl/drivers/debounced_button.h>
-
+#include <pbl/bluetooth/init.h>
 #include <pbl/drivers/accel.h>
 #include <pbl/drivers/ambient_light.h>
 #include <pbl/drivers/backlight.h>
 #include <pbl/drivers/battery.h>
+#include <pbl/drivers/debounced_button.h>
 #include <pbl/drivers/display/display.h>
+#include <pbl/drivers/flash.h>
 #include <pbl/drivers/hrm.h>
 #include <pbl/drivers/mag.h>
 #include <pbl/drivers/mic.h>
 #include <pbl/drivers/otp.h>
 #include <pbl/drivers/pmic.h>
 #include <pbl/drivers/pressure.h>
-#include <pbl/task_wdt/task_wdt.h>
+#include <pbl/drivers/rtc.h>
+#include <pbl/drivers/sf32lb52/rc10k.h>
 #include <pbl/drivers/temperature.h>
 #include <pbl/drivers/touch/touch_sensor.h>
 #include <pbl/drivers/vibe.h>
 #include <pbl/drivers/watchdog.h>
-#include <pbl/drivers/sf32lb52/rc10k.h>
-
-#include "resource/resource.h"
-#include "resource/system_resource.h"
-
-#include "kernel/util/task_init.h"
-#include "kernel/events.h"
-#include "kernel/kernel_heap.h"
-#include "kernel/fault_handling.h"
-#include "kernel/memory_layout.h"
-#include "logging/pulse_logging.h"
-#include "pbl/services/services.h"
-#include "pbl/services/boot_splash.h"
-#include "pbl/services/clock.h"
-#include "pbl/services/compositor/compositor.h"
-#include "pbl/services/regular_timer.h"
-#include "pbl/services/system_task.h"
-#include "pbl/services/new_timer/new_timer_service.h"
-#include "pbl/services/new_timer/new_timer.h"
-#include "pbl/services/analytics/analytics.h"
-#include "pbl/services/prf_update.h"
-#include "kernel/ui/kernel_ui.h"
-#include "kernel/kernel_applib_state.h"
-#include "kernel/util/delay.h"
-#include "system/firmware_storage.h"
-#include "system/passert.h"
-#include "system/version.h"
-
-#include "kernel/event_loop.h"
-
-#include "console/serial_console.h"
-#include "system/bootbits.h"
+#include <pbl/kernel/irq.h>
+#include <pbl/kernel/sched.h>
+#include <pbl/kernel/thread.h>
 #include <pbl/logging/logging.h>
+#include <pbl/services/analytics/analytics.h>
+#include <pbl/services/boot_splash.h>
+#include <pbl/services/clock.h>
+#include <pbl/services/compositor/compositor.h>
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/services/new_timer/new_timer_service.h>
+#include <pbl/services/prf_update.h>
+#include <pbl/services/regular_timer.h>
+#include <pbl/services/services.h>
+#include <pbl/services/system_task.h>
+#include <pbl/task_wdt/task_wdt.h>
 
-#include "debug/debug.h"
-
-#include "pbl/kernel/irq.h"
-#include "pbl/kernel/sched.h"
-#include "pbl/kernel/thread.h"
-
-#include "mfg/mfg_info.h"
-#include "mfg/mfg_serials.h"
-
-#include <pbl/bluetooth/init.h>
+#include <board/board.h>
+#include <console/dbgserial.h>
+#include <console/dbgserial_input.h>
+#include <console/pulse.h>
+#include <console/serial_console.h>
+#include <debug/debug.h>
+#include <kernel/event_loop.h>
+#include <kernel/events.h>
+#include <kernel/fault_handling.h>
+#include <kernel/kernel_applib_state.h>
+#include <kernel/kernel_heap.h>
+#include <kernel/memory_layout.h>
+#include <kernel/ui/kernel_ui.h>
+#include <kernel/util/delay.h>
+#include <kernel/util/task_init.h>
+#include <logging/pulse_logging.h>
+#include <mfg/mfg_info.h>
+#include <mfg/mfg_serials.h>
+#include <resource/resource.h>
+#include <resource/system_resource.h>
+#include <system/bootbits.h>
+#include <system/firmware_storage.h>
+#include <system/passert.h>
+#include <system/version.h>
 #ifdef CONFIG_QEMU_SERIAL
-#include "comm/qemu/serial.h"
+#include <comm/qemu/serial.h>
 #endif
 
 static TimerID s_lowpower_timer = TIMER_INVALID_ID;
@@ -86,7 +76,7 @@ static void main_task(void *parameter);
 static void print_splash_screen(void) {
 #if defined(CONFIG_MFG)
   PBL_LOG_ALWAYS("PebbleOS - MANUFACTURING MODE");
-#elif defined(CONFIG_RECOVERY_FW)
+#elifdef CONFIG_RECOVERY_FW
   PBL_LOG_ALWAYS("PebbleOS - RECOVERY MODE");
 #else
   PBL_LOG_ALWAYS("PebbleOS");
@@ -307,18 +297,18 @@ static PBL_NOINLINE void prv_main_task_init(void) {
 
   clear_reset_loop_detection_bits();
 
-  PBL_ASSERTN(pbl_task_wdt_add(NULL, CONFIG_TASK_WDT_TIMEOUT_MS, NULL, NULL) >= 0);
+  PBL_ASSERTN(pbl_task_wdt_add(nullptr, CONFIG_TASK_WDT_TIMEOUT_MS, nullptr, nullptr) >= 0);
 
   // Leave the board with stop and sleep mode debugging enabled for at least 10
   // seconds to give OpenOCD time to start and still able to connect when it is
   // ready to flash in the new image via JTAG
   s_lowpower_timer = new_timer_create();
-  new_timer_start(s_lowpower_timer, 10 * 1000, prv_low_power_debug_config_callback, NULL,
+  new_timer_start(s_lowpower_timer, 10 * 1000, prv_low_power_debug_config_callback, nullptr,
                   0 /*flags*/);
 
 #ifndef CONFIG_MFG
   s_uptime_timer = new_timer_create();
-  new_timer_start(s_uptime_timer, 15 * 60 * 1000, uptime_callback, NULL, 0 /*flags*/);
+  new_timer_start(s_uptime_timer, 15 * 60 * 1000, uptime_callback, nullptr, 0 /*flags*/);
 #else
   boot_bit_set(BOOT_BIT_FW_STABLE);
 #endif

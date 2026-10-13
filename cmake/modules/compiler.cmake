@@ -3,7 +3,7 @@
 #
 # Compiler and linker flags shared by every firmware object.
 
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=c11>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=c23>)
 
 add_compile_options(
   -Wall
@@ -11,14 +11,13 @@ add_compile_options(
   -Wpointer-arith
   -Wno-unused-parameter
   -Wno-missing-field-initializers
-  -Wno-address-of-packed-member
 )
 
+add_compile_options(-Werror)
+
 if(CONFIG_ARCH_POSIX)
-  # Firmware code was never written for a host compiler; keep its
-  # diagnostics visible but do not fail on them.
-  # The firmware is written in GNU C, which clang flags as extensions.
-  add_compile_options(-Wno-unknown-warning-option -Wno-gnu-variable-sized-type-not-at-end)
+  # Host clang does not know some of the GCC-only flags shared with ARM.
+  add_compile_options(-Wno-unknown-warning-option)
   # Enums as small as the ARM EABI makes them, for the same struct layouts.
   set(pbl_arch_flags
     -fno-common
@@ -48,7 +47,6 @@ if(CONFIG_ARCH_POSIX)
     pbl_host_compile_options(${pbl_sanitize_flags})
   endif()
 else()
-  add_compile_options(-Werror)
   set(pbl_arch_flags
     -fvar-tracking-assignments
     -mthumb

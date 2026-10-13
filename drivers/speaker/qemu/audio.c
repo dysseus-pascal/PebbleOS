@@ -1,13 +1,13 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <cmsis_core.h>
+#include <stdint.h>
+
 #include <pbl/drivers/speaker/qemu/audio.h>
 #include <pbl/kernel/irq.h>
+#include <pbl/services/system_task.h>
 
-#include "pbl/services/system_task.h"
-
-#include <stdint.h>
+#include <cmsis_core.h>
 
 // QEMU audio device register offsets (must match pebble-audio QEMU device)
 #define AUDIO_CTRL       0x00
@@ -27,7 +27,7 @@
 void audio_init(AudioDevice *dev) {
   REG32(dev->base_addr + AUDIO_CTRL) = 0;
   REG32(dev->base_addr + AUDIO_SAMPLERATE) = 16000;
-  dev->state->trans_cb = NULL;
+  dev->state->trans_cb = nullptr;
 }
 
 static void prv_audio_system_task_cb(void *data) {
@@ -80,7 +80,7 @@ void audio_stop(AudioDevice *dev) {
 
   pbl_irq_disable(dev->irqn);
 
-  dev->state->trans_cb = NULL;
+  dev->state->trans_cb = nullptr;
 }
 
 void qemu_audio_irq_handler(AudioDevice *dev) {

@@ -1,16 +1,16 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/tick_timer.h"
-
-#include "kernel/events.h"
 #include <pbl/drivers/rtc.h>
-#include "pbl/kernel/mutex.h"
-#include "pbl/services/regular_timer.h"
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
-#include "system/passert.h"
+#include <pbl/services/regular_timer.h>
+#include <pbl/services/tick_timer.h>
+
+#include <kernel/events.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(service_tick_timer, CONFIG_SERVICE_TICK_TIMER_LOG_LEVEL);
 
@@ -32,7 +32,7 @@ static RegularTimerInfo s_second_timer_info = {.cb = &timer_tick_event_publisher
 static RegularTimerInfo s_minute_timer_info = {.cb = &timer_tick_event_publisher};
 
 static void prv_update_timer_locked(void) {
-  RegularTimerInfo *timer = NULL;
+  RegularTimerInfo *timer = nullptr;
   if (s_num_subscribers > 0) {
     timer = (s_second_tasks != 0) ? &s_second_timer_info : &s_minute_timer_info;
   }

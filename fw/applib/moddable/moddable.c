@@ -1,26 +1,27 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-FileCopyrightText: 2025-2026 Moddable Tech, Inc. */
 /* SPDX-License-Identifier: Apache-2.0 */
-#include "applib/app.h"
-#include "logging/logging_private.h"
-#include "pbl/services/evented_timer.h"
-#include "syscall/syscall_internal.h"
-#include "syscall/syscall.h"
-#include "applib/app_logging.h"
-#include "applib/moddable/moddable.h"
-#include "applib/ui/dialogs/expandable_dialog.h"
-
 #include <stddef.h>
 
+#include <pbl/services/evented_timer.h>
+
+#include <applib/app.h>
+#include <applib/app_logging.h>
+#include <applib/moddable/moddable.h>
+#include <applib/ui/dialogs/expandable_dialog.h>
+#include <logging/logging_private.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+
 #if defined(CONFIG_MODDABLE_XS) && !defined(CONFIG_RECOVERY_FW)
-#include "xsmc.h"
-#include "xsHost.h"
-#include "xsHosts.h"
-#include "moddableAppState.h"
-#include "kernel/pbl_malloc.h"
-#include "kernel/event_loop.h"
-#include "kernel/ui/modals/modal_manager.h"
-#include "shell/normal/watchface.h"
+#include <kernel/event_loop.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/ui/modals/modal_manager.h>
+#include <moddableAppState.h>
+#include <shell/normal/watchface.h>
+#include <xsHost.h>
+#include <xsHosts.h>
+#include <xsmc.h>
 
 static ExpandableDialog *prv_create_fatal_dialog(const char *message) {
   ExpandableDialog *dialog = expandable_dialog_create("");
@@ -39,7 +40,7 @@ static void prv_watchface_fatal_error(void *data) {
   // Keep the warning above the safe watchface until it is dismissed.
   expandable_dialog_push(dialog, modal_manager_get_window_stack(ModalPriorityAlert));
   watchface_set_default_install_id(INSTALL_ID_INVALID);
-  watchface_launch_default(NULL);
+  watchface_launch_default(nullptr);
 }
 
 void moddable_cleanup(void) {
@@ -60,7 +61,7 @@ void moddable_cleanup(void) {
     kernel_free(f);
   }
 
-  app_state_set_js_memory_api_context(NULL);
+  app_state_set_js_memory_api_context(nullptr);
   task_free(state);
 }
 
@@ -106,12 +107,12 @@ DEFINE_SYSCALL(void, moddable_createMachine, ModdableCreationRecord *cr) {
 
   state->creationFlags = flags;
 
-  void *fxBuildFFI = NULL;
+  void *fxBuildFFI = nullptr;
   xsCreation *defaultCreation;
   extern void *xsPreparationAndCreation(xsCreation * *creation);
   (void)xsPreparationAndCreation(&defaultCreation);
   struct xsCreationRecord creation = *defaultCreation;
-  if (NULL != cr) {
+  if (nullptr != cr) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "evaluating creation record");
     uint32_t stack = (cr->stack + 3) & ~3, slot = (cr->slot + 3) & ~3, chunk = (cr->chunk + 3) & ~3;
     if (stack || slot || chunk) {
@@ -144,8 +145,8 @@ DEFINE_SYSCALL(void, moddable_createMachine, ModdableCreationRecord *cr) {
     }
   }
 
-  xsMachine *the = modCloneMachine(&creation, NULL);
-  if (NULL == the) {
+  xsMachine *the = modCloneMachine(&creation, nullptr);
+  if (nullptr == the) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "failed to allocate XS machine");
     moddable_cleanup();
     return;
@@ -163,7 +164,7 @@ DEFINE_SYSCALL(void, moddable_createMachine, ModdableCreationRecord *cr) {
 
   int exitStatus = the->exitStatus;
   char *abortReason = state->abortReason;
-  state->abortReason = NULL;
+  state->abortReason = nullptr;
   moddable_cleanup();
 
   if ((xsNormalExit != exitStatus) && (xsDebuggerExit != exitStatus)) {

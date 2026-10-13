@@ -5,9 +5,7 @@
 
 #include "music.h"
 
-#include "kernel/events.h"
-
-#include <stdbool.h>
+#include <kernel/events.h>
 
 /**
  * @addtogroup services_music

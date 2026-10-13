@@ -15,11 +15,10 @@
  *   a specific point.
  */
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include "pbl/util/list.h"
+#include <pbl/util/list.h>
 
 #ifdef CONFIG_PROFILER
 #include <cmsis_core.h>

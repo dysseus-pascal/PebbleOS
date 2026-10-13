@@ -1,13 +1,13 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/rtc.h>
-
-#include "board/board.h"
-#include <pbl/logging/logging.h>
-
 #include <stdio.h>
-#include "pbl/services/time.h"
+
+#include <pbl/drivers/rtc.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/time.h>
+
+#include <board/board.h>
 
 #define REG32(addr) (*(volatile uint32_t *)(addr))
 
@@ -136,8 +136,7 @@ bool rtc_alarm_is_initialized(void) {
 
 void rtc_set_timezone(TimezoneInfo *tzinfo) {
   uint32_t *raw = (uint32_t *)tzinfo;
-  _Static_assert(sizeof(TimezoneInfo) <= 5 * sizeof(uint32_t),
-                 "RTC Set Timezone invalid data size");
+  static_assert(sizeof(TimezoneInfo) <= 5 * sizeof(uint32_t), "RTC Set Timezone invalid data size");
 
   RTC_WriteBackupRegister(TZ_BACKUP_BASE + 0, raw[0]);
   RTC_WriteBackupRegister(TZ_BACKUP_BASE + 1, raw[1]);

@@ -1,31 +1,31 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/timeline/sports_layout.h"
-#include "pbl/services/timeline/timeline_layout.h"
-
-#include "applib/graphics/gtypes.h"
-#include "applib/preferred_content_size.h"
-#include "applib/ui/ui.h"
 #include <pbl/drivers/rtc.h>
-#include "font_resource_keys.auto.h"
-#include "kernel/pbl_malloc.h"
-#include "process_state/app_state/app_state.h"
-#include "pbl/services/clock.h"
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/util/size.h"
-#include "pbl/util/string.h"
-#include "pbl/services/time.h"
-#include "pbl/util/units.h"
+#include <pbl/services/clock.h>
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/services/time.h>
+#include <pbl/services/timeline/sports_layout.h>
+#include <pbl/services/timeline/timeline_layout.h>
+#include <pbl/util/size.h>
+#include <pbl/util/string.h>
+#include <pbl/util/units.h>
 
-_Static_assert(AttributeIdRankAway + 1 == AttributeIdRankHome,
-               "Sports layout requires that all Home attributes are directly after Away");
-_Static_assert(AttributeIdNameAway + 1 == AttributeIdNameHome,
-               "Sports layout requires that all Home attributes are directly after Away");
-_Static_assert(AttributeIdRecordAway + 1 == AttributeIdRecordHome,
-               "Sports layout requires that all Home attributes are directly after Away");
-_Static_assert(AttributeIdScoreAway + 1 == AttributeIdScoreHome,
-               "Sports layout requires that all Home attributes are directly after Away");
+#include <applib/graphics/gtypes.h>
+#include <applib/preferred_content_size.h>
+#include <applib/ui/ui.h>
+#include <font_resource_keys.auto.h>
+#include <kernel/pbl_malloc.h>
+#include <process_state/app_state/app_state.h>
+
+static_assert(AttributeIdRankAway + 1 == AttributeIdRankHome,
+              "Sports layout requires that all Home attributes are directly after Away");
+static_assert(AttributeIdNameAway + 1 == AttributeIdNameHome,
+              "Sports layout requires that all Home attributes are directly after Away");
+static_assert(AttributeIdRecordAway + 1 == AttributeIdRecordHome,
+              "Sports layout requires that all Home attributes are directly after Away");
+static_assert(AttributeIdScoreAway + 1 == AttributeIdScoreHome,
+              "Sports layout requires that all Home attributes are directly after Away");
 
 //////////////////////////////////////////
 //  Card Mode
@@ -142,7 +142,7 @@ static GTextNode *prv_broadcaster_header_constructor(const LayoutLayer *layout_r
   const char *broadcaster =
       attribute_get_string(layout_ref->attributes, AttributeIdBroadcaster, "");
   if (IS_EMPTY_STRING(broadcaster)) {
-    return NULL;
+    return nullptr;
   }
   static const LayoutNodeTextBufferConfig s_broadcaster_header_config = {
     .text.extent.node.type = LayoutNodeType_TextBuffer,
@@ -222,7 +222,8 @@ static GTextNode *prv_create_team_node(const LayoutLayer *layout_ref, int team_o
   AttributeList *attributes = layout->timeline_layout.layout_layer.attributes;
 
   const bool is_pregame = (layout->state == GameStatePreGame);
-  const bool has_record = (attribute_find(attributes, AttributeIdRecordAway + team_offset) != NULL);
+  const bool has_record =
+      (attribute_find(attributes, AttributeIdRecordAway + team_offset) != nullptr);
 
   const AttributeId large_attr = !is_pregame ? AttributeIdScoreAway : AttributeIdNameAway;
   const AttributeId small_attr = !is_pregame  ? AttributeIdNameAway

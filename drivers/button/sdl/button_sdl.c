@@ -1,12 +1,14 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "button_sdl_bottom.h"
+
 #include <pbl/drivers/button.h>
 #include <pbl/drivers/debounced_button.h>
-#include <pbl_arch_posix.h>
+#include <pbl/input/input.h>
 
-#include "kernel/events.h"
-#include "button_sdl_bottom.h"
+#include <board/board.h>
+#include <pbl_arch_posix.h>
 
 static const ButtonId s_buttons[] = {
   [BUTTON_SDL_BACK] = BUTTON_ID_BACK,
@@ -33,11 +35,7 @@ static void prv_button_isr(void *arg) {
   if (!s_initialized) {
     return;
   }
-  PebbleEvent event = {
-    .type = e->pressed ? PEBBLE_BUTTON_DOWN_EVENT : PEBBLE_BUTTON_UP_EVENT,
-    .button.button_id = e->id,
-  };
-  event_put_isr(&event);
+  pbl_input_report_key(BOARD_CONFIG_BUTTON.buttons[e->id].code, e->pressed, true);
 }
 
 void button_sdl_changed(int button, bool pressed) {

@@ -1,24 +1,19 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/kernel/irq.h"
-#include "pbl/kernel/types.h"
-#include <pbl/drivers/rtc.h>
+#include <inttypes.h>
 
 #include <pbl/drivers/exti.h>
-
-#include "pbl/mcu/interrupts.h"
-
-#include "pbl/services/regular_timer.h"
-
+#include <pbl/drivers/rtc.h>
+#include <pbl/kernel/irq.h>
+#include <pbl/kernel/types.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-
-#include "pbl/services/time.h"
+#include <pbl/mcu/interrupts.h>
+#include <pbl/services/regular_timer.h>
+#include <pbl/services/time.h>
 
 #include <hal/nrf_rtc.h>
-
-#include <inttypes.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_rtc_nrf5, CONFIG_DRIVER_RTC_LOG_LEVEL);
 
@@ -242,8 +237,7 @@ const char *time_t_to_string(char *buffer, time_t t) {
 //! timezone index and the daylight_savings_time into the same register set
 void rtc_set_timezone(TimezoneInfo *tzinfo) {
   uint32_t *raw = (uint32_t *)tzinfo;
-  _Static_assert(sizeof(TimezoneInfo) <= 5 * sizeof(uint32_t),
-                 "RTC Set Timezone invalid data size");
+  static_assert(sizeof(TimezoneInfo) <= 5 * sizeof(uint32_t), "RTC Set Timezone invalid data size");
 
   retained_write(RTC_TIMEZONE_ABBR_START, raw[0]);
   retained_write(RTC_TIMEZONE_ABBR_END_TZID_DSTID, raw[1]);
@@ -334,7 +328,7 @@ void rtc_enable_synthetic_systick(void) {
   // Now that the RTC is awake, we can switch from SysTick to RTC interrupt
   // ticks.  We need to do this so that we actually get ticks in wfi, since
   // nRF5 stops SysTick in sleep.
-  _Static_assert(RTC_TICKS_HZ == PBL_TICK_HZ);
+  static_assert(RTC_TICKS_HZ == PBL_TICK_HZ);
   if (!s_did_init_rtc) {
     rtc_init();
   }
@@ -358,7 +352,7 @@ void rtc_systick_resume(void) {
 
 //! Our RTC tick counter can overflow if nobody asks about it.  This
 //! repeating callback allows us to make sure this doesn't happen.
-static void prv_rtc_resync_timer_callback() {
+static void prv_rtc_resync_timer_callback(void *data) {
   rtc_get_ticks();
 }
 

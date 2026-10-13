@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
-
 #include <stdint.h>
 
-#include "pbl/util/bits.h"
+#include <pbl/util/bits.h>
 
-_Static_assert(PBL_GENMASK(7, 4) == 0xF0U, "");
-_Static_assert(PBL_FIELD_PREP(PBL_GENMASK(7, 4), 0x4U) == 0x40U, "");
+#include <clar.h>
+
+static_assert(PBL_GENMASK(7, 4) == 0xF0U, "");
+static_assert(PBL_FIELD_PREP(PBL_GENMASK(7, 4), 0x4U) == 0x40U, "");
 
 #if PBL_GENMASK(3, 0) != 0x0FU
 #error "PBL_GENMASK not usable in #if"

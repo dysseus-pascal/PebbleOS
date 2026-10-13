@@ -3,15 +3,12 @@
 
 #include "ble_scan.h"
 
-#include "applib/app_logging.h"
-#include "applib/applib_malloc.auto.h"
-
-#include "process_state/app_state/app_state.h"
-#include "comm/ble/gap_le_scan.h"
-
-#include "kernel/events.h"
-
-#include "syscall/syscall.h"
+#include <applib/app_logging.h>
+#include <applib/applib_malloc.auto.h>
+#include <comm/ble/gap_le_scan.h>
+#include <kernel/events.h>
+#include <process_state/app_state/app_state.h>
+#include <syscall/syscall.h>
 
 void ble_scan_handle_event(PebbleEvent *e) {
   BLEAppState *ble_app_state = app_state_get_ble_app_state();
@@ -83,7 +80,7 @@ enum pbl_bt_errno ble_scan_stop(void) {
     return PBL_BT_ERRNO_OTHER;
   }
   event_service_client_unsubscribe(&ble_app_state->scan_service_info);
-  ble_app_state->scan_handler = NULL;
+  ble_app_state->scan_handler = nullptr;
   return PBL_BT_ERRNO_OK;
 }
 

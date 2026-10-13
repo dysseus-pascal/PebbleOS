@@ -1,17 +1,17 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/kernel/compiler.h"
-
 #include <string.h>
+
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/i18n/i18n.h>
 
 const char *PBL_WEAK i18n_get(const char *msgid, const void *owner) {
   // If a string wasn't found, we want to return the original string.
   // However, if we have a context, this string needs to not show the context.
   // So we just find EOT and if it's present return the next character.
   const char *message = strchr(msgid, '\4');
-  if (message == NULL) {
+  if (message == nullptr) {
     // No context, the whole string is the message.
     return msgid;
   }

@@ -1,27 +1,27 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/accel_manager.h"
+#include <inttypes.h>
 
 #include <pbl/drivers/accel.h>
 #include <pbl/drivers/vibe.h>
-#include "kernel/events.h"
-#include "kernel/pbl_malloc.h"
-#include "pbl/mcu/interrupts.h"
-#include "pbl/kernel/mutex.h"
-#include "pbl/services/analytics/analytics.h"
-#include "pbl/services/event_service.h"
-#include "pbl/services/system_task.h"
-#include "pbl/services/imu/units.h"
-#include "pbl/services/vibe_pattern.h"
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
-#include "pbl/util/shared_cbuf.h"
+#include <pbl/mcu/interrupts.h>
+#include <pbl/services/accel_manager.h>
+#include <pbl/services/analytics/analytics.h>
+#include <pbl/services/event_service.h>
+#include <pbl/services/imu/units.h>
+#include <pbl/services/system_task.h>
+#include <pbl/services/vibe_pattern.h>
+#include <pbl/util/math.h>
+#include <pbl/util/shared_cbuf.h>
 
-#include <inttypes.h>
+#include <kernel/events.h>
+#include <kernel/pbl_malloc.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(service_accel_manager, CONFIG_SERVICE_ACCEL_MANAGER_LOG_LEVEL);
 
@@ -51,7 +51,8 @@ typedef struct AccelManagerState {
   uint64_t timestamp_ms;    // timestamp of first item in the buffer
   AccelRawData *raw_buffer; // raw buffer allocated by subscriber
   uint8_t num_samples;      // number of samples in raw_buffer
-  bool event_posted;        // True if we've posted a "data ready" callback event
+  bool event_posted;        // True while a data event is queued or running
+  uint32_t generation;      // bumped on every buffer change
 } AccelManagerState;
 
 typedef struct {
@@ -60,12 +61,12 @@ typedef struct {
   //   time_sample_collected = s_last_empty_timestamp_ms + timestamp_delta_ms
   uint16_t timestamp_delta_ms;
 } AccelManagerBufferData;
-_Static_assert(offsetof(AccelManagerBufferData, rawdata) == 0,
-               "AccelRawData must be first entry in AccelManagerBufferData struct");
+static_assert(offsetof(AccelManagerBufferData, rawdata) == 0,
+              "AccelRawData must be first entry in AccelManagerBufferData struct");
 
 // Statics
 //! List of all registered consumers of accel data. Points to AccelManagerState objects.
-static ListNode *s_data_subscribers = NULL;
+static ListNode *s_data_subscribers = nullptr;
 //! Mutex locking all accel_manager state
 static PBL_MUTEX_DEFINE(s_accel_manager_mutex);
 
@@ -280,13 +281,8 @@ static void prv_dispatch_data(bool post_event) {
 
   AccelManagerState *state = (AccelManagerState *)s_data_subscribers;
   while (state) {
-    if (!state->raw_buffer) {
-      state = (AccelManagerState *)state->list_node.next;
-      continue;
-    }
-
-    // if subscribed but not looking for any samples then just drop the data
-    if (state->samples_per_update == 0) {
+    // drop the data if none are wanted or there's no buffer, so the subscriber doesn't fall behind
+    if (state->samples_per_update == 0 || !state->raw_buffer) {
       uint16_t len =
           pbl_shared_cbuf_get_read_space_remaining(&s_buffer, &state->buffer_client.buffer_client);
       pbl_shared_cbuf_consume(&s_buffer, &state->buffer_client.buffer_client, len);
@@ -461,7 +457,7 @@ DEFINE_SYSCALL(AccelManagerState *, sys_accel_manager_data_subscribe, AccelSampl
       .samples_per_update = accel_get_max_num_samples(),
     };
 
-    bool no_subscribers_before = (s_data_subscribers == NULL);
+    bool no_subscribers_before = (s_data_subscribers == nullptr);
     s_data_subscribers = list_insert_before(s_data_subscribers, &state->list_node);
     if (no_subscribers_before) {
       sys_vibe_history_start_collecting();
@@ -486,10 +482,10 @@ DEFINE_SYSCALL(AccelManagerState *, sys_accel_manager_data_subscribe, AccelSampl
 // is one we handed out. The list is short (one entry per active subscriber) so the
 // walk is cheap. Caller must hold s_accel_manager_mutex.
 static bool prv_state_is_valid_subscriber(const AccelManagerState *state) {
-  if (state == NULL) {
+  if (state == nullptr) {
     return false;
   }
-  for (ListNode *node = s_data_subscribers; node != NULL; node = node->next) {
+  for (ListNode *node = s_data_subscribers; node != nullptr; node = node->next) {
     if ((const AccelManagerState *)node == state) {
       return true;
     }
@@ -518,7 +514,7 @@ DEFINE_SYSCALL(bool, sys_accel_manager_data_unsubscribe, AccelManagerState *stat
     event_outstanding = state->event_posted;
     // Remove this subscriber and free up its state variables
     pbl_shared_cbuf_remove_subsampled_client(&s_buffer, &state->buffer_client);
-    list_remove(&state->list_node, &s_data_subscribers /* &head */, NULL /* &tail */);
+    list_remove(&state->list_node, &s_data_subscribers /* &head */, nullptr /* &tail */);
     kernel_free(state);
 
     if (!s_data_subscribers) {
@@ -586,15 +582,17 @@ DEFINE_SYSCALL(int, sys_accel_manager_set_sample_buffer, AccelManagerState *stat
     return -1;
   }
 
-  if (PRIVILEGE_WAS_ELEVATED) {
+  // A batch size of 0 never writes the buffer, so it's neither checked nor kept
+  if (PRIVILEGE_WAS_ELEVATED && samples_per_update > 0) {
     syscall_assert_userspace_buffer(buffer, samples_per_update * sizeof(AccelRawData));
   }
 
   pbl_mutex_lock(&s_accel_manager_mutex, PBL_FOREVER);
   {
-    state->raw_buffer = buffer;
+    state->raw_buffer = (samples_per_update > 0) ? buffer : nullptr;
     state->samples_per_update = samples_per_update;
     state->num_samples = 0;
+    state->generation++;
     prv_update_driver_config();
   }
   pbl_mutex_unlock(&s_accel_manager_mutex);
@@ -607,40 +605,50 @@ DEFINE_SYSCALL(uint32_t, sys_accel_manager_get_max_samples_per_update, void) {
 }
 
 DEFINE_SYSCALL(uint32_t, sys_accel_manager_get_num_samples, AccelManagerState *state,
-               uint64_t *timestamp_ms) {
+               uint64_t *timestamp_ms, uint32_t *generation) {
   prv_assert_state_from_user(state);
   if (PRIVILEGE_WAS_ELEVATED) {
     syscall_assert_userspace_buffer(timestamp_ms, sizeof(*timestamp_ms));
+    syscall_assert_userspace_buffer(generation, sizeof(*generation));
   }
 
   pbl_mutex_lock(&s_accel_manager_mutex, PBL_FOREVER);
 
   uint32_t result = state->num_samples;
   *timestamp_ms = state->timestamp_ms;
+  *generation = state->generation;
 
   pbl_mutex_unlock(&s_accel_manager_mutex);
   return result;
 }
 
-DEFINE_SYSCALL(bool, sys_accel_manager_consume_samples, AccelManagerState *state,
-               uint32_t samples) {
+DEFINE_SYSCALL(bool, sys_accel_manager_consume_samples, AccelManagerState *state, uint32_t samples,
+               uint32_t generation, bool *more) {
   prv_assert_state_from_user(state);
+  if (PRIVILEGE_WAS_ELEVATED) {
+    syscall_assert_userspace_buffer(more, sizeof(*more));
+  }
   bool success = true;
   pbl_mutex_lock(&s_accel_manager_mutex, PBL_FOREVER);
 
-  if (samples > state->num_samples) {
-    PBL_LOG_ERR("Consuming more samples than exist %d vs %d!", (int)samples,
-                (int)state->num_samples);
-    success = false;
-  } else if (samples != state->num_samples) {
-    PBL_LOG_DBG("Dropping %d accel samples", (int)(state->num_samples - samples));
-    success = false;
+  // Samples from a buffer that's been replaced, or none at all, leave the current buffer as it is
+  if (generation == state->generation && samples > 0) {
+    if (samples > state->num_samples) {
+      PBL_LOG_ERR("Consuming more samples than exist %d vs %d!", (int)samples,
+                  (int)state->num_samples);
+      success = false;
+    } else if (samples != state->num_samples) {
+      PBL_LOG_DBG("Dropping %d accel samples", (int)(state->num_samples - samples));
+      success = false;
+    }
+    state->num_samples = 0;
   }
 
-  state->event_posted = false;
-  state->num_samples = 0;
   // Fill it again from circular buffer
-  prv_dispatch_data(state->task != pebble_task_get_current() /* post_event */);
+  prv_dispatch_data(false /* post_event */);
+  // A batch that's already in goes to the running callback, so no event is posted for it
+  *more = state->samples_per_update > 0 && state->num_samples >= state->samples_per_update;
+  state->event_posted = *more;
 
   pbl_mutex_unlock(&s_accel_manager_mutex);
   return success;
@@ -937,7 +945,7 @@ void test_accel_manager_reset(void) {
     state = (AccelManagerState *)state->list_node.next;
     kernel_free(free_state);
   }
-  s_data_subscribers = NULL;
+  s_data_subscribers = nullptr;
   s_shake_subscribers_count = 0;
   s_double_tap_subscribers_count = 0;
   s_motion_backlight_subscribed = false;

@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "pbl/kernel/types.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/kernel/types.h>
 
 /**
  * @defgroup kernel_sched Scheduler
@@ -29,7 +29,7 @@
  * Creates the idle thread and switches to the highest priority thread. Called once from main(),
  * after the first threads have been created.
  */
-void pbl_kernel_start(void) PBL_NORETURN;
+[[noreturn]] void pbl_kernel_start(void);
 
 /**
  * @brief Check whether the scheduler has started.

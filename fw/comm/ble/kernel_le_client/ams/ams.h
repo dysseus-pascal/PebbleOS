@@ -4,7 +4,8 @@
 #pragma once
 
 #include "ams_types.h"
-#include "applib/bluetooth/ble_client.h"
+
+#include <applib/bluetooth/ble_client.h>
 
 //! @file ams.h Module implementing an AMS client.
 //! See http://bit.ly/ams-spec for Apple's documentation of AMS.

@@ -2,17 +2,18 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #ifdef CONFIG_ORIENTATION_MANAGER
-#include "pbl/services/orientation_manager.h"
-#include "system/passert.h"
-#include "shell/prefs.h"
-#include <pbl/drivers/display/display.h>
 #include <pbl/drivers/accel.h>
 #include <pbl/drivers/button.h>
+#include <pbl/drivers/display/display.h>
 #include <pbl/drivers/imu/mmc5603nj/mmc5603nj.h>
-#include "kernel/events.h"
-#include "process_management/process_manager.h"
+#include <pbl/services/orientation_manager.h>
+
+#include <kernel/events.h>
+#include <process_management/process_manager.h>
+#include <shell/prefs.h>
+#include <system/passert.h>
 #ifdef CONFIG_SERVICE_TOUCH
-#include "pbl/services/touch/touch.h"
+#include <pbl/services/touch/touch.h>
 #endif
 
 void prv_change_orientation(bool rotated) {

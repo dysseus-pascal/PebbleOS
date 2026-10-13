@@ -1,8 +1,8 @@
 #pragma once
 /* Boulder: D0 Herkunft der Kopie
  *   Original: include/pbl/services/activity/kraepelin/kraepelin_algorithm.h
- *   Commit:   acc6dd23670695c7669c5850ceab2db3b8fd623c
- *   SHA-256:  e27cb65208447d8101b44278d9849e3e07a4e858902153df664d639d30b14156
+ *   Commit:   daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
+ *   SHA-256:  f99811eb901f11a0175a66b67c065e1e205fce52b3ff38644f63c8d071c931b2
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.
  * Boulder: Ende D0 */
@@ -10,7 +10,6 @@
 #include "pbl/services/activity/boulder/kraepelin/namen.h"
 /* Boulder: Ende D0 */
 #include <stdint.h>
-#include <stdbool.h>
 #include <time.h>
 
 /**

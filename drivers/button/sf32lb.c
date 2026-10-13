@@ -2,11 +2,11 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include <pbl/drivers/button.h>
-
-#include "board/board.h"
 #include <pbl/drivers/gpio.h>
-#include "kernel/events.h"
-#include "system/passert.h"
+
+#include <board/board.h>
+#include <kernel/events.h>
+#include <system/passert.h>
 
 static bool s_rotated_180 = false;
 
@@ -64,6 +64,6 @@ static int prv_cmd_button_read(const struct pbl_shell *sh, size_t argc, char **a
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_button, read, NULL, "Read the state of button <id>", prv_cmd_button_read,
-                     2, 0);
+PBL_SHELL_SUBCMD_ADD(sub_button, read, nullptr, "Read the state of button <id>",
+                     prv_cmd_button_read, 2, 0);
 #endif

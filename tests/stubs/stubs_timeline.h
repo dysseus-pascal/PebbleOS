@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include "pbl/services/timeline/item.h"
-#include "apps/system/timeline/timeline.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/timeline/item.h>
+
+#include <apps/system/timeline/timeline.h>
 
 void PBL_WEAK timeline_invoke_action(const TimelineItem *item, const TimelineItemAction *action,
                                      const AttributeList *attributes) {
@@ -35,7 +36,7 @@ void PBL_WEAK timeline_action_endpoint_send_displayed_item(const Uuid *id) {
 }
 
 Animation *PBL_WEAK timeline_animate_back_from_card(void) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK timeline_get_originator_id(const TimelineItem *item, Uuid *id) {

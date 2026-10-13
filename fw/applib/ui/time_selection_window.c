@@ -3,13 +3,12 @@
 
 #include "time_selection_window.h"
 
-#include "applib/ui/option_menu_window.h"
-#include "pbl/services/clock.h"
-#include "shell/system_theme.h"
-
 #include <stdio.h>
 
-#pragma GCC diagnostic ignored "-Wformat-truncation"
+#include <pbl/services/clock.h>
+
+#include <applib/ui/option_menu_window.h>
+#include <shell/system_theme.h>
 
 typedef struct TimeSelectionSizeConfig {
   const char *subtitle_font_key;
@@ -216,7 +215,7 @@ void time_selection_window_configure(TimeSelectionWindowData *time_selection_win
 }
 
 static void prv_text_layer_init(Layer *window_layer, TextLayer *text_layer, const GFont font) {
-  text_layer_init_with_parameters(text_layer, &GRectZero, NULL, font, GColorBlack, GColorClear,
+  text_layer_init_with_parameters(text_layer, &GRectZero, nullptr, font, GColorBlack, GColorClear,
                                   GTextAlignmentCenter, GTextOverflowModeTrailingEllipsis);
   layer_add_child(window_layer, &text_layer->layer);
   layer_set_hidden(&text_layer->layer, true);

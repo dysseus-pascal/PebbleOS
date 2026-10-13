@@ -37,6 +37,9 @@ jobs:
               - 'tools/**'
               - 'CMakeLists.txt'
               - 'Kconfig'
+              - 'SDK_VERSION'
+              - 'pbl.yml'
+              - 'requirements.txt'
 
   build-native:
     needs: changes-native
@@ -50,7 +53,7 @@ jobs:
         include:
           - host: linux
             os: ubuntu-24.04
-            container: ghcr.io/coredevices/pebbleos-docker:v9
+            container: ghcr.io/coredevices/pebbleos-docker:v10
           - host: macos
             os: macos-15
 

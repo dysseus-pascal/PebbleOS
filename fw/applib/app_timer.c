@@ -1,11 +1,11 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/app_timer.h"
+#include <pbl/services/evented_timer.h>
 
-#include "applib/app_logging.h"
-#include "pbl/services/evented_timer.h"
-#include "syscall/syscall_internal.h"
+#include <applib/app_logging.h>
+#include <applib/app_timer.h>
+#include <syscall/syscall_internal.h>
 
 //! @file fw/applib/app_timer.c
 //!
@@ -58,7 +58,7 @@ DEFINE_SYSCALL(void *, app_timer_get_data, AppTimer *timer) {
   if (PRIVILEGE_WAS_ELEVATED) {
     if (!evented_timer_exists((EventedTimerID)timer)) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Timer %u does not exist", (unsigned)(uintptr_t)timer);
-      return NULL;
+      return nullptr;
     }
     if (!evented_timer_is_current_task((EventedTimerID)timer)) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Invalid timer %u used in app_timer_reschedule",

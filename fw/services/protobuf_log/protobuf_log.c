@@ -1,32 +1,31 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/protobuf_log/protobuf_log.h"
-#include "pbl/services/protobuf_log/protobuf_log_private.h"
-#include "pbl/services/protobuf_log/protobuf_log_util.h"
-
-#include "applib/data_logging.h"
-#include <pbl/drivers/rtc.h>
-#include "kernel/pbl_malloc.h"
-#include "mfg/mfg_serials.h"
-#include "pbl/kernel/mutex.h"
-#include "pb.h"
-#include "pb_encode.h"
-#include "pbl/services/data_logging/data_logging_service.h"
-#include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "system/version.h"
-#include "pbl/util/math.h"
-#include "pbl/services/time.h"
-
-#include "pbl/util/uuid.h"
-
 #include <string.h>
 
+#include <pbl/drivers/rtc.h>
+#include <pbl/kernel/mutex.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/data_logging/data_logging_service.h>
+#include <pbl/services/protobuf_log/protobuf_log.h>
+#include <pbl/services/protobuf_log/protobuf_log_private.h>
+#include <pbl/services/protobuf_log/protobuf_log_util.h>
+#include <pbl/services/time.h>
+#include <pbl/util/math.h>
+#include <pbl/util/uuid.h>
+
+#include <applib/data_logging.h>
+#include <kernel/pbl_malloc.h>
+#include <mfg/mfg_serials.h>
+#include <pb.h>
+#include <pb_encode.h>
+#include <system/passert.h>
+#include <system/version.h>
+
 // These headers auto-generated from the measurements.proto
-#include "event.pb.h"
-#include "measurements.pb.h"
-#include "payload.pb.h"
+#include <event.pb.h>
+#include <measurements.pb.h>
+#include <payload.pb.h>
 
 PBL_LOG_MODULE_DEFINE(service_protobuf_log, CONFIG_SERVICE_PROTOBUF_LOG_LOG_LEVEL);
 
@@ -42,7 +41,7 @@ static PLogState s_plog_state;
 // ---------------------------------------------------------------------------------------
 // Get the data logging session. Creating it if not already created
 static DataLoggingSession *prv_get_dls_session(void) {
-  if (s_plog_state.dls_session == NULL) {
+  if (s_plog_state.dls_session == nullptr) {
     const bool buffered = true;
     const bool resume = false;
     Uuid system_uuid = UUID_SYSTEM;
@@ -53,7 +52,7 @@ static DataLoggingSession *prv_get_dls_session(void) {
       // times because each time you reboot, you get new sessions created and reach the limit
       // of the max # of sessions allowed.
       PBL_LOG_WRN("Error creating activity logging session");
-      return NULL;
+      return nullptr;
     }
   }
   return s_plog_state.dls_session;
@@ -260,7 +259,7 @@ static uint32_t prv_get_hdr_reserved_size(ProtobufLogConfig *config) {
   // Figure out how much space we need to reserve for the payload structure in each record
   pb_ostream_t substream = PB_OSTREAM_SIZING;
   // Encode a payload with a 0 length data blob.
-  bool success = prv_populate_payload(config, 0, NULL, &substream);
+  bool success = prv_populate_payload(config, 0, nullptr, &substream);
   PBL_ASSERT(success, "error encoding payload");
 
   // Save enough room for us to encode the length of the data buffer
@@ -284,7 +283,7 @@ ProtobufLogRef protobuf_log_create(ProtobufLogConfig *config, ProtobufLogTranspo
   // make it the size of a data logging record
   uint8_t *msg_buffer = kernel_zalloc(PLOG_DLS_RECORD_SIZE);
   if (!msg_buffer) {
-    return NULL;
+    return nullptr;
   }
 
   // Number of bytes that are needed to encode the payload structure
@@ -300,7 +299,7 @@ ProtobufLogRef protobuf_log_create(ProtobufLogConfig *config, ProtobufLogTranspo
   uint8_t *data_buffer = kernel_zalloc(max_data_size);
   if (!data_buffer) {
     kernel_free(msg_buffer);
-    return NULL;
+    return nullptr;
   }
 
   // Extra space needed for each config to store some variables and information.
@@ -310,7 +309,7 @@ ProtobufLogRef protobuf_log_create(ProtobufLogConfig *config, ProtobufLogTranspo
   if (!session) {
     kernel_free(msg_buffer);
     kernel_free(data_buffer);
-    return NULL;
+    return nullptr;
   }
 
   *session = (PLogSession){
@@ -327,7 +326,7 @@ ProtobufLogRef protobuf_log_create(ProtobufLogConfig *config, ProtobufLogTranspo
   if (!success) {
     PBL_LOG_ERR("Error encoding msg");
     prv_session_free(session);
-    session = NULL;
+    session = nullptr;
   }
 
   return session;
@@ -372,7 +371,7 @@ static bool prv_log_struct(PLogSession *session, uint32_t field_number, const pb
 
 bool protobuf_log_session_add_measurements(ProtobufLogRef session_ref, time_t sample_utc,
                                            uint32_t num_values, uint32_t *values) {
-  PBL_ASSERTN(session_ref != NULL);
+  PBL_ASSERTN(session_ref != nullptr);
   PLogSession *session = (PLogSession *)session_ref;
   PBL_ASSERTN(session->config.type == ProtobufLogType_Measurements);
   int32_t offset_sec = sample_utc - session->start_utc;
@@ -403,7 +402,7 @@ bool protobuf_log_session_add_measurements(ProtobufLogRef session_ref, time_t sa
 }
 
 bool protobuf_log_session_add_event(ProtobufLogRef session_ref, pebble_pipeline_Event *event) {
-  PBL_ASSERTN(session_ref != NULL);
+  PBL_ASSERTN(session_ref != nullptr);
   PLogSession *session = (PLogSession *)session_ref;
   PBL_ASSERTN(session->config.type == ProtobufLogType_Events);
 
@@ -429,7 +428,7 @@ bool protobuf_log_session_add_event(ProtobufLogRef session_ref, pebble_pipeline_
 }
 
 bool protobuf_log_session_flush(ProtobufLogRef session_ref) {
-  PBL_ASSERTN(session_ref != NULL);
+  PBL_ASSERTN(session_ref != nullptr);
   PLogSession *session = (PLogSession *)session_ref;
   bool encode_success = false;
 
@@ -469,7 +468,7 @@ exit:
 bool protobuf_log_session_delete(ProtobufLogRef session_ref) {
   PBL_LOG_DBG("Session: %p - Deleting", session_ref);
 
-  if (session_ref == NULL) {
+  if (session_ref == nullptr) {
     return true;
   }
   protobuf_log_session_flush(session_ref);

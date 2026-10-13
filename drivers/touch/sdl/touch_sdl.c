@@ -1,13 +1,14 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/touch/touch_sensor.h>
-#include <pbl_arch_posix.h>
-
-#include "pbl/services/system_task.h"
-#include "pbl/services/touch/touch.h"
-#include "board/board.h"
 #include "touch_sdl_bottom.h"
+
+#include <pbl/drivers/touch/touch_sensor.h>
+#include <pbl/input/input.h>
+#include <pbl/services/system_task.h>
+
+#include <board/board.h>
+#include <pbl_arch_posix.h>
 
 static bool s_enabled;
 static bool s_pressed;
@@ -17,7 +18,9 @@ static bool s_callback_scheduled;
 
 static void prv_process_touch_update(void *unused) {
   s_callback_scheduled = false;
-  touch_handle_update(s_pressed ? TouchState_FingerDown : TouchState_FingerUp, s_x, s_y);
+  pbl_input_report_key(PBL_INPUT_BTN_TOUCH, s_pressed, false);
+  pbl_input_report_abs(PBL_INPUT_ABS_X, s_x, false);
+  pbl_input_report_abs(PBL_INPUT_ABS_Y, s_y, true);
 }
 
 struct prv_touch_event {
@@ -34,7 +37,7 @@ static void prv_touch_isr(void *arg) {
   if (!s_enabled || s_callback_scheduled) {
     return;
   }
-  if (system_task_add_callback_from_isr(prv_process_touch_update, NULL)) {
+  if (system_task_add_callback_from_isr(prv_process_touch_update, nullptr)) {
     s_callback_scheduled = true;
   }
 }

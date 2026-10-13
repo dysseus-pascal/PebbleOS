@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "pbl/services/timeline/sports_layout.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/timeline/sports_layout.h>
 
 LayoutLayer *PBL_WEAK sports_layout_create(const LayoutLayerConfig *config) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK sports_layout_verify(bool existing_attributes[]) {

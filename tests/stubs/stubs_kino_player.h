@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "applib/ui/kino/kino_player.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/ui/kino/kino_player.h>
 
 void PBL_WEAK kino_player_deinit(KinoPlayer *player) {
 }
@@ -14,7 +15,7 @@ void PBL_WEAK kino_player_set_callbacks(KinoPlayer *player, KinoPlayerCallbacks 
 }
 
 KinoReel *PBL_WEAK kino_player_get_reel(KinoPlayer *player) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK kino_player_play(KinoPlayer *player) {

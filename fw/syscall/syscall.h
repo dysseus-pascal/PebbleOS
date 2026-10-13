@@ -3,41 +3,36 @@
 
 #pragma once
 
-#include "applib/app_comm.h"
-#include "applib/app_exit_reason.h"
-#include "applib/app_inbox.h"
-#include "applib/app_outbox.h"
-#include "applib/app_logging.h"
-#include "applib/app_timer.h"
-#include "applib/app_watch_info.h"
-#include "applib/app_worker.h"
-#include "applib/bluetooth/ble_client.h"
-#include "applib/data_logging.h"
-#include "applib/event_service_client.h"
-#include "applib/fonts/fonts.h"
-#include "applib/tick_timer_service.h"
-#include "applib/graphics/gtypes.h"
-#include "applib/ui/window_stack_animation.h"
-
-#include "comm/ble/gap_le_scan.h"
-
+#include <pbl/bluetooth/types.h>
 #include <pbl/drivers/mag.h>
 #include <pbl/drivers/rtc.h>
+#include <pbl/kernel/compiler.h>
+#include <pbl/services/activity/activity.h>
+#include <pbl/services/app_glances/app_glance_service.h>
+#include <pbl/services/comm_session/session.h>
+#include <pbl/services/evented_timer.h>
+#include <pbl/services/wakeup.h>
+#include <pbl/util/time.h>
 
-#include "kernel/events.h"
-#include "logging/logging_private.h"
-#include "pbl/services/wakeup.h"
-#include "pbl/services/comm_session/session.h"
-#include "pbl/services/evented_timer.h"
-#include "pbl/services/activity/activity.h"
-#include "pbl/services/app_glances/app_glance_service.h"
-
-#include "process_management/pebble_process_info.h"
-
-#include "pbl/kernel/compiler.h"
-
-#include <pbl/bluetooth/types.h>
-#include "pbl/util/time.h"
+#include <applib/app_comm.h>
+#include <applib/app_exit_reason.h>
+#include <applib/app_inbox.h>
+#include <applib/app_logging.h>
+#include <applib/app_outbox.h>
+#include <applib/app_timer.h>
+#include <applib/app_watch_info.h>
+#include <applib/app_worker.h>
+#include <applib/bluetooth/ble_client.h>
+#include <applib/data_logging.h>
+#include <applib/event_service_client.h>
+#include <applib/fonts/fonts.h>
+#include <applib/graphics/gtypes.h>
+#include <applib/tick_timer_service.h>
+#include <applib/ui/window_stack_animation.h>
+#include <comm/ble/gap_le_scan.h>
+#include <kernel/events.h>
+#include <logging/logging_private.h>
+#include <process_management/pebble_process_info.h>
 
 //! @internal
 //! Just a dummy syscall that we use in the user mode test app. Remove eventually.
@@ -60,7 +55,7 @@ void sys_get_pebble_event(PebbleEvent *event);
 
 void sys_pbl_log(LogBinaryMessage *log_message, uint32_t flags);
 
-PBL_NORETURN void sys_app_fault(uint32_t stashed_lr);
+[[noreturn]] void sys_app_fault(uint32_t stashed_lr);
 
 bool sys_resource_is_valid(ResAppNum app_num, uint32_t resource_id);
 size_t sys_resource_size(ResAppNum app_num, uint32_t handle);
@@ -73,7 +68,7 @@ const uint8_t *sys_resource_read_only_bytes(ResAppNum app_num, uint32_t resource
 
 uint32_t sys_resource_get_and_cache(ResAppNum app_num, uint32_t resource_id);
 
-PBL_NORETURN void sys_exit(void);
+[[noreturn]] void sys_exit(void);
 
 GFont sys_font_get_system_font(const char *font_key);
 void sys_font_reload_font(FontInfo *fontinfo);
@@ -88,8 +83,8 @@ bool sys_vibe_history_was_vibrating(uint64_t time_search);
 int32_t sys_vibe_get_vibe_strength(void);
 
 // Speaker syscalls
-#include "pbl/services/speaker/note_sequence.h"
-#include "pbl/services/speaker/track.h"
+#include <pbl/services/speaker/note_sequence.h>
+#include <pbl/services/speaker/track.h>
 bool sys_speaker_play_note_seq(const SpeakerNote *notes, uint32_t num_notes, uint8_t priority,
                                uint8_t volume);
 bool sys_speaker_play_tone(uint16_t freq_hz, uint16_t duration_ms, uint8_t waveform,

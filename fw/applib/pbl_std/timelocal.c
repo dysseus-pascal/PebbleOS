@@ -25,11 +25,11 @@
  * SUCH DAMAGE.
  */
 
-#include <stddef.h>
-
 #include "timelocal.h"
 
-#include "pbl/services/i18n/i18n.h"
+#include <stddef.h>
+
+#include <pbl/services/i18n/i18n.h>
 
 #define LCTIME_SIZE (sizeof(struct lc_time_T) / sizeof(char *))
 

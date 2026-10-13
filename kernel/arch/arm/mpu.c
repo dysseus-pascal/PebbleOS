@@ -1,20 +1,18 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/mcu/mpu.h"
-
-#include "pbl/mcu/cache.h"
+#include <pbl/mcu/cache.h>
+#include <pbl/mcu/mpu.h>
 
 #include <cmsis_core.h>
-
-#include "kernel.h"
+#include <kernel.h>
 
 extern const uint32_t __SRAM_size__[];
 #if !defined(SRAM_BASE)
 #if defined(CONFIG_SOC_NRF52)
 #include <drivers/nrfx_common.h>
 #define SRAM_BASE (0x20000000UL)
-#elif defined(CONFIG_SOC_SF32LB52)
+#elifdef CONFIG_SOC_SF32LB52
 #define SRAM_BASE (0x20000000UL)
 #endif
 #endif

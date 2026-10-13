@@ -1,12 +1,13 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "uart_posix_bottom.h"
+
 #include <stddef.h>
 
 #include <pbl/drivers/uart/posix.h>
-#include <pbl_arch_posix.h>
 
-#include "uart_posix_bottom.h"
+#include <pbl_arch_posix.h>
 
 static UARTDevice *s_devices[UART_POSIX_NUM_CHANNELS];
 
@@ -18,21 +19,26 @@ struct rx {
 static void prv_rx_isr(void *arg) {
   const struct rx *rx = arg;
   UARTDeviceState *state = rx->dev->state;
-  if (state->rx_int_enabled && state->rx_irq_handler != NULL) {
-    const UARTRXErrorFlags flags = {0};
+  if (state->rx_int_enabled && state->rx_irq_handler != nullptr) {
+    const UARTRXErrorFlags flags = {};
     state->rx_irq_handler(rx->dev, rx->c, &flags);
   }
 }
 
+bool uart_posix_rx_enabled(enum uart_posix_channel channel) {
+  UARTDevice *dev = s_devices[channel];
+  return dev != nullptr && __atomic_load_n(&dev->state->rx_int_enabled, __ATOMIC_RELAXED);
+}
+
 void uart_posix_rx(enum uart_posix_channel channel, uint8_t c) {
   struct rx rx = {.dev = s_devices[channel], .c = c};
-  if (rx.dev != NULL) {
+  if (rx.dev != nullptr) {
     pbl_posix_irq_run(prv_rx_isr, &rx);
   }
 }
 
 void uart_init(UARTDevice *dev) {
-  if (s_devices[dev->channel] == NULL) {
+  if (s_devices[dev->channel] == nullptr) {
     s_devices[dev->channel] = dev;
     uart_posix_bottom_start((enum uart_posix_channel)dev->channel);
   }
@@ -108,7 +114,7 @@ void uart_wait_for_tx_complete(UARTDevice *dev) {
 }
 
 UARTRXErrorFlags uart_has_errored_out(UARTDevice *dev) {
-  return (UARTRXErrorFlags){0};
+  return (UARTRXErrorFlags){};
 }
 
 void uart_clear_all_interrupt_flags(UARTDevice *dev) {

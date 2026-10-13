@@ -12,12 +12,11 @@
 //
 // NEW PREFERENCES DO __NOT__ BELONG HERE WITHOUT A VERY GOOD REASON.
 
-#include <stdbool.h>
+#include <pbl/util/uuid.h>
 
-#include "applib/graphics/gtypes.h"
-#include "process_management/app_install_types.h"
-#include "shell/system_theme.h"
-#include "pbl/util/uuid.h"
+#include <applib/graphics/gtypes.h>
+#include <process_management/app_install_types.h>
+#include <shell/system_theme.h>
 
 #if defined(CONFIG_APP_SCALING) &&                                       \
     (defined(CONFIG_BOARD_OBELIX) || defined(CONFIG_BOARD_QEMU_EMERY) || \

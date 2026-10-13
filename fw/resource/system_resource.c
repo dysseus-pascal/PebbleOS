@@ -1,24 +1,26 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+// clang-format off
 #include "system_resource.h"
 
-#include "applib/fonts/fonts.h"
-#include "applib/graphics/text_resources.h"
-#include "kernel/event_loop.h"
-#include "kernel/memory_layout.h"
-#include "kernel/panic.h"
-#include "kernel/util/fw_reset.h"
-#include "resource/resource.h"
-#include "resource/resource_storage.h"
-#include "syscall/syscall_internal.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/size.h"
+#include <pbl/util/size.h>
 
-#include "resource/resource_ids.auto.h"
-#include "resource/resource_version.auto.h"
-#include "font_resource_table.auto.h"
+#include <applib/fonts/fonts.h>
+#include <applib/graphics/text_resources.h>
+#include <kernel/event_loop.h>
+#include <kernel/memory_layout.h>
+#include <kernel/panic.h>
+#include <kernel/util/fw_reset.h>
+#include <resource/resource.h>
+#include <resource/resource_ids.auto.h>
+#include <resource/resource_storage.h>
+#include <resource/resource_version.auto.h>
+#include <font_resource_table.auto.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
+// clang-format on
 
 void system_resource_init(void) {
   if (!resource_init_app(SYSTEM_APP, &SYSTEM_RESOURCE_VERSION)) {
@@ -45,7 +47,7 @@ bool system_resource_is_valid(void) {
 FontInfo s_system_fonts_info_table[NUM_SYSTEM_FONTS + 1] KERNEL_READONLY_DATA;
 
 static GFont prv_load_system_font(const char *font_key) {
-  if (font_key == NULL) {
+  if (font_key == nullptr) {
     PBL_LOG_DBG("GETTING FALLBACK FONT");
     // load fallback font
     if (!s_system_fonts_info_table[NUM_SYSTEM_FONTS].loaded) {
@@ -65,7 +67,7 @@ static GFont prv_load_system_font(const char *font_key) {
         if (!text_resources_init_font(SYSTEM_APP, resource, extension,
                                       &s_system_fonts_info_table[i])) {
           // Can't initialize the font for some reason
-          return NULL;
+          return nullptr;
         }
         resource_get_and_cache(SYSTEM_APP, resource);
         resource_get_and_cache(SYSTEM_APP, extension);
@@ -75,7 +77,7 @@ static GFont prv_load_system_font(const char *font_key) {
   }
 
   // Didn't find the given font, invalid key.
-  return NULL;
+  return nullptr;
 }
 
 GFont system_resource_get_font(const char *font_key) {

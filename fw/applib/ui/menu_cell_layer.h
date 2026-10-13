@@ -5,10 +5,10 @@
 
 #include "layer.h"
 
-#include "applib/fonts/fonts.h"
-#include "applib/graphics/text.h"
-
 #include <stdint.h>
+
+#include <applib/fonts/fonts.h>
+#include <applib/graphics/text.h>
 
 //! @file menu_layer.h
 //! @addtogroup UI

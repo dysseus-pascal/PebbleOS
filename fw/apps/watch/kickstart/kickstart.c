@@ -3,26 +3,27 @@
 
 #include "kickstart.h"
 
-#include "applib/app.h"
-#include "applib/graphics/text.h"
-#include "applib/tick_timer_service.h"
-#include "applib/ui/app_window_stack.h"
-#include "applib/ui/ui.h"
-#include "apps/system/timeline/text_node.h"
-#include "kernel/pbl_malloc.h"
-#include "applib/pbl_std/pbl_std.h"
-#include "process_state/app_state/app_state.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/clock.h"
-#include "pbl/services/activity/health_util.h"
-#include "pbl/util/size.h"
-#include "pbl/util/string.h"
-#include "pbl/services/time.h"
-#include "pbl/util/units.h"
-#include "pbl/util/trig.h"
-
 #include <string.h>
-#include "pbl/util/testing.h"
+
+#include <pbl/services/activity/health_util.h>
+#include <pbl/services/clock.h>
+#include <pbl/services/time.h>
+#include <pbl/util/size.h>
+#include <pbl/util/string.h>
+#include <pbl/util/testing.h>
+#include <pbl/util/trig.h>
+#include <pbl/util/units.h>
+
+#include <applib/app.h>
+#include <applib/graphics/text.h>
+#include <applib/pbl_std/pbl_std.h>
+#include <applib/tick_timer_service.h>
+#include <applib/ui/app_window_stack.h>
+#include <applib/ui/ui.h>
+#include <apps/system/timeline/text_node.h>
+#include <kernel/pbl_malloc.h>
+#include <process_state/app_state/app_state.h>
+#include <resource/resource_ids.auto.h>
 
 #define EMERY_SCREEN_RES    (PBL_DISPLAY_WIDTH == 200 && PBL_DISPLAY_HEIGHT == 228)
 #define SNOWY_SCREEN_RES    (PBL_DISPLAY_WIDTH == 144 && PBL_DISPLAY_HEIGHT == 168)
@@ -300,7 +301,7 @@ static void prv_draw_steps_and_shoe(GContext *ctx, const char *steps_buffer, GFo
 #endif
 
   graphics_context_set_text_color(ctx, color);
-  graphics_draw_text(ctx, steps_buffer, font, bounds, GTextOverflowModeFill, alignment, NULL);
+  graphics_draw_text(ctx, steps_buffer, font, bounds, GTextOverflowModeFill, alignment, nullptr);
 }
 
 static void prv_draw_time(GContext *ctx, GFont time_font, GFont am_pm_font, GRect bounds,
@@ -337,7 +338,7 @@ static void prv_draw_time(GContext *ctx, GFont time_font, GFont am_pm_font, GRec
   bounds.origin.y = 72;
 #endif
 
-  graphics_text_node_draw(&container->node, ctx, &bounds, NULL, NULL);
+  graphics_text_node_draw(&container->node, ctx, &bounds, nullptr, nullptr);
   graphics_text_node_destroy(&container->node);
 }
 
@@ -370,7 +371,7 @@ static void prv_draw_bpm(GContext *ctx, int32_t current_bpm, GFont font, GBitmap
   const GTextAlignment alignment = PBL_IF_BW_ELSE(GTextAlignmentLeft, GTextAlignmentRight);
 
   graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorRed, GColorWhite));
-  graphics_draw_text(ctx, bpm_text, font, bounds, GTextOverflowModeFill, alignment, NULL);
+  graphics_draw_text(ctx, bpm_text, font, bounds, GTextOverflowModeFill, alignment, nullptr);
 }
 #endif
 

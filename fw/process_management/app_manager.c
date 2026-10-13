@@ -2,64 +2,67 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "app_manager.h"
+
 #include "process_loader.h"
 
 // Pebble stuff
-#include "applib/app_launch_reason.h"
-#include "applib/app_message/app_message_internal.h"
-#include "applib/fonts/fonts.h"
-#include "applib/ui/dialogs/dialog.h"
-#include "applib/ui/dialogs/simple_dialog.h"
-#include "kernel/event_loop.h"
-#include "kernel/memory_layout.h"
-#include "kernel/pbl_malloc.h"
-#include "kernel/ui/kernel_ui.h"
-#include "kernel/ui/modals/modal_manager.h"
-#include "kernel/util/segment.h"
-#include "kernel/util/task_init.h"
-#include "pbl/kernel/mutex.h"
-#include "pbl/mcu/privilege.h"
-#include "popups/health_tracking_ui.h"
-#include "popups/timeline/peek.h"
-#include "process_management/app_install_manager.h"
-#include "process_management/app_run_state.h"
-#include "process_management/pebble_process_md.h"
-#include "process_management/process_heap.h"
-#include "process_state/app_state/app_state.h"
-#include "resource/resource.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/analytics/analytics.h"
-#include "pbl/services/compositor/compositor_transitions.h"
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/services/light.h"
-#include "pbl/services/app_inbox_service.h"
-#include "pbl/services/app_outbox_service.h"
-#include "pbl/services/vibe_pattern.h"
+#include <pbl/kernel/mutex.h>
+#include <pbl/mcu/privilege.h>
+#include <pbl/services/analytics/analytics.h>
+#include <pbl/services/app_inbox_service.h>
+#include <pbl/services/app_outbox_service.h>
+#include <pbl/services/compositor/compositor_transitions.h>
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/services/light.h>
+#include <pbl/services/vibe_pattern.h>
+
+#include <applib/app_launch_reason.h>
+#include <applib/app_message/app_message_internal.h>
+#include <applib/fonts/fonts.h>
+#include <applib/ui/dialogs/dialog.h>
+#include <applib/ui/dialogs/simple_dialog.h>
+#include <kernel/event_loop.h>
+#include <kernel/memory_layout.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/ui/kernel_ui.h>
+#include <kernel/ui/modals/modal_manager.h>
+#include <kernel/util/segment.h>
+#include <kernel/util/task_init.h>
+#include <popups/health_tracking_ui.h>
+#include <popups/timeline/peek.h>
+#include <process_management/app_install_manager.h>
+#include <process_management/app_run_state.h>
+#include <process_management/pebble_process_md.h>
+#include <process_management/process_heap.h>
+#include <process_state/app_state/app_state.h>
+#include <resource/resource.h>
+#include <resource/resource_ids.auto.h>
 #ifndef CONFIG_RECOVERY_FW
-#include "pbl/services/speaker/speaker_service.h"
+#include <pbl/services/speaker/speaker_service.h>
 #endif
-#include "shell/normal/app_idle_timeout.h"
-#include "shell/normal/watchface.h"
-#include "shell/system_shell.h"
-#include "shell/system_app_state_machine.h"
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
+#include <pbl/util/math.h>
+
+#include <shell/normal/app_idle_timeout.h>
+#include <shell/normal/watchface.h>
+#include <shell/system_app_state_machine.h>
+#include <shell/system_shell.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 // FreeRTOS stuff
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "pbl/util/testing.h"
+
+#include <pbl/util/testing.h>
 
 #if defined(CONFIG_SHELL) && !defined(CONFIG_RECOVERY_FW)
-#include <pbl/shell/shell.h>
-
 #include <errno.h>
+
+#include <pbl/shell/shell.h>
 #endif
 
 #define RETURN_CRASH_TIMEOUT_TICKS (60 * RTC_TICKS_HZ)
@@ -100,7 +103,7 @@ static NextApp s_next_app;
 // ---------------------------------------------------------------------------------------------
 void app_manager_init(void) {
   s_initialized = true;
-  s_app_task_context = (ProcessContext){0};
+  s_app_task_context = (ProcessContext){};
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -288,14 +291,14 @@ static bool prv_app_start(const PebbleProcessMd *app_md, const void *args,
 
   MemorySegment app_segment;
   PBL_ASSERTN(memory_segment_split(&app_ram, &app_segment, app_segment_size));
-  PBL_ASSERTN(memory_segment_split(&app_segment, NULL, stack_guard_size));
+  PBL_ASSERTN(memory_segment_split(&app_segment, nullptr, stack_guard_size));
   // No (accessible) memory segments can be placed between the top of APP_RAM
   // and the end of stack. Stacks always grow towards lower memory addresses, so
   // we want a stack overflow to touch the stack guard region before it begins
   // to clobber actual data. And syscalls assume that the stack is always at the
   // top of APP_RAM; violating this assumption will result in syscalls sometimes
   // failing when the app hasn't done anything wrong.
-  void *stack = memory_segment_split(&app_segment, NULL, stack_size);
+  void *stack = memory_segment_split(&app_segment, nullptr, stack_size);
   PBL_ASSERTN(stack);
   s_app_task_context.load_start = app_segment.start;
   g_app_load_address = app_segment.start;
@@ -467,7 +470,7 @@ static void prv_app_show_crash_ui(AppInstallId install_id) {
   }
 
 #if !defined(CONFIG_RECOVERY_FW)
-  static AppCrashInfo crash_info = {0};
+  static AppCrashInfo crash_info = {};
   // If the same watchface crashes twice in one minute, then we show a dialog informing
   // the user that the watchface has crashed.  Any button press will dismiss
   // the dialog and show us the default system watch face.
@@ -478,7 +481,7 @@ static void prv_app_show_crash_ui(AppInstallId install_id) {
     PBL_ANALYTICS_ADD(watchface_crash_count, 1);
     crash_info = (AppCrashInfo){.install_id = install_id, .crash_ticks = rtc_get_ticks()};
     // Re-launch immediately
-    watchface_launch_default(NULL);
+    watchface_launch_default(nullptr);
     return;
   }
 
@@ -528,10 +531,10 @@ static void prv_app_show_crash_ui(AppInstallId install_id) {
   PBL_ANALYTICS_ADD(watchface_crash_count, 1);
   PBL_ANALYTICS_ADD(watchface_crash_revert_count, 1);
 
-  crash_info = (AppCrashInfo){0};
+  crash_info = (AppCrashInfo){};
 
   watchface_set_default_install_id(INSTALL_ID_INVALID);
-  watchface_launch_default(NULL);
+  watchface_launch_default(nullptr);
 #endif
 }
 
@@ -603,7 +606,7 @@ static bool prv_app_switch(bool gracefully) {
     PBL_LOG_WRN("Failed to start app <%s>! Restarting launcher",
                 process_metadata_get_name(s_next_app.md));
 
-    prv_app_start(system_app_state_machine_system_start(), NULL, APP_LAUNCH_SYSTEM);
+    prv_app_start(system_app_state_machine_system_start(), nullptr, APP_LAUNCH_SYSTEM);
   }
 
   compositor_transition(s_next_app.common.transition);
@@ -644,7 +647,7 @@ void app_manager_start_first_app(void) {
   PBL_ASSERTN(prv_app_start(app_md, 0, APP_LAUNCH_SYSTEM));
 #endif
   s_first_app_launched = true;
-  compositor_transition(NULL);
+  compositor_transition(nullptr);
 }
 
 static const CompositorTransition *prv_get_transition(const LaunchConfigCommon *config,
@@ -706,13 +709,13 @@ bool app_manager_launch_new_app(const AppLaunchConfig *config) {
   };
   s_next_app.common.transition = prv_get_transition(&config->common, new_app_id);
 
-  if ((config->common.reason == APP_LAUNCH_WAKEUP) && (config->common.args != NULL)) {
+  if ((config->common.reason == APP_LAUNCH_WAKEUP) && (config->common.args != nullptr)) {
     WakeupInfo *wakeup_info = (WakeupInfo *)config->common.args;
     s_next_app.wakeup_info = *(WakeupInfo *)wakeup_info;
 
     // Stop pointing at the old storage location for wakeup_info so we don't keep the dangling
     // pointer around.
-    s_next_app.common.args = NULL;
+    s_next_app.common.args = nullptr;
   }
 
   return prv_app_switch(!config->forcefully);
@@ -818,7 +821,7 @@ ProcessContext *app_manager_get_task_context(void) {
 bool app_manager_is_watchface_running(void) {
   // No app while one is being switched out.
   const PebbleProcessMd *md = app_manager_get_current_app_md();
-  return (md != NULL) && (md->process_type == ProcessTypeWatchface);
+  return (md != nullptr) && (md->process_type == ProcessTypeWatchface);
 }
 
 ResAppNum app_manager_get_current_resource_num(void) {
@@ -834,7 +837,7 @@ ButtonId app_manager_get_launch_button(void) {
 }
 
 void app_manager_get_framebuffer_size(GSize *size) {
-  if (size == NULL) {
+  if (size == nullptr) {
     return;
   }
 
@@ -926,7 +929,7 @@ DEFINE_SYSCALL(AppInstallId, sys_app_manager_get_current_app_id, void) {
 #if defined(CONFIG_SHELL) && !defined(CONFIG_RECOVERY_FW)
 static int prv_cmd_app_active(const struct pbl_shell *sh, size_t argc, char **argv) {
   const PebbleProcessMd *app_metadata = app_manager_get_current_app_md();
-  if (app_metadata == NULL) {
+  if (app_metadata == nullptr) {
     pbl_shell_error(sh, "metadata lookup failed: no app running");
     return -ENOENT;
   }
@@ -938,6 +941,6 @@ static int prv_cmd_app_active(const struct pbl_shell *sh, size_t argc, char **ar
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_app, active, NULL, "Show the running app metadata", prv_cmd_app_active, 0,
-                     0);
+PBL_SHELL_SUBCMD_ADD(sub_app, active, nullptr, "Show the running app metadata", prv_cmd_app_active,
+                     0, 0);
 #endif

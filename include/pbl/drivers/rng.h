@@ -4,7 +4,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdbool.h>
 
 /**
  * @defgroup drivers_rng RNG

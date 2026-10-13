@@ -5,9 +5,10 @@
 
 #include "app_glance.h"
 
-#include "applib/ui/kino/kino_reel.h"
-#include "apps/system/timeline/text_node.h"
-#include "pbl/util/uuid.h"
+#include <pbl/util/uuid.h>
+
+#include <applib/ui/kino/kino_reel.h>
+#include <apps/system/timeline/text_node.h>
 
 #define LAUNCHER_APP_GLANCE_STRUCTURED_ICON_MAX_SIZE \
   (GSize(ATTRIBUTE_ICON_TINY_SIZE_PX, ATTRIBUTE_ICON_TINY_SIZE_PX))
@@ -80,8 +81,8 @@ struct LauncherAppGlanceStructured {
   int32_t icon_horizontal_margin;
 };
 
-_Static_assert((offsetof(LauncherAppGlanceStructured, glance) == 0),
-               "LauncherAppGlance is not the first field of LauncherAppGlanceStructured");
+static_assert((offsetof(LauncherAppGlanceStructured, glance) == 0),
+              "LauncherAppGlance is not the first field of LauncherAppGlanceStructured");
 
 //! Create a structured launcher app glance for the provided app menu node.
 //! @param uuid The UUID of the app for which to initialize this structured glance

@@ -1,13 +1,14 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "display_sdl_bottom.h"
+
 #include <string.h>
 
 #include <pbl/drivers/display/display.h>
 
-#include "board/board.h"
-#include "display_sdl_bottom.h"
-#include "system/passert.h"
+#include <board/board.h>
+#include <system/passert.h>
 
 static uint8_t s_fb[PBL_DISPLAY_WIDTH * PBL_DISPLAY_HEIGHT];
 static bool s_enabled;
@@ -39,8 +40,8 @@ bool display_update_in_progress(void) {
 }
 
 void display_update(NextRowCallback nrcb, UpdateCompleteCallback uccb) {
-  PBL_ASSERTN(nrcb != NULL);
-  PBL_ASSERTN(uccb != NULL);
+  PBL_ASSERTN(nrcb != nullptr);
+  PBL_ASSERTN(uccb != nullptr);
 
   DisplayRow row;
   while (nrcb(&row)) {

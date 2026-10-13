@@ -1,18 +1,18 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+// clang-format off
 #include <pbl/drivers/uart/sf32lb.h>
-
 #include <pbl/drivers/uart.h>
-#include "pbl/kernel/irq.h"
-#include "pbl/mcu/cache.h"
-#include "pbl/soc/sf32lb/sleep.h"
-#include "system/passert.h"
+#include <pbl/kernel/irq.h>
+#include <pbl/mcu/cache.h>
+#include <pbl/soc/sf32lb/sleep.h>
+#include <pbl/util/misc.h>
 
-#include "bf0_hal_dma.h"
-#include "bf0_hal_uart.h"
-
-#include "pbl/util/misc.h"
+#include <bf0_hal_dma.h>
+#include <bf0_hal_uart.h>
+#include <system/passert.h>
+// clang-format on
 
 static void prv_init(UARTDevice *dev, uint32_t mode) {
   HAL_StatusTypeDef ret;
@@ -40,7 +40,7 @@ static void prv_init(UARTDevice *dev, uint32_t mode) {
 
   dev->state->initialized = true;
 
-  if (dev->state->hdma.Instance != NULL) {
+  if (dev->state->hdma.Instance != nullptr) {
     __HAL_LINKDMA(&dev->state->huart, hdmarx, dev->state->hdma);
 
     pbl_irq_enable(dev->dma_irqn);
@@ -258,7 +258,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
     for (size_t i = 0; i < recv_len; i++) {
       uint8_t data;
       data = state->rx_dma_buffer[idx];
-      state->rx_irq_handler(dev, data, NULL);
+      state->rx_irq_handler(dev, data, nullptr);
       idx++;
       if (idx >= state->rx_dma_length) {
         idx = 0;
@@ -292,7 +292,7 @@ void uart_start_rx_dma(UARTDevice *dev, void *buffer, uint32_t length) {
 }
 
 void uart_stop_rx_dma(UARTDevice *dev) {
-  dev->state->rx_dma_buffer = NULL;
+  dev->state->rx_dma_buffer = nullptr;
   dev->state->rx_dma_length = 0;
   HAL_UART_DMAPause(&dev->state->huart);
 }

@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "applib/ui/menu_layer.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/ui/menu_layer.h>
 
 void PBL_WEAK menu_cell_basic_draw(GContext *ctx, const Layer *cell_layer, const char *title,
                                    const char *subtitle, GBitmap *icon) {
@@ -21,7 +22,7 @@ void PBL_WEAK menu_layer_init(MenuLayer *menu_layer, const GRect *frame) {
 }
 
 MenuLayer *PBL_WEAK menu_layer_create(GRect frame) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK menu_layer_deinit(MenuLayer *menu_layer) {
@@ -31,11 +32,11 @@ void PBL_WEAK menu_layer_destroy(MenuLayer *menu_layer) {
 }
 
 Layer *PBL_WEAK menu_layer_get_layer(const MenuLayer *menu_layer) {
-  return NULL;
+  return nullptr;
 }
 
 ScrollLayer *PBL_WEAK menu_layer_get_scroll_layer(const MenuLayer *menu_layer) {
-  return NULL;
+  return nullptr;
 }
 
 void PBL_WEAK menu_layer_set_callbacks(MenuLayer *menu_layer, void *callback_context,

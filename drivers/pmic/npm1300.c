@@ -6,19 +6,18 @@
 
 #include <math.h>
 
-#include <pbl/drivers/pmic.h>
-#include <pbl/drivers/battery.h>
-
-#include "board/board.h"
 #include <pbl/drivers/battery.h>
 #include <pbl/drivers/exti.h>
 #include <pbl/drivers/i2c.h>
-#include "kernel/events.h"
-#include "kernel/util/delay.h"
-#include "kernel/util/sleep.h"
-#include "pbl/services/system_task.h"
+#include <pbl/drivers/pmic.h>
 #include <pbl/logging/logging.h>
+#include <pbl/services/system_task.h>
 #include <pbl/util/bits.h>
+
+#include <board/board.h>
+#include <kernel/events.h>
+#include <kernel/util/delay.h>
+#include <kernel/util/sleep.h>
 
 PBL_LOG_MODULE_DEFINE(driver_pmic_npm1300, CONFIG_DRIVER_PMIC_LOG_LEVEL);
 
@@ -280,11 +279,11 @@ static void prv_clear_pending_interrupts() {
 static void prv_pmic_state_change_cb(void *null) {
   prv_clear_pending_interrupts();
   new_timer_start(s_debounce_charger_timer, CHARGER_DEBOUNCE_MS, prv_handle_charge_state_change,
-                  NULL, 0 /*flags*/);
+                  nullptr, 0 /*flags*/);
 }
 
 static void prv_npm1300_interrupt_handler(void) {
-  system_task_add_callback_from_isr(prv_pmic_state_change_cb, NULL);
+  system_task_add_callback_from_isr(prv_pmic_state_change_cb, nullptr);
 }
 
 static void prv_configure_interrupts(void) {
@@ -368,12 +367,12 @@ bool pmic_init(void) {
 
   ok &= prv_write_register(NPM1300_BCHGVTERM, NPM1300_BCHGVTERM_4V35);
   ok &= prv_write_register(NPM1300_BCHGVTERMR, NPM1300_BCHGVTERMR_4V00);
-#elif defined(CONFIG_BOARD_GETAFIX)
+#elifdef CONFIG_BOARD_GETAFIX
   ok &= prv_write_register(NPM1300_ADCNTCRSEL, NPM1300_ADCNTCRSEL_10K);
 
   ok &= prv_write_register(NPM1300_BCHGVTERM, NPM1300_BCHGVTERM_4V45);
   ok &= prv_write_register(NPM1300_BCHGVTERMR, NPM1300_BCHGVTERMR_4V00);
-#elif defined(CONFIG_BOARD_ASTERIX)
+#elifdef CONFIG_BOARD_ASTERIX
   ok &= prv_write_register(NPM1300_ADCNTCRSEL, NPM1300_ADCNTCRSEL_10K);
 
   ok &= prv_write_register(NPM1300_BCHGVTERM, NPM1300_BCHGVTERM_4V20);
@@ -392,7 +391,7 @@ bool pmic_init(void) {
   ok &= prv_write_register(NPM1300_LDSW2LDOSEL, NPM1300_LDSWLDOSEL_LDO);
   ok &= prv_write_register(NPM1300_LDSW2VOUTSEL, NPM1300_LDSWVOUTSEL_3V3);
   ok &= prv_write_register(NPM1300_TASKLDSW2CLR, 1);
-#elif defined(CONFIG_BOARD_GETAFIX)
+#elifdef CONFIG_BOARD_GETAFIX
   // LDSW2 (3.3V for PDM)
   ok &= prv_write_register(NPM1300_LDSW2LDOSEL, NPM1300_LDSWLDOSEL_LDSW);
   ok &= prv_write_register(NPM1300_TASKLDSW2CLR, 1);
@@ -851,9 +850,9 @@ static int prv_cmd_pmic_regs(const struct pbl_shell *sh, size_t argc, char **arg
 }
 
 static const struct pbl_shell_cmd sub_pmic[] = {
-  PBL_SHELL_CMD(regs, NULL, "Dump the main registers", prv_cmd_pmic_regs),
+  PBL_SHELL_CMD(regs, nullptr, "Dump the main registers", prv_cmd_pmic_regs),
   PBL_SHELL_SUBCMD_SET_END,
 };
 
-PBL_SHELL_CMD_REGISTER(pmic, sub_pmic, "PMIC", NULL);
+PBL_SHELL_CMD_REGISTER(pmic, sub_pmic, "PMIC", nullptr);
 #endif

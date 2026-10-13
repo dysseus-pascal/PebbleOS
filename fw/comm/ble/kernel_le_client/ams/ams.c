@@ -2,30 +2,28 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "ams.h"
+
 #include "ams_analytics.h"
 #include "ams_util.h"
 
-#include "comm/ble/gap_le_connection.h"
-#include "comm/ble/gatt_client_accessors.h"
-#include "comm/ble/gatt_client_operations.h"
-#include "comm/ble/gatt_client_subscriptions.h"
-#include "comm/bt_conn_mgr.h"
-#include "comm/bt_lock.h"
-
-#include "kernel/event_loop.h"
-#include "kernel/pbl_malloc.h"
-
-#include "pbl/services/music_internal.h"
-
-#include <pbl/logging/logging.h>
-#include "system/hexdump.h"
-#include "system/passert.h"
-#include "pbl/kernel/compiler.h"
-#include "pbl/util/units.h"
+#include <string.h>
 
 #include <pbl/btutil/bt_device.h>
+#include <pbl/kernel/compiler.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/music_internal.h>
+#include <pbl/util/units.h>
 
-#include <string.h>
+#include <comm/ble/gap_le_connection.h>
+#include <comm/ble/gatt_client_accessors.h>
+#include <comm/ble/gatt_client_operations.h>
+#include <comm/ble/gatt_client_subscriptions.h>
+#include <comm/bt_conn_mgr.h>
+#include <comm/bt_lock.h>
+#include <kernel/event_loop.h>
+#include <kernel/pbl_malloc.h>
+#include <system/hexdump.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(bt, CONFIG_BT_LOG_LEVEL);
 
@@ -114,7 +112,7 @@ static void prv_request_response_time(enum pbl_bt_consumer consumer,
     const pbl_bt_characteristic_t characteristic = s_ams_client->characteristics[0];
     const struct pbl_bt_device_internal device =
         gatt_client_characteristic_get_device(characteristic);
-    if (!bt_device_is_invalid(&device.opaque)) {
+    if (!bt_device_internal_equal(&device, &PBL_BT_DEVICE_INTERNAL_INVALID)) {
       GAPLEConnection *connection = gap_le_connection_by_device(&device);
       conn_mgr_set_ble_conn_response_time(connection, consumer, state, max_period_secs);
     }
@@ -256,7 +254,7 @@ static void prv_register_next_entity(void *unused) {
   if (e != PBL_BT_ERRNO_OK) {
     if (e == PBL_BT_ERRNO_NOT_ENOUGH_RESOURCES) {
       // Need to wait for space to become available
-      launcher_task_add_callback(&prv_register_next_entity, NULL);
+      launcher_task_add_callback(&prv_register_next_entity, nullptr);
     } else {
       // Most likely the LE connection got busted, don't think retrying will help.
       PBL_LOG_ERR("Write failed %i", e);
@@ -619,7 +617,7 @@ void ams_handle_subscribe(pbl_bt_characteristic_t subscribed_characteristic,
     PBL_LOG_ERR("Another music service was already connected. Aborting AMS setup.");
     return;
   }
-  prv_register_next_entity(NULL);
+  prv_register_next_entity(nullptr);
 }
 
 void ams_handle_write_response(pbl_bt_characteristic_t characteristic,
@@ -646,7 +644,7 @@ void ams_handle_write_response(pbl_bt_characteristic_t characteristic,
   }
   PBL_LOG_DBG("AMS Registered for entity_id=%u", entity_id);
   ++s_ams_client->next_entity_to_register;
-  prv_register_next_entity(NULL);
+  prv_register_next_entity(nullptr);
 }
 
 void ams_handle_read_or_notification(pbl_bt_characteristic_t characteristic, const uint8_t *value,
@@ -667,7 +665,7 @@ void ams_destroy(void) {
   prv_set_connected(false);
 
   kernel_free(s_ams_client);
-  s_ams_client = NULL;
+  s_ams_client = nullptr;
 }
 
 static void prv_send_command_kernel_main_task_cb(void *data) {

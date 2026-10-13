@@ -302,12 +302,14 @@ static void prv_wecker_boot(void) {
 // vollstaendig zaehlt sie in alarm.c nach). Abgelegt, bevor alarm.c das erste Mal laeuft, und
 // bei jedem Neustart zurueckgeschrieben: alarm.c beginnt dann mit seinen eigenen
 // Anfangswerten wie auf der Uhr, der Test schreibt sie nicht nach. Die Datei "alarms" bleibt.
+// clang-format off
 #define ALARM_RAM(X)                                                                         \
   X(s_alarms_enabled) X(s_next_alarm_time) X(s_next_alarm) X(s_next_alarm_cron)               \
   X(s_most_recent_alarm_id) X(s_most_recent_alarm_config) X(s_most_recent_alarm_recorded)     \
   X(s_snooze_timer_id) X(s_snooze_delay_m) X(s_user_snoozed) X(s_smart_snooze_counter)        \
   X(s_armed_record) X(s_missed_alarm_id) X(s_missed_alarm_time) X(s_mutex)                    \
-  X(s_language_change_event_info)
+  X(s_language_change_event_info) X(s_snooze_generation)
+// clang-format on
 #define ALARM_RAM_FELD(v) __typeof__(v) v;
 #define ALARM_RAM_SICHERN(v) s_alarm_ram_anfang.v = v;
 #define ALARM_RAM_ZURUECK(v) v = s_alarm_ram_anfang.v;
@@ -1322,10 +1324,10 @@ void test_boulder_wecker__zwei_verpasst(void) {
 }
 
 // Pebbles Lauf endet im Fenster ohne Klingeln: aus und gleich wieder an, geloescht und gleich
-// neu angelegt (dieselbe Id), oder ein anderer Wecker loest ihn ab. Ohne Neustart klingelt er
-// an diesem Morgen nicht mehr (Pebble plant morgen) - ein Neustart danach holt ihn dann auch
-// nicht nach. Umgestellt und zurueck laeuft Pebbles Lauf weiter: Er klingelt mit und ohne
-// Neustart.
+// neu angelegt (dieselbe Id), umgestellt und zurueck (seit v4.41.0 beendet jede Aenderung an
+// Zeit, Art oder Tagen den Lauf, 62e8d0a8). Ohne Neustart klingelt er an diesem Morgen nicht
+// mehr (Pebble plant morgen) - ein Neustart danach holt ihn dann auch nicht nach. Loest ein
+// anderer Wecker ihn ab, klingelt der andere, mit und ohne Neustart.
 typedef enum {
   EndeAusAn,
   EndeNeuAngelegt,
@@ -1337,7 +1339,7 @@ typedef enum {
 void test_boulder_wecker__lauf_endet(void) {
   static const char *s_name[] = { "aus und wieder an", "geloescht und neu angelegt",
                                   "anderer Wecker loest ab", "umgestellt und zurueck" };
-  static const int s_ohne_neustart[] = { 0, 0, 1, 1 };
+  static const int s_ohne_neustart[] = {0, 0, 1, 0};
   for (Ende e = 0; e < EndeAnzahl; e++) {
     int klingeln[2];
     for (int neustart = 0; neustart <= 1; neustart++) {

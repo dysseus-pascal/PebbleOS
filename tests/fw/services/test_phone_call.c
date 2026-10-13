@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
+#include <pbl/services/comm_session/session.h>
+#include <pbl/services/notifications/alerts.h>
+#include <pbl/services/phone_call.h>
+#include <pbl/services/phone_call_util.h>
+#include <pbl/util/testing.h>
 
-#include "kernel/events.h"
-#include "pbl/services/comm_session/session.h"
-#include "pbl/services/notifications/alerts.h"
-#include "pbl/services/phone_call.h"
-#include "pbl/services/phone_call_util.h"
-#include "pbl/util/testing.h"
+#include <clar.h>
+#include <kernel/events.h>
 
 extern PBL_T_STATIC void prv_handle_phone_event(PebbleEvent *e, void *context);
 extern PBL_T_STATIC void prv_handle_mobile_app_event(PebbleEvent *e, void *context);
@@ -17,14 +17,14 @@ extern PBL_T_STATIC void prv_handle_ancs_disconnected_event(PebbleEvent *e, void
 ///////////////////////////////////////////////////////////
 // Stubs
 ///////////////////////////////////////////////////////////
-#include "stubs_analytics.h"
-#include "stubs_event_service_client.h"
-#include "stubs_logging.h"
-#include "stubs_new_timer.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_phone_call_util.h"
-#include "stubs_session.h"
-#include "stubs_system_task.h"
+#include <stubs_analytics.h>
+#include <stubs_event_service_client.h>
+#include <stubs_logging.h>
+#include <stubs_new_timer.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_phone_call_util.h>
+#include <stubs_session.h>
+#include <stubs_system_task.h>
 
 bool alerts_should_notify_for_type(AlertType type) {
   return true;
@@ -100,7 +100,7 @@ static void prv_put_comm_session_event(bool app_connected) {
       .is_open = app_connected,
     }
   };
-  prv_handle_mobile_app_event(&comm_session_event, NULL);
+  prv_handle_mobile_app_event(&comm_session_event, nullptr);
 }
 
 static void prv_put_phone_event(PhoneEventType type, PhoneCallSource source,
@@ -111,10 +111,10 @@ static void prv_put_phone_event(PhoneEventType type, PhoneCallSource source,
       .type = type,
       .source = source,
       .call_identifier = call_identifier,
-      .caller = NULL,
+      .caller = nullptr,
     }
   };
-  prv_handle_phone_event(&phone_event, NULL);
+  prv_handle_phone_event(&phone_event, nullptr);
 }
 
 static void prv_put_incoming_call_event(PhoneCallSource source, bool app_connected) {
@@ -141,7 +141,7 @@ static void prv_ancs_disconnect(void) {
   PebbleEvent ancs_event = {
     .type = PEBBLE_ANCS_DISCONNECTED_EVENT,
   };
-  prv_handle_ancs_disconnected_event(&ancs_event, NULL);
+  prv_handle_ancs_disconnected_event(&ancs_event, nullptr);
 }
 
 ///////////////////////////////////////////////////////////

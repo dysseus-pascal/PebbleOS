@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "pbl/services/blob_db/timeline_item_storage.h"
-#include "pbl/services/settings/settings_file.h"
+#include <pbl/services/blob_db/timeline_item_storage.h>
+#include <pbl/services/settings/settings_file.h>
 
 void reminder_db_init(void) {
   return;
@@ -65,7 +65,7 @@ status_t reminder_db_is_dirty(bool *is_dirty_out) {
 }
 
 BlobDBDirtyItem *reminder_db_get_dirty_list(void) {
-  return NULL;
+  return nullptr;
 }
 
 status_t reminder_db_mark_synced(const uint8_t *key, int key_len) {

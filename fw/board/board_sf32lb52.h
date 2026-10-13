@@ -6,12 +6,13 @@
 #include "display.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "bf0_hal_pinmux.h"
 #include <pbl/drivers/button_id.h>
+#include <pbl/input/input.h>
 
-#define GPIO_Port_NULL NULL
+#include <bf0_hal_pinmux.h>
+
+#define GPIO_Port_NULL nullptr
 #define GPIO_Pin_NULL  0U
 
 typedef enum {
@@ -90,6 +91,7 @@ typedef struct {
   uint8_t pin;
   GPIOPuPd_TypeDef pull;
   bool active_high;
+  uint16_t code;
 } ButtonConfig;
 
 typedef struct {
@@ -119,12 +121,12 @@ typedef struct {
   const MagConfig mag_config;
 } BoardConfigMag;
 
-#include <pbl/drivers/flash/qspi_flash_definitions.h>
-#include <pbl/drivers/qspi_definitions.h>
-#include <pbl/drivers/uart/sf32lb.h>
 #include <pbl/drivers/display/sf32lb/display_jdi.h>
+#include <pbl/drivers/flash/qspi_flash_definitions.h>
 #include <pbl/drivers/mic/sf32lb52/pdm_definitions.h>
+#include <pbl/drivers/qspi_definitions.h>
 #include <pbl/drivers/speaker/sf32lb52/audio_definitions.h>
+#include <pbl/drivers/uart/sf32lb.h>
 
 typedef const struct UARTDevice UARTDevice;
 typedef const struct I2CBus I2CBus;

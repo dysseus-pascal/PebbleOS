@@ -1,22 +1,22 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/process_management/app_storage.h"
-
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <pbl/drivers/flash.h>
-#include "process_management/pebble_process_md.h"
-#include "resource/resource_storage.h"
-#include "pbl/services/filesystem/pfs.h"
-#include "pbl/services/filesystem/app_file.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/build_id.h"
-#include "pbl/util/math.h"
+#include <pbl/services/filesystem/app_file.h>
+#include <pbl/services/filesystem/pfs.h>
+#include <pbl/services/process_management/app_storage.h>
+#include <pbl/util/build_id.h>
+#include <pbl/util/math.h>
+
+#include <process_management/pebble_process_md.h>
+#include <resource/resource_storage.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(service_process_management, CONFIG_SERVICE_PROCESS_MANAGEMENT_LOG_LEVEL);
 
@@ -112,7 +112,7 @@ bool app_storage_app_exists(AppInstallId id) {
   pfs_close(fd);
 
   // now check resource bank
-  return resource_storage_check((ResAppNum)id, 0, NULL);
+  return resource_storage_check((ResAppNum)id, 0, nullptr);
 }
 
 void app_storage_get_file_name(char *name, size_t buf_length, AppInstallId app_id,

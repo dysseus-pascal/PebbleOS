@@ -5,8 +5,6 @@
 
 #include <pbl/bluetooth/types.h>
 
-#include <stdbool.h>
-
 //! @internal
 //! The number of reports that the circular reports buffer can contain.
 //! Accommodate for 4 reports with advertisement and scan response data:

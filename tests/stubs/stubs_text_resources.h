@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include "applib/fonts/fonts_private.h"
-#include "applib/graphics/text_resources.h"
-#include "applib/fonts/codepoint.h"
-
 #include <inttypes.h>
-#include <stdbool.h>
+
+#include <applib/fonts/codepoint.h>
+#include <applib/fonts/fonts_private.h>
+#include <applib/graphics/text_resources.h>
 
 #define HORIZ_ADVANCE_PX (2)
 
@@ -36,9 +35,9 @@ int8_t text_resources_get_glyph_height(FontCache *font_cache, Codepoint codepoin
 const GlyphData *text_resources_get_glyph(FontCache *font_cache, Codepoint codepoint,
                                           FontInfo *fontinfo, GlyphLocation *location_out) {
   if (location_out) {
-    *location_out = (GlyphLocation){0};
+    *location_out = (GlyphLocation){};
   }
-  return NULL;
+  return nullptr;
 }
 
 bool text_resources_glyph_is_color(const GlyphLocation *location) {

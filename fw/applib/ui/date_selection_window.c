@@ -3,12 +3,13 @@
 
 #include "date_selection_window.h"
 
-#include "applib/ui/option_menu_window.h"
-#include "pbl/services/clock.h"
-#include "shell/system_theme.h"
-#include "pbl/util/time.h"
-
 #include <stdio.h>
+
+#include <pbl/services/clock.h>
+#include <pbl/util/time.h>
+
+#include <applib/ui/option_menu_window.h>
+#include <shell/system_theme.h>
 
 // ---------------------------------------------------------------------------
 // Layout configuration
@@ -136,7 +137,7 @@ static void prv_handle_dec(unsigned index, void *context) {
 // ---------------------------------------------------------------------------
 
 static void prv_text_layer_init(Layer *window_layer, TextLayer *text_layer, const GFont font) {
-  text_layer_init_with_parameters(text_layer, &GRectZero, NULL, font, GColorBlack, GColorClear,
+  text_layer_init_with_parameters(text_layer, &GRectZero, nullptr, font, GColorBlack, GColorClear,
                                   GTextAlignmentCenter, GTextOverflowModeTrailingEllipsis);
   layer_add_child(window_layer, &text_layer->layer);
   layer_set_hidden(&text_layer->layer, true);

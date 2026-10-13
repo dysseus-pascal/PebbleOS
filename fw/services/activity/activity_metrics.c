@@ -1,27 +1,27 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/data_logging.h"
-#include "applib/health_service.h"
-#include "kernel/events.h"
-#include "kernel/pbl_malloc.h"
-#include "pbl/kernel/mutex.h"
-#include "pbl/services/protobuf_log/protobuf_log.h"
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
-#include "pbl/util/size.h"
-#include "pbl/util/stats.h"
-#include "pbl/util/units.h"
+#include <pbl/services/activity/activity.h>
+#include <pbl/services/activity/activity_algorithm.h>
+#include <pbl/services/activity/activity_calculators.h>
+#include <pbl/services/activity/activity_private.h>
+#include <pbl/services/protobuf_log/protobuf_log.h>
+#include <pbl/services/time.h>
+#include <pbl/util/math.h>
+#include <pbl/util/size.h>
+#include <pbl/util/stats.h>
+#include <pbl/util/time.h>
+#include <pbl/util/units.h>
 
-#include "pbl/services/activity/activity.h"
-#include "pbl/services/activity/activity_algorithm.h"
-#include "pbl/services/activity/activity_calculators.h"
-#include "pbl/services/activity/activity_private.h"
-#include "pbl/services/time.h"
-#include "pbl/util/time.h"
+#include <applib/data_logging.h>
+#include <applib/health_service.h>
+#include <kernel/events.h>
+#include <kernel/pbl_malloc.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
@@ -381,7 +381,8 @@ static void prv_update_median_hr_bpm(ActivityState *state) {
     }
 
     // Calculate the total weight
-    pbl_stats_calculate(PBL_STATS_OP_SUM, weight_buf, hr->num_samples, NULL, NULL, &total_weight);
+    pbl_stats_calculate(PBL_STATS_OP_SUM, weight_buf, hr->num_samples, nullptr, nullptr,
+                        &total_weight);
 
     // Calculate the weighted median
     median = pbl_stats_weighted_median(sample_buf, weight_buf, num_hr_samples);
@@ -427,7 +428,7 @@ static void prv_write_hr_zone_info_to_flash(HRZone zone) {
 // The median HR should get updated before calling this
 static void prv_update_current_hr_zone(ActivityState *state) {
   int32_t hr_median;
-  activity_metrics_prv_get_median_hr_bpm(&hr_median, NULL);
+  activity_metrics_prv_get_median_hr_bpm(&hr_median, nullptr);
   HRZone new_hr_zone = hr_util_get_hr_zone(hr_median);
 
   if (new_hr_zone != HRZone_Zone0 && state->hr.num_samples < ACTIVITY_MIN_NUM_SAMPLES_FOR_HR_ZONE) {
@@ -657,8 +658,8 @@ void activity_metrics_prv_init(SettingsFile *file, time_t utc_now) {
     activity_metrics_prv_get_metric_info(metric, &m_info);
     if (m_info.has_history) {
       PBL_ASSERTN(m_info.value_p);
-      ActivitySettingsValueHistory old_history = {0};
-      ActivitySettingsValueHistory new_history = {0};
+      ActivitySettingsValueHistory old_history = {};
+      ActivitySettingsValueHistory new_history = {};
 
       // In case we change the length of the history, fetch the old size
       int fetch_size = sizeof(old_history);

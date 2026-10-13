@@ -53,10 +53,10 @@ static const char *prv_titel(LauncherAppGlanceStructured *structured_glance) {
   return NULL_SAFE_FIELD_ACCESS(k, titel, NULL);
 }
 
-static void prv_untertitel_fuellen(PBL_UNUSED GContext *ctx, PBL_UNUSED GTextNode *node,
-                                   PBL_UNUSED const GRect *box,
-                                   PBL_UNUSED const GTextNodeDrawConfig *config,
-                                   PBL_UNUSED bool render, char *buffer, size_t buffer_size,
+static void prv_untertitel_fuellen([[maybe_unused]] GContext *ctx, [[maybe_unused]] GTextNode *node,
+                                   [[maybe_unused]] const GRect *box,
+                                   [[maybe_unused]] const GTextNodeDrawConfig *config,
+                                   [[maybe_unused]] bool render, char *buffer, size_t buffer_size,
                                    void *user_data) {
   LauncherAppGlanceStructured *structured_glance = user_data;
   LauncherAppGlanceKieselsport *k = launcher_app_glance_structured_get_data(structured_glance);

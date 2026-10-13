@@ -3,18 +3,20 @@
 
 #include "face.h"
 
-#include "applib/app.h"
-#include "applib/graphics/gdraw_command_image.h"
-#include "applib/graphics/text.h"
-#include "applib/tick_timer_service.h"
-#include "applib/ui/app_window_stack.h"
-#include "applib/ui/kino/kino_layer.h"
-#include "applib/ui/ui.h"
-#include "kernel/pbl_malloc.h"
-#include "process_state/app_state/app_state.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/clock.h"
 #include <time.h>
+
+#include <pbl/services/clock.h>
+
+#include <applib/app.h>
+#include <applib/graphics/gdraw_command_image.h>
+#include <applib/graphics/text.h>
+#include <applib/tick_timer_service.h>
+#include <applib/ui/app_window_stack.h>
+#include <applib/ui/kino/kino_layer.h>
+#include <applib/ui/ui.h>
+#include <kernel/pbl_malloc.h>
+#include <process_state/app_state/app_state.h>
+#include <resource/resource_ids.auto.h>
 
 typedef struct {
   Window low_power_window;
@@ -97,9 +99,9 @@ static void init(void) {
   layer_add_child(&s_low_power_data->low_power_window.layer,
                   &s_low_power_data->low_power_kino_layer.layer);
 
-  text_layer_init_with_parameters(&s_low_power_data->low_power_time_layer,
-                                  &s_low_power_data->low_power_window.layer.frame, NULL, text_font,
-                                  GColorBlack, GColorClear, text_alignment, text_overflow_mode);
+  text_layer_init_with_parameters(
+      &s_low_power_data->low_power_time_layer, &s_low_power_data->low_power_window.layer.frame,
+      nullptr, text_font, GColorBlack, GColorClear, text_alignment, text_overflow_mode);
   layer_set_frame(&s_low_power_data->low_power_time_layer.layer, &text_frame);
   layer_add_child(&s_low_power_data->low_power_window.layer,
                   &s_low_power_data->low_power_time_layer.layer);
@@ -118,7 +120,7 @@ static void init(void) {
     .origin = {0, time_bottom_y + (icon_top_y - time_bottom_y - (int)date_font_height) / 2 - 3},
     .size = {DISP_COLS, date_font_height},
   };
-  text_layer_init_with_parameters(&s_low_power_data->low_power_date_layer, &date_frame, NULL,
+  text_layer_init_with_parameters(&s_low_power_data->low_power_date_layer, &date_frame, nullptr,
                                   date_font, GColorBlack, GColorClear, text_alignment,
                                   text_overflow_mode);
   layer_add_child(&s_low_power_data->low_power_window.layer,

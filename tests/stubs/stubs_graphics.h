@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "applib/graphics/graphics.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/graphics/graphics.h>
 
 void PBL_WEAK graphics_fill_circle(GContext *ctx, GPoint p, uint16_t radius) {
 }
@@ -30,7 +31,7 @@ void PBL_WEAK graphics_draw_text(GContext *ctx, const char *text, GFont const fo
 }
 
 GBitmap *PBL_WEAK graphics_capture_frame_buffer(GContext *ctx) {
-  return NULL;
+  return nullptr;
 }
 
 bool PBL_WEAK graphics_release_frame_buffer(GContext *ctx, GBitmap *buffer) {

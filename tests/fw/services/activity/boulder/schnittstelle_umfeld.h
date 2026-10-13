@@ -270,7 +270,7 @@ bool syscall_internal_check_return_address(void *ret_addr) {
   return s_erhoeht;
 }
 
-PBL_NORETURN void syscall_failed(void) {
+[[noreturn]] void syscall_failed(void) {
   PBL_ASSERTN(false);
   while (1) {
   }

@@ -4,12 +4,11 @@
 #pragma once
 
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "pbl/kernel/compiler.h"
-#include "pbl/kernel/section.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/kernel/section.h>
 
 /**
  * @defgroup shell Shell

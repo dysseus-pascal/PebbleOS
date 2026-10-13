@@ -187,6 +187,7 @@ pbl_clar_test(test_timeline_layouts
     fw/system/hexdump.c
     fw/services/clock/time.c
     lib/c/time/gmtime.c
+    lib/c/time/mktime.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_clock.c
     tests/fakes/fake_display.c
@@ -214,6 +215,7 @@ pbl_clar_test(test_timeline_layouts
     fw/services/timeline/weather_layout.c
     fw/services/weather/weather_types.c
     fw/shell/system_theme.c
+    lib/c/time/mktime.c
     tests/stubs/stubs_clock.c
     tests/stubs/stubs_timeline_layout.c
   PLATFORMS obelix gabbro asterix

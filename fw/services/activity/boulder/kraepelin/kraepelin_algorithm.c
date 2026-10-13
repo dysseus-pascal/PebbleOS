@@ -26,34 +26,33 @@ Pebble App project.
 */
 /* Boulder: D0 Herkunft der Kopie
  *   Original: fw/services/activity/kraepelin/kraepelin_algorithm.c
- *   Commit:   acc6dd23670695c7669c5850ceab2db3b8fd623c
- *   SHA-256:  bf45c3a148609a8dfa828576250c3b59f800c58775f36d3d32e9fc3017b31d5a
+ *   Commit:   daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
+ *   SHA-256:  2bd08ba51370c17846d9e1f9781c749bbd626914cd4fef26e1f3c013caf2fa6d
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.
  * Boulder: Ende D0 */
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#include "applib/accel_service.h"
-#include "pbl/util/trig.h"
-#include "pbl/services/hrm/hrm_manager_private.h"
-#include "pbl/services/activity/activity.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/math.h"
-#include "pbl/util/math_fixed.h"
-#include "pbl/util/size.h"
-
+#include <pbl/services/activity/activity.h>
 /* Boulder: D0 Includes auf die Kopie */
-#include "pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h"
+#include <pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h>
 /* Boulder: Ende D0 */
 /* Boulder: D10 Szene ueber die Variante (variante.h) */
-#include "pbl/services/activity/boulder/variante.h"
+#include <pbl/services/activity/boulder/variante.h>
 /* Boulder: Ende D10 */
-#include "pbl/util/units.h"
+#include <pbl/services/hrm/hrm_manager_private.h>
+#include <pbl/util/math.h>
+#include <pbl/util/math_fixed.h>
+#include <pbl/util/size.h>
+#include <pbl/util/trig.h>
+#include <pbl/util/units.h>
+
+#include <applib/accel_service.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
@@ -1215,7 +1214,7 @@ static uint32_t prv_analyze_epoch(KAlgState *state) {
   }
 
   // 5 sec proportional integral mode (pim), used by the steps calculation
-  uint32_t pim_epoch[KALG_N_AXES] = {0};
+  uint32_t pim_epoch[KALG_N_AXES] = {};
 
   // Calculate the axis metrics
   for (int16_t axis = 0; axis < KALG_N_AXES; axis++) {
@@ -1300,7 +1299,7 @@ uint32_t kalg_state_size(void) {
 // -----------------------------------------------------------------------------------------
 // Init the state, return true on success
 bool kalg_init(KAlgState *state, KAlgStatsCallback stats_cb) {
-  PBL_ASSERTN(state != NULL);
+  PBL_ASSERTN(state != nullptr);
   *state = (KAlgState){
     .stats_cb = stats_cb,
   };
@@ -1315,7 +1314,7 @@ bool kalg_init(KAlgState *state, KAlgStatsCallback stats_cb) {
 // Release resources held by the state. Must be called before the caller frees it, otherwise the
 // HRM subscriptions outlive the only references to them and pin the sensor on until reboot.
 void kalg_deinit(KAlgState *state) {
-  PBL_ASSERTN(state != NULL);
+  PBL_ASSERTN(state != nullptr);
   prv_release_step_activity_hrm(&state->walk_state);
   prv_release_step_activity_hrm(&state->run_state);
 }
@@ -1323,12 +1322,12 @@ void kalg_deinit(KAlgState *state) {
 // ------------------------------------------------------------------------------------
 uint32_t kalg_analyze_samples(KAlgState *state, AccelRawData *data, uint32_t num_samples,
                               uint32_t *consumed_samples) {
-  PBL_ASSERTN(state != NULL);
+  PBL_ASSERTN(state != nullptr);
   uint32_t new_steps = 0;
   *consumed_samples = 0;
 
   // We do an FFT in place on the accel_samples array, so make sure our constraints are correct
-  _Static_assert(KALG_N_SAMPLES_EPOCH < KALG_FFT_WIDTH, "Invalid array sizes");
+  static_assert(KALG_N_SAMPLES_EPOCH < KALG_FFT_WIDTH, "Invalid array sizes");
 
   // Format the accel data for the algorithm - it wants the x, y and z values in separate arrays
   for (uint32_t i = 0; i < num_samples; i++) {
@@ -1352,7 +1351,7 @@ uint32_t kalg_analyze_samples(KAlgState *state, AccelRawData *data, uint32_t num
 
 // ------------------------------------------------------------------------------------
 void kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *orientation, bool *still) {
-  PBL_ASSERTN(state != NULL);
+  PBL_ASSERTN(state != nullptr);
   // -----------------------------------------
   // Compute the orientation
   // We want to fit the encoding into a byte, so
@@ -1405,7 +1404,7 @@ void kalg_minute_stats_peek(KAlgState *state, uint16_t *vmc, uint8_t *orientatio
 /* Boulder: Ende D7 */
 // ------------------------------------------------------------------------------------
 uint32_t kalg_analyze_finish_epoch(KAlgState *state) {
-  PBL_ASSERTN(state != NULL);
+  PBL_ASSERTN(state != nullptr);
   uint32_t new_steps = 0;
 
   if (state->num_samples) {
@@ -2086,7 +2085,7 @@ static void prv_step_activity_update(KAlgState *alg_state, KAlgStepActivityState
                activity_prefs_hrm_activity_tracking_is_enabled()) {
       state->hrm_session = hrm_manager_subscribe_with_callback(
           INSTALL_ID_INVALID, hrm_interval_s, KALG_ACTIVITY_HRM_EXPIRE_S, HRMFeature_BPM,
-          false /*low_latency*/, prv_hrm_subscription_cb, NULL);
+          false /*low_latency*/, prv_hrm_subscription_cb, nullptr);
       // A new auto-detected activity just enabled HR: switch the algorithm to a motion-tuned scene.
       prv_update_activity_hrm_scene(alg_state);
     }

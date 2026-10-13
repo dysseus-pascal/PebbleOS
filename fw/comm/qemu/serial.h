@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
-#include "applib/accel_service.h"
-#include "applib/compass_service.h"
-#include "applib/preferred_content_size.h"
 #include <pbl/drivers/button_id.h>
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/accel_service.h>
+#include <applib/compass_service.h>
+#include <applib/preferred_content_size.h>
 
 /**
  * @defgroup comm_qemu QEMU host channel
@@ -137,8 +137,8 @@ typedef struct PBL_PACKED {
   uint8_t size;
 } QemuProtocolContentSizeHeader;
 #if !UNITTEST
-_Static_assert(sizeof(PreferredContentSize) == sizeof(((QemuProtocolContentSizeHeader *)0)->size),
-               "sizeof(PreferredContentSize) grew, need to update QemuContentSize in libpebble2 !");
+static_assert(sizeof(PreferredContentSize) == sizeof(((QemuProtocolContentSizeHeader *)0)->size),
+              "sizeof(PreferredContentSize) grew, need to update QemuContentSize in libpebble2 !");
 #endif
 
 /**

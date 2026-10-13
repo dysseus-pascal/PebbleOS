@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "applib/ui/progress_window.h"
+#include <applib/ui/progress_window.h>
 
 void progress_window_init(ProgressWindow *data) {};
 
 void progress_window_deinit(ProgressWindow *data) {};
 
 ProgressWindow *progress_window_create(void) {
-  return NULL;
+  return nullptr;
 };
 
 void progress_window_destroy(ProgressWindow *window) {};

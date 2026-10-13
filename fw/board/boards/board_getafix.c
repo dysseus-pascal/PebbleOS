@@ -1,11 +1,12 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "board/board.h"
-#include "board/splash.h"
 #include <pbl/drivers/sf32lb52/debounced_button_definitions.h>
-#include "pbl/kernel/irq.h"
-#include "system/passert.h"
+#include <pbl/kernel/irq.h>
+
+#include <board/board.h>
+#include <board/splash.h>
+#include <system/passert.h>
 
 static UARTDeviceState s_dbg_uart_state = {
   .huart =
@@ -522,10 +523,10 @@ const BoardConfig BOARD_CONFIG = {
 const BoardConfigButton BOARD_CONFIG_BUTTON = {
   .buttons =
       {
-        [BUTTON_ID_BACK] = {"Back", hwp_gpio1, 34, GPIO_PuPd_NOPULL, true},
-        [BUTTON_ID_UP] = {"Up", hwp_gpio1, 35, GPIO_PuPd_UP, false},
-        [BUTTON_ID_SELECT] = {"Select", hwp_gpio1, 36, GPIO_PuPd_UP, false},
-        [BUTTON_ID_DOWN] = {"Down", hwp_gpio1, 37, GPIO_PuPd_UP, false},
+        [BUTTON_ID_BACK] = {"Back", hwp_gpio1, 34, GPIO_PuPd_NOPULL, true, PBL_INPUT_KEY_BACK},
+        [BUTTON_ID_UP] = {"Up", hwp_gpio1, 35, GPIO_PuPd_UP, false, PBL_INPUT_KEY_UP},
+        [BUTTON_ID_SELECT] = {"Select", hwp_gpio1, 36, GPIO_PuPd_UP, false, PBL_INPUT_KEY_SELECT},
+        [BUTTON_ID_DOWN] = {"Down", hwp_gpio1, 37, GPIO_PuPd_UP, false, PBL_INPUT_KEY_DOWN},
       },
   .timer = GPTIM2,
   .timer_irqn = GPTIM2_IRQn,

@@ -35,10 +35,14 @@ the rest of the results.
 Anything `pbl itest` does not recognize goes straight to pytest, which it
 runs from `tests/integration`, so the usual selection options work:
 
-- `-m smoke`, `-m "ui and not slow"`: by category
+- `bluetooth`, `--ignore=bluetooth`: by area
 - `-k settings`: by name
 - `ui/test_navigation.py::test_settings`: a single file or test
+- `--integration`: what CI runs, see below
 - `--collect-only -q`: list the tests without running them
+- `-n 4`: run on four emulators or native watches at once, one per
+  pytest-xdist worker; most of a test's time is spent waiting on the watch,
+  so this scales past the CPU count. Not on a real watch.
 
 `pbl itest` is only a convenience; the same run is
 
@@ -84,8 +88,8 @@ what plays the phone. The same tests run on any of:
 
 | Watch | Phone | How |
 |---|---|---|
-| Emulator | Bumble, software controllers | a `CONFIG_BT_HCI_UART` build, by default |
-| Emulator | Bumble, on a dongle | `--qemu-bt-hci lab`: the lab's first dongle for the watch, its second for the phone |
+| Emulator or native | Bumble, software controllers | a `CONFIG_BT_HCI_UART` build, by default |
+| Emulator or native | Bumble, on a dongle | `--bt-hci lab`: the lab's first dongle for the watch, its second for the phone |
 | Watch, serial console | Bumble, on a dongle | the lab's watch, and its first dongle for the phone |
 | Watch, serial console | CoreApp | `--phone coreapp` (not supported yet) |
 
@@ -161,26 +165,36 @@ opens the link with and declines the watch's requests to change them:
 those updates stall the watch's sending for seconds, and some fail and
 drop the link.
 
-An emulator built with `CONFIG_BT_HCI_UART` needs a controller of its own.
+An emulator or a native build with `CONFIG_BT_HCI_UART` needs a controller
+of its own (QEMU's fourth serial port, the native program's `-b`).
 By default it gets Bumble's software controllers (`virtual`), two linked
 in memory, one for the watch and one for the harness: they cover the host
 stacks and the protocols above them, not a radio, and are what CI uses: it
 runs the normal tests on a normal build and the PRF tests on a PRF build,
 both with `CONFIG_BT_HCI_UART`, so that tests needing a phone run too.
 With real ones it takes two dongles, one for the watch and one for the
-harness: the lab's (`--qemu-bt-hci lab`), or given on the command line:
+harness: the lab's (`--bt-hci lab`), or given on the command line:
 
 ```shell
 pbl configure --board qemu_emery -DCONFIG_BT_HCI_UART=y
-pbl itest --qemu-bt-hci /dev/cu.usbmodem1101 --ble-controller /dev/cu.usbmodem1201
+pbl itest --bt-hci /dev/cu.usbmodem1101 --ble-controller /dev/cu.usbmodem1201
 ```
 
 Tests that need a phone take the `phones` fixture: `phones()` makes the
 setup's phone, and `connect()` pairs and opens the Pebble protocol session
-(`phone.pebble`). A Bumble phone can also be another phone to the watch,
+(`phone.pebble`), confirming the pairing on the watch. `pair()` connects
+too, but leaves the pairing to the test: `number()` is the code the phone
+shows, `answer()` the phone's answer and `result()` whether it paired,
+while `harness.helpers.pairing` reads the watch's prompt (`bt pairing`)
+and answers it. A Bumble phone can also be another phone to the watch,
 `phones(address=...)`, with a bond of its own, and host the PPoGATT
 service itself, `phones(ppogatt="forward")`, instead of using the one the
-watch hosts; tests that ask for these skip on other phones.
+watch hosts; tests that ask for these skip on other phones. It can also
+ask for another ATT MTU (`mtu=23`), grant the watch's connection
+parameter updates (`accept_parameters=True`), and serve another PPoGATT
+meta characteristic (`forward_meta=...`); its `link` reads the watch's
+GATT characteristics, resets the PPoGATT session and records the
+parameters the watch asks for.
 `harness.helpers.firmware` installs a firmware bundle through a phone, as
 the phone app does:
 
@@ -189,6 +203,13 @@ def test_version(phones):
     phone = phones().connect()
     assert phone.watch_version().version_tag
 ```
+
+`phone.inbox` keeps every message the watch sends the phone, from the
+start of the session; `mark()` and `wait(endpoint, match, timeout, since)`
+work as the log's do, and `phone.send(endpoint, payload)` sends raw
+payloads. `harness.helpers.blobdb` writes blob DB records and timeline
+items as the phone app does. The `bluetooth/test_*_endpoints.py` tests
+cover the Pebble protocol endpoints the watch serves the phone this way.
 
 ### Results
 
@@ -205,6 +226,8 @@ Everything a run produces goes to `BUILD/itest` (or `--results-dir`):
 - `<test>/<name>.json`, `<name>.csv`: current measurements
 - `qemu.log`, `uart1.log`, `flash.log`: the emulator's and the flasher's
   output
+- with `-n`, the session-wide files are in a directory per worker (`gw0`,
+  `gw1`, ...)
 
 ## Selecting tests by device
 
@@ -226,9 +249,24 @@ what would run on one without a build for it:
 pbl itest --collect-only -q --board obelix --device-type hardware
 ```
 
-What a test covers is a category marker: `smoke`, `ui`, `notifications`,
-`voice`, `power` and `slow`. The full list is in `harness/plugin.py`; markers are
-strict, so a new one must be added there.
+CI runs with `--integration`, which also honours `integration_boards`: a test
+marked `integration_boards("qemu_emery", "getafix@dvt2")` runs anywhere it
+applies, but CI runs it only on qemu_emery and on the lab's getafix@dvt2 (a
+board, or a board at a revision); `integration_boards()` keeps it out of CI. Use it
+for tests that do not depend on the board, or that take too long for every
+pull request.
+
+The lab's watches run the suite nightly, normal and recovery firmware. A
+maintainer can run it on a pull request by adding the `ci:hw-itest` label;
+each time the label is added, the pull request runs once more. The run
+executes the pull request's own code on the lab machine, so review all of
+it first, including tooling and Python requirements. On someone else's
+pull request, approve the head commit before adding the label: a label
+from anyone other than the author is refused unless they approved the
+commit that would run.
+
+The markers are in `harness/plugin.py`; they are strict, so a new one must
+be added there.
 
 ## Writing a test
 
@@ -237,11 +275,7 @@ Tests are grouped by area in subdirectories of `tests/integration`
 needs:
 
 ```python
-import pytest
-
 from harness.helpers.ui import Button
-
-pytestmark = pytest.mark.ui
 
 
 def test_settings(ui, snapshot):
@@ -315,7 +349,7 @@ ports of which only one answers; `auto` finds it:
 
 ```shell
 pbl -b build-obelix itest --device-serial /dev/tty.usbserial-1 \
-    --ppk2 auto --ppk2-voltage 3800 -m power
+    --ppk2 auto --ppk2-voltage 3800 power
 ```
 
 With a PPK2 the harness powers the watch on before the session, and
@@ -349,9 +383,12 @@ without nominals record their figures with a warning.
 
 ## Recovery firmware
 
-The tests in `prf/` cover what a PRF release is checked for: the Getting
-Started screen and the phone's name on it, pairing and the Pebble protocol
-over reversed PPoGATT, a second phone taking over the single bond,
+The tests in `bluetooth/` run on both firmwares: pairing, with the phone's
+name and the code on the watch's prompt, confirmed or declined on either
+side or left to time out, and the Pebble protocol over either PPoGATT.
+The tests in `prf/` cover what else a PRF release is checked for: the
+Getting Started screen and the phone's name on it, a second phone taking
+over the single bond,
 installing the normal firmware from the phone and "Reset to PRF" from it,
 the backlight timeout, turning off after 10 minutes unplugged and
 unconnected (not while a phone or a charger is connected), the low battery
@@ -368,14 +405,14 @@ pbl -b build-main configure --board qemu_emery
 pbl -b build-main build bundle
 pbl -b build-prf configure --board qemu_emery --variant prf -DCONFIG_BT_HCI_UART=y
 pbl -b build-prf build qemu_image_micro qemu_image_spi
-pbl -b build-prf itest --no-build --qemu-bt-hci virtual --main-build "$PWD/build-main"
+pbl -b build-prf itest --no-build --bt-hci virtual --main-build "$PWD/build-main"
 ```
 
 The emulator has no bootloader, so it only checks the transfer. A watch
 installs it, boots it, and goes back to PRF when the phone asks; it has to
 be running PRF to start with, as set up for a release check (the
-bootloader and PRF alone on the flash). `slow` covers the idle shutdown,
-about 12 minutes each way.
+bootloader and PRF alone on the flash). The idle shutdown tests take about
+12 minutes each, so CI does not run them.
 
 Left for a person: the Back+Up+Select hold that reboots into PRF,
 charging a watch, the MFG menu's tests (checked in the factory), and the

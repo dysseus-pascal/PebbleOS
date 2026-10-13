@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "pbl/services/comm_session/session.h"
+#include <pbl/services/comm_session/session.h>
 
 bool comm_session_has_capability(CommSession *session, CommSessionCapability capability) {
   return true;
@@ -19,7 +19,7 @@ bool comm_session_is_system(CommSession *session) {
 }
 
 CommSession *comm_session_get_by_type(CommSessionType type) {
-  return NULL;
+  return nullptr;
 }
 
 bool comm_session_send_data(CommSession *session, uint16_t endpoint_id, const uint8_t *data,

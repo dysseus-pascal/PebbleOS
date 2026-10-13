@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "applib/app_inbox.h"
-#include "pbl/kernel/compiler.h"
+#include <pbl/kernel/compiler.h>
+
+#include <applib/app_inbox.h>
 
 /**
  * @defgroup services_app_inbox_service App inbox service
@@ -69,8 +69,8 @@ typedef struct PBL_PACKED {
 } AppInboxMessageHeader;
 
 #if !UNITTEST && __SIZEOF_POINTER__ == 4
-_Static_assert(sizeof(AppInboxMessageHeader) == 8,
-               "The size of AppInboxMessageHeader cannot grow beyond 8 bytes!");
+static_assert(sizeof(AppInboxMessageHeader) == 8,
+              "The size of AppInboxMessageHeader cannot grow beyond 8 bytes!");
 #endif
 
 /** @brief Initialize the service, once at boot. */

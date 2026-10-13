@@ -1,19 +1,21 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+// clang-format off
 #include <errno.h>
+#include <sys/time.h>
 // Ahead of pthread.h, which needs struct timespec from the host's time.h,
 // not the firmware's.
-#include <sys/time.h>
+#include "posix.h"
+
+#include <pbl/kernel/idle.h>
+#include <pbl/kernel/init.h>
+
+#include <kernel.h>
+#include <pbl_arch_posix.h>
 #include <pthread.h>
 #include <unistd.h>
-
-#include "pbl/kernel/idle.h"
-#include "pbl/kernel/init.h"
-
-#include "kernel.h"
-#include "pbl_arch_posix.h"
-#include "posix.h"
+// clang-format on
 
 // Native application: interrupts come from host threads, which take the CPU
 // whenever no kernel thread holds it, as an interrupt between instructions.
@@ -46,7 +48,7 @@ void pbl_posix_irq_run(void (*isr)(void *), void *arg) {
 
 void pbl_posix_cpu_wait(uint64_t timeout_us) {
   struct timeval now;
-  gettimeofday(&now, NULL);
+  gettimeofday(&now, nullptr);
   uint64_t ns = (uint64_t)now.tv_usec * 1000 + timeout_us * 1000;
   struct timespec deadline = {
     .tv_sec = now.tv_sec + (time_t)(ns / 1000000000),

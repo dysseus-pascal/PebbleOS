@@ -2,15 +2,15 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Boulder: D0 Herkunft der Kopie
  *   Original: include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h
- *   Commit:   acc6dd23670695c7669c5850ceab2db3b8fd623c
- *   SHA-256:  c924ec7512fb84920b56ebfdc607c60f3266b4ca11d04842ee8f22e0700125a3
+ *   Commit:   daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
+ *   SHA-256:  83b51cec41429c50e26b45bf10c45fe8a6ab721203e4d6c9cd78076ac28b31b7
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.
  * Boulder: Ende D0 */
 
 #pragma once
 
-#include "pbl/util/units.h"
+#include <pbl/util/units.h>
 
 /**
  * @addtogroup services_activity_kraepelin

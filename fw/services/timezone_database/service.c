@@ -1,20 +1,19 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/services/timezone_database.h"
-
-#include "resource/resource.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/clock.h"
-#include <pbl/logging/logging.h>
-#include "system/passert.h"
+#include <string.h>
 
 #include <pbl/kernel/compiler.h>
+#include <pbl/logging/logging.h>
+#include <pbl/services/clock.h>
+#include <pbl/services/time.h>
+#include <pbl/services/timezone_database.h>
 #include <pbl/util/size.h>
+#include <pbl/util/units.h>
 
-#include <string.h>
-#include "pbl/services/time.h"
-#include "pbl/util/units.h"
+#include <resource/resource.h>
+#include <resource/resource_ids.auto.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(service_timezone_database, CONFIG_SERVICE_TIMEZONE_DATABASE_LOG_LEVEL);
 
@@ -201,7 +200,7 @@ static int prv_search_regions_by_name(const char *region_name, int region_name_l
 }
 
 static int prv_search_links_by_name(const char *region_name, int region_name_length) {
-  char name_asciz[256] = {0};
+  char name_asciz[256] = {};
   memcpy(name_asciz, region_name, region_name_length);
 
   const int link_section_offset =

@@ -6,19 +6,20 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "applib/ui/dialogs/dialog_private.h"
-#include "applib/ui/dialogs/simple_dialog.h"
-#include "applib/ui/ui.h"
-#include "kernel/ui/kernel_ui.h"
-#include "kernel/ui/modals/modal_manager.h"
-#include "resource/resource_ids.auto.h"
-#include "pbl/services/battery/battery_curve.h"
-#include "pbl/services/clock.h"
-#include "pbl/services/i18n/i18n.h"
+#include <pbl/services/battery/battery_curve.h>
+#include <pbl/services/clock.h>
+#include <pbl/services/i18n/i18n.h>
+
+#include <applib/ui/dialogs/dialog_private.h>
+#include <applib/ui/dialogs/simple_dialog.h>
+#include <applib/ui/ui.h>
+#include <kernel/ui/kernel_ui.h>
+#include <kernel/ui/modals/modal_manager.h>
+#include <resource/resource_ids.auto.h>
 
 typedef void (*DialogUpdateFn)(Dialog *, void *);
 
-static Dialog *s_dialog = NULL;
+static Dialog *s_dialog = nullptr;
 
 typedef struct {
   uint32_t percent;
@@ -72,7 +73,7 @@ static void prv_dialog_on_unload(void *context) {
   Dialog *dialog = context;
   i18n_free_all(dialog);
   if (dialog == s_dialog) {
-    s_dialog = NULL;
+    s_dialog = nullptr;
   }
 }
 
@@ -89,7 +90,7 @@ static void prv_display_modal(WindowStack *stack, DialogUpdateFn update_fn, void
                        &(DialogCallbacks){
                          .unload = prv_dialog_on_unload,
                        },
-                       NULL);
+                       nullptr);
   update_fn(new_dialog, data);
 
   Dialog *old_dialog = s_dialog;
@@ -134,7 +135,7 @@ void battery_ui_display_plugged(void) {
   // but we don't want to overlay ourselves over anything they may have
   // on the screen at the moment.
   WindowStack *stack = modal_manager_get_window_stack(ModalPriorityGeneric);
-  prv_display_modal(stack, prv_update_ui_charging, NULL);
+  prv_display_modal(stack, prv_update_ui_charging, nullptr);
 }
 
 void battery_ui_display_fully_charged(void) {
@@ -142,7 +143,7 @@ void battery_ui_display_fully_charged(void) {
   // but we don't want to overlay ourselves over anything they may have
   // on the screen at the moment.
   WindowStack *stack = modal_manager_get_window_stack(ModalPriorityGeneric);
-  prv_display_modal(stack, prv_update_ui_fully_charged, NULL);
+  prv_display_modal(stack, prv_update_ui_fully_charged, nullptr);
 }
 
 void battery_ui_display_warning(uint32_t percent, BatteryUIWarningLevel warning_level) {
@@ -162,6 +163,6 @@ void battery_ui_display_warning(uint32_t percent, BatteryUIWarningLevel warning_
 void battery_ui_dismiss_modal(void) {
   if (s_dialog) {
     dialog_pop(s_dialog);
-    s_dialog = NULL;
+    s_dialog = nullptr;
   }
 }

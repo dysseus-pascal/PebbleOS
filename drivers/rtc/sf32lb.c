@@ -1,23 +1,23 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/kernel/sched.h"
-#include "pbl/kernel/types.h"
 #include <stdint.h>
 
-#include "board/board.h"
 #include <pbl/drivers/flash.h>
 #include <pbl/drivers/rtc.h>
-#include "flash_region/flash_region.h"
-#include "kernel/events.h"
-#include "pbl/mcu/interrupts.h"
-#include "system/passert.h"
-#include "pbl/services/time.h"
+#include <pbl/kernel/compiler.h>
+#include <pbl/kernel/sched.h>
+#include <pbl/kernel/types.h>
 #include <pbl/logging/logging.h>
-#include "pbl/services/regular_timer.h"
+#include <pbl/mcu/interrupts.h>
+#include <pbl/services/regular_timer.h>
+#include <pbl/services/time.h>
 
-#include "bf0_hal_rtc.h"
-#include "pbl/kernel/compiler.h"
+#include <bf0_hal_rtc.h>
+#include <board/board.h>
+#include <flash_region/flash_region.h>
+#include <kernel/events.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_rtc_sf32lb, CONFIG_DRIVER_RTC_LOG_LEVEL);
 
@@ -287,8 +287,9 @@ void rtc_get_time_ms(time_t *out_seconds, uint16_t *out_ms) {
   RTC_TimeTypeDef rtc_time;
 
   if (s_initialized) {
-    while ((RTC_Handler.Instance->ISR & RTC_ISR_RSF) == (uint32_t)RESET) {
-      // Wait for RTC registers to synchronize
+    // RSF stays clear while the RTC is in init mode. Waiting for it then would deadlock if we
+    // preempted the code setting the time, so read the shadow registers as they are.
+    while ((RTC_Handler.Instance->ISR & (RTC_ISR_RSF | RTC_ISR_INITF)) == (uint32_t)RESET) {
     }
   }
 
@@ -402,8 +403,8 @@ typedef struct PBL_PACKED {
 #define TZINFO_VERSION 1
 
 void rtc_set_timezone(TimezoneInfo *tzinfo) {
-  _Static_assert(sizeof(TzinfoFlashStorage) <= SUBSECTOR_SIZE_BYTES,
-                 "TzinfoFlashStorage must fit in TZINFO flash region (4KB)");
+  static_assert(sizeof(TzinfoFlashStorage) <= SUBSECTOR_SIZE_BYTES,
+                "TzinfoFlashStorage must fit in TZINFO flash region (4KB)");
 
   // Copy to versioned buffer
   TzinfoFlashStorage storage = {

@@ -1,28 +1,29 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include "time.h"
+
 #include "menu.h"
 #include "option_menu.h"
-#include "time.h"
 #include "window.h"
-
-#include "applib/app.h"
-#include "applib/ui/action_menu_window_private.h"
-#include "applib/ui/app_window_stack.h"
-#include "applib/ui/date_selection_window.h"
-#include "applib/ui/option_menu_window.h"
-#include "applib/ui/time_selection_window.h"
-#include "applib/ui/ui.h"
-#include "kernel/pbl_malloc.h"
-#include "pbl/util/string.h"
-
-#include "pbl/services/clock.h"
-#include "pbl/services/i18n/i18n.h"
-#include "pbl/services/timezone_database.h"
-#include "shell/prefs.h"
 
 #include <stdio.h>
 #include <time.h>
+
+#include <pbl/services/clock.h>
+#include <pbl/services/i18n/i18n.h>
+#include <pbl/services/timezone_database.h>
+#include <pbl/util/string.h>
+
+#include <applib/app.h>
+#include <applib/ui/action_menu_window_private.h>
+#include <applib/ui/app_window_stack.h>
+#include <applib/ui/date_selection_window.h>
+#include <applib/ui/option_menu_window.h>
+#include <applib/ui/time_selection_window.h>
+#include <applib/ui/ui.h>
+#include <kernel/pbl_malloc.h>
+#include <shell/prefs.h>
 
 // 9 (TZ) continents: Africa, America, Antarctica, Asia, Atlantic, Australia,
 // Europe, Indian, Pacific
@@ -347,8 +348,8 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
                             uint16_t row, bool selected) {
   SettingsTimeData *data = (SettingsTimeData *)context;
 
-  const char *title = NULL;
-  const char *subtitle = NULL;
+  const char *title = nullptr;
+  const char *subtitle = nullptr;
   char current_timezone_region[TIMEZONE_NAME_LENGTH];
   char tz_source_buf[TIMEZONE_NAME_LENGTH + 32];
   char time_buf[TIME_STRING_TIME_LENGTH];
@@ -406,7 +407,7 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
       break;
   }
 
-  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), NULL);
+  menu_cell_basic_draw(ctx, cell_layer, i18n_get(title, data), i18n_get(subtitle, data), nullptr);
 }
 
 static uint16_t prv_num_rows_cb(SettingsCallbacks *context) {

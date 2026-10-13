@@ -2,9 +2,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include <pbl/drivers/pwm.h>
-#include "system/passert.h"
 
 #include <nrfx.h>
+#include <system/passert.h>
 
 void pwm_init(const PwmConfig *pwm, uint32_t resolution, uint32_t frequency) {
   nrfx_pwm_config_t config =
@@ -34,7 +34,7 @@ void pwm_init(const PwmConfig *pwm, uint32_t resolution, uint32_t frequency) {
   config.load_mode = NRF_PWM_LOAD_COMMON;
   config.step_mode = NRF_PWM_STEP_TRIGGERED;
 
-  nrfx_err_t rv = nrfx_pwm_init(&pwm->peripheral, &config, NULL, NULL);
+  nrfx_err_t rv = nrfx_pwm_init(&pwm->peripheral, &config, nullptr, nullptr);
   PBL_ASSERTN(rv == NRFX_SUCCESS);
 
   pwm->state->enabled = 0;

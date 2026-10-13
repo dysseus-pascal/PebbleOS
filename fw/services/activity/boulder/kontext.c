@@ -214,9 +214,11 @@ static void prv_sitzung(bool laufend) {
 // die Summe bis zu ihrem Ende (kcal_cal), festgehalten in der Minute, in der es lag. Ein Wort -
 // KernelMain liest es beim Einstecken (boulder_kontext_sitzung_beenden), ohne den Zaehler.
 
+#ifdef CONFIG_BOULDER_KIESELSPORT
 static int32_t prv_kcal_t(time_t utc) {
   return (int32_t)(utc - s_k.beginn);
 }
+#endif
 
 static void prv_kcal_neu(void) {
   s_k.kcal_vorher = 0;

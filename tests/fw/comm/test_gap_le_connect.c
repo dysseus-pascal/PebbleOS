@@ -1,47 +1,45 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pbl/bluetooth/gap_le_connect.h"
-#include "comm/ble/gap_le_connect.h"
-#include "comm/ble/gap_le_connection.h"
-#include "comm/ble/gap_le_task.h"
-
-#include "kernel/events.h"
-#include "pbl/services/analytics/analytics.h"
-
-#include "clar.h"
-
 #include <pbl/bluetooth/bonding_sync.h>
+#include <pbl/bluetooth/gap_le_connect.h>
 #include <pbl/bluetooth/sm_types.h>
 #include <pbl/btutil/bt_device.h>
+#include <pbl/services/analytics/analytics.h>
+
+#include <clar.h>
+#include <comm/ble/gap_le_connect.h>
+#include <comm/ble/gap_le_connection.h>
+#include <comm/ble/gap_le_task.h>
+#include <kernel/events.h>
 
 // Fakes
 ///////////////////////////////////////////////////////////
 
-#include "fake_events.h"
-#include "fake_GAPAPI.h"
-#include "fake_bluetooth_persistent_storage.h"
-#include "fake_HCIAPI.h"
-#include "fake_new_timer.h"
-#include "fake_pbl_malloc.h"
-#include "fake_system_task.h"
+#include <fake_GAPAPI.h>
+#include <fake_HCIAPI.h>
+#include <fake_bluetooth_persistent_storage.h>
+#include <fake_events.h>
+#include <fake_new_timer.h>
+#include <fake_pbl_malloc.h>
+#include <fake_system_task.h>
 
 // Stubs
 ///////////////////////////////////////////////////////////
 
-#include "stubs_bluetopia_interface.h"
-#include "stubs_bt_lock.h"
-#include "stubs_gap_le_advert.h"
-#include "stubs_bluetooth_analytics.h"
-#include "stubs_gatt_client_discovery.h"
-#include "stubs_gatt_client_subscriptions.h"
-#include "stubs_hexdump.h"
-#include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_pebble_pairing_service.h"
-#include "stubs_regular_timer.h"
-#include "stubs_shared_prf_storage.h"
+#include <stubs_bluetooth_analytics.h>
+#include <stubs_bluetopia_interface.h>
+#include <stubs_bt_lock.h>
+#include <stubs_gap_le_advert.h>
+#include <stubs_gatt_client_discovery.h>
+#include <stubs_gatt_client_subscriptions.h>
+#include <stubs_hexdump.h>
+#include <stubs_logging.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <stubs_pebble_pairing_service.h>
+#include <stubs_regular_timer.h>
+#include <stubs_shared_prf_storage.h>
 
 // Note:
 // The unit tests for "Pebble as Master" are disabled because role switching is not implemented yet,
@@ -57,7 +55,7 @@ void cc2564A_bad_le_connection_complete_handle(
 }
 
 const GAP_LE_Pairing_Capabilities_t *gap_le_pairing_capabilities(void) {
-  return NULL;
+  return nullptr;
 }
 
 void gap_le_device_name_request(uintptr_t stack_id, GAPLEConnection *connection) {
@@ -169,7 +167,8 @@ void test_gap_le_connect__initialize(void) {
 
   // Register slave connection event callback for tests involving Pebble as slave:
   // This normally happens in gap_le_advert.c. Taking a shortcut to avoid dragging in more code.
-  GAP_LE_Advertising_Enable(1, TRUE, NULL, NULL, gap_le_connect_bluetopia_connection_callback, 0);
+  GAP_LE_Advertising_Enable(1, TRUE, nullptr, nullptr, gap_le_connect_bluetopia_connection_callback,
+                            0);
   fake_event_init();
   fake_bt_persistent_storage_reset();
   gap_le_connection_init();
@@ -214,13 +213,13 @@ void test_gap_le_connect__register_max_intents(void) {
 }
 
 void test_gap_le_connect__register_null_device(void) {
-  enum pbl_bt_errno e = gap_le_connect_connect(NULL, true /* auto_reconnect */,
+  enum pbl_bt_errno e = gap_le_connect_connect(nullptr, true /* auto_reconnect */,
                                                false /* is_pairing_required */, GAPLEClientApp);
   cl_assert_equal_i(e, PBL_BT_ERRNO_INVALID_PARAMETER);
 }
 
 void test_gap_le_connect__unregister_null_device(void) {
-  enum pbl_bt_errno e = gap_le_connect_cancel(NULL, GAPLEClientApp);
+  enum pbl_bt_errno e = gap_le_connect_cancel(nullptr, GAPLEClientApp);
   cl_assert_equal_i(e, PBL_BT_ERRNO_INVALID_PARAMETER);
 }
 

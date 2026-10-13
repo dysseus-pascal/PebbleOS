@@ -3,24 +3,23 @@
 
 #pragma once
 
+// clang-format off
 #include "display.h"
 
-#include <pbl/drivers/button_id.h>
-
 #include <stdint.h>
-#include <stdbool.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
+#include <pbl/drivers/button_id.h>
+#include <pbl/input/input.h>
+
 #include <hal/nrf_gpio.h>
-#include <nrfx_spim.h>
 #include <nrfx_gpiote.h>
-#include <nrfx_timer.h>
-#include <nrfx_pwm.h>
 #include <nrfx_pdm.h>
-#pragma GCC diagnostic pop
+#include <nrfx_pwm.h>
+#include <nrfx_spim.h>
+#include <nrfx_timer.h>
+// clang-format on
 
-#define GPIO_Port_NULL (NULL)
+#define GPIO_Port_NULL (nullptr)
 #define GPIO_Pin_NULL  ((uint16_t)-1)
 
 typedef struct {
@@ -35,6 +34,7 @@ typedef struct {
   const char *const name; ///< Name for debugging purposes.
   GpioteConfig gpiote;
   nrf_gpio_pin_pull_t pull;
+  uint16_t code;
 } ButtonConfig;
 
 typedef struct {
@@ -176,6 +176,7 @@ typedef const struct AudioDevice AudioDevice;
 void board_early_init(void);
 void board_init(void);
 
+// clang-format off
 #include <pbl/drivers/i2c/definitions.h>
-
 #include "board_definitions.h"
+// clang-format on

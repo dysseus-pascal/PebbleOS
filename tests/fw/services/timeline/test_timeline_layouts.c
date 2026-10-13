@@ -1,23 +1,24 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "apps/system/timeline/pin_window.h"
-#include "pbl/services/alarms/alarm.h"
-#include "pbl/services/timeline/sports_layout.h"
-#include "pbl/services/timeline/weather_layout.h"
-
-#include "clar.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <pbl/services/alarms/alarm.h>
+#include <pbl/services/timeline/sports_layout.h>
+#include <pbl/services/timeline/weather_layout.h>
+#include <pbl/util/size.h>
+
+#include <apps/system/timeline/pin_window.h>
+#include <clar.h>
+
 // Fakes
 /////////////////////
 
-#include "fake_content_indicator.h"
-#include "fixtures/load_test_resources.h"
-#include "fixtures/screen_grid.h"
+#include <fake_content_indicator.h>
+#include <fixtures/load_test_resources.h>
+#include <fixtures/screen_grid.h>
 
 bool property_animation_init(PropertyAnimation *animation,
                              const PropertyAnimationImplementation *implementation, void *subject,
@@ -72,51 +73,51 @@ const char *alarm_get_string_for_kind(AlarmKind kind, bool all_caps) {
 // Stubs
 /////////////////////
 
-#include "stubs_action_menu.h"
-#include "stubs_alerts_preferences.h"
-#include "stubs_analytics.h"
-#include "stubs_animation_timing.h"
-#include "stubs_app_install_manager.h"
-#include "stubs_app_timer.h"
-#include "stubs_app_window_stack.h"
-#include "stubs_bootbits.h"
-#include "stubs_click.h"
-#include "stubs_event_service_client.h"
-#include "stubs_layer.h"
-#include "stubs_logging.h"
-#include "stubs_memory_layout.h"
-#include "stubs_modal_manager.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_pebble_process_info.h"
-#include "stubs_pebble_tasks.h"
-#include "stubs_process_manager.h"
-#include "stubs_property_animation.h"
-#include "stubs_serial.h"
-#include "stubs_shell_prefs.h"
-#include "stubs_sleep.h"
-#include "stubs_syscalls.h"
-#include "stubs_task_wdt.h"
-#include "stubs_timeline.h"
-#include "stubs_timeline_actions.h"
-#include "stubs_timeline_item.h"
-#include "stubs_timeline_layer.h"
-#include "stubs_timeline_peek.h"
-#include "stubs_vibes.h"
-#include "stubs_window_manager.h"
-#include "stubs_window_stack.h"
+#include <stubs_action_menu.h>
+#include <stubs_alerts_preferences.h>
+#include <stubs_analytics.h>
+#include <stubs_animation_timing.h>
+#include <stubs_app_install_manager.h>
+#include <stubs_app_timer.h>
+#include <stubs_app_window_stack.h>
+#include <stubs_bootbits.h>
+#include <stubs_click.h>
+#include <stubs_event_service_client.h>
+#include <stubs_layer.h>
+#include <stubs_logging.h>
+#include <stubs_memory_layout.h>
+#include <stubs_modal_manager.h>
+#include <stubs_mutex.h>
+#include <stubs_passert.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_pebble_process_info.h>
+#include <stubs_pebble_tasks.h>
+#include <stubs_process_manager.h>
+#include <stubs_property_animation.h>
+#include <stubs_serial.h>
+#include <stubs_shell_prefs.h>
+#include <stubs_sleep.h>
+#include <stubs_syscalls.h>
+#include <stubs_task_wdt.h>
+#include <stubs_timeline.h>
+#include <stubs_timeline_actions.h>
+#include <stubs_timeline_item.h>
+#include <stubs_timeline_layer.h>
+#include <stubs_timeline_peek.h>
+#include <stubs_vibes.h>
+#include <stubs_window_manager.h>
+#include <stubs_window_stack.h>
 
 // Helper Functions
 /////////////////////
 
-#include "fw/graphics/util.h"
+#include <fw/graphics/util.h>
 
 // Setup and Teardown
 ////////////////////////////////////
 
 static GContext s_ctx;
-static FrameBuffer *fb = NULL;
+static FrameBuffer *fb = nullptr;
 
 GContext *graphics_context_get_current_context(void) {
   return &s_ctx;
@@ -176,7 +177,7 @@ static void prv_render_layout(LayoutId layout_id, time_t timestamp, uint16_t dur
   window_set_on_screen(window, true, true);
 
   for (int i = 0; i < num_down_clicks; i++) {
-    prv_handle_down_click(NULL, &pin_window.item_detail_layer);
+    prv_handle_down_click(nullptr, &pin_window.item_detail_layer);
 
     // Aint nobody got time for animations; advance the scrolling property animation to completion
     int16_t to = 0;
@@ -207,7 +208,7 @@ static void prv_construct_and_render_layout(const TimelineLayoutTestConfig *conf
     return;
   }
 
-  AttributeList attr_list = (AttributeList){0};
+  AttributeList attr_list = (AttributeList){};
   if (config->title) {
     attribute_list_add_cstring(&attr_list, AttributeIdTitle, config->title);
   }
@@ -383,6 +384,28 @@ void test_timeline_layouts__content_sizes_weather(void) {
   prv_check_pages_for_each_size(prv_render_config_page, &s_weather_config, 2, TEST_PBI_FILE);
 }
 
+void test_timeline_layouts__weather_city_clears_page_arrow(void) {
+  static const char *const locations[] = {"Las Vegas", "Llanfairpwllgwyngyll, Wales"};
+  const size_t arrow_height = TIMELINE_CARD_ARROW_HEIGHT + 1;
+  const size_t row_size = s_ctx.dest_bitmap.row_size_bytes;
+  const size_t offset = (DISP_ROWS - arrow_height) * row_size;
+  uint8_t *expected = malloc(arrow_height * row_size);
+  TimelineLayoutTestConfig config = s_weather_config;
+  for (PreferredContentSize size = PreferredContentSizeDefault - 1;
+       size <= PreferredContentSizeDefault + 1; size++) {
+    system_theme_set_content_size(size);
+    config.location_name = "";
+    prv_construct_and_render_layout(&config, 0);
+    memcpy(expected, s_ctx.dest_bitmap.addr + offset, arrow_height * row_size);
+    for (size_t i = 0; i < ARRAY_LENGTH(locations); i++) {
+      config.location_name = locations[i];
+      prv_construct_and_render_layout(&config, 0);
+      cl_assert(memcmp(expected, s_ctx.dest_bitmap.addr + offset, arrow_height * row_size) == 0);
+    }
+  }
+  free(expected);
+}
+
 static void prv_check_renders_like(const TimelineLayoutTestConfig *config,
                                    const TimelineLayoutTestConfig *reference,
                                    size_t num_down_clicks) {
@@ -419,7 +442,7 @@ void test_timeline_layouts__weather_pin_kind(void) {
 }
 
 static void prv_construct_and_render_sports_layout(GameState state, size_t num_down_clicks) {
-  AttributeList attr_list = (AttributeList){0};
+  AttributeList attr_list = (AttributeList){};
   attribute_list_add_cstring(&attr_list, AttributeIdTitle, "Warriors at Bulls");
   attribute_list_add_uint8(&attr_list, AttributeIdSportsGameState, state);
   attribute_list_add_cstring(&attr_list, AttributeIdNameAway, "GSW");

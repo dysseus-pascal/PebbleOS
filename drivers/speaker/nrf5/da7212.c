@@ -1,23 +1,22 @@
 /* SPDX-FileCopyrightText: 2026 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include <pbl/drivers/speaker/nrf5/da7212_definitions.h>
-
-#include "board/board.h"
 #include <pbl/drivers/audio.h>
 #include <pbl/drivers/clocksource.h>
 #include <pbl/drivers/i2c.h>
-#include "kernel/pbl_malloc.h"
-#include "kernel/util/sleep.h"
-#include "pbl/kernel/mutex.h"
-#include "pbl/services/new_timer/new_timer.h"
-#include "pbl/services/system_task.h"
+#include <pbl/drivers/speaker/nrf5/da7212_definitions.h>
+#include <pbl/kernel/mutex.h>
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
-#include "pbl/util/circular_buffer.h"
-#include "pbl/util/math.h"
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/services/system_task.h>
+#include <pbl/util/circular_buffer.h>
+#include <pbl/util/math.h>
 
-#include "nrfx_i2s.h"
+#include <board/board.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/util/sleep.h>
+#include <nrfx_i2s.h>
+#include <system/passert.h>
 
 PBL_LOG_MODULE_DEFINE(driver_speaker_da7212, CONFIG_DRIVER_SPEAKER_LOG_LEVEL);
 
@@ -220,10 +219,10 @@ static bool prv_allocate_buffers(AudioDeviceState *state) {
       PBL_LOG_ERR("Failed to allocate I2S buffer %d", i);
       for (int j = 0; j < i; j++) {
         kernel_free(state->i2s_bufs[j]);
-        state->i2s_bufs[j] = NULL;
+        state->i2s_bufs[j] = nullptr;
       }
       kernel_free(state->circ_buffer_storage);
-      state->circ_buffer_storage = NULL;
+      state->circ_buffer_storage = nullptr;
       return false;
     }
     memset(state->i2s_bufs[i], 0, I2S_BUF_SIZE_BYTES);
@@ -238,12 +237,12 @@ static void prv_free_buffers(AudioDeviceState *state) {
   for (int i = 0; i < NRF5_AUDIO_I2S_BUF_COUNT; i++) {
     if (state->i2s_bufs[i]) {
       kernel_free(state->i2s_bufs[i]);
-      state->i2s_bufs[i] = NULL;
+      state->i2s_bufs[i] = nullptr;
     }
   }
   if (state->circ_buffer_storage) {
     kernel_free(state->circ_buffer_storage);
-    state->circ_buffer_storage = NULL;
+    state->circ_buffer_storage = nullptr;
   }
 }
 
@@ -329,7 +328,7 @@ static void prv_i2s_data_handler(nrfx_i2s_buffers_t const *p_released, uint32_t 
 
     nrfx_i2s_buffers_t next = {
       .p_tx_buffer = (uint32_t *)fill_buf,
-      .p_rx_buffer = NULL,
+      .p_rx_buffer = nullptr,
       .buffer_size = I2S_BUF_SIZE_WORDS,
     };
     (void)nrfx_i2s_next_buffers_set(&dev->i2s_instance, &next);
@@ -429,7 +428,7 @@ void audio_start(AudioDevice *audio_device, AudioTransCB cb) {
   memset(state->i2s_bufs[0], 0, I2S_BUF_SIZE_BYTES);
   nrfx_i2s_buffers_t initial = {
     .p_tx_buffer = (uint32_t *)state->i2s_bufs[0],
-    .p_rx_buffer = NULL,
+    .p_rx_buffer = nullptr,
     .buffer_size = I2S_BUF_SIZE_WORDS,
   };
   state->buf_idx = 1;
@@ -509,7 +508,7 @@ void audio_stop(AudioDevice *audio_device) {
   // DAC mute, no I2S teardown, no LINE-output transitions. The actual
   // teardown happens later on the idle timer.
   state->is_running = false;
-  state->trans_cb = NULL;
+  state->trans_cb = nullptr;
   s_pwr_state = AudioPwrWarm;
 
   if (s_idle_timer == TIMER_INVALID_ID) {
@@ -537,7 +536,7 @@ void audio_stop(AudioDevice *audio_device) {
     audio_device->power_ops->power_down();
   }
 
-  s_active_device = NULL;
+  s_active_device = nullptr;
   prv_free_buffers(state);
 
   s_pwr_state = AudioPwrCold;
@@ -572,7 +571,7 @@ static void prv_idle_shutdown(void *data) {
     audio_device->power_ops->power_down();
   }
 
-  s_active_device = NULL;
+  s_active_device = nullptr;
   prv_free_buffers(state);
 
   s_pwr_state = AudioPwrCold;

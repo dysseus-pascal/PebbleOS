@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "kernel/core_dump.h"
-#include "kernel/core_dump_private.h"
-#include "system/status_codes.h"
+#include <kernel/core_dump.h>
+#include <kernel/core_dump_private.h>
+#include <system/status_codes.h>
 
 // No core dumps: a fatal error stops the process where a debugger or the
 // host's crash reporter can look at it.
@@ -16,7 +16,7 @@ void coredump_assert(int line) {
   abort();
 }
 
-PBL_NORETURN void core_dump_reset(bool is_forced) {
+[[noreturn]] void core_dump_reset(bool is_forced) {
   fprintf(stderr, "core dump requested, aborting\n");
   abort();
 }

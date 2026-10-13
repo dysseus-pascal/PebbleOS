@@ -3,30 +3,29 @@
 
 #ifdef CONFIG_SHELL
 
-#include <pbl/shell/shell.h>
-
-#include "kernel/event_loop.h"
-#include "kernel/util/delay.h"
-#include "kernel/util/factory_reset.h"
-#include "kernel/util/sleep.h"
-#include "pbl/services/new_timer/new_timer.h"
-#include "process_management/worker_manager.h"
-#include "system/bootbits.h"
-#include "system/passert.h"
-#include "system/reboot_reason.h"
-#include "system/reset.h"
-
 #include <errno.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
 
+#include <pbl/services/new_timer/new_timer.h>
+#include <pbl/shell/shell.h>
+
+#include <kernel/event_loop.h>
+#include <kernel/util/delay.h>
+#include <kernel/util/factory_reset.h>
+#include <kernel/util/sleep.h>
+#include <process_management/worker_manager.h>
+#include <system/bootbits.h>
+#include <system/passert.h>
+#include <system/reboot_reason.h>
+#include <system/reset.h>
+
 // The delay audit counts Cortex-M cycles.
 #if !defined(CONFIG_RELEASE) && defined(CONFIG_CPU_CORTEX_M)
 #define AUDIT_DELAY 1
 #include <cmsis_core.h>
-
-#include "system/profiler.h"
+#include <system/profiler.h>
 #endif
 
 static int prv_cmd_reset(const struct pbl_shell *sh, size_t argc, char **argv) {
@@ -68,7 +67,7 @@ static int prv_cmd_factory_reset(const struct pbl_shell *sh, size_t argc, char *
       psleep(3);
     }
 
-    launcher_task_add_callback(factory_reset_fast, NULL);
+    launcher_task_add_callback(factory_reset_fast, nullptr);
     return 0;
   }
 #endif
@@ -106,7 +105,7 @@ struct WasteTimerData {
   uint16_t count;
   uint16_t delay;
 };
-_Static_assert(sizeof(struct WasteTimerData) <= sizeof(uintptr_t), "struct WasteTimerData too big");
+static_assert(sizeof(struct WasteTimerData) <= sizeof(uintptr_t), "struct WasteTimerData too big");
 
 static void prv_waste_time_cb(void *context) {
   struct WasteTimerData data;
@@ -177,23 +176,24 @@ static int prv_cmd_audit_delay(const struct pbl_shell *sh, size_t argc, char **a
 }
 #endif
 
-PBL_SHELL_SUBCMD_ADD(sub_sys, reset, NULL, "Reset the system", prv_cmd_reset, 0, 0);
-PBL_SHELL_SUBCMD_ADD(sub_sys, crash, NULL, "Reset as if the launcher panicked", prv_cmd_crash, 0,
+PBL_SHELL_SUBCMD_ADD(sub_sys, reset, nullptr, "Reset the system", prv_cmd_reset, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, crash, nullptr, "Reset as if the launcher panicked", prv_cmd_crash, 0,
                      0);
-PBL_SHELL_SUBCMD_ADD(sub_sys, crash_hard, NULL, "Hard reset as if the firmware failed to start",
+PBL_SHELL_SUBCMD_ADD(sub_sys, crash_hard, nullptr, "Hard reset as if the firmware failed to start",
                      prv_cmd_crash_hard, 0, 0);
-PBL_SHELL_SUBCMD_ADD(sub_sys, croak, NULL, "Trigger a croak", prv_cmd_croak, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, croak, nullptr, "Trigger a croak", prv_cmd_croak, 0, 0);
 #ifdef CONFIG_RECOVERY_FW
-PBL_SHELL_SUBCMD_ADD(sub_sys, factory_reset, NULL, "Factory reset", prv_cmd_factory_reset, 1, 0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, factory_reset, nullptr, "Factory reset", prv_cmd_factory_reset, 1, 0);
 #else
-PBL_SHELL_SUBCMD_ADD(sub_sys, factory_reset, NULL, "Factory reset [fast]", prv_cmd_factory_reset, 1,
-                     1);
+PBL_SHELL_SUBCMD_ADD(sub_sys, factory_reset, nullptr, "Factory reset [fast]", prv_cmd_factory_reset,
+                     1, 1);
 #endif
-PBL_SHELL_SUBCMD_ADD(sub_sys, bootbit, NULL, "Set a boot bit <bit> <0|1>", prv_cmd_bootbit, 3, 0);
-PBL_SHELL_SUBCMD_ADD(sub_sys, waste_time, NULL, "Busy-wait on the timer task <count> <delay_ms>",
+PBL_SHELL_SUBCMD_ADD(sub_sys, bootbit, nullptr, "Set a boot bit <bit> <0|1>", prv_cmd_bootbit, 3,
+                     0);
+PBL_SHELL_SUBCMD_ADD(sub_sys, waste_time, nullptr, "Busy-wait on the timer task <count> <delay_ms>",
                      prv_cmd_waste_time, 3, 0);
 #ifdef AUDIT_DELAY
-PBL_SHELL_SUBCMD_ADD(sub_sys, audit_delay, NULL, "Audit the accuracy of delay_us",
+PBL_SHELL_SUBCMD_ADD(sub_sys, audit_delay, nullptr, "Audit the accuracy of delay_us",
                      prv_cmd_audit_delay, 0, 0);
 #endif
 

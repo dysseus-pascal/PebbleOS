@@ -64,7 +64,7 @@ void boulder_wecklauf_minute(void) {
 #define wtf stubs_wtf
 #include "stubs_passert.h"
 #undef wtf
-void wtf(void) {
+[[noreturn]] void wtf(void) {
   if (clar_expecting_passert) {
     clar_passert_occurred = true;
     longjmp(clar_passert_jmp_buf, 1);

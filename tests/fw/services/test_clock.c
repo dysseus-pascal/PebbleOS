@@ -1,47 +1,48 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "clar.h"
+#include <pbl/services/clock.h>
+#include <pbl/services/filesystem/pfs.h>
+#include <pbl/services/notifications/alerts.h>
+#include <pbl/services/timezone_database.h>
+#include <pbl/services/vibes/vibe_score.h>
 
-#include "pbl/services/clock.h"
-#include "pbl/services/notifications/alerts.h"
-#include "pbl/services/timezone_database.h"
-#include "pbl/services/filesystem/pfs.h"
-#include "pbl/services/vibes/vibe_score.h"
-#include "resource/resource_ids.auto.h"
-#include "resource/resource.h"
-#include "resource/resource_version.auto.h"
+#include <clar.h>
+#include <resource/resource.h>
+#include <resource/resource_ids.auto.h>
+#include <resource/resource_version.auto.h>
 
 // Fixture
 ////////////////////////////////////////////////////////////////
-#include "fixtures/load_test_resources.h"
+#include <fixtures/load_test_resources.h>
 
 // Fakes
 ////////////////////////////////////////////////////////////////
-#include "fake_rtc.h"
-#include "fake_events.h"
-#include "fake_spi_flash.h"
-#include "fake_system_task.h"
+#include <fake_events.h>
+#include <fake_rtc.h>
+#include <fake_spi_flash.h>
+#include <fake_system_task.h>
 
 // Stubs
 ////////////////////////////////////
-#include "stubs_alerts_preferences.h"
-#include "stubs_analytics.h"
-#include "stubs_vibe_score_info.h"
-#include "stubs_hexdump.h"
-#include "stubs_language_ui.h"
-#include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_pbl_malloc.h"
-#include "stubs_regular_timer.h"
-#include "stubs_serial.h"
-#include "stubs_session.h"
-#include "stubs_sleep.h"
-#include "stubs_system_reset.h"
-#include "stubs_task_wdt.h"
-#include "stubs_memory_layout.h"
-#include "pbl/services/time.h"
-#include "pbl/util/units.h"
+#include <pbl/services/time.h>
+#include <pbl/util/units.h>
+
+#include <stubs_alerts_preferences.h>
+#include <stubs_analytics.h>
+#include <stubs_hexdump.h>
+#include <stubs_language_ui.h>
+#include <stubs_logging.h>
+#include <stubs_memory_layout.h>
+#include <stubs_mutex.h>
+#include <stubs_pbl_malloc.h>
+#include <stubs_regular_timer.h>
+#include <stubs_serial.h>
+#include <stubs_session.h>
+#include <stubs_sleep.h>
+#include <stubs_system_reset.h>
+#include <stubs_task_wdt.h>
+#include <stubs_vibe_score_info.h>
 
 static bool s_prefs_24h_style;
 
@@ -71,7 +72,7 @@ bool alerts_should_vibrate_for_type(AlertType type) {
 
 VibeScore *vibe_score_create_with_resource_system(ResAppNum app_num, uint32_t resource_id) {
   s_vibe_create_count++;
-  return NULL;
+  return nullptr;
 }
 
 void vibe_score_do_vibe(VibeScore *score) {
@@ -81,7 +82,7 @@ void vibe_score_destroy(VibeScore *score) {
 }
 
 static void prv_clock_reset(int32_t gmtoff) {
-  TimezoneInfo tzinfo = {{0}};
+  TimezoneInfo tzinfo = {};
   tzinfo.dst_id = 0;
   tzinfo.dst_start = tzinfo.dst_end = 0;
   tzinfo.tm_gmtoff = gmtoff;
@@ -253,7 +254,7 @@ void test_clock__basic_timezone_gmtoffset(void) {
   static const int32_t max_gmtoff = 12 * PBL_SEC_PER_HOUR;
   static const int32_t gmtoff_slide = PBL_SEC_PER_MIN;
 
-  TimezoneInfo tzinfo = {{0}};
+  TimezoneInfo tzinfo = {};
   strcpy(tzinfo.tm_zone, "UNK");
   tzinfo.dst_id = 0;
   tzinfo.dst_start = tzinfo.dst_end = 0;
@@ -280,7 +281,7 @@ void test_clock__basic_timezone_dst(void) {
   static const int32_t max_dstoff = 12 * PBL_SEC_PER_HOUR;
   static const int32_t dstoff_slide = PBL_SEC_PER_MIN;
   static const int32_t dstrange = PBL_SEC_PER_HOUR;
-  TimezoneInfo tzinfo = {{0}};
+  TimezoneInfo tzinfo = {};
   strcpy(tzinfo.tm_zone, "UNK");
   tzinfo.dst_id = 0;
   tzinfo.tm_gmtoff = 0;
@@ -593,7 +594,7 @@ void test_clock__clock_to_timestamp(void) {
   static const int32_t max_gmtoff = 12 * PBL_SEC_PER_HOUR;
   static const int32_t gmtoff_slide = PBL_SEC_PER_MIN;
 
-  TimezoneInfo tzinfo = {{0}};
+  TimezoneInfo tzinfo = {};
   tzinfo.dst_id = 0;
   tzinfo.dst_start = tzinfo.dst_end = 0;
   tzinfo.timezone_id = 0;
@@ -1492,7 +1493,7 @@ void test_clock__month_named_abbrev_date(void) {
 }
 
 void test_clock__relative_daypart_string(void) {
-  const char *daypart_string = NULL;
+  const char *daypart_string = nullptr;
 
   const char morning[] = "this morning";                  // anything before 12pm of the current day
   const char afternoon[] = "this afternoon";              // 12pm today

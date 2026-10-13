@@ -1,31 +1,31 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "process_manager.h"
 #include "worker_manager.h"
+
 #include "process_loader.h"
+#include "process_manager.h"
 
 // Pebble stuff
-#include "kernel/pbl_malloc.h"
-#include "kernel/memory_layout.h"
-#include "kernel/util/segment.h"
-#include "kernel/util/task_init.h"
-#include "pbl/mcu/privilege.h"
-#include "popups/crashed_ui.h"
-#include "process_management/app_install_manager.h"
-#include "process_management/app_manager.h"
-#include "process_management/process_heap.h"
-#include "process_state/worker_state/worker_state.h"
-#include "shell/prefs.h"
-
-#include "syscall/syscall.h"
-#include "syscall/syscall_internal.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
+#include <pbl/mcu/privilege.h>
+
+#include <kernel/memory_layout.h>
+#include <kernel/pbl_malloc.h>
+#include <kernel/util/segment.h>
+#include <kernel/util/task_init.h>
+#include <popups/crashed_ui.h>
+#include <process_management/app_install_manager.h>
+#include <process_management/app_manager.h>
+#include <process_management/process_heap.h>
+#include <process_state/worker_state/worker_state.h>
+#include <shell/prefs.h>
+#include <syscall/syscall.h>
+#include <syscall/syscall_internal.h>
+#include <system/passert.h>
 
 // FreeRTOS stuff
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -128,7 +128,7 @@ bool worker_manager_launch_new_worker_with_args(const PebbleProcessMd *app_md, c
 
   // If there is a different worker currently running, tell it to quit first. When it sees
   // s_next_worker set, it will call us again once it finishes closing the current worker
-  if (s_worker_task_context.app_md != NULL && s_worker_task_context.app_md != app_md) {
+  if (s_worker_task_context.app_md != nullptr && s_worker_task_context.app_md != app_md) {
     s_next_worker = (NextWorker){
       .md = app_md,
       .args = args,
@@ -141,7 +141,7 @@ bool worker_manager_launch_new_worker_with_args(const PebbleProcessMd *app_md, c
   s_next_worker = (NextWorker){};
 
   // Error if a worker already launched
-  if (pebble_task_get_thread(PebbleTask_Worker) != NULL) {
+  if (pebble_task_get_thread(PebbleTask_Worker) != nullptr) {
     PBL_LOG_WRN("Worker already launched");
     return false;
   }
@@ -162,14 +162,14 @@ bool worker_manager_launch_new_worker_with_args(const PebbleProcessMd *app_md, c
 
   MemorySegment worker_segment;
   PBL_ASSERTN(memory_segment_split(&worker_ram, &worker_segment, worker_segment_size));
-  PBL_ASSERTN(memory_segment_split(&worker_segment, NULL, stack_guard_size));
+  PBL_ASSERTN(memory_segment_split(&worker_segment, nullptr, stack_guard_size));
   // No (accessible) memory segments can be placed between the top of WORKER_RAM
   // and the end of stack. Stacks always grow towards lower memory addresses, so
   // we want a stack overflow to touch the stack guard region before it begins
   // to clobber actual data. And syscalls assume that the stack is always at the
   // top of WORKER_RAM; violating this assumption will result in syscalls
   // sometimes failing when the worker hasn't done anything wrong.
-  void *stack = memory_segment_split(&worker_segment, NULL, stack_size);
+  void *stack = memory_segment_split(&worker_segment, nullptr, stack_size);
   PBL_ASSERTN(stack);
   s_worker_task_context.load_start = worker_segment.start;
   g_worker_load_address = worker_segment.start;
@@ -239,7 +239,7 @@ static void prv_reset_last_worker_crashed_data(void) {
 // Launch the next worker, if there is one
 void worker_manager_launch_next_worker(AppInstallId previous_worker_install_id) {
   // Is there another worker set to switch to?
-  if (s_next_worker.md != NULL) {
+  if (s_next_worker.md != nullptr) {
     worker_manager_launch_new_worker_with_args(s_next_worker.md, s_next_worker.args);
   } else {
     // Do we have a default worker we should switch to that is different from the previous worker?
@@ -388,5 +388,6 @@ static int prv_cmd_worker_kill(const struct pbl_shell *sh, size_t argc, char **a
   return 0;
 }
 
-PBL_SHELL_SUBCMD_ADD(sub_worker, kill, NULL, "Kill the running worker", prv_cmd_worker_kill, 0, 0);
+PBL_SHELL_SUBCMD_ADD(sub_worker, kill, nullptr, "Kill the running worker", prv_cmd_worker_kill, 0,
+                     0);
 #endif

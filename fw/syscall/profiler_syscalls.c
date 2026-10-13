@@ -1,10 +1,9 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "syscall/syscall_internal.h"
-#include "system/profiler.h"
-
 #include <cmsis_core.h>
+#include <syscall/syscall_internal.h>
+#include <system/profiler.h>
 
 // ------------------------------------------------------------------------------------
 // Find node by ptr
