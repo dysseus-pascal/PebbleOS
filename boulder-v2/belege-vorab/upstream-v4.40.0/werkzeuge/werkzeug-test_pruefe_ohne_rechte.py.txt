@@ -1,0 +1,28 @@
+ok    static int
+ok    boulder_nacht_letzte
+ok    health_util_format_hours_minutes_seconds
+ok    health_service_get_minute_history (im SDK, aber rot)
+ok    static int mit Anfangswert (.data)
+ok    globales int ohne static
+ok    COMMON-Symbol (-fcommon)
+ok    beschreibbare Bytes ohne Namen (Assembler)
+ok    static in einer Funktion
+ok    sys_activity_get_minute_history (Syscall, aber rot)
+ok    persist_read_int
+ok    app_message_open
+ok    Kernfunktion kernel_malloc
+ok    Kern-Daten (Linker-Symbol)
+ok    Firmware-Name statt implName (graphics_fill_rect)
+ok    Laufzeit-Helfer mit Zustand (__aeabi_read_tp)
+ok    menu_cell_basic_draw (im SDK, mit System-ID Kernel-RAM)
+ok    localtime (statischer Puffer)
+ok    sys_* ohne Syscall (sys_msg_protocol_msg_callback)
+ok    erlaubt: SDK nach implName, sys_*, Helfer, libc, Konstanten
+ok    Aufruf in eine andere Datei der App
+ok    leere Objekte (Schalter aus) sind nicht gruen
+ok    Bauordner: gelinktes Objekt gruen, altes zaehlt nicht
+ok    Bauordner: gelinktes Objekt rot
+ok    Bauordner: App nicht gelinkt
+ok    Bauordner: Syscall aus dem Abbild gruen
+ok    Bauordner: ohne Abbild rot
+ok    Abbild: Syscalls zwischen den Marken

@@ -1,0 +1,99 @@
+ok    markiert
+ok    geloescht im Block
+ok    unmarkiert geaendert
+ok    unmarkiert geloescht
+ok    unmarkiert angefuegt
+ok    Dn nicht in HERKUNFT
+ok    Block offen
+ok    falsche Pruefsumme
+ok    erlaubt
+ok    eigener Ordner
+ok    activity.c
+ok    ohne Marke
+ok    zu viele Zeilen
+ok    falsche Funktion
+ok    richtige Funktion
+ok    Nachholen in alarm_init
+ok    Geklungen in prv_record_alarm_op
+ok    aehnlicher Name
+ok    alarm.c zu viele Zeilen
+ok    neue Datei ausserhalb
+ok    P2 im Prozess-Eintrag
+ok    zweiter Hunk in workout.c
+ok    P2 ohne Schalter
+ok    P2 in anderer Funktion
+ok    P2 zu viele Zeilen
+ok    P1 im Stopp
+ok    P1 Include ohne Schalter
+ok    P1 Include mit Schalter
+ok    P1 #if 0 ausserhalb
+ok    P1 in Pause
+ok    P1 ohne Schalter
+ok    P1 Schalter nur im Kommentar
+ok    P1 Zeile nach dem #endif
+ok    P1 Pebbles Zeile im #else
+ok    P1 Zeile im #else geaendert
+ok    P1 neue Zeile im #else
+ok    P1 Pebbles Zeile entfernt
+ok    P1 #if 0 ohne Schalter
+ok    P1 Kommentar vor dem #ifdef
+ok    P1 zu viele Zeilen
+ok    P3 Registry
+ok    P3 ohne Schalter
+ok    P3 zweiter Eintrag
+ok    P4 Satz
+ok    P4 andere Funktion
+ok    App-Ordner frei
+ok    Testordner der App frei
+ok    anderer App-Ordner
+ok    P5 in der Liste
+ok    P5 ohne Schalter
+ok    P5 zu viele Zeilen
+ok    P5 in einer Funktion
+ok    P5 zweiter Hunk
+ok    P5 wie git es zeigt
+ok    P5 Zeile nach dem #endif
+ok    P6 Include und Eintrag
+ok    P6 in anderer Funktion
+ok    P6 ohne Schalter
+ok    P6 Include ohne Schalter
+ok    P6 Include vor dem #ifdef
+ok    P6 weiterer Eintrag
+ok    P6 dritter Hunk
+ok    Kacheldatei
+ok    Kacheldatei unversioniert erlaubt
+ok    Kacheldatei ohne Schalter
+ok    Kacheldatei Zeile vor dem #ifdef
+ok    Kacheldatei Zeile nach dem #endif
+ok    Kacheldatei Zeile im #else
+ok    Kacheldatei Code hinter einem Kommentar
+ok    Kacheldatei mit Kommentaren aussen
+ok    Kacheldatei ohne Marke
+ok    Kacheldatei aendert Pebbles Zeilen
+ok    andere neue Datei im Startmenue
+ok    Arbeitsbaum: Kacheldatei unversioniert
+ok    Arbeitsbaum: Kacheldatei unversioniert, Zeile vor dem #ifdef
+ok    Arbeitsbaum: Kacheldatei unversioniert ohne Marke
+ok    Arbeitsbaum: andere Datei unversioniert
+ok    P7 im else()-Zweig
+ok    P7 mit Leerzeichen und Kommentar am Ende
+ok    P7 zweite Zeile
+ok    P7 zweite Zeile nach dem endif()
+ok    P7 ohne Schalter
+ok    P7 anderer Schalter
+ok    P7 Schalter nur im Kommentar
+ok    P7 anderer Ausdruck
+ok    P7 entfernt Pebbles Zeile
+ok    P7 ohne Marke
+ok    P7 zu viele Zeilen
+ok    P7 zweiter Hunk
+ok    Zeile in Pebbles Health-Ordner
+ok    neue Datei in Pebbles Health-Ordner
+ok    Ordner der Health-App frei
+ok    Testordner der Health-App frei
+ok    Pebbles Health-Tests nicht frei
+ok    Bild von test_bh_karten frei
+ok    fremdes Bild nicht frei
+ok    Praefix ohne .png nicht frei
+ok    Praefix im Unterordner nicht frei
+ok    Pebbles Bild aendern nicht frei

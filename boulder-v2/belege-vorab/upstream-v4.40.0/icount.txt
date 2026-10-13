@@ -1,0 +1,9 @@
+# Erster Start nach dem Boot unter -icount shift=3 (icount_kaltstart.py aus belege-schritt3/ap9/kaltstart),
+# build-pruef auf 0510648c, zwei Boots. Je Boot drei Starts: Zeit bis zum ersten Bild in ms.
+ERGEBNIS shift 3 | 1: start 0.0 daten 0.0 bild 16.6 | 2: start 0.0 daten 1.0 bild 8.8 | 3: start 1.0 daten 1.0 bild 8.8
+ERGEBNIS shift 3 | 1: start 0.0 daten 1.0 bild 17.6 | 2: start 0.0 daten 0.0 bild 8.8 | 3: start 1.0 daten 1.0 bild 8.8
+# AP9 auf ecb6b739: erster Start 17.6 ms (app_jetzt), 16.6-17.6 ms (app_ap8).
+
+# Echtzeit (qemu-a, qemu-b): L1 je Start aus protokoll.txt, die ersten 60 Starts sind die L1-Reihe.
+a: erster Start 39.1 ms, uebrige 59 hoechstens 24.4 ms, Median 6.8 ms
+b: erster Start 52.7 ms, uebrige 59 hoechstens 14.6 ms, Median 7.8 ms

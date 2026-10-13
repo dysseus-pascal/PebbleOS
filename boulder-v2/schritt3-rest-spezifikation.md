@@ -321,3 +321,17 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Analyse: `naechte/analyse-2026-10-13.md`; Entscheid: `entscheidungen.md` (13.10.).
 - `test_boulder_schlafanalyse_wie_b26` ist ersetzt durch `test_boulder_schlaf`. Die Vergleiche mit b26
   auf den Referenznächten bleiben.
+
+## Stand nach Upstream v4.40.0 (13.10.2026, `0510648c`)
+
+- Punkt 1 aus Abschnitt 6 erledigt: v4.40.0 zusammengeführt, ohne Konflikt.
+- Nachgezogen:
+  - Testpfade (uzlib, upng, `drivers/`).
+  - `umzug_pruefen.py`: `start_utc` ist jetzt `int32_t`, auf der Uhr gleich wie `time_t`.
+  - `HERKUNFT` nennt v4.40.0.
+- Ohne Systemrechte, QEMU und `pruefe_ohne_rechte` wiederholt; alles grün bis auf F17.
+  Upstreams neue Syscall-Prüfung ist grün.
+- Prüfung: acht Bauten ohne Warnung, Host 433/433, Werkzeuge grün, Mutationen 43/43 rot.
+- Bericht: `schritt3-abnahme.md`, Abschnitt 8. Belege: `belege-vorab/upstream-v4.40.0/`.
+- Neu zu entscheiden: F18 Upstream v4.41.0 (Abnahme, Abschnitt 7). Nächster Schritt danach: Punkt 2
+  (Wechsel b26 → V2).

@@ -259,6 +259,7 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
 
 1. Upstream v4.40.0 nachziehen (`kopie_nachziehen` war rot); danach die Probe ohne Systemrechte, die
    QEMU-Messung und `pruefe_ohne_rechte` wiederholen (MPU und Syscalls umgebaut).
+   *Erledigt am 13.10. (`0510648c`), siehe Abschnitt 8.*
 2. Wechsel b26 → V2 testen (bisher mit einem b25-Abbild).
 3. Boulder 0.53: Seite „Goals“ schreibt `boulder_ziele` (8 B, **Schlüssel ohne Nullbyte**, Befund K4),
    V2 als Firmware erkennen, Gravel 0.3.4.
@@ -280,3 +281,65 @@ lagen in den Schlussläufen bei höchstens 27,3 ms.
   Boot. Dort zählt nur, was die App ausführt (heute 17,6 ms). In Echtzeit zählen alle übrigen Starts wie
   bisher.
 - **Empfehlung: B.** Es misst die Bauart (2.6.3) statt des Emulators, und das Ergebnis ist wiederholbar.
+- *Nachtrag 13.10. (v4.40.0):* Wieder dasselbe Bild. In Echtzeit kam der erste Start auf 39,1 und
+  52,7 ms, ein Lauf wurde an L1 rot. Unter `-icount` waren es 16,6 und 17,6 ms wie in AP9, die übrigen
+  59 Starts lagen bei höchstens 24,4 ms. Die App ist nicht langsamer geworden.
+
+**F18 Upstream v4.41.0.** Seit dem 12.10. gibt es v4.41.0 (216 Commits nach v4.40.0).
+- **Inhalt:**
+  - Der grösste Teil stellt den ganzen Baum auf C23 um: `nullptr`, `[[maybe_unused]]`,
+    `unreachable()`, `static_assert`, sortierte Includes; Firmware und Tests bauen als C23.
+  - Pulsdienst: Ein Ereignis aus einem schon beendeten Sensor-Abo konnte den Kern abstürzen lassen,
+    wenn KernelBG den Sensor aus- und wieder einschaltet (`21a43337`). Das tut Boulders Messstufe.
+  - Wecker: Ein Schlummern endet, wenn der Plan des Weckers geändert wird (`62e8d0a8`), in `alarm.c`
+    neben Boulders Weckregel.
+  - Beschleunigungssensor: Apps, die die Batch-Grösse ändern, bekamen keine Daten mehr oder wurden
+    beendet (`1c85cc53`, `c8a812ea`). Dazu Korrekturen an Bluetooth.
+- **Aufwand:**
+  - Ein Probe-Merge ergab vier Konfliktstellen in drei Dateien (`settings/health.c`,
+    `workout_service.c`, `alarm.c`).
+  - Die Kraepelin-Originale ändern sich nur im Stil (66 Zeilen); die Kopie zieht das mit
+    `git merge-file` nach.
+  - `PBL_UNUSED` und `PBL_NORETURN` fallen weg, Boulder nutzt sie in je einer Datei.
+- A: v4.41.0 jetzt nachziehen, dann den Stand bis nach dem Gerätetest einfrieren. Der Gerätetest prüft
+  dann den Code, der bleibt.
+- B: Die erste Vorabversion auf v4.40.0, v4.41.0 erst nach dem Gerätetest. Das geht schneller an die
+  Uhr, aber der Gerätetest prüft eine Basis, die danach wechselt.
+- **Empfehlung: A.** Die Korrektur im Pulsdienst betrifft genau, was der Gerätetest prüft (7 Nächte
+  ohne Absturz), und der Aufwand ist überschaubar.
+
+## 8. Upstream v4.40.0 (13.10.2026, `0510648c`)
+
+Punkt 1 aus Abschnitt 7. Belege: `belege-vorab/upstream-v4.40.0/`.
+
+- **Merge:** Tag v4.40.0 (131 Commits seit v4.39.0), ohne Konflikt.
+  - Upstream ändert zwei Dateien, in denen Boulder Stellen hat: `alarm.c` (gespeicherte Weckzeit
+    `int32_t` statt `time_t`) und `settings_blob_db.c` (Callback als eigene Funktion). Boulders Stellen
+    bleiben unverändert.
+  - Die Kraepelin-Originale sind unverändert. `HERKUNFT` und die Köpfe der Kopie nennen jetzt v4.40.0,
+    `kopie_pruefen.py --nachziehen v4.40.0` ist grün.
+- **Nachgezogen im Merge-Commit:**
+  - Testpfade: tinflate und uPNG liegen jetzt in `third_party` (uzlib, upng), `flash_crc.c` in
+    `drivers/`.
+  - `umzug_pruefen.py`: `ActivitySession.start_utc` ist upstream `int32_t` statt `time_t`. Auf der Uhr
+    ist `time_t` 32 bit (beim Bauen zugesichert), b25s Sitzungen liegen also gleich. Eine neue
+    Gegenprobe zeigt, dass ein anders breiter Beginn rot bleibt.
+- **Ohne Systemrechte:**
+  - Upstream prüft jetzt beim Bauen, dass Privilegienprüfungen nur in Syscall-Rümpfen stehen
+    (`c3610b6e`). Das ist auf allen acht Bauten grün, auch für S1–S7.
+  - `pruefe_ohne_rechte.py` ist auf obelix, obelix Release und emery grün; im Prüfbau ist nur die
+    Fehlerprobe rot, wie gewollt.
+  - QEMU mit Upstreams neuem MPU-Code: Die Fehlerprobe endet am DACCVIOL, die Uhr läuft weiter.
+- **Prüfung:**
+  - Acht Bauten sauber ohne Warnung.
+  - Host 433/433: Upstream bringt 24 Tests mit.
+  - Alle Werkzeuge grün; K1 misst jetzt gegen v4.40.0.
+  - Mutationen 43/43 rot.
+- **QEMU, zwei Läufe:**
+  - Lauf a ist grün.
+  - Lauf b ist an L1 rot: 52,7 ms am ersten Start nach dem Boot. Das ist F17; unter `-icount` liegt
+    der erste Start bei 17,6 ms wie vorher.
+  - Alle übrigen Werte sind grün: L2 höchstens 20,5 ms, L4 7,8 ms, L6 0,01 ms. Der Kernel-Heap wächst
+    nicht, der Syscall-Stapel hat 1 368 B Reserve, und es gab keinen Neustart.
+- **Offen:** Upstream ist schon bei v4.41.0 (F18). Gegen `upstream/main` ist `kopie_nachziehen` deshalb
+  wieder rot.
