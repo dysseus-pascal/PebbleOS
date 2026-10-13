@@ -7,8 +7,9 @@
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
-// eingestellt, das Einschlafen zuletzt an der Nacht 5./6.10., das Aufstehen an
-// ihrem zweiten Export bis 07:24 (der Host-Test rechnet alle Naechte nach).
+// eingestellt, das Einschlafen zuletzt an den Naechten 7. bis 12.10. (V2), das
+// Aufstehen am zweiten Export der Nacht 5./6.10. bis 07:24 (der Host-Test
+// test_boulder_schlaf rechnet alle Naechte nach).
 // Der Puls relativ zu seiner Umgebung traf Fitbits
 // Tiefschlaf nur zufaellig. Was traf, war der Koerper: im Tiefschlaf liegt er
 // lange ganz still. Beim REM traf das Herz: es schlaegt unregelmaessig,
@@ -31,17 +32,20 @@
 // 5.10. kam spaeter dazu: bei 150 und 200 hat sie einen Aufwach-Schub mehr
 // (15 Minuten wach, Fitbit sah keine), ab 250 nicht.
 #define REGUNG_SECHZEHNTEL 5
-// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Waelz-Regungen in den vierzig
+// EINGESCHLAFEN IST, WER ZUR RUHE KOMMT: zwei Waelz-Regungen in den dreissig
 // Minuten ab dem Einschlafen sind noch das Herumwaelzen davor (Nacht 3.10.:
 // 22:11, 22:19, 22:25 - Fitbit sah den Schlaf erst um 22:29).
-// VIERZIG MINUTEN, NICHT MEHR ZWANZIG (b26): am 5.10. lag der Nutzer ab 21:46
-// still, waelzte sich aber noch um 21:54, 22:10 und 22:13 - Fitbit sah den
-// Schlaf erst um 22:15. In zwanzig Minuten ab 21:46 liegt davon nur eine
-// Regung, und die Nacht begann 29 Minuten zu frueh. Ab 25 Minuten traegt das
-// Fenster die Regung um 22:10; von 25 bis 60 rechnen alle vier Naechte
-// gleich, 40 liegt mitten darin. EINGESTELLT ALLEIN AM 5.10. - unabhaengig
-// prueft es erst die naechste Fitbit-Nacht.
-#define EINSCHLAF_RUHE 40
+// NICHT MEHR ZWANZIG (b26): am 5.10. lag der Nutzer ab 21:46 still, waelzte
+// sich aber noch um 21:54, 22:10 und 22:13 - Fitbit sah den Schlaf erst um
+// 22:15. In zwanzig Minuten ab 21:46 liegt davon nur eine Regung, und die
+// Nacht begann 29 Minuten zu frueh; ab 25 Minuten traegt das Fenster die
+// Regung um 22:10. b26 nahm vierzig, eingestellt allein am 5.10.
+// DREISSIG, NICHT VIERZIG (V2): die naechsten Fitbit-Naechte. Am 8.10. lagen
+// zwei Regungen im Schlaf (22:52 und 23:14) im Fenster von vierzig Minuten und
+// schoben das Einschlafen von 22:35 auf 22:53 (Fitbit 22:32). Unten haelt der
+// 7.10. (Fitbit 21:17): unter 27 Minuten begann die Nacht um 20:45. Von 27 bis
+// 39 Minuten rechnen alle Naechte vom 26.9. bis 12.10. gleich.
+#define EINSCHLAF_RUHE     30
 #define EINSCHLAF_REGUNGEN 2
 // ALS WAELZEN ZAEHLT NUR EINE KRAEFTIGE REGUNG: neun Sechzehntel der
 // Wachschwelle (450 beim VMC der Uhr), nicht fuenf wie eine Regung sonst.
@@ -449,6 +453,32 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
   }
 }
 
+// EIN WEGNICKEN VOR EINEM SCHUB IST KEIN EINSCHLAFEN (V2). Das Einschlafen
+// steht fest, bevor die Aufwach-Schuebe die Minuten danach wach machen. Bleibt
+// am Einschlafen so ein Schlaf, der kuerzer ist als MIN_SCHLAFLAUF, beginnt die
+// Nacht mit dem naechsten, der lang genug ist. Nacht 9.10.: vom Einschlafen um
+// 21:34 blieben fuenf Minuten vor einem Schub bis 23:12 (wach im Bett, ein
+// Toilettengang); Fitbit sah den Schlaf ab 23:12, so beginnt er um 23:16. Ein
+// langer Schlaf vor einem Schub bleibt das Einschlafen (7.10.: 21:18, Fitbit
+// 21:17). Rueckgabe: die erste Minute des Schlafs, `auf`, wenn keiner kommt.
+static int prv_nach_den_schueben(const bool *wach, int ein, int auf) {
+  int von = ein;
+  while (von < auf) {
+    int bis = von;
+    while (bis < auf && !wach[bis]) {
+      bis++;
+    }
+    if (bis - von >= MIN_SCHLAFLAUF) {
+      return von;
+    }
+    von = bis;
+    while (von < auf && wach[von]) {
+      von++;
+    }
+  }
+  return auf;
+}
+
 static bool prv_ruhig(const bool *wach, int ein, int auf, int j) {
   return j >= ein && j < auf && !wach[j];
 }
@@ -843,6 +873,10 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
     return false;
   }
   prv_aufwach_schuebe(e, w, ein, auf);
+  ein = prv_nach_den_schueben(w->wach, ein, auf);
+  if (ein >= auf) {
+    return false;
+  }
 
   int schlaf = 0;
   bool hat_puls = false;

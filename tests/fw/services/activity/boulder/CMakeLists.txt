@@ -145,8 +145,9 @@ pbl_clar_test(test_boulder_vertraege_ohne_kieselsport
     fw/services/activity/boulder/vertraege.c
 )
 
-# Die Schlafrechnung selbst, aus b26 (main a7d8b16e1) uebernommen: die Naechte neben einem Fitbit
-# und die Regeln an gebauten Naechten.
+# Die Schlafrechnung selbst: die Naechte neben einem Fitbit und die Regeln an gebauten Naechten.
+# Aus b26 (main a7d8b16e1) uebernommen; seit V2 rechnet sie anders als b26 (Waelz-Fenster,
+# Einschlafen nach den Aufwach-Schueben) und prueft dazu die Naechte vom 7. bis 12.10.
 pbl_clar_test(test_boulder_schlaf
   SOURCES
     fw/services/activity/boulder/schlafanalyse.c
@@ -197,13 +198,6 @@ pbl_clar_test(test_boulder_zyklen
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
 )
-
-# schlafanalyse.c/.h sind bytegleich zu b26 (main a7d8b16e1).
-add_test(NAME test_boulder_schlafanalyse_wie_b26
-  COMMAND ${CMAKE_COMMAND}
-    -DDATEIEN=${PBL_BASE}/fw/services/activity/boulder/schlafanalyse.c|${PBL_BASE}/include/pbl/services/activity/boulder/schlafanalyse.h
-    -DSOLL=d75621f7510a147c2f7b3220172f8c94060fd2aeddcf3b290885e1c6035d61dd|6334fe6ae9de942379075a96344479bbf1228748c7ff867fa1db94853110f35a
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/bytegleich.cmake)
 
 # Kopie und Original zaehlen gleich: dieselben Pruefkorpus-Laeufe, Ausgabe Zeile fuer Zeile.
 add_test(NAME test_boulder_kraepelin_gleich

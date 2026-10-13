@@ -12,11 +12,12 @@
 //
 // WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
 // auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
-// Bewegung. Dazu, eingestellt an vier Naechten neben einem Fitbit (29.9.,
-// 30.9., 2.10. und - nur das Einschlafen - 5.10.2026): Aufwach-Schuebe -
-// Regungen dicht hintereinander mit einem Pulsstoss - sind ganz wach, auch
-// zwischen den Regungen; eingeschlafen ist man erst, wenn das Herumwaelzen
-// aufhoert (keine zwei kraeftigen Regungen mehr in vierzig Minuten); wer nach
+// Bewegung. Dazu, eingestellt an Naechten neben einem Fitbit (29.9., 30.9. und
+// 2.10.2026, nur das Einschlafen auch am 5.10. und - in V2 - 7. bis 12.10.):
+// Aufwach-Schuebe - Regungen dicht hintereinander mit einem Pulsstoss - sind
+// ganz wach, auch zwischen den Regungen; eingeschlafen ist man erst, wenn das
+// Herumwaelzen aufhoert (keine zwei kraeftigen Regungen mehr in dreissig
+// Minuten), und ein Wegnicken vor einem Schub zaehlt nicht; wer nach
 // dem Aufwachen gegangen ist (VMC, nicht Schritte), schlaeft nur weiter, wenn
 // es haelt (30 Schlafminuten in 45) - der Kaffee danach ist keine Nacht. DIE
 // PHASEN: Tiefschlaf ist eine Viertelstunde ohne jede Regung bei ruhigem Herz,
