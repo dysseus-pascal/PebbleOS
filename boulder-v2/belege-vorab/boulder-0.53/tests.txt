@@ -1,0 +1,17 @@
+Boulder 23b335a9, nach :pebble:clean :androidApp:clean, jede Testaufgabe mit --rerun (13.10.2026)
+libpebble3:testAndroidHostTest  385 Tests, 0 uebersprungen, 0 Fehler
+    neu: com.anopticlabs.gravel.health.HealthRecordFormatsTest 7
+    neu: io.rebble.libpebblecommon.health.BoulderZieleTest 3
+    neu: io.rebble.libpebblecommon.health.parsers.HealthDataParserTest 5
+libpebble3:jvmTest  373 Tests, 2 uebersprungen, 0 Fehler
+    neu: com.anopticlabs.gravel.health.HealthRecordFormatsTest 7
+    neu: io.rebble.libpebblecommon.database.dao.ZieleZurUhrTest 1
+    neu: io.rebble.libpebblecommon.health.BoulderZieleTest 3
+    neu: io.rebble.libpebblecommon.health.parsers.HealthDataParserTest 5
+pebble:testAndroidHostTest  1010 Tests, 0 uebersprungen, 0 Fehler
+    neu: coredevices.pebble.kiesel.ablauf.ZieleAblaufTest 3
+    neu: coredevices.pebble.kiesel.ansicht.ZieleBildTest 1
+composeApp:testAndroidHostTest  113 Tests, 0 uebersprungen, 0 Fehler
+util:testAndroidHostTest  247 Tests, 0 uebersprungen, 0 Fehler
+androidApp:testDebugUnitTest  39 Tests, 0 uebersprungen, 0 Fehler
+zusammen 2167

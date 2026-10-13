@@ -360,3 +360,12 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Bericht: `schritt3-abnahme.md`, Abschnitt 10 (Wechsel) und Abschnitt 9, Nachtrag (SDK).
 - Nächster Schritt: Punkt 3 (Boulder 0.53: Seite „Goals“, V2 erkennen, Gravel 0.3.4) oder Punkt 4
   (Kieselstrasse nach V2).
+
+## Stand nach Boulder 0.53 (13.10.2026, Boulder `23b335a9`, Zweig `claude/exciting-cerf-m8apu2`)
+
+- Punkt 3 aus Abschnitt 6 gebaut: Seite „Goals“ mit `boulder_ziele`, V2 als Firmware erkannt (ohne
+  TimeStyle Bedrock), Gravel 0.3.4.
+- 2167 Tests grün, Release-Build grün. Bericht: `schritt3-abnahme.md`, Abschnitt 11.
+- Offen: das Release 0.53.0 (Stand auf `main` bringen, die CI legt `v0.53.0` an).
+- Für V2: Tag `v4.41.0-bN`, sonst gilt sie in Boulder als unbekannte Firmware.
+- Nächster Schritt: Punkt 4 (Kieselstrasse nach V2).

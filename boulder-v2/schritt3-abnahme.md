@@ -8,7 +8,8 @@ Belege: `belege-schritt3/ap9/`.
 
 - **Kriterien:** 1, 2, 3, 4, 5 und 7 sind erfüllt (Host, QEMU, Abbild). 6 ist teilweise erfüllt: in QEMU
   ja, auf der Uhr steht der Gerätetest aus. 8 ist teilweise erfüllt: auf der Uhr ja, in Boulder 0.53 fehlt
-  die Seite „Goals“.
+  die Seite „Goals“. *Nachtrag 13.10.: Boulder 0.53 hat die Seite (Abschnitt 11); veröffentlicht ist es
+  noch nicht.*
 - **Gegenprüfung:** Drei Prüfer meldeten 23 Befunde, davon 21 verschiedene. Alle habe ich am Code
   bestätigt und behoben, darunter eine Sicherheitslücke an der Syscall-Grenze (K1) und ein
   Use-after-free (A1). Zu jeder Behebung gibt es einen Test, der ohne sie rot ist.
@@ -34,7 +35,7 @@ Belege: `belege-schritt3/ap9/`.
 | 5 | Einstiege landen auf der richtigen Karte; andere Boards behalten Pebbles App | **erfüllt** | `test_bh_einstieg`, `test_bh_einstiege` (Pebbles echter Code), `test_bh_startmenue`, `test_bh_startmenue_asterix`; asterix, getafix, flint, gabbro linken Pebbles `health/` (13 Objekte), die Boulder-Bauten keins; Mutationen K5a, K5b rot |
 | 6 | Ladezeit L1–L6 in QEMU; auf der Uhr im Gerätetest | **teilweise**: QEMU erfüllt, Uhr offen | Drei QEMU-Schlussläufe grün (Abschnitt 3). Der erste Start nach dem Boot liegt nahe an der Grenze und schwankt in Echtzeit-QEMU mit dem Host; unter `-icount` 17,6 ms wie mit dem Code von AP8. QEMU-Mutation (60 ms vor dem ersten Bild) an L1 rot (89,8 ms); Mutation K6b (Taste liest, L3) rot |
 | 7 | Kein Kernel-Heap-Verlust nach 100 Starts, kein Puls-Abo nach dem Ende, kein Neustart | **erfüllt** (QEMU) | QEMU-Schlussläufe a–c; QEMU-Mutation (16 B Kernel-Heap je S2) am Kernel-Heap rot (49 372 → 48 304 → 47 304 B); Mutation K7a rot; seit A2 läuft Puls live auch nach einem abnormalen Ende höchstens 2 min |
-| 8 | `boulder_ziele` vom Telefon gilt auf Uhr und in Boulder; ohne Telefon der letzte Wert oder die Vorgabe | **teilweise**: Uhr erfüllt, Boulder offen | `test_boulder_schnittstelle` (Einfügen, Ändern, Löschen, Leeren, ungültige Sätze, Neustart); Mutationen K8a, K8b rot; die Seite „Goals“ in Boulder 0.53 fehlt (Schlüssel ohne Nullbyte, K4) |
+| 8 | `boulder_ziele` vom Telefon gilt auf Uhr und in Boulder; ohne Telefon der letzte Wert oder die Vorgabe | **teilweise**: Uhr erfüllt, Boulder offen. *Nachtrag 13.10.: Boulder 0.53 erfüllt es in den Tests (Abschnitt 11), Release und Gerätetest offen* | `test_boulder_schnittstelle` (Einfügen, Ändern, Löschen, Leeren, ungültige Sätze, Neustart); Mutationen K8a, K8b rot; die Seite „Goals“ in Boulder 0.53 fehlt (Schlüssel ohne Nullbyte, K4) |
 
 ## 2. Gegenprüfung (12.10.2026)
 
@@ -264,6 +265,8 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
    *Erledigt am 13.10. (`b6a4b3df`), siehe Abschnitt 10.*
 3. Boulder 0.53: Seite „Goals“ schreibt `boulder_ziele` (8 B, **Schlüssel ohne Nullbyte**, Befund K4),
    V2 als Firmware erkennen, Gravel 0.3.4.
+   *Gebaut am 13.10. im Arbeitszweig von Boulder (`23b335a9`), siehe Abschnitt 11. Das Release steht
+   aus.*
 4. Kieselstrasse nach V2 portieren (F6).
 5. Vorher-Video von b26 (braucht die Uhr).
 6. Gerätetest: 7 Nächte, Fitbit-Nächte, Velo- und Autofahrten, Messstufen, Ladezeiten auf der Uhr
@@ -420,3 +423,52 @@ Punkt 2 aus Abschnitt 7. Belege und Ablauf: `belege-vorab/wechsel-b26/`.
   - Die alte Kieselsport-Store-App einmal löschen, falls sie doppelt erscheint (V9).
 - **Nicht in QEMU prüfbar:** Nächte und Movement-Sitzungen (keine Sensordaten). Dafür stehen die
   Host-Tests T8.1–T8.3 und der Gerätetest.
+
+## 11. Boulder 0.53 (13.10.2026, Boulder-Zweig `claude/exciting-cerf-m8apu2`, `23b335a9`)
+
+Punkt 3 aus Abschnitt 7. Belege: `belege-vorab/boulder-0.53/`. Gebaut und geprüft in der Cloud
+(Android-SDK, NDK 28.2, Gradle 9.6.1; Maven Central über Googles Spiegel, weil es hier mit 429
+antwortet).
+
+- **Gravel 0.3.4** (`36fad7e2`):
+  - Gravel liest jetzt Minutensätze nach Fassung 13. Firmware ab v4.39 schickt Fassung 14 mit SpO2.
+    Boulder las 14 schon seit b25, darum war V2 hier nie ein Problem.
+  - Übernommen sind zwei Regeln: Eine Fassung über 14 wird mit den Feldern von 14 gelesen (die
+    Firmware hängt nur an). Ein Sitzungssatz ohne Bit 0 in der Fassung fällt weg (activity_private.h);
+    Boulders Fassung 7 trägt es.
+  - Gravels Tests kommen mit, angepasst. Nicht übernommen: WhatsNew und der Eintrag in KNOWN_ISSUES zur
+    Changelog-Liste, die Boulder nicht hat.
+- **V2 erkennen** (`2916e3f0`):
+  - V2 ist eine Boulder-Fassung (`-bN`) auf Pebbles v4.39 oder neuer. 0.52 hätte V2 ab b24 für
+    Bedrock-fähig gehalten.
+  - Auf V2 gibt es jetzt keine Bedrock-Kachel und keine Einstellungen dafür. Zurück auf b26 geht die
+    gespeicherte Bedrock-Einstellung einmal neu zur Uhr.
+  - **Folge für die Vorabversion:** V2 braucht einen Tag `v4.41.0-bN` (N ab 27). Ohne `-bN` gilt V2 als
+    unbekannte Firmware, und die Bedrock-Kachel steht mit dem Hinweis „Needs Boulder firmware b22 or
+    newer“ da.
+  - Für das spätere Stable-Release von V2: Zeile `Mindest-App: 0.53.0` in die Notizen. Eine
+    Vorabversion bietet Boulder ohnehin nicht an.
+- **Goals** (`fcd56ca8`):
+  - Neue Seite unter Einstellungen > Health: Schritte 1 000–50 000 in 500er-Stufen, Schlaf 4:00–12:00 h
+    in Viertelstunden. Jede Änderung gilt sofort.
+  - Boulder schreibt `boulder_ziele` als Zeile der Datenbank Health: 8 B, Fassung 1, little endian,
+    Schlüssel 13 B ohne Nullbyte. Die BlobDB-Synchronisation bringt sie zur Uhr. Nach einer neuen
+    Kopplung leert das Telefon die Datenbank auf der Uhr und sendet alles neu, die Ziele mit.
+  - Beim Start der App gehen gemerkte Ziele noch einmal in die Datenbank, falls sie neu ist. Derselbe
+    Wert geht nicht erneut zur Uhr (Hash der Zeile).
+  - Boulder misst überall an diesen Zielen. Das Schlafurteil folgt derselben Regel wie
+    `bh_schlafurteil` auf der Uhr.
+  - Auch die Vergleiche („What makes a difference“) folgen den Zielen, ihre Gruppen nennen die Zahl
+    („After 8,000+ steps“, „Under 6:30 h“). Sonst stünde auf der Trendseite neben der Ziellinie bei
+    8 000 eine Gruppe „10,000+“.
+  - Ohne Einstellung gelten 10 000 Schritte und 8:00 h, wie bisher und wie auf der Uhr.
+- **Prüfung:**
+  - 2167 Tests, 2 wie bisher übersprungen, nach `clean` jede Testaufgabe mit `--rerun`. Der
+    Release-Build ist grün.
+  - Gegenproben mit eingebauten Fehlern: Parser (1 und 2 Tests rot), V2 (1 und 2), Ziele (Widget,
+    Tagessatz, Vergleich je 1).
+  - Die Seite ist in Robolectric gezeichnet (`ziele.png`), mit einem Tipp auf Plus.
+- **Nicht geprüft:** der Weg über Bluetooth zur Uhr (geprüft bis zur Datenbank Health; dass die Uhr
+  den Satz liest, prüft `test_boulder_schnittstelle`), Telefon und Emulator.
+- **Release:** Fassung 0.53.0 mit Notiz liegt im Arbeitszweig. Das Release legt die CI an, sobald der
+  Stand auf `main` ist (Tag `v0.53.0`, APK). Das braucht dein Okay.
