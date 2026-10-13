@@ -170,3 +170,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **H2 (HRV-Regel) nicht umgesetzt.** Sie hilft am 9.10., ändert aber den 5.10. ohne Beleg. Dazu passt
   der Befund vom 8.10.: Puls und HRV trennen ruhiges Wachliegen nicht vom Schlaf. Es braucht mehr
   Nächte mit Fitbit und HRV.
+
+## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
+- **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
+- **F17: B.** Den ersten Start nach dem Boot misst `qemu_health.py` in einem zweiten Boot unter
+  `-icount shift=3`. In Echtzeit zählen die übrigen Starts wie bisher. Grenze für beide: 50 ms.
+- **F18: A.** Upstream v4.41.0 jetzt nachziehen. Danach bleibt der Upstream-Stand **eingefroren bis
+  nach dem Gerätetest**: Der Gerätetest prüft den Code, der bleibt.

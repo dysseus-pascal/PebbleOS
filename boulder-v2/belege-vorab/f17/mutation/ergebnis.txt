@@ -1,0 +1,2 @@
+qemu_health rc=1; L1 76.172 ms ok=False; L1 erster Start (icount) 75.195 ms ok=False; Kernel-Heap ok=False (frei 49400 -> 48332 -> 47400 B)
+rc=0

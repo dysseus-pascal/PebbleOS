@@ -1,0 +1,86 @@
+ROT  L1: hoechstens 76.172 ms (Grenze 50.0 ms)
+ROT  L1 erster Start (icount): hoechstens 75.195 ms (Grenze 50.0 ms)
+ok   L2: hoechstens 12.695 ms (Grenze 30.0 ms)
+ok   L4: hoechstens 8.789 ms (Grenze 30.0 ms)
+ok   L6: hoechstens 0.049 ms (Grenze 1.0 ms)
+ok   L1 Startmenue (app launch): 20 von 20 Starts gemessen 
+ok   L1 Pin Night: 20 von 20 Starts gemessen 
+ok   L1 Pin Activity: 20 von 20 Starts gemessen 
+ok   L4: 3 Minuten gemessen 
+ok   L6: neun Syscalls gemessen 
+ok   Puls im Sekundentakt auf Heart 1
+ok   kein Puls im Sekundentakt nach Verlassen von Heart 0
+ok   kein Puls im Sekundentakt nach dem Ende auf Heart 0
+ROT  Kernel-Heap: kein Wachstum mit den Starts (100) frei 49400 -> 48332 -> 47400 B
+ok   Syscall-Stapel der App: Reserve 1368 B nie benutzt
+ok   Fehlerprobe: die Uhr laeuft weiter 
+ok   Fehlerprobe: die App endet am Fehler 44] * - 20:09:49.383 hardfault_handle:59>     DACCVIOL = yes
+ok   kein Neustart im ganzen Lauf (Ticks steigen) 873 Stempel, fallend: []
+ok   QEMU laeuft am Ende noch 
+{
+  "L1": {
+    "Startmenue (app launch)": {
+      "n": 19,
+      "max": 69.34,
+      "median": 64.45
+    },
+    "Pin Night": {
+      "n": 20,
+      "max": 76.17,
+      "median": 67.38
+    },
+    "Pin Activity": {
+      "n": 20,
+      "max": 73.24,
+      "median": 65.43
+    }
+  },
+  "L2": {
+    "Karte": {
+      "n": 20,
+      "max": 11.72,
+      "median": 5.86
+    },
+    "Detail": {
+      "n": 16,
+      "max": 12.7,
+      "median": 5.37
+    },
+    "Detail bis Zeichnen": {
+      "n": 16,
+      "max": 2.93,
+      "median": 1.46
+    },
+    "Detail zeichnen": {
+      "n": 16,
+      "max": 10.74,
+      "median": 3.42
+    }
+  },
+  "L4": {
+    "n": 3,
+    "max": 8.79,
+    "median": 4.88
+  },
+  "L6": {
+    "sys_boulder_lage": 0.049,
+    "sys_boulder_nacht": 0.01,
+    "sys_boulder_naechte": 0.01,
+    "sys_boulder_herz": 0.02,
+    "sys_boulder_woche": 0.01,
+    "sys_boulder_spo2": 0.01,
+    "sys_activity_get_metric": 0.01,
+    "sys_activity_get_sessions": 0.01,
+    "sys_get_time": 0.01
+  },
+  "app_heap": {
+    "gross": 131068,
+    "hoechststand": 5404
+  },
+  "kernel_heap_frei": [
+    49400,
+    48332,
+    47400
+  ],
+  "laengster_callback_ms": 76.17
+}
