@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 dysseus-pascal
 # SPDX-License-Identifier: Apache-2.0
-"""Boulder V2, T8.4: was b25 auf dem Flash hinterlaesst, liest V2 mit demselben Aufbau.
+"""Boulder V2, T8.4: was b25 oder b26 auf dem Flash hinterlaesst, liest V2 mit demselben Aufbau.
 
-Aufruf: umzug_pruefen.py <repo> [--b25 <commit>] [--gegenprobe]
+Aufruf: umzug_pruefen.py <repo> [--von <commit>] [--gegenprobe]
 
-Vergleicht die Definitionen von b25 (M: main 217428e90, ueber git aus demselben Repository)
-mit denen im Arbeitsbaum (U:), ohne Kommentare und Leerraum:
+Vergleicht die Definitionen von b25 und b26 (M: main 217428e90 und a7d8b16e1, ueber git aus
+demselben Repository; mit --von nur dieser Commit) mit denen im Arbeitsbaum (U:), ohne
+Kommentare und Leerraum:
 - liegende Datalogging-Saetze (0x4001/0x4002 und Tag 84 im Spool): DLSFileHeader,
   DLSChunkHeader, die Fassung, die Chunk-Grenzen, der Dateiname, DataLoggingItemType;
 - Pebbles Activity-Datei: Name, Groesse, ActivitySettingsKey (die Merker der zuletzt geloggten
@@ -33,7 +34,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from vertraege import SCHALTER, zweig  # noqa: E402
 
-B25 = '217428e90'
+# Was auf der Uhr liegen kann: b26 laeuft beim Nutzer, b25 davor. Zwischen beiden aendert sich
+# nur die Schlafrechnung; die Definitionen hier sind gleich, geprueft wird trotzdem beides.
+VORGAENGER = {'b25': '217428e90', 'b26': 'a7d8b16e1'}
 
 # (Pfad in b25, Pfad in V2, Art, Name)
 PRUEFEN = [
@@ -123,35 +126,41 @@ def pruefe(repo, commit, aendern=None):
         # V2 wie auf obelix und qemu_emery gebaut: mit Kieselsport (P4).
         neu = teil(zweig(neu_text, SCHALTER, True), art, name)
         if alt is None or neu is None:
-            fehler.append(f'{name}: nicht gefunden (b25 {alt is not None}, V2 {neu is not None})')
+            fehler.append(f'{name}: nicht gefunden (M: {alt is not None}, V2 {neu is not None})')
             continue
         for muster in ERLAUBT.get(name, []):
             alt = re.sub(muster, '', alt)
         for b25_typ, v2_typ in GLEICH.get(name, []):
             alt = alt.replace(b25_typ, v2_typ)
         if alt != neu:
-            fehler.append(f'{name}: b25 {alt}\n   V2  {neu}')
+            fehler.append(f'{name}: M:  {alt}\n   V2  {neu}')
     return fehler
 
 
 def main(argv):
     repo = argv[1]
-    commit = argv[argv.index('--b25') + 1] if '--b25' in argv else B25
+    if '--von' in argv:
+        commit = argv[argv.index('--von') + 1]
+        commits = {commit: commit}
+    else:
+        commits = VORGAENGER
     if '--gegenprobe' in argv:
         # Ein Feld des Dateikopfs anders breit, und ein Beginn der Sitzung, der nicht 32 bit hat:
         # beides muss auffallen.
         proben = [('DLSFileHeader', 'uint16_t item_size;', 'uint32_t item_size;'),
                   ('ActivitySession', 'int32_t start_utc;', 'int64_t start_utc;')]
-        gruen = [p[0] for p in proben if not pruefe(repo, commit, p)]
+        gruen = [f'{p[0]} ({name})' for name, commit in commits.items() for p in proben
+                 if not pruefe(repo, commit, p)]
         if gruen:
             print('Gegenprobe: veraendert und gruen geblieben: ' + ', '.join(gruen))
             return 1
-        print(f'Gegenprobe rot wie erwartet ({len(proben)} Proben)')
+        print(f'Gegenprobe rot wie erwartet ({len(proben)} Proben je Stand: {", ".join(commits)})')
         return 0
-    fehler = pruefe(repo, commit)
+    fehler = [f'{name}: {f}' for name, commit in commits.items() for f in pruefe(repo, commit)]
     for f in fehler:
         print('ANDERS', f)
-    print(f'{len(PRUEFEN)} Definitionen b25 = V2' if not fehler else f'{len(fehler)} anders')
+    gleich = ' = '.join([*commits, 'V2'])
+    print(f'{len(PRUEFEN)} Definitionen {gleich}' if not fehler else f'{len(fehler)} anders')
     return 1 if fehler else 0
 
 

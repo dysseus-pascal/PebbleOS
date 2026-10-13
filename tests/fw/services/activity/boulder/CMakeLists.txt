@@ -316,7 +316,8 @@ pbl_clar_test(test_boulder_umzug_prefs
   OVERRIDES dummy_board
 )
 
-# T8.4: Spool-Koepfe, Activity-Datei und Sitzung wie in b25 (main 217428e90), mit Gegenprobe.
+# T8.4: Spool-Koepfe, Activity-Datei und Sitzung wie in b25 und b26 (main 217428e90, a7d8b16e1),
+# mit Gegenprobe.
 add_test(NAME test_boulder_umzug_aufbau
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE})
 add_test(NAME test_boulder_umzug_aufbau_gegenprobe
