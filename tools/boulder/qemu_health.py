@@ -11,6 +11,7 @@ Aufruf (aus dem venv, SDK auf dem PATH):
 Startet QEMU ohne Fenster auf einer Kopie des Flash-Abbilds, spielt Pruefdaten ein (Tracking an,
 Pruefnacht, SpO2, Schritte) und misst:
   L1  Start bis zum ersten Bild mit Werten, je Einstieg 20-mal         <= 50 ms
+      (der erste Start nach dem Boot in einem zweiten Boot unter -icount, siehe ICOUNT_SHIFT)
   L2  Taste bis zum Bild der naechsten Karte oder des Details          <= 30 ms
   L4  Auffrischen im Minutentakt bis zum Bild                          <= 30 ms
   L6  jeder Syscall der Daten (Mittel aus 100 Aufrufen)                <= 1 ms
@@ -49,6 +50,10 @@ from pebble.commander.exceptions import CommandTimedOut  # noqa: E402
 
 TICKS_HZ = 1024
 ZIELE_MS = {'L1': 50.0, 'L2': 30.0, 'L4': 30.0, 'L6': 1.0}
+# DER ERSTE START NACH DEM BOOT ZAEHLT UNTER -icount (F17): In Echtzeit enthaelt er, dass QEMU jeden
+# Codepfad beim ersten Lauf uebersetzt, und schwankt mit dem Host (30-54 ms in AP9). Unter -icount
+# laeuft die Gastzeit nach ausgefuehrten Befehlen (2^3 ns je Befehl); es zaehlt nur, was die App tut.
+ICOUNT_SHIFT = 3
 APP_HEALTH = -82
 KONSOLE_PORT = 12345
 # Die Pruefnacht soll von heute sein: Die Uhr steht am Abend nach ihr (Wachtag = heute).
@@ -60,9 +65,10 @@ FARBE = re.compile(r'\x1b\[[0-9;]*m')
 class Emulator:
     """QEMU ohne Fenster: Tasten ueber den Monitor, Bilder ueber pbl screenshot."""
 
-    def __init__(self, bau, arbeit):
+    def __init__(self, bau, arbeit, icount=None):
         self.bau = bau
         self.arbeit = arbeit
+        self.icount = icount
         self.prozess = None
 
     def starten(self):
@@ -85,6 +91,8 @@ class Emulator:
             '-drive', f'if=mtd,format=raw,file={flash}',
             '-display', 'none',
         ]
+        if self.icount is not None:
+            befehl[1:1] = ['-icount', f'shift={self.icount},align=off,sleep=on']
         self.prozess = subprocess.Popen(befehl, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         frist = time.time() + 60
         while time.time() < frist:
@@ -259,9 +267,12 @@ class Messung:
                 if w is not None:
                     werte.append(w)
                 self.app_zu()
-            self.werte['L1'][name] = werte
             self.pruefe(f'L1 {name}: {len(werte)} von {je_einstieg} Starts gemessen',
                         len(werte) == je_einstieg)
+            if not self.werte['L1'] and werte:
+                # Der erste Start nach dem Boot: hier nur zur Auskunft (ICOUNT_SHIFT).
+                self.erster_start_echtzeit = werte.pop(0)
+            self.werte['L1'][name] = werte
 
     def l2(self, runden=4):
         st, _ = self.app_auf(f'app launch {APP_HEALTH}')
@@ -405,7 +416,7 @@ class Messung:
                     f'{len(ticks)} Stempel, fallend: {fallend[:3]}')
 
 
-def zusammenfassen(m):
+def zusammenfassen(m, erster_start_icount):
     def kennzahl(werte):
         return {'n': len(werte), 'max': round(max(werte), 2) if werte else None,
                 'median': round(statistics.median(werte), 2) if werte else None}
@@ -415,6 +426,8 @@ def zusammenfassen(m):
         'L1': {name: kennzahl(v) for name, v in m.werte['L1'].items()},
         'L2': {art: kennzahl([w for a, w in m.werte['L2'] if a == art and w is not None])
                for art in ('Karte', 'Detail', 'Detail bis Zeichnen', 'Detail zeichnen')},
+        'L1_erster_start': {'echtzeit': getattr(m, 'erster_start_echtzeit', None),
+                            f'icount_shift_{ICOUNT_SHIFT}': erster_start_icount},
         'L4': kennzahl(m.werte['L4']),
         'L6': {name: round(w, 3) for name, w in m.werte['L6'].items()},
         'app_heap': {'gross': getattr(m, 'heap_gross', None), 'hoechststand': getattr(m, 'heap_hoch', None)},
@@ -423,15 +436,39 @@ def zusammenfassen(m):
         'pruefungen': m.pruefungen,
     }
     ziele = [
-        ('L1', max(l1_alle) if l1_alle else None),
-        ('L2', max(l2) if l2 else None),
-        ('L4', max(m.werte['L4']) if m.werte['L4'] else None),
-        ('L6', max(m.werte['L6'].values()) if m.werte['L6'] else None),
+        ('L1', 'L1', max(l1_alle) if l1_alle else None),
+        ('L1 erster Start (icount)', 'L1', erster_start_icount[0] if erster_start_icount else None),
+        ('L2', 'L2', max(l2) if l2 else None),
+        ('L4', 'L4', max(m.werte['L4']) if m.werte['L4'] else None),
+        ('L6', 'L6', max(m.werte['L6'].values()) if m.werte['L6'] else None),
     ]
-    ergebnis['ziele'] = [{'ziel': z, 'hoechstwert_ms': None if w is None else round(w, 3),
+    ergebnis['ziele'] = [{'ziel': name, 'hoechstwert_ms': None if w is None else round(w, 3),
                           'grenze_ms': ZIELE_MS[z], 'ok': w is not None and w <= ZIELE_MS[z]}
-                         for z, w in ziele]
+                         for name, z, w in ziele]
     return ergebnis
+
+
+def erster_start_icount(bau, starts=3):
+    """Ein eigener Boot unter -icount: die ersten Starts danach (ms bis zum Bild, None ohne Bild)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        emu = Emulator(bau, pathlib.Path(tmp), icount=ICOUNT_SHIFT)
+        emu.starten()
+        k = None
+        try:
+            time.sleep(20)  # Boot bis zum Zifferblatt
+            k = Konsole(bau)
+            m = Messung(emu, k, pathlib.Path(tmp))
+            m.vorbereiten()
+            werte = []
+            for _ in range(starts):
+                st, _ = m.app_auf(f'app launch {APP_HEALTH}')
+                werte.append(spanne(st or [], 'main', 'bild'))
+                m.app_zu()
+            return werte
+        finally:
+            if k:
+                k.close()
+            emu.stoppen()
 
 
 def main():
@@ -468,13 +505,14 @@ def main():
             m.fehlerprobe()
             m.kein_neustart()
             m.pruefe('QEMU laeuft am Ende noch', emu.laeuft())
-            ergebnis = zusammenfassen(m)
             protokoll = [z for z in k.ab(0) if 'bh ' in z]
             (args.aus / 'protokoll.txt').write_text('\n'.join(protokoll) + '\n')
         finally:
             if k:
                 k.close()
             emu.stoppen()
+    # Erst nach dem Ende des ersten: Beide Boots nutzen dieselben Ports und Sockets.
+    ergebnis = zusammenfassen(m, erster_start_icount(bau))
 
     (args.aus / 'messung.json').write_text(json.dumps(ergebnis, indent=2, ensure_ascii=False) + '\n')
     for z in ergebnis['ziele']:
