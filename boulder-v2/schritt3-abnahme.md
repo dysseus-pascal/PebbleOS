@@ -234,6 +234,10 @@ Alle Tests laufen im vollen Host-Lauf mit (409/409). Dazu je eine Mutation auf e
 | 2 | Kieselsport (Dienst, App, Kalorien, Schritte) | `test_kieselsport*`, `test_boulder_kalorien`, `test_workout_service_kieselsport` | grün; Mutationen S2-1, S2-5 rot |
 | 2 | tote Texte und Funktionen | `test_boulder_apps_unbenutzt` | grün |
 
+*Nachtrag 13.10.:* `test_boulder_schlafanalyse_wie_b26` ist seit `4ea6fb64` ersetzt durch
+`test_boulder_schlaf`, weil die Schlafrechnung von V2 jetzt von b26 abweicht (Nachtrag in der
+Spezifikation).
+
 ## 6. Bekannte Grenzen (bleiben so, im Gerätetest ansehen)
 
 - **Boot am Kabel:** Den Takt plant erst „Laden“, und das läuft erst mit Pebbles Tracking-Teil. Startet die

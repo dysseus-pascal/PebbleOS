@@ -312,3 +312,12 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
   43/43 rot, dazu die QEMU-Mutation.
 - Belege: `belege-schritt3/ap9/`.
 - Nächster Schritt: Abschnitt 6 (bis zur ersten Vorabversion), Abnahme Abschnitt 7.
+
+## Nachtrag 13.10.2026: Schlafrechnung von V2
+
+- Nach den Nächten vom 7. bis 12.10. weicht die Schlafrechnung von V2 von b26 ab. Ein Wegnicken vor
+  einem Aufwach-Schub ist kein Einschlafen, und das Wälz-Fenster ist 30 statt 40 Minuten (`12b28664`,
+  `4ea6fb64`).
+- Analyse: `naechte/analyse-2026-10-13.md`; Entscheid: `entscheidungen.md` (13.10.).
+- `test_boulder_schlafanalyse_wie_b26` ist ersetzt durch `test_boulder_schlaf`. Die Vergleiche mit b26
+  auf den Referenznächten bleiben.

@@ -152,3 +152,21 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   - F14: Kartenfarben Today Orange, Night Indigo, Heart Folly, Activity DarkGreen, Settings DarkGray.
   - F15: Abnahmekriterien Schritt 3 wie in Abschnitt 7 der Spezifikation.
   - F16: Ladeziele L1–L6 wie rekonstruiert (L4 Auffrischen ≤ 30 ms).
+
+## Schlaf: Nächte 7.–12.10. (13.10.2026, Analyse `naechte/analyse-2026-10-13.md`)
+- **Wecker am 9. und 13.10. um 06:00** (Nutzer): Boulders Aufwachen stimmt, Fitbits Ende ist zu früh,
+  wie schon am 8.10. festgehalten. Der Gang am 9.10. um 22:50 war vermutlich ein Toilettengang.
+- **O2 und W30 umgesetzt** (vom Nutzer am 13.10. freigegeben; V2 `12b28664`, `4ea6fb64`):
+  - O2: Ein Wegnicken vor einem Aufwach-Schub ist kein Einschlafen. 9.10.: 21:34 → 23:16 (Fitbit
+    23:12).
+  - W30: Wälz-Fenster 30 statt 40 Minuten. 8.10.: 22:53 → 22:35 (Fitbit 22:32). Von 27 bis 39 Minuten
+    rechnen alle Nächte gleich.
+  - **Zum Rahmen vom 8.10.** (zwei Nächte einstellen, zwei andere prüfen, keine Nacht schlechter):
+    Beide sind nur an je einer Nacht belegt. In den übrigen sieben Nächten ändern sie nichts, also
+    wird keine schlechter. Mit der Freigabe gilt das als genug.
+  - **Folge:** Die Schlafrechnung von V2 ist nicht mehr bytegleich zu b26. `test_boulder_schlaf` (aus
+    b26 übernommen) prüft sie jetzt, auch an den Nächten vom 7. bis 12.10. Die Vergleiche mit b26 auf
+    den sechs Referenznächten bleiben grün.
+- **H2 (HRV-Regel) nicht umgesetzt.** Sie hilft am 9.10., ändert aber den 5.10. ohne Beleg. Dazu passt
+  der Befund vom 8.10.: Puls und HRV trennen ruhiges Wachliegen nicht vom Schlaf. Es braucht mehr
+  Nächte mit Fitbit und HRV.

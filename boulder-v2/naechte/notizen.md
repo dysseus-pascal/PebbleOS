@@ -30,3 +30,4 @@
 - Wecker am 9.10. und 13.10. um 06:00 (Aussage des Nutzers): Boulders Aufwachen stimmt, Fitbits Ende
   (05:42, 05:46) ist zu früh, wie am 7.10.
 - 9.10. 22:50–23:04 (rund 260 Schritte): vermutlich ein Toilettengang; davor wach im Bett.
+- Umgesetzt in V2 (13.10.): O2 und W30 (`12b28664`, `4ea6fb64`), siehe `analyse-2026-10-13.md`, Abschnitt 7.
