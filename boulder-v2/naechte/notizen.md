@@ -27,4 +27,6 @@
 - **12.→13.10.:** Fitbit war 21:38 im Bett, Ende 05:46. Wach 1 h 19, REM 1 h 20, leicht 4 h 28,
   tief 1 h 01. Boulder schlief ein um 21:42, wachte auf um 05:59, 6 h 36. Die großen Wachphasen
   (02:25–03:12, 04:03–04:45) sieht Fitbit auch, aber kürzer.
-- Offen: Aufgestanden am 9.10. und 13.10. um 06:00?
+- Wecker am 9.10. und 13.10. um 06:00 (Aussage des Nutzers): Boulders Aufwachen stimmt, Fitbits Ende
+  (05:42, 05:46) ist zu früh, wie am 7.10.
+- 9.10. 22:50–23:04 (rund 260 Schritte): vermutlich ein Toilettengang; davor wach im Bett.

@@ -13,3 +13,4 @@ Lauf dort anpassen.
 | `wachphasen.py` | Merkmale aller Wachphasen in der Nacht. Ausgabe `wachphasen.txt` |
 | `bewerten.py` | Alle Varianten über alle Nächte. Ausgabe `varianten.txt` |
 | `ref-*.csv` | Die b26-Referenzsätze aus `v2` (`tests/fixtures/activity/boulder/referenz-b26/`) als CSV; fehlende Minuten fehlen auch hier |
+| `bewerten_wecker.py`, `fitbit-08k.json`, `fitbit-12k.json` | Wie `bewerten.py`, aber Fitbit am 8. und 12.10. bis zum Wecker um 06:00 als Schlaf. Ausgabe `varianten_wecker.txt` |
