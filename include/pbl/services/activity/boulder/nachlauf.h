@@ -7,12 +7,12 @@
 //
 // Statt die ganze Nacht bei jedem Takt aus der Minutendatei zu lesen (b26),
 // rechnet der Nachlauf alle NACHLAUF_TAKT Minuten nur die letzten
-// NACHLAUF_FENSTER Minuten der Nachtfelder (eingang.h) mit der unveraenderten
-// b26-Rechnung (schlafanalyse.c) und schreibt jede Minute fest, die alt genug
-// ist, ins Nachtbuch (fuer den Zustand und die Zyklen in der Nacht). Die
-// Endfassung (bei "fertig" und jeder Aenderung bis "endgueltig") rechnet die
-// ganze Nacht aus den Nachtfeldern im Speicher: derselbe Satz 0x4001 wie b26
-// (Host-Test test_boulder_schlafkern).
+// NACHLAUF_FENSTER Minuten der Nachtfelder (eingang.h) mit der Schlafrechnung
+// (schlafanalyse.c) und schreibt jede Minute fest, die alt genug ist, ins
+// Nachtbuch (fuer den Zustand und die Zyklen in der Nacht). Die Endfassung (bei
+// "fertig" und jeder Aenderung bis "endgueltig") rechnet die ganze Nacht aus den
+// Nachtfeldern im Speicher: auf den Referenznaechten derselbe Satz 0x4001 wie
+// b26 (Host-Test test_boulder_schlafkern).
 //
 // STATISCH, KEIN HEAP, KEINE DATEI. Minuten zaehlen ab Minute 0 der Nacht
 // (beginn_utc des Fensters). KEIN BETRIEBSSYSTEM HIER.

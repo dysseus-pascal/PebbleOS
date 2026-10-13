@@ -7,8 +7,8 @@
 
 #include <string.h>
 
-// Dieselben Gewichte wie schlafanalyse.c (s_gewichte, Minute-4..Minute+2). Die Datei ist
-// bytegleich zu b26 und gibt sie nicht heraus; deshalb hier noch einmal.
+// Dieselben Gewichte wie schlafanalyse.c (s_gewichte, Minute-4..Minute+2). Die Datei gibt sie
+// nicht heraus, damit sie nah an b26 bleibt; deshalb hier noch einmal.
 static const uint16_t s_gewichte[7] = { 106, 54, 58, 76, 230, 74, 67 };
 
 // Pulse der Schlafminuten: ein Histogramm statt einer Liste, damit der Median O(1) im
