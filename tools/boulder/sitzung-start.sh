@@ -15,8 +15,9 @@ fi
 repo="${CLAUDE_PROJECT_DIR:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)}"
 cd "$repo"
 
-# SDK_VERSION nennt die Mindestfassung, aber das SDK 0.1.11 bringt GCC 15, und daran
-# scheitert dieser Stand (-Werror=unterminated-string-initialization). Darum genau sie.
+# Genau die Fassung aus SDK_VERSION, nicht die neueste: Ein neueres SDK bringt einen neueren
+# Compiler, und an GCC 15 (SDK 0.1.11) scheiterte der Stand vor Upstream v4.41.0
+# (-Werror=unterminated-string-initialization).
 sdk_fassung="$(tr -d '[:space:]' < SDK_VERSION)"
 sdk="$HOME/pebbleos-sdk-$sdk_fassung"
 
