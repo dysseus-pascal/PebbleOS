@@ -177,3 +177,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `-icount shift=3`. In Echtzeit zählen die übrigen Starts wie bisher. Grenze für beide: 50 ms.
 - **F18: A.** Upstream v4.41.0 jetzt nachziehen. Danach bleibt der Upstream-Stand **eingefroren bis
   nach dem Gerätetest**: Der Gerätetest prüft den Code, der bleibt.
+
+## Boulder-App (13.10.2026)
+- **Boulder baut nicht mehr auf Gravel auf** (Nutzer: „wir haben gesagt, dass wir nicht mehr auf Gravel
+  aufbauen, da es ein Fork ist“). Keine Gravel-Fassungen mehr nachziehen. Der Punkt „Gravel 0.3.4“ auf
+  der Liste bis zur Vorabversion war falsch; er ist aus Boulder 0.53 wieder entfernt. Letzter
+  übernommener Stand bleibt 0.3.3. Für V2 war 0.3.4 nicht nötig: Boulder liest V2s Minutendaten
+  (Fassung 14) seit b25.

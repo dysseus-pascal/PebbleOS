@@ -213,7 +213,8 @@ Die Skripte der alten Sitzung (`ap2-qemu.py` u. a.) sind verloren; diesmal liegt
 
 1. Upstream v4.40.0 nachziehen; Probe ohne Systemrechte danach wiederholen (MPU und Syscalls umgebaut).
 2. Wechsel b26 → V2 testen (bisher mit einem b25-Abbild).
-3. Boulder 0.53: Seite „Goals“ (schreibt `boulder_ziele`), V2 als Firmware erkennen, Gravel 0.3.4.
+3. Boulder 0.53: Seite „Goals“ (schreibt `boulder_ziele`), V2 als Firmware erkennen, ~~Gravel 0.3.4~~
+   (gestrichen am 13.10.: Boulder baut nicht mehr auf Gravel auf).
 4. Kieselstrasse nach V2 portieren (F6).
 5. Vorher-Video von b26 (braucht deine Uhr).
 6. Gerätetest: 7 Nächte, Fitbit-Nächte, Velo- und Autofahrten, Messstufen, Ladezeiten auf der Uhr.
@@ -361,11 +362,11 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Nächster Schritt: Punkt 3 (Boulder 0.53: Seite „Goals“, V2 erkennen, Gravel 0.3.4) oder Punkt 4
   (Kieselstrasse nach V2).
 
-## Stand nach Boulder 0.53 (13.10.2026, Boulder `23b335a9`, Zweig `claude/exciting-cerf-m8apu2`)
+## Stand nach Boulder 0.53 (13.10.2026, Boulder `aecd3350`, Zweig `claude/exciting-cerf-m8apu2`)
 
 - Punkt 3 aus Abschnitt 6 gebaut: Seite „Goals“ mit `boulder_ziele`, V2 als Firmware erkannt (ohne
-  TimeStyle Bedrock), Gravel 0.3.4.
-- 2167 Tests grün, Release-Build grün. Bericht: `schritt3-abnahme.md`, Abschnitt 11.
+  TimeStyle Bedrock). Gravel 0.3.4 gestrichen: Boulder baut nicht mehr auf Gravel auf.
+- 2143 Tests grün, Release-Build grün. Bericht: `schritt3-abnahme.md`, Abschnitt 11.
 - Offen: das Release 0.53.0 (Stand auf `main` bringen, die CI legt `v0.53.0` an).
 - Für V2: Tag `v4.41.0-bN`, sonst gilt sie in Boulder als unbekannte Firmware.
 - Nächster Schritt: Punkt 4 (Kieselstrasse nach V2).

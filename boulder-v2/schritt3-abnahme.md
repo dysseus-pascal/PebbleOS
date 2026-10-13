@@ -264,9 +264,9 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
 2. Wechsel b26 → V2 testen (bisher mit einem b25-Abbild).
    *Erledigt am 13.10. (`b6a4b3df`), siehe Abschnitt 10.*
 3. Boulder 0.53: Seite „Goals“ schreibt `boulder_ziele` (8 B, **Schlüssel ohne Nullbyte**, Befund K4),
-   V2 als Firmware erkennen, Gravel 0.3.4.
-   *Gebaut am 13.10. im Arbeitszweig von Boulder (`23b335a9`), siehe Abschnitt 11. Das Release steht
-   aus.*
+   V2 als Firmware erkennen, ~~Gravel 0.3.4~~ (gestrichen: Boulder baut nicht mehr auf Gravel auf,
+   `entscheidungen.md`).
+   *Gebaut am 13.10. im Arbeitszweig von Boulder, siehe Abschnitt 11. Das Release steht aus.*
 4. Kieselstrasse nach V2 portieren (F6).
 5. Vorher-Video von b26 (braucht die Uhr).
 6. Gerätetest: 7 Nächte, Fitbit-Nächte, Velo- und Autofahrten, Messstufen, Ladezeiten auf der Uhr
@@ -424,20 +424,15 @@ Punkt 2 aus Abschnitt 7. Belege und Ablauf: `belege-vorab/wechsel-b26/`.
 - **Nicht in QEMU prüfbar:** Nächte und Movement-Sitzungen (keine Sensordaten). Dafür stehen die
   Host-Tests T8.1–T8.3 und der Gerätetest.
 
-## 11. Boulder 0.53 (13.10.2026, Boulder-Zweig `claude/exciting-cerf-m8apu2`, `23b335a9`)
+## 11. Boulder 0.53 (13.10.2026, Boulder-Zweig `claude/exciting-cerf-m8apu2`, `aecd3350`)
 
 Punkt 3 aus Abschnitt 7. Belege: `belege-vorab/boulder-0.53/`. Gebaut und geprüft in der Cloud
 (Android-SDK, NDK 28.2, Gradle 9.6.1; Maven Central über Googles Spiegel, weil es hier mit 429
 antwortet).
 
-- **Gravel 0.3.4** (`36fad7e2`):
-  - Gravel liest jetzt Minutensätze nach Fassung 13. Firmware ab v4.39 schickt Fassung 14 mit SpO2.
-    Boulder las 14 schon seit b25, darum war V2 hier nie ein Problem.
-  - Übernommen sind zwei Regeln: Eine Fassung über 14 wird mit den Feldern von 14 gelesen (die
-    Firmware hängt nur an). Ein Sitzungssatz ohne Bit 0 in der Fassung fällt weg (activity_private.h);
-    Boulders Fassung 7 trägt es.
-  - Gravels Tests kommen mit, angepasst. Nicht übernommen: WhatsNew und der Eintrag in KNOWN_ISSUES zur
-    Changelog-Liste, die Boulder nicht hat.
+- **Gravel 0.3.4: gestrichen.** Boulder baut nicht mehr auf Gravel auf (`entscheidungen.md`, 13.10.).
+  Ich hatte es zuerst übernommen (`36fad7e2`); `aecd3350` nimmt es zurück. Für V2 war es nicht nötig:
+  V2 schickt Minutendaten in Fassung 14, die Boulder seit b25 liest, und Sitzungen in Fassung 7.
 - **V2 erkennen** (`2916e3f0`):
   - V2 ist eine Boulder-Fassung (`-bN`) auf Pebbles v4.39 oder neuer. 0.52 hätte V2 ab b24 für
     Bedrock-fähig gehalten.
@@ -462,11 +457,14 @@ antwortet).
     („After 8,000+ steps“, „Under 6:30 h“). Sonst stünde auf der Trendseite neben der Ziellinie bei
     8 000 eine Gruppe „10,000+“.
   - Ohne Einstellung gelten 10 000 Schritte und 8:00 h, wie bisher und wie auf der Uhr.
-- **Prüfung:**
-  - 2167 Tests, 2 wie bisher übersprungen, nach `clean` jede Testaufgabe mit `--rerun`. Der
-    Release-Build ist grün.
-  - Gegenproben mit eingebauten Fehlern: Parser (1 und 2 Tests rot), V2 (1 und 2), Ziele (Widget,
-    Tagessatz, Vergleich je 1).
+- **Fassung 0.53.0** (`23b335a9`, Notiz berichtigt in `aecd3350`). CLAUDE.md von Boulder hält den
+  Entscheid gegen Gravel jetzt fest.
+- **Prüfung** (Baum von `aecd3350`):
+  - 2143 Tests, 2 wie bisher übersprungen, nach `clean` jede Testaufgabe mit `--rerun`. Der
+    Release-Build ist grün (0.53.0, mit dem CI-Schlüssel signiert, nicht debuggable, ohne Firebase
+    und GMS).
+  - Gegenproben mit eingebauten Fehlern: V2 (1 und 2 Tests rot), Ziele (Widget, Tagessatz, Vergleich
+    je 1).
   - Die Seite ist in Robolectric gezeichnet (`ziele.png`), mit einem Tipp auf Plus.
 - **Nicht geprüft:** der Weg über Bluetooth zur Uhr (geprüft bis zur Datenbank Health; dass die Uhr
   den Satz liest, prüft `test_boulder_schnittstelle`), Telefon und Emulator.
