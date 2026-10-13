@@ -26,7 +26,7 @@ Pebble App project.
 */
 /* Boulder: D0 Herkunft der Kopie
  *   Original: fw/services/activity/kraepelin/kraepelin_algorithm.c
- *   Commit:   a2120e2aefd3b916df7cbb141d542db9ab04916d
+ *   Commit:   acc6dd23670695c7669c5850ceab2db3b8fd623c
  *   SHA-256:  bf45c3a148609a8dfa828576250c3b59f800c58775f36d3d32e9fc3017b31d5a
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.

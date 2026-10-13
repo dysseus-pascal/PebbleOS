@@ -13,6 +13,12 @@ typedef struct AccelServiceState {
   AccelManagerState *manager_state;
   AccelSamplingRate sampling_rate;
   bool deferred_free;
+  //! True for a session from accel_session_create(). The app and worker states live inside their
+  //! process state, so this module never frees them.
+  bool kernel_session;
+  //! Set by every subscribe and unsubscribe, so a data handler that does either can be told
+  //! apart from one that doesn't.
+  bool subscription_changed;
   uint16_t samples_per_update;
   AccelRawData *raw_data; // of size samples_per_update
 

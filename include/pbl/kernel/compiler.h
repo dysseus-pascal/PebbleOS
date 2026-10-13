@@ -123,11 +123,12 @@
 /**
  * @brief Place the symbol in a linker section.
  *
- * A no-op in unit tests, whose host object format rejects the firmware's section names.
+ * A no-op in unit tests and in builds linked without the firmware linker script
+ * (@c PBL_NO_LINKER_SCRIPT), where nothing would gather the sections.
  *
  * @param name Section name, as a string.
  */
-#if UNITTEST
+#if UNITTEST || defined(PBL_NO_LINKER_SCRIPT)
 #define PBL_SECTION(name)
 #else
 #define PBL_SECTION(name) PBL_SECTION_IMPL(name)
@@ -186,6 +187,32 @@
  * @param x Unsigned int.
  */
 #define PBL_POPCOUNT(x) PBL_POPCOUNT_IMPL(x)
+
+/**
+ * @brief Keep AddressSanitizer off the object: no redzones around a global,
+ * e.g. one that must sit next to its neighbours in a section.
+ */
+#define PBL_NO_SANITIZE_ADDRESS PBL_NO_SANITIZE_ADDRESS_IMPL
+
+/**
+ * @brief Add, detecting overflow. Prefer the typed helpers of pbl/util/math.h.
+ *
+ * @param a First operand.
+ * @param b Second operand.
+ * @param r Where the result goes, wrapped around on overflow.
+ * @return true if the result overflowed the type of @p r.
+ */
+#define PBL_ADD_OVERFLOW(a, b, r) PBL_ADD_OVERFLOW_IMPL(a, b, r)
+
+/**
+ * @brief Multiply, detecting overflow. Prefer the typed helpers of pbl/util/math.h.
+ *
+ * @param a First operand.
+ * @param b Second operand.
+ * @param r Where the result goes, wrapped around on overflow.
+ * @return true if the result overflowed the type of @p r.
+ */
+#define PBL_MUL_OVERFLOW(a, b, r) PBL_MUL_OVERFLOW_IMPL(a, b, r)
 
 /**
  * @brief Reverse the bytes of a 16-bit value.

@@ -29,7 +29,8 @@
 #include "pbl/soc/nrf/sleep.h"
 #endif
 
-#define BLE_NPL_OS_ALIGNMENT 4
+// Pool blocks hold pointers.
+#define BLE_NPL_OS_ALIGNMENT __SIZEOF_POINTER__
 
 #define BLE_NPL_TIME_FOREVER PBL_TICK_FOREVER
 
@@ -243,6 +244,7 @@ static inline void ble_npl_hw_exit_critical(uint32_t ctx) {
 static inline bool ble_npl_hw_is_in_critical(void) {
   return pbl_irq_is_locked();
 }
+#undef realloc
 #define realloc kernel_realloc
 
 #if NRF52_SERIES

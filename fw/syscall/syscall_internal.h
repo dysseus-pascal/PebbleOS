@@ -6,7 +6,7 @@
 #include "kernel/pebble_tasks.h"
 #include "pbl/kernel/compiler.h"
 
-#include <pbl/drivers/mpu.h>
+#include <pbl/mcu/mpu.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,7 +27,8 @@
 
 //! Useful function for checking syscall privileges.
 //! @return True if the most recent syscall originated from userspace, resulting in a privilege
-//! escalation. It can only be called from a function created with DEFINE_SYSCALL
+//! escalation. It can only be called from a function created with DEFINE_SYSCALL, or from a
+//! PBL_ALWAYS_INLINE helper of one; the firmware build checks this.
 #define PRIVILEGE_WAS_ELEVATED (syscall_internal_check_return_address(PBL_RETURN_ADDRESS(0)))
 
 //! Check if ret_addr points at the drop_privilege code
@@ -76,5 +77,14 @@ const MpuRegion *syscall_get_stack_guard_region(PebbleTask task);
 #undef PRIVILEGE_WAS_ELEVATED
 #define PRIVILEGE_WAS_ELEVATED (0)
 #endif
+
+#elif defined(CONFIG_ARCH_POSIX)
+
+// A native build has a single privilege level: syscalls are plain calls.
+#undef DEFINE_SYSCALL
+#define DEFINE_SYSCALL(retType, funcName, ...) retType funcName(__VA_ARGS__)
+
+#undef PRIVILEGE_WAS_ELEVATED
+#define PRIVILEGE_WAS_ELEVATED (0)
 
 #endif

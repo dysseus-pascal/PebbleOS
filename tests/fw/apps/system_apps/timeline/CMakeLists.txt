@@ -40,10 +40,12 @@ pbl_clar_test(test_timeline_list_view
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -114,6 +116,7 @@ pbl_clar_test(test_timeline_list_view
     tests/fakes/fake_fonts.c
     tests/fakes/fake_settings_file.c
     tests/fixtures/resources/timeline_resource_table.auto.c
+    tests/fixtures/screen_grid.c
     tests/stubs/stubs_evented_timer.c
   PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
@@ -160,10 +163,12 @@ pbl_clar_test(test_timeline_no_events
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c

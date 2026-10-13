@@ -20,8 +20,10 @@ WARUM KEIN HOST-TEST DER GROESSEN: Die Satzkoepfe stehen privat in dls_storage.c
 Quellen lassen sich im V2-Baum nicht uebersetzen. Gleicher Text heisst gleicher Aufbau.
 
 Erlaubt ist nur, was die Liste ERLAUBT nennt (b25s Union-Mitglied nicht_schlaf_min in der
-Sitzung: kleiner als step_data, die Groesse bleibt). Rot (1) bei jedem anderen Unterschied.
---gegenprobe: prueft, dass ein veraenderter Kopf rot wird.
+Sitzung: kleiner als step_data, die Groesse bleibt), und was GLEICH als auf der Uhr gleichen
+Typ nennt. Rot (1) bei jedem anderen Unterschied.
+--gegenprobe: prueft, dass ein veraenderter Kopf und ein anders breiter Beginn der Sitzung
+rot werden.
 """
 import os
 import re
@@ -72,6 +74,10 @@ PRUEFEN = [
 # b25s Mitglied in der Union der Sitzung (M: activity.h:240-244): 2 Byte neben 8 Byte step_data.
 ERLAUBT = {'ActivitySession': [r'uint16_tnicht_schlaf_min;']}
 
+# Upstream v4.40.0 (cb77f5b4) fuehrt start_utc als int32_t statt time_t. Auf der Uhr ist time_t
+# 32 bit (schnittstelle.c sichert das beim Bauen zu): Groesse und Lage der Felder bleiben.
+GLEICH = {'ActivitySession': [('time_tstart_utc;', 'int32_tstart_utc;')]}
+
 
 def ohne_kommentare(text):
     text = re.sub(r'/\*.*?\*/', '', text, flags=re.S)
@@ -121,6 +127,8 @@ def pruefe(repo, commit, aendern=None):
             continue
         for muster in ERLAUBT.get(name, []):
             alt = re.sub(muster, '', alt)
+        for b25_typ, v2_typ in GLEICH.get(name, []):
+            alt = alt.replace(b25_typ, v2_typ)
         if alt != neu:
             fehler.append(f'{name}: b25 {alt}\n   V2  {neu}')
     return fehler
@@ -130,12 +138,15 @@ def main(argv):
     repo = argv[1]
     commit = argv[argv.index('--b25') + 1] if '--b25' in argv else B25
     if '--gegenprobe' in argv:
-        # Ein Feld des Dateikopfs anders breit: das muss auffallen.
-        rot = pruefe(repo, commit, ('DLSFileHeader', 'uint16_t item_size;', 'uint32_t item_size;'))
-        if not rot:
-            print('Gegenprobe: veraenderter DLSFileHeader blieb gruen')
+        # Ein Feld des Dateikopfs anders breit, und ein Beginn der Sitzung, der nicht 32 bit hat:
+        # beides muss auffallen.
+        proben = [('DLSFileHeader', 'uint16_t item_size;', 'uint32_t item_size;'),
+                  ('ActivitySession', 'int32_t start_utc;', 'int64_t start_utc;')]
+        gruen = [p[0] for p in proben if not pruefe(repo, commit, p)]
+        if gruen:
+            print('Gegenprobe: veraendert und gruen geblieben: ' + ', '.join(gruen))
             return 1
-        print('Gegenprobe rot wie erwartet')
+        print(f'Gegenprobe rot wie erwartet ({len(proben)} Proben)')
         return 0
     fehler = pruefe(repo, commit)
     for f in fehler:

@@ -42,10 +42,12 @@ pbl_clar_test(test_workout_summary
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -98,7 +100,7 @@ pbl_clar_test(test_workout_summary
     fw/apps/system/workout/dialog.c
     fw/apps/system/workout/utils.c
     fw/apps/system/workout/summary.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
@@ -145,10 +147,12 @@ pbl_clar_test(test_workout_active
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -199,7 +203,7 @@ pbl_clar_test(test_workout_active
     fw/apps/system/workout/data.c
     fw/apps/system/workout/dialog.c
     fw/apps/system/workout/active.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
@@ -246,10 +250,12 @@ pbl_clar_test(test_workout_dialog
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -299,7 +305,7 @@ pbl_clar_test(test_workout_dialog
     fw/applib/ui/menu_layer.c
     fw/apps/system/workout/data.c
     fw/apps/system/workout/dialog.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
@@ -346,10 +352,12 @@ pbl_clar_test(test_workout_selection
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -399,7 +407,7 @@ pbl_clar_test(test_workout_selection
     fw/applib/ui/menu_layer.c
     fw/apps/system/workout/utils.c
     fw/apps/system/workout/selection.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES

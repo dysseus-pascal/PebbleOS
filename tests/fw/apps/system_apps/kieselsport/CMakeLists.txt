@@ -86,7 +86,7 @@ set(kieselsport_startmenue_quellen
   fw/apps/system/workout/workout.c
   fw/applib/graphics/gcolor_definitions.c
   fw/applib/graphics/gtypes.c
-  fw/drivers/flash/flash_crc.c
+  drivers/flash/flash_crc.c
   fw/flash_region/filesystem_regions.c
   fw/flash_region/flash_region.c
   fw/process_management/app_install_manager.c

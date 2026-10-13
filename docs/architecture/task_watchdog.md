@@ -29,9 +29,12 @@ watchdog (`include/pbl/drivers/watchdog.h`).
   the thread and returns a pointer naming the work it was doing, which lands
   in `stuck_task_callback`. It runs again on every check while the channel
   stays expired.
-- After `CONFIG_TASK_WDT_GRACE_MS` of a channel staying expired the system
-  resets through `reset_due_to_software_failure()`, so a core dump is
-  written. Without `CONFIG_WATCHDOG` it logs instead and keeps running. A
+- After `CONFIG_TASK_WDT_GRACE_MS` of a channel staying expired, counted
+  from the check that first found it expired, the system resets through
+  `reset_due_to_software_failure()`, so a core dump is written. That check
+  never resets, so the callback always gets the grace period to recover
+  the thread, and the next check runs once the grace period is over
+  instead of a full check period later. Without `CONFIG_WATCHDOG` it logs instead and keeps running. A
   channel fed again within the grace period clears the reboot reason and
   logs the recovery.
 - `pbl_task_wdt_suspend()` keeps every channel fed for a bounded time (or until
@@ -57,6 +60,6 @@ watchdog (`include/pbl/drivers/watchdog.h`).
 virtual time; see `docs/development/testing.md` for how to run it.
 
 The QEMU boards carry a real hardware watchdog (the CMSDK APB watchdog,
-driven by `fw/drivers/watchdog/qemu.c`), so both paths can be tried in
+driven by `drivers/watchdog/qemu.c`), so both paths can be tried in
 the emulator: `wdt stall main` ends in a core dump, and `wdt stall irq`
 ends in a hardware reset that the next boot reports as a watchdog reset.

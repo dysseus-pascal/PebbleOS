@@ -42,6 +42,7 @@
 #include "pbl/services/firmware_update.h"
 #include "pbl/services/i18n/i18n.h"
 #include "pbl/services/light.h"
+#include "pbl/services/music_internal.h"
 #include "pbl/services/new_timer/new_timer.h"
 #include "pbl/services/put_bytes/put_bytes.h"
 #ifdef CONFIG_TOUCH
@@ -267,6 +268,12 @@ static PBL_NOINLINE void prv_minimal_event_handler(PebbleEvent *e) {
       compositor_app_render_ready();
       return;
 
+#ifdef CONFIG_SERVICE_MUSIC
+    case PEBBLE_MEDIA_EVENT:
+      music_handle_media_event(&e->media);
+      return;
+#endif
+
     case PEBBLE_ACCEL_SHAKE_EVENT:
       if (backlight_is_motion_enabled()) {
 #ifndef CONFIG_RECOVERY_FW
@@ -349,6 +356,13 @@ static PBL_NOINLINE void prv_minimal_event_handler(PebbleEvent *e) {
 
     case PEBBLE_GESTURE_EVENT: {
 #ifdef CONFIG_TOUCH
+      if (e->gesture.event.type == GestureEvent_Palm) {
+        // palm gesture turns off the backlight
+        light_touch_up();
+        light_enable(false);
+        touch_session_reset();
+        return;
+      }
       s_touch_contact_engaged = true;
 #endif
       bool wake_on_gesture = false;

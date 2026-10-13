@@ -120,8 +120,10 @@ pbl_clar_test(test_kino_reel
     fw/applib/graphics/gbitmap.c
     fw/applib/graphics/gbitmap_sequence.c
     fw/applib/graphics/gbitmap_png.c
-    fw/applib/vendor/uPNG/upng.c
-    fw/applib/vendor/tinflate/tinflate.c
+    third_party/upng/upng/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
     fw/applib/graphics/gcolor_definitions.c
     fw/applib/graphics/gdraw_command.c
     fw/applib/graphics/gdraw_command_list.c
@@ -149,8 +151,10 @@ pbl_clar_test(test_kino_player
     fw/applib/ui/kino/kino_reel_custom.c
     fw/applib/graphics/gbitmap_sequence.c
     fw/applib/graphics/gbitmap_png.c
-    fw/applib/vendor/uPNG/upng.c
-    fw/applib/vendor/tinflate/tinflate.c
+    third_party/upng/upng/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
     fw/applib/graphics/gcolor_definitions.c
     fw/applib/graphics/gdraw_command.c
     fw/applib/graphics/gdraw_command_list.c
@@ -294,7 +298,7 @@ pbl_clar_test(test_menu_layer_system_cells
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -306,8 +310,10 @@ pbl_clar_test(test_menu_layer_system_cells
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -320,7 +326,7 @@ pbl_clar_test(test_menu_layer_system_cells
     fw/shell/system_theme.c
     tests/fakes/fake_fonts.c
     tests/fixtures/resources/timeline_resource_table.auto.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   OVERRIDES dummy_board
   TEST_IMAGES
 )
@@ -365,7 +371,7 @@ pbl_clar_test(test_action_menu_window
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -377,8 +383,10 @@ pbl_clar_test(test_action_menu_window
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -447,7 +455,7 @@ pbl_clar_test(test_notification_window
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -459,8 +467,10 @@ pbl_clar_test(test_notification_window
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -494,7 +504,7 @@ pbl_clar_test(test_notification_window
     tests/fakes/fake_graphics_context.c
     tests/fixtures/resources/timeline_resource_table.auto.c
     tests/stubs/stubs_clock.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
@@ -540,7 +550,7 @@ pbl_clar_test(test_simple_dialog
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -552,8 +562,10 @@ pbl_clar_test(test_simple_dialog
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -580,7 +592,7 @@ pbl_clar_test(test_simple_dialog
     fw/applib/ui/inverter_layer.c
     fw/applib/ui/content_indicator.c
     tests/fakes/fake_fonts.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   OVERRIDES dummy_board
   TEST_IMAGES
 )
@@ -625,7 +637,7 @@ pbl_clar_test(test_emoji_fonts
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -637,8 +649,10 @@ pbl_clar_test(test_emoji_fonts
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -693,7 +707,7 @@ pbl_clar_test(test_expandable_dialog
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -705,8 +719,10 @@ pbl_clar_test(test_expandable_dialog
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -788,7 +804,7 @@ pbl_clar_test(test_selection_windows
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -800,8 +816,10 @@ pbl_clar_test(test_selection_windows
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -820,7 +838,7 @@ pbl_clar_test(test_selection_windows
     fw/shell/system_theme.c
     tests/fakes/fake_clock.c
     tests/fakes/fake_fonts.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   OVERRIDES dummy_board
   TEST_IMAGES
 )
@@ -881,7 +899,7 @@ pbl_clar_test(test_timeline_peek
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -893,8 +911,10 @@ pbl_clar_test(test_timeline_peek
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -931,7 +951,7 @@ pbl_clar_test(test_timeline_peek
     tests/stubs/stubs_clock.c
     tests/stubs/stubs_timeline_layout.c
     tests/stubs/stubs_timeline_peek.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
@@ -977,7 +997,7 @@ pbl_clar_test(test_option_menu_window
     fw/applib/ui/layer.c
     fw/applib/ui/menu_layer_system_cells.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -989,8 +1009,10 @@ pbl_clar_test(test_option_menu_window
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c
@@ -998,6 +1020,7 @@ pbl_clar_test(test_option_menu_window
     tests/fakes/fake_spi_flash.c
     tests/fixtures/resources/builtin_resources.auto.c
     tests/fixtures/resources/pfs_resource_table.c
+    tests/fixtures/screen_grid.c
     tests/stubs/stubs_animation.c
     tests/stubs/stubs_system_theme.c
     fw/applib/ui/animation_interpolate.c
@@ -1013,7 +1036,7 @@ pbl_clar_test(test_option_menu_window
     tests/fakes/fake_clock.c
     tests/fakes/fake_fonts.c
     tests/fakes/fake_graphics_context.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   DEFINES USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES

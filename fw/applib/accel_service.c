@@ -85,14 +85,16 @@ static uint32_t prv_do_data_handle_chunk(AccelServiceState *state, uint16_t time
       (state->prev_timestamp_ms != 0) ? timestamp_ms - state->prev_timestamp_ms : 0;
   state->prev_timestamp_ms = timestamp_ms;
 
-  PBL_LOG_VERBOSE("got %d samples for task %d at %ld (%lu ms delta)", (int)num_samples,
-                  (int)pebble_task_get_current(), (uint32_t)timestamp_ms, time_since_last_sample);
+  PBL_LOG_VERBOSE("got %d samples for task %d at %" PRIu32 " (%" PRIu32 " ms delta)",
+                  (int)num_samples, (int)pebble_task_get_current(), (uint32_t)timestamp_ms,
+                  time_since_last_sample);
 
   for (unsigned int i = 0; i < num_samples; i++) {
     PBL_LOG_VERBOSE("  => x:%d, y:%d, z:%d", state->raw_data[i].x, state->raw_data[i].y,
                     state->raw_data[i].z);
   }
 
+  state->subscription_changed = false;
   if (state->raw_data_handler_deprecated) {
     state->raw_data_handler_deprecated(state->raw_data, num_samples);
 
@@ -112,6 +114,12 @@ static uint32_t prv_do_data_handle_chunk(AccelServiceState *state, uint16_t time
       timestamp_ms += time_interval_ms;
     }
     state->data_handler(data, num_samples);
+  }
+
+  // The handler unsubscribed or subscribed again, so these samples belong to a subscription
+  // that's gone and there's nothing left to consume.
+  if (state->subscription_changed) {
+    return 0;
   }
 
   // Tell accel_manager that it can put more data in now
@@ -161,8 +169,17 @@ int accel_service_set_samples_per_update(uint32_t samples_per_update) {
 // ----------------------------------------------------------------------------------------------
 static void prv_shared_subscribe(AccelServiceState *state, AccelSamplingRate sampling_rate,
                                  uint32_t samples_per_update, PebbleTask handler_task) {
+  // Subscribing again replaces the current subscription. The new one is added before the old
+  // one is removed, so the manager is never left without a subscriber in between.
+  AccelManagerState *old_manager_state = state->manager_state;
   state->manager_state =
       sys_accel_manager_data_subscribe(sampling_rate, prv_do_data_handle, state, handler_task);
+  state->subscription_changed = true;
+  state->sampling_rate = sampling_rate;
+  if (old_manager_state && sys_accel_manager_data_unsubscribe(old_manager_state)) {
+    // A data event for the old subscription still points at this state, as on unsubscribe
+    state->deferred_free |= state->kernel_session;
+  }
 
   accel_session_set_samples_per_update((AccelServiceState *)state, samples_per_update);
 }
@@ -278,6 +295,7 @@ AccelServiceState *accel_session_create(void) {
   AccelServiceState *state = kernel_malloc_check(sizeof(AccelServiceState));
 
   *state = (AccelServiceState){
+    .kernel_session = true,
     .sampling_rate = ACCEL_DEFAULT_SAMPLING_RATE,
     .accel_shake_info =
         {
@@ -359,13 +377,14 @@ void accel_session_data_unsubscribe(AccelServiceState *state) {
     return;
   }
   if (sys_accel_manager_data_unsubscribe(state->manager_state)) {
-    // There is a pending event posted. Only session tasks allocate memory for their state in the
-    // first place so only free the memory if this is true
-    state->deferred_free = prv_is_session_task();
+    // A queued data event still points at this state. Only a session from accel_session_create()
+    // is heap memory, so only that one is freed when the event drains.
+    state->deferred_free = state->kernel_session;
   }
 
   applib_free(state->raw_data);
   state->manager_state = NULL;
+  state->subscription_changed = true;
   state->raw_data = NULL;
   state->data_handler = NULL;
   state->raw_data_handler = NULL;
@@ -378,8 +397,12 @@ int accel_session_set_sampling_rate(AccelServiceState *state, AccelSamplingRate 
       (!state->data_handler && !state->raw_data_handler && !state->raw_data_handler_deprecated)) {
     return -1;
   }
-  state->sampling_rate = rate;
-  return sys_accel_manager_set_sampling_rate(state->manager_state, rate);
+  int result = sys_accel_manager_set_sampling_rate(state->manager_state, rate);
+  // A rate the manager rejects leaves the driver sampling at the old rate, so the old rate stays.
+  if (result == 0) {
+    state->sampling_rate = rate;
+  }
+  return result;
 }
 
 // -----------------------------------------------------------------------------------------------

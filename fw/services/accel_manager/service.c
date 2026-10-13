@@ -295,7 +295,6 @@ static void prv_dispatch_data(bool post_event) {
     }
 
     // If buffer has room, read more data
-    uint32_t samples_drained = 0;
     while (state->num_samples < state->samples_per_update) {
       // Read available data.
       AccelManagerBufferData data;
@@ -318,7 +317,6 @@ static void prv_dispatch_data(bool post_event) {
 
       memcpy(state->raw_buffer + state->num_samples, &data, sizeof(AccelRawData));
       state->num_samples++;
-      samples_drained++;
     }
 
     // If buffer is full, notify subscriber to process it
@@ -499,7 +497,7 @@ static bool prv_state_is_valid_subscriber(const AccelManagerState *state) {
   return false;
 }
 
-static void prv_assert_state_from_user(const AccelManagerState *state) {
+static PBL_ALWAYS_INLINE void prv_assert_state_from_user(const AccelManagerState *state) {
   if (!PRIVILEGE_WAS_ELEVATED) {
     return;
   }

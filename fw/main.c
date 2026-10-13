@@ -73,8 +73,8 @@
 #include "mfg/mfg_serials.h"
 
 #include <pbl/bluetooth/init.h>
-#ifdef CONFIG_QEMU
-#include <pbl/drivers/qemu/qemu_serial.h>
+#ifdef CONFIG_QEMU_SERIAL
+#include "comm/qemu/serial.h"
 #endif
 
 static TimerID s_lowpower_timer = TIMER_INVALID_ID;
@@ -125,8 +125,8 @@ int main(void) {
     .entry = main_task,
     .prio = PBL_PRIO_IDLE + 3,
     .privileged = true,
-    .stack = (void *)((uintptr_t)__kernel_main_stack_start__ + (uintptr_t)__stack_guard_size__),
-    .stack_size = (uintptr_t)__kernel_main_stack_size__ - (uintptr_t)__stack_guard_size__,
+    .stack = (void *)((uintptr_t)__kernel_main_stack_start__ + MEMORY_LAYOUT_STACK_GUARD_SIZE),
+    .stack_size = MEMORY_LAYOUT_KERNEL_MAIN_STACK_SIZE - MEMORY_LAYOUT_STACK_GUARD_SIZE,
   };
 
   pebble_task_create(PebbleTask_KernelMain, &attr);
@@ -291,7 +291,7 @@ static PBL_NOINLINE void prv_main_task_init(void) {
   compositor_init();
   kernel_ui_init();
 
-#ifdef CONFIG_QEMU
+#ifdef CONFIG_QEMU_SERIAL
   qemu_serial_init();
 #endif
   pbl_bt_init();

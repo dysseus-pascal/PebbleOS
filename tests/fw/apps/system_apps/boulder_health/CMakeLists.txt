@@ -59,9 +59,11 @@ pbl_clar_test(test_bh_karten
     fw/applib/graphics/utf8.c
     fw/applib/graphics/bidi.c
     fw/applib/graphics/arabic_shaping.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
-    fw/drivers/flash/flash_crc.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -136,7 +138,7 @@ pbl_clar_test(test_bh_einstieg
 set(bh_startmenue_quellen
   fw/applib/graphics/gcolor_definitions.c
   fw/applib/graphics/gtypes.c
-  fw/drivers/flash/flash_crc.c
+  drivers/flash/flash_crc.c
   fw/flash_region/filesystem_regions.c
   fw/flash_region/flash_region.c
   fw/process_management/app_install_manager.c

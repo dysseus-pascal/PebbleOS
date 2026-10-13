@@ -400,7 +400,11 @@ static bool prv_find_session_by_app_uuid_comparator(ListNode *found_node, void *
 }
 
 static CommSession *prv_get_app_session(void) {
-  const Uuid *app_uuid = &app_manager_get_current_app_md()->uuid;
+  const PebbleProcessMd *md = app_manager_get_current_app_md();
+  if (md == NULL) {
+    return NULL;
+  }
+  const Uuid *app_uuid = &md->uuid;
   if (uuid_is_system(app_uuid) || uuid_is_invalid(app_uuid)) {
     return NULL;
   }
@@ -428,7 +432,7 @@ static bool prv_find_session_is_system_filter(ListNode *found_node, void *data) 
 
 static bool prv_find_session_is_type_filter(ListNode *found_node, void *data) {
   CommSession *session = (CommSession *)found_node;
-  CommSessionTransportType required_session_type = (CommSessionTransportType)data;
+  CommSessionTransportType required_session_type = (CommSessionTransportType)(uintptr_t)data;
   return prv_is_transport_type(session->transport, session->transport_imp, required_session_type);
 }
 
@@ -487,7 +491,8 @@ CommSession *comm_session_get_system_session(void) {
 }
 
 CommSession *comm_session_get_current_app_session(void) {
-  if (app_manager_get_current_app_md()->allow_js) {
+  const PebbleProcessMd *md = app_manager_get_current_app_md();
+  if (md != NULL && md->allow_js) {
     return comm_session_get_system_session();
   }
   return comm_session_get_by_type(CommSessionTypeApp);

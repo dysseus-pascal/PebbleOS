@@ -37,7 +37,7 @@ pbl_clar_test(test_launcher_menu_layer
     fw/applib/ui/scroll_layer.c
     fw/applib/ui/shadows.c
     fw/applib/ui/window.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -65,8 +65,10 @@ pbl_clar_test(test_launcher_menu_layer
     fw/applib/ui/kino/kino_reel_pdci.c
     fw/applib/ui/kino/kino_reel_pdcs.c
     fw/applib/ui/menu_layer_system_cells.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     fw/apps/system/launcher/default/app_glance.c
     fw/apps/system/launcher/default/app_glance_alarms.c
     fw/apps/system/launcher/default/app_glance_generic.c
@@ -90,10 +92,11 @@ pbl_clar_test(test_launcher_menu_layer
     tests/fakes/fake_fonts.c
     tests/fakes/fake_settings_file.c
     tests/fixtures/resources/timeline_resource_table.auto.c
+    tests/fixtures/screen_grid.c
     tests/stubs/stubs_animation.c
     tests/stubs/stubs_app_install_manager.c
     tests/stubs/stubs_app_menu_data_source.c
-  PLATFORMS obelix gabbro
+  PLATFORMS obelix gabbro asterix
   OVERRIDES dummy_board
   TEST_IMAGES
 )

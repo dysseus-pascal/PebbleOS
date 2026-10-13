@@ -1,7 +1,7 @@
 #pragma once
 /* Boulder: D0 Herkunft der Kopie
  *   Original: include/pbl/services/activity/kraepelin/kraepelin_algorithm.h
- *   Commit:   a2120e2aefd3b916df7cbb141d542db9ab04916d
+ *   Commit:   acc6dd23670695c7669c5850ceab2db3b8fd623c
  *   SHA-256:  e27cb65208447d8101b44278d9849e3e07a4e858902153df664d639d30b14156
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.

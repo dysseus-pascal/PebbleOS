@@ -9,7 +9,7 @@ config KERNEL_IDLE_STACK_SIZE
 
 config KERNEL_TICK_HZ
 	int "Tick rate in Hz"
-	default 1000 if QEMU || SOC_SF32LB52
+	default 1000 if QEMU || SOC_SF32LB52 || SOC_POSIX
 	default 1024
 
 config KERNEL_IRQ_PRIO_KERNEL
@@ -41,7 +41,7 @@ config KERNEL_THREAD_TLS_SLOTS
 
 config KERNEL_STACK_ALIGN
 	int "Thread stack alignment"
-	default 32 if MPU_TYPE_ARMV8M
+	default 32 if ARMV8_M_MAINLINE
 	default 256
 	help
 	  Alignment that lets the bottom of a stack be covered by an MPU
@@ -61,3 +61,4 @@ config RAMFUNC
 endmenu
 
 rsource "arch/arm/Kconfig"
+rsource "arch/posix/Kconfig"

@@ -41,7 +41,7 @@ pbl_clar_test(test_weather_app_layout
     fw/applib/ui/layer.c
     fw/apps/system/timeline/text_node.c
     fw/board/displays/display_getafix.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     fw/flash_region/filesystem_regions.c
     fw/flash_region/flash_region.c
     fw/resource/resource.c
@@ -53,8 +53,10 @@ pbl_clar_test(test_weather_app_layout
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/applib/vendor/tinflate/tinflate.c
-    fw/applib/vendor/uPNG/upng.c
+    third_party/uzlib/uzlib/src/tinflate.c
+    third_party/uzlib/uzlib/src/adler32.c
+    third_party/uzlib/uzlib/src/crc32.c
+    third_party/upng/upng/upng.c
     tests/fakes/fake_applib_resource.c
     tests/fakes/fake_display.c
     tests/fakes/fake_gbitmap_get_data_row.c

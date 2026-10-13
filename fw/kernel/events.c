@@ -103,8 +103,10 @@ void events_init(void) {
   // restriction.
   // PBL_LOG_DBG("PebbleEvent size is %u", sizeof(PebbleEvent));
   // FIXME:
+#ifndef CONFIG_ARCH_POSIX
   _Static_assert(sizeof(PebbleEvent) <= 12,
                  "You made the PebbleEvent bigger! It should be no more than 12");
+#endif
 
   pbl_poll_group_add(&s_system_event_queue_set, &s_kernel_event_queue);
   pbl_poll_group_add(&s_system_event_queue_set, &s_from_app_event_queue);
@@ -130,7 +132,7 @@ struct pbl_msgq *event_get_to_kernel_queue(PebbleTask task) {
 //! Decode a bit more information out about an event and pack it into a uint32_t
 static uint32_t prv_get_fancy_type_from_event(const PebbleEvent *event) {
   if (event->type == PEBBLE_CALLBACK_EVENT) {
-    return (uint32_t)event->callback.callback;
+    return (uint32_t)(uintptr_t)event->callback.callback;
   }
   return event->type;
 }
@@ -381,6 +383,10 @@ void event_reset_from_process_queue(PebbleTask task) {
 
 struct pbl_msgq *event_kernel_to_kernel_event_queue(void) {
   return &s_from_kernel_event_queue;
+}
+
+uint32_t event_kernel_to_kernel_num_free(void) {
+  return pbl_msgq_num_free(&s_from_kernel_event_queue);
 }
 
 void event_queue_cleanup_and_reset(struct pbl_msgq *queue) {

@@ -47,14 +47,14 @@ typedef struct PBL_PACKED {
   bool repeating;               //!< Enable event repetition
   uint16_t repeat_hours_offset; //!< repeat hour interval
   bool notify_if_missed;        //!< Notify user if wakeup event has been missed
-  time_t timestamp;             //!< The time at which this entry will wake up at
+  int32_t timestamp;            //!< The time at which this entry will wake up at
   bool utc;                     //!< If timezone has been set, the this is UTC time
 } WakeupEntry;
 
 typedef struct PBL_PACKED {
   WakeupId current_wakeup_id;
   WakeupId next_wakeup_id;
-  time_t timestamp;
+  int32_t timestamp;
 } WakeupState;
 
 struct prv_missed_events_s {
@@ -80,7 +80,7 @@ static WakeupState s_wakeup_state = {-1, -1, 0};
 static bool s_catchup_enabled = false; // enables catching up with missed events
 
 void wakeup_dispatcher_system_task(void *data) {
-  WakeupId wakeup_id = (WakeupId)data;
+  WakeupId wakeup_id = (WakeupId)(intptr_t)data;
   WakeupEntry entry = prv_wakeup_settings_get_entry(wakeup_id);
 
   // Delete event from settings

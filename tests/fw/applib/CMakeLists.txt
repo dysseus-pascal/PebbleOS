@@ -101,7 +101,7 @@ pbl_clar_test(test_text_resources
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
     fw/services/filesystem/app_file.c
-    fw/drivers/flash/flash_crc.c
+    drivers/flash/flash_crc.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
     tests/fixtures/resources/builtin_resources.auto.c
@@ -135,6 +135,12 @@ pbl_clar_test(test_touch_service
   OVERRIDES dummy_board
 )
 
+pbl_clar_test(test_accel_service
+  SOURCES
+    fw/applib/accel_service.c
+  OVERRIDES dummy_board
+)
+
 pbl_clar_test(test_app_glance
   SOURCES
     fw/applib/app_glance.c
@@ -156,4 +162,32 @@ pbl_clar_test(test_template_string
 pbl_clar_test(test_dict
   SOURCES
     fw/applib/dict.c
+)
+
+pbl_clar_test(test_qr_code
+  SOURCES
+    fw/applib/graphics/gtypes.c
+    fw/applib/graphics/gbitmap.c
+    tests/fakes/fake_gbitmap_png.c
+    fw/applib/graphics/gcolor_definitions.c
+    fw/applib/graphics/8_bit/framebuffer.c
+    fw/applib/graphics/framebuffer.c
+    fw/applib/ui/layer.c
+    fw/applib/ui/qr_code.c
+    fw/applib/graphics/8_bit/bitblt_private.c
+    fw/applib/graphics/bitblt.c
+    fw/applib/graphics/graphics_private.c
+    fw/applib/graphics/graphics_private_raw.c
+    fw/applib/graphics/graphics_circle.c
+    fw/applib/graphics/graphics_line.c
+    fw/applib/graphics/graphics.c
+    third_party/qr_code_generator/QR-Code-generator/c/qrcodegen.c
+    third_party/qr_code_generator/qrcodegen_ext.c
+  INCLUDES
+    tests/fw/graphics
+    third_party/qr_code_generator/include
+    third_party/qr_code_generator/QR-Code-generator/c
+  DEFINES QRCODEGEN_TEST
+  PLATFORMS obelix
+  TEST_IMAGES
 )

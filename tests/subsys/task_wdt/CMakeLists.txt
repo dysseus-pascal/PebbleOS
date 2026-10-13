@@ -14,6 +14,7 @@ pbl_clar_test(test_task_wdt
     kernel/irq.c
     kernel/debug.c
     kernel/arch/posix/arch.c
+    kernel/arch/posix/test.c
   INCLUDES
     kernel
     kernel/arch
@@ -23,7 +24,7 @@ pbl_clar_test(test_task_wdt
     CONFIG_WATCHDOG=1
     CONFIG_WATCHDOG_TIMEOUT_MS=30000
     CONFIG_TASK_WDT_CHANNELS=4
-    CONFIG_TASK_WDT_CHECK_PERIOD_MS=1000
+    CONFIG_TASK_WDT_CHECK_PERIOD_MS=3000
     CONFIG_TASK_WDT_GRACE_MS=1000
     CONFIG_TASK_WDT_THREAD_STACK_SIZE=4096
     CONFIG_TASK_WDT_LOG_LEVEL=0

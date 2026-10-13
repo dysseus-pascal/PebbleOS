@@ -11,6 +11,7 @@
 #include "applib/ui/dialogs/dialog.h"
 #include "applib/ui/dialogs/simple_dialog.h"
 #include "kernel/event_loop.h"
+#include "kernel/memory_layout.h"
 #include "kernel/pbl_malloc.h"
 #include "kernel/ui/kernel_ui.h"
 #include "kernel/ui/modals/modal_manager.h"
@@ -235,7 +236,7 @@ PBL_T_STATIC MemorySegment prv_get_app_ram_segment(void) {
 }
 
 PBL_T_STATIC size_t prv_get_stack_guard_size(void) {
-  return (uintptr_t)__stack_guard_size__;
+  return MEMORY_LAYOUT_STACK_GUARD_SIZE;
 }
 
 #if !defined(CONFIG_RECOVERY_FW) && !defined(CONFIG_SHELL_SDK)
@@ -815,7 +816,9 @@ ProcessContext *app_manager_get_task_context(void) {
 }
 
 bool app_manager_is_watchface_running(void) {
-  return (app_manager_get_current_app_md()->process_type == ProcessTypeWatchface);
+  // No app while one is being switched out.
+  const PebbleProcessMd *md = app_manager_get_current_app_md();
+  return (md != NULL) && (md->process_type == ProcessTypeWatchface);
 }
 
 ResAppNum app_manager_get_current_resource_num(void) {
