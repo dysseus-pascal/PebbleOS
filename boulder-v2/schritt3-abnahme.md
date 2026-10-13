@@ -236,7 +236,8 @@ Alle Tests laufen im vollen Host-Lauf mit (409/409). Dazu je eine Mutation auf e
 
 *Nachtrag 13.10.:* `test_boulder_schlafanalyse_wie_b26` ist seit `4ea6fb64` ersetzt durch
 `test_boulder_schlaf`, weil die Schlafrechnung von V2 jetzt von b26 abweicht (Nachtrag in der
-Spezifikation).
+Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
+(`naechte/analyse-2026-10-13.md`, Abschnitt 7).
 
 ## 6. Bekannte Grenzen (bleiben so, im Gerätetest ansehen)
 

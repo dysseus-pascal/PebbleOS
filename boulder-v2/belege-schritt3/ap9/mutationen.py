@@ -94,10 +94,11 @@ M = [
      'bh_schlafurteil(n->schlaf_minuten, d->lage.ziel_schlaf_min)',
      'bh_schlafurteil(n->schlaf_minuten, 420)', ctest('^test_bh_karten')),
     # Schritt 1
-    # 30 statt 40 waere ein gleichwertiger Mutant: von 25 bis 60 rechnen alle Pruefnaechte gleich
-    # (schlafanalyse.c). 20 ist der Wert von b25, der am 5.10. 29 Minuten zu frueh einschlafen liess.
-    ('S1-3', 'Schritt 1 K3', 'Waelz-Regel beim Einschlafen wie b25: 20 statt 40 min', VAR + 'schlafanalyse.c',
-     '#define EINSCHLAF_RUHE 40', '#define EINSCHLAF_RUHE 20', ctest('^test_boulder_(naechte|schlafkern)')),
+    # Seit 4ea6fb64 ist der Wert 30 (in AP9 noch 40). Von 27 bis 39 rechnen alle Pruefnaechte gleich
+    # (schlafanalyse.c), ein Wert in dem Band waere ein gleichwertiger Mutant. 20 ist der Wert von
+    # b25, der am 5.10. 29 Minuten zu frueh einschlafen liess.
+    ('S1-3', 'Schritt 1 K3', 'Waelz-Regel beim Einschlafen wie b25: 20 statt 30 min', VAR + 'schlafanalyse.c',
+     '#define EINSCHLAF_RUHE     30', '#define EINSCHLAF_RUHE     20', ctest('^test_boulder_(naechte|schlaf)')),
     ('S1-4', 'Schritt 1 K4', 'Smart Alarm ohne Bewegung (auch im Tiefschlaf)', VAR + 'wecker.c',
      '  if (s_bewegt & WECKER_S1) {', '  if (true) {', ctest('^test_boulder_wecker')),
     ('S1-5', 'Schritt 1 K5', 'Velo nie erkannt', VAR + 'kontext.c',
