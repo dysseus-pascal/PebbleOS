@@ -320,8 +320,8 @@ Was Core seither geändert hat und Boulder trifft:
 6. Core bleibt Core: Cores Tests grün; Benachrichtigungen, PKJS, Locker, Wetter und Kalender auf dem
    Telefon offen.
 7. Netz: Liste oben aus dem Code; im Betrieb nicht gemessen.
-8. Release und Gerät: Release-Build signiert mit dem CI-Schlüssel; Installation über 0.53 und eine
-   Nacht der Uhr: Gerätetest des Nutzers.
+8. Release und Gerät: Release-Build signiert mit dem CI-Schlüssel. Installation über 0.53: bestanden
+   (Nutzer, 14.10.: 2567 „installiert und läuft“). Eine Nacht der Uhr: offen.
 
 #### Für den Gerätetest
 - Vorher in Boulder 0.53 eine Sicherung machen. Zurück auf 0.53 (`adb install -d`) legt 0.53 die
@@ -329,3 +329,14 @@ Was Core seither geändert hat und Boulder trifft:
 - Uhr auf V2 (b27 oder neuer; F26).
 - Prüfen: Start ohne Absturz, Health mit den alten Daten, eine Nacht kommt an, Benachrichtigungen,
   Locker (Kieselsport, Kieselstrasse), Firmware-Prüfung, Widget, Health Connect.
+- **Stand 14.10. abends:** 2567 über 0.53 installiert, startet und läuft (Nutzer). Die erste Nacht
+  steht aus; danach `main` (Fast-Forward von `aecd3350`) und Release über die CI (F31).
+
+#### Sperre in der CI (14.10.)
+- Der Lauf von 0.53 auf `main` scheiterte beim Hochladen des APK: „Failed to CreateArtifact:
+  Artifact storage quota has been hit … Usage is recalculated every 6-12 hours.“ Darum fehlt
+  `v0.53.0`. Die APKs der früheren Läufe liegen mit 90 Tagen Aufbewahrung (je etwa 6,8 MB, etwa
+  0.52 bis Januar 2027). `retention-days: 1` steht erst im Zweig und wirkt nur für neue Artefakte.
+- Ein Push nach `main` scheitert genauso, bis der Nutzer die alten Artefakte löscht (die Werkzeuge
+  hier können keine Artefakte löschen) und GitHub neu gerechnet hat. Danach: Lauf 76 (0.53) neu
+  starten für `v0.53.0`, dann `main` vorziehen für `v0.54.0`.
