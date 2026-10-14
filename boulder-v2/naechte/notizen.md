@@ -48,5 +48,5 @@
   früh: 7.10. 05:13, 8.10. 05:42, 12.10. 05:46 (jeweils statt 06:00), 13.10. 05:23 (statt 05:45/06:00).
   Nur am 9.10. ohne Wecker stimmte sie (06:57, Boulder 07:00). Für das Aufwachen gilt deshalb die
   Angabe des Nutzers, nicht Fitbit.
-- F20: A (H2/20 in V2). Offen F21: Gang aus dem VMC (H4) statt aus Schritten, weil die Firmware ohne
-  Schritte rechnet (`analyse-2026-10-14.md`, Abschnitt 5).
+- F20: A, F21: A: Ein Schub mit hoher HRV ohne Gang (aus dem VMC) bleibt Schlaf. Umgesetzt in V2
+  `14e34d2e` (`analyse-2026-10-14.md`, Abschnitte 5 und 6).

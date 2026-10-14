@@ -176,9 +176,9 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   aufgestanden um 06:00: Boulders Aufwachen (05:46) stimmt, Fitbits Ende (05:23) ist zu früh.
 - **F20: A.** H2/20 in V2 übernehmen: Ein Aufwach-Schub bleibt Schlaf, wenn die HRV im Schub mindestens
   beim Median der Nacht liegt und kein Gang darin ist (unter 20 Schritten).
-- **Offen F21:** Die Firmware rechnet ohne Schritte. Vorschlag H4: derselbe Entscheid, der Gang aber
-  aus dem VMC wie beim Aufstehen (`prv_gang_ab`). Rechnet alle Nächte wie H2/20 bis auf den 12.10.
-  02:25–03:12.
+- **F21: A** (14.10.). Die Firmware rechnet ohne Schritte; der Gang kommt deshalb aus dem VMC wie
+  beim Aufstehen (`prv_gang_ab`, H4). Das rechnet alle Nächte wie H2/20 bis auf den 12.10.
+  02:25–03:12. Umgesetzt in V2 `14e34d2e`.
 
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
