@@ -1,0 +1,20 @@
+rc=0 07:25:22
+ok   L1: hoechstens 14.648 ms (Grenze 50.0 ms)
+ok   L1 erster Start (icount): hoechstens 20.508 ms (Grenze 50.0 ms)
+ok   L2: hoechstens 19.531 ms (Grenze 30.0 ms)
+ok   L4: hoechstens 8.789 ms (Grenze 30.0 ms)
+ok   L6: hoechstens 0.01 ms (Grenze 1.0 ms)
+ok   L1 Startmenue (app launch): 20 von 20 Starts gemessen 
+ok   L1 Pin Night: 20 von 20 Starts gemessen 
+ok   L1 Pin Activity: 20 von 20 Starts gemessen 
+ok   L4: 3 Minuten gemessen 
+ok   L6: neun Syscalls gemessen 
+ok   Puls im Sekundentakt auf Heart 1
+ok   kein Puls im Sekundentakt nach Verlassen von Heart 0
+ok   kein Puls im Sekundentakt nach dem Ende auf Heart 0
+ok   Kernel-Heap: kein Wachstum mit den Starts (100) frei 52716 -> 52640 -> 52640 B
+ok   Syscall-Stapel der App: Reserve 1368 B nie benutzt
+ok   Fehlerprobe: die Uhr laeuft weiter 
+ok   Fehlerprobe: die App endet am Fehler 18] * - 20:09:41.710 hardfault_handle:58>     DACCVIOL = yes
+ok   kein Neustart im ganzen Lauf (Ticks steigen) 873 Stempel, fallend: []
+ok   QEMU laeuft am Ende noch 

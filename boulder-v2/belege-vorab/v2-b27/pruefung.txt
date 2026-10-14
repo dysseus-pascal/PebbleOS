@@ -1,0 +1,27 @@
+Stand b6a4b3df 06:40:42; Arbeitsbaum: 7 Aenderungen
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=11
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=11
+build rc=0 warnungen=0 fehler=0 uebersetzt=14
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=383
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=500
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=381
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=497
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=516
+host rc=0 100% tests passed, 0 tests failed out of 437
+rc=0 k1_waechter.py /home/user/pebbleos-v2
+rc=0 kopie_pruefen.py /home/user/pebbleos-v2
+rc=0 vertraege.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py --gegenprobe
+rc=0 prueflauf_daten.py /home/user/pebbleos-v2
+rc=0 pruefe_unbenutzt.py fw/apps/system/boulder_health
+rc=0 pruefe_unbenutzt.py fw/apps/system/kieselsport tests/fw/apps/system_apps/kieselsport
+rc=0 test_kopie_pruefen.py 
+rc=0 test_pruefe_ohne_rechte.py 
+rc=0 test_pruefe_unbenutzt.py 
+rc=0 pruefe_ohne_rechte.py build-obelix
+rc=0 pruefe_ohne_rechte.py build-obelixrel
+rc=0 pruefe_ohne_rechte.py build
+rc=1 pruefe_ohne_rechte.py build-pruef
+rc=0 mehrwort.sh build-obelixrel
+Ende 06:48:32; Arbeitsbaum: 7 Aenderungen
