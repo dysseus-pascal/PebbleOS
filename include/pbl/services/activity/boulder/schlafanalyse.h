@@ -13,16 +13,17 @@
 // WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
 // auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
 // Bewegung. Dazu, eingestellt an Naechten neben einem Fitbit (29.9., 30.9. und
-// 2.10.2026, nur das Einschlafen auch am 5.10. und - in V2 - 7. bis 12.10.):
+// 2.10.2026, nur das Einschlafen auch am 5.10. und - in V2 - 7. bis 13.10.):
 // Aufwach-Schuebe - Regungen dicht hintereinander mit einem Pulsstoss - sind
-// ganz wach, auch zwischen den Regungen; eingeschlafen ist man erst, wenn das
-// Herumwaelzen aufhoert (keine zwei kraeftigen Regungen mehr in dreissig
-// Minuten), und ein Wegnicken vor einem Schub zaehlt nicht; wer nach
-// dem Aufwachen gegangen ist (VMC, nicht Schritte), schlaeft nur weiter, wenn
-// es haelt (30 Schlafminuten in 45) - der Kaffee danach ist keine Nacht. DIE
-// PHASEN: Tiefschlaf ist eine Viertelstunde ohne jede Regung bei ruhigem Herz,
-// REM ein unregelmaessiges Herz bei ruhendem Koerper (ohne dichten Puls: der
-// zuckende Koerper). Der Host-Test rechnet alle Naechte nach.
+// ganz wach, auch zwischen den Regungen, ausser die HRV liegt hoch und man ist
+// nicht gegangen (V2); eingeschlafen ist man erst, wenn das Herumwaelzen
+// aufhoert (keine zwei kraeftigen Regungen mehr in dreissig Minuten), und ein
+// Wegnicken vor einem Schub zaehlt nicht; wer nach dem Aufwachen gegangen ist
+// (VMC, nicht Schritte), schlaeft nur weiter, wenn es haelt (30 Schlafminuten
+// in 45) - der Kaffee danach ist keine Nacht. DIE PHASEN: Tiefschlaf ist eine
+// Viertelstunde ohne jede Regung bei ruhigem Herz, REM ein unregelmaessiges
+// Herz bei ruhendem Koerper (ohne dichten Puls: der zuckende Koerper). Der
+// Host-Test rechnet alle Naechte nach.
 //
 // KEIN BETRIEBSSYSTEM HIER. Eingabe sind Felder, Ausgabe ein Ergebnis; der
 // Aufrufer holt die Minuten aus der Datei und legt die Sitzungen an. So laesst
@@ -113,3 +114,11 @@ bool schlafanalyse_werte(const SchlafEingabe *eingabe, SchlafArbeit *arbeit,
 // Verdichtet `a` auf hoechstens `max` Abschnitte: der kuerzeste geht im
 // Nachbarn auf. Die Liste bleibt lueckenlos. Rueckgabe: wie viele.
 int schlafanalyse_verdichten(SchlafAbschnitt *a, int n, int max);
+
+#ifdef UNITTEST
+// Tests: die HRV-Regel der Aufwach-Schuebe (V2) aus und wieder an. Ohne sie
+// rechnet die Analyse die Referenznaechte wie b26; die Vergleiche mit b26
+// pruefen so die Maschinerie um die Rechnung. Was die Regel dort aendert,
+// prueft test_boulder_schlafkern eigens.
+void schlafanalyse_test_hrv_regel(bool an);
+#endif

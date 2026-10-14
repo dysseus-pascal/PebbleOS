@@ -290,12 +290,16 @@ static Ergebnis prv_nacht(const char *name, bool extra, bool endfassung) {
 }
 
 // `nachlauf_anders`: so viele Minuten hatte der Nachlauf vor der Endfassung
-// anders als b26 (nur in HRV-Naechten erlaubt, siehe nachlauf.c).
+// anders als b26 (nur in HRV-Naechten erlaubt, siehe nachlauf.c). OHNE DIE
+// HRV-REGEL VON V2: mit ihr rechnet V2 drei Referenznaechte mit Absicht anders
+// (hrv_regel_nur_in_den_schueben).
 static void prv_pruefe(const char *name, int nachlauf_anders) {
   prv_lade(name);
+  schlafanalyse_test_hrv_regel(false);
   const Ergebnis a = prv_nacht(name, true, true);
   const Ergebnis b = prv_nacht(name, false, true);
   const Ergebnis c = prv_nacht(name, true, false);
+  schlafanalyse_test_hrv_regel(true);
   printf("\n%s: Saetze %d gleich %d (Ganznacht-Kopie %d, im Takt %d), Satz-Minuten anders %d, "
          "Nachtbuch anders %d, Nachlauf allein anders %d; Lauf max %.0f us, Endfassung max %.0f us",
          name, s_ref.saetze, a.saetze_gleich, a.ganz_gleich, b.saetze_gleich, a.phasen_anders,
@@ -380,6 +384,90 @@ static int prv_nachlauf_gegen_ganznacht(const char *name, int *vergleiche) {
     (*vergleiche)++;
   }
   return anders;
+}
+
+// DIE HRV-REGEL (V2) AENDERT AN DEN REFERENZNAECHTEN NUR IHRE SCHUEBE: die Ganznacht zum
+// letzten Satz mit der Regel gegen die Phasen von b26. In drei Naechten bleibt ein Schub mit
+// hoher HRV ohne Gang Schlaf (Fitbit-Minuten gibt es dort nicht), sonst ist alles gleich.
+typedef struct {
+  const char *name;
+  int anders;       //< Minuten anders als b26
+  const char *von;  //< alle davon in [von, bis), "HH:MM"
+  const char *bis;
+} Regelspur;
+
+static int prv_minute(const char *uhr) {
+  const int m = atoi(uhr) * 60 + atoi(uhr + 3) - 20 * 60;
+  return (m < 0) ? m + 24 * 60 : m;
+}
+
+void test_boulder_schlafkern__hrv_regel_nur_in_den_schueben(void) {
+  static const Regelspur spuren[] = {
+    { "nacht-2026-09-26", 21, "05:57", "06:37" }, { "nacht-2026-09-29", 0, "", "" },
+    { "nacht-2026-09-30", 0, "", "" },            { "nacht-2026-10-03", 0, "", "" },
+    { "nacht-2026-10-05", 14, "03:35", "03:49" },
+    { "nacht-2026-10-05-morgen", 14, "03:35", "03:49" },
+  };
+  for (size_t k = 0; k < sizeof(spuren) / sizeof(spuren[0]); k++) {
+    const Regelspur *s = &spuren[k];
+    prv_lade(s->name);
+    const int um = s_ref.satz_um[s_ref.saetze - 1];
+    NachtDlsRecord ganz;
+    prv_satz(prv_ganznacht(um), um, &ganz);
+    char p_ganz[MINUTEN + 1];
+    prv_phasen_satz(&ganz, p_ganz);
+    const int anders = prv_anders(s->name, "mit HRV-Regel", p_ganz, s_ref.phasen);
+    printf("\n%s mit HRV-Regel: %d Minuten anders als b26", s->name, anders);
+    cl_assert_equal_i(anders, s->anders);
+    for (int m = 0; m < MINUTEN && anders; m++) {
+      if (p_ganz[m] != s_ref.phasen[m]) {
+        cl_assert(m >= prv_minute(s->von) && m < prv_minute(s->bis));
+        cl_assert(p_ganz[m] != '0');
+      }
+    }
+  }
+}
+
+// Mit der Regel bleibt die Maschinerie, wie sie ist: zu jeder Satzminute von b26 ist die
+// Endfassung Byte fuer Byte die Ganznacht mit derselben Rechnung, das Nachtbuch danach ihr Satz.
+void test_boulder_schlafkern__mit_hrv_regel_endfassung_wie_ganznacht(void) {
+  static const char *naechte[] = { "nacht-2026-09-26", "nacht-2026-10-05",
+                                   "nacht-2026-10-05-morgen" };
+  for (size_t k = 0; k < sizeof(naechte) / sizeof(naechte[0]); k++) {
+    prv_lade(naechte[k]);
+    boulder_eingang_neu();
+    boulder_nachlauf_neu(0, 0);
+    int satz = 0;
+    int hrv = 0;
+    for (int t = 1; t <= MINUTEN && satz < s_ref.saetze; t++) {
+      const int m = t - 1;
+      boulder_eingang_minute(m, s_ref.vmc[m], s_ref.puls[m], s_ref.gueltig[m]);
+      while (hrv < s_ref.hrv_anzahl && s_ref.hrv[hrv].minute + 2 < t) {
+        cl_assert(boulder_eingang_hrv(s_ref.hrv[hrv].minute, s_ref.hrv[hrv].rmssd,
+                                      s_ref.hrv[hrv].puls));
+        hrv++;
+      }
+      const bool faellig = (t == s_ref.satz_um[satz]);
+      if ((t % NACHLAUF_TAKT == 2 && t >= 60) || faellig) {
+        boulder_nachlauf_rechnen(t);
+      }
+      if (!faellig) {
+        continue;
+      }
+      NachtDlsRecord ist;
+      NachtDlsRecord ganz;
+      prv_satz(boulder_nachlauf_endfassung(), t, &ist);
+      prv_satz(prv_ganznacht(t), t, &ganz);
+      cl_assert(prv_gleich(naechte[k], "Endfassung mit HRV-Regel", t, &ist, &ganz));
+      char p_ist[MINUTEN + 1];
+      char p_soll[MINUTEN + 1];
+      prv_phasen_satz(&ganz, p_soll);
+      prv_phasen_buch(p_ist);
+      cl_assert_equal_i(prv_anders(naechte[k], "Nachtbuch mit HRV-Regel", p_ist, p_soll), 0);
+      satz++;
+    }
+    cl_assert_equal_i(satz, s_ref.saetze);
+  }
 }
 
 // LANGES WACHLIEGEN MITTEN IN DER NACHT (Spezifikation 4.3, strom P2/P7): in die

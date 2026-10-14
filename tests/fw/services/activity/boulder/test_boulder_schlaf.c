@@ -107,10 +107,13 @@ static SchlafPhase prv_phase_aus_text(const char *t) {
 // diese Rechnung selbst ergab. Der Test meldet also nur, DASS sich die Rechnung
 // aendert, die niemand aendern wollte - ob sie stimmt, belegen allein die
 // Fitbit-Naechte weiter unten. Aendern sich die Regeln mit Absicht, wird die
-// Spalte neu geschrieben (aus der Zeile LAUF26). Zuletzt neu am 3.10.2026: die
+// Spalte neu geschrieben (aus der Zeile LAUF26). Am 3.10.2026: die
 // Aufwach-Schuebe um 06:00 und 06:30 sind wach, und die HRV um 02:00 und 04:00
-// (36 und 37 ms) verwirft den Tiefschlaf dort nicht mehr. Der Puls dieser
-// Nacht ist duenn (alle zehn Minuten), deshalb bleibt das REM aus der Unruhe.
+// (36 und 37 ms) verwirft den Tiefschlaf dort nicht mehr. Zuletzt am 14.10.2026
+// (V2): dieselben Schuebe bleiben Schlaf (REM), ihre HRV (65 und 82 ms) liegt
+// ueber dem Median der Nacht (56), und gegangen ist man darin nicht. Der Puls
+// dieser Nacht ist duenn (alle zehn Minuten), deshalb bleibt das REM aus der
+// Unruhe.
 void test_boulder_schlaf__nacht_26_snapshot_unveraendert(void) {
   char pfad[512];
   snprintf(pfad, sizeof(pfad), "%s/activity/boulder/nacht-2026-09-26.csv", CLAR_FIXTURE_PATH);
@@ -773,9 +776,9 @@ void test_boulder_schlaf__echte_nacht_0510_neben_fitbit(void) {
   prv_neben_fitbit("Aufwachen 5.10.", s_ergebnis.aufwachen, "06:00");
   // Bis zum Wecker 7:45 h im Bett, Fitbit sah keine Minute wach.
   cl_assert(s_ergebnis.schlaf_minuten >= 420 && s_ergebnis.schlaf_minuten <= 480);
-  // Je Minute: b25 42,5 %, seit b26 43,6 %. UNSCHARF: die Tabelle ist von Hand
-  // aus dem Bild abgelesen, hat je 13 Minuten mehr REM und Tiefschlaf als
-  // Fitbits Summen, und die 18 Minuten bis zum Wecker sind als leicht
+  // Je Minute: b25 42,5 %, seit b26 43,6 %, V2 mit der HRV-Regel 43,8 %. UNSCHARF: die
+  // Tabelle ist von Hand aus dem Bild abgelesen, hat je 13 Minuten mehr REM und Tiefschlaf
+  // als Fitbits Summen, und die 18 Minuten bis zum Wecker sind als leicht
   // angenommen. Die Ablesefehler sind groesser als die zehn Promille Spiel (in
   // dieser Nacht rund fuenf Minuten): die Grenze faengt Rueckschritte der
   // Rechnung, sie sagt nicht, wie nah sie an Fitbit ist.
@@ -1179,6 +1182,47 @@ void test_boulder_schlaf__aufwach_schub_ist_wach(void) {
   cl_assert(prv_phase_bei(&s_ergebnis, 185) != SchlafPhaseWach);
 }
 
+// HOHE HRV OHNE GANG BLEIBT SCHLAF (V2): derselbe Schub mit Pulsstoss, dazu HRV-Fenster alle
+// fuenfzehn Minuten - in der Nacht 50 ms, im Schub mehr. Mit tiefer HRV im Schub oder mit
+// einem Gang darin (zwei Gehminuten hintereinander) wird er wach wie bisher.
+static int prv_hrv_alle_15(int schub_rmssd) {
+  int h = 0;
+  for (int m = 30; m < 320; m += 15) {
+    const bool im_schub = m >= 165 && m <= 200;
+    s_hrv[h++] = (SchlafHrv){ .minute = m, .rmssd = im_schub ? schub_rmssd : 50 };
+  }
+  return h;
+}
+
+void test_boulder_schlaf__schub_mit_hoher_hrv_bleibt_schlaf(void) {
+  const int b[][3] = { { 20, WACH, 80 }, { 300, RUHIG, 55 }, { 20, WACH, 80 } };
+  const int n = prv_bloecke(b, 3);
+  for (int i = 170; i <= 200; i += 6) {
+    s_bewegung[i] = 100 * 100;
+  }
+  s_puls[170] = 72;
+  const SchlafEingabe e = prv_eingabe(n, prv_hrv_alle_15(70));
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  for (int i = 170; i <= 200; i++) {
+    cl_assert(prv_phase_bei(&s_ergebnis, i) != SchlafPhaseWach);
+  }
+
+  prv_hrv_alle_15(40);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 185), SchlafPhaseWach);
+
+  prv_hrv_alle_15(70);
+  s_bewegung[188] = GEHEN * GEHEN;
+  s_bewegung[189] = GEHEN * GEHEN;
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(prv_phase_bei(&s_ergebnis, 185), SchlafPhaseWach);
+
+  // Eine einzelne Gehminute ist kein Gang (ein Umdrehen): der Schub bleibt Schlaf.
+  s_bewegung[189] = 0;
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert(prv_phase_bei(&s_ergebnis, 185) != SchlafPhaseWach);
+}
+
 void test_boulder_schlaf__einschlafen_nach_dem_herumwaelzen(void) {
   // Ab Minute 24 ruhig (Webster haengt vier Minuten an das Wachsein), aber um
   // 28, 31 und 35 noch kraeftige Regungen: eingeschlafen erst, wenn in den
@@ -1286,16 +1330,18 @@ void test_boulder_schlaf__zu_viele_abschnitte_werden_verdichtet(void) {
 }
 
 // ---------------------------------------------------------------------------
-// V2: DIE NAECHTE VOM 7. BIS 12.10.2026 (Pebble Time 2, b26, Messstufe 4) neben einem Fitbit.
+// V2: DIE NAECHTE VOM 7. BIS 13.10.2026 (Pebble Time 2, b26, Messstufe 4) neben einem Fitbit.
 // Die Exporte kommen von der Uhr; ihre Spalte `phase` ist, was b26 rechnete. An diesen Naechten
-// weicht V2 zweimal von b26 ab: das Waelz-Fenster ist 30 statt 40 Minuten (8.10.), und ein
-// Wegnicken vor einem Aufwach-Schub ist kein Einschlafen (9.10.). Analyse: Notizen,
-// boulder-v2/naechte/analyse-2026-10-13.md.
+// weicht V2 dreimal von b26 ab: das Waelz-Fenster ist 30 statt 40 Minuten (8.10.), ein
+// Wegnicken vor einem Aufwach-Schub ist kein Einschlafen (9.10.), und ein Schub mit hoher HRV
+// ohne Gang bleibt Schlaf (7.10., 9.10., 13.10.). Analyse: Notizen, boulder-v2/naechte/
+// analyse-2026-10-13.md und analyse-2026-10-14.md.
 // FITBITS PHASEN SIND AUS DEN BILDERN GELESEN, Zeile fuer Zeile aus den Pixeln und auf Fitbits
 // Summen gestreckt: an den Grenzen auf zwei, drei Minuten genau. Einminuetige Stuecke, die nur
 // Verbindungslinien des Bildes waren, fehlen.
-// FITBITS ENDE GILT NICHT, WO DER WECKER KLINGELTE: am 8. und 12.10. um 06:00 (Nutzer, 13.10.),
-// Fitbit endete um 05:42 und 05:46. Dort zaehlt fuer das Aufwachen der Wecker.
+// FITBITS ENDE GILT NICHT, WO DER NUTZER ANDERES SAGT: am 8. und 12.10. weckte der Wecker um 06:00
+// (Fitbit endete 05:42 und 05:46), am 13.10. wachte er um 05:45 auf (Fitbit 05:23). Dort zaehlt
+// fuer das Aufwachen seine Angabe.
 
 // Fitbit: ins Bett 21:17, "aus dem Bett" 05:13 - aufgestanden ist der Nutzer um 06:00. Fitbits
 // Phasen dieser Nacht gibt es nicht mehr (das Bild ging mit dem alten Rechner verloren).
@@ -1310,6 +1356,11 @@ void test_boulder_schlaf__echte_nacht_0710_einschlafen_wie_fitbit(void) {
   cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("21:18"));
   prv_neben_fitbit("Einschlafen 7.10.", s_ergebnis.einschlafen, "21:17");
   prv_neben_fitbit("Aufwachen 7.10. (aufgestanden)", s_ergebnis.aufwachen, "06:00");
+  // Der Schub 04:43-04:57 war laut Fitbit Schlaf; mit der HRV-Regel (89 ms, Nacht 70) bleibt er
+  // es. 02:43-03:28 bleibt wach: seine HRV liegt einen halben Millisekunde unter der der Nacht.
+  for (int m = prv_minute_ab_20("04:43"); m < prv_minute_ab_20("04:57"); m++) {
+    cl_assert(prv_phase_bei(&s_ergebnis, m) != SchlafPhaseWach);
+  }
 }
 
 // Fitbit: ins Bett 22:32, aus 05:42 (Wecker 06:00); wach 17 min, REM 1:50, leicht 3:48, tief
@@ -1347,8 +1398,8 @@ void test_boulder_schlaf__echte_nacht_0810_neben_fitbit(void) {
 // Fitbit: ins Bett 23:12, aus 06:57; wach 16 min, REM 1:28, leicht 4:51, tief 1:10 h. Davor lag
 // der Nutzer wach im Bett, mit einem Toilettengang um 22:50. b26 liess die Nacht um 21:34
 // beginnen: fuenf Minuten Wegnicken vor einem Aufwach-Schub bis 23:12.
-// BEKANNTE GRENZE: drei Aufwach-Schuebe (01:41, 02:34, 04:38; 46 Minuten) sind laut Fitbit Schlaf
-// - Schlafpuls, hohe HRV, keine Schritte. Eine Regel dafuer ist noch nicht belegt (Notiz).
+// Drei Aufwach-Schuebe (01:41, 02:34, 04:38; 46 Minuten) sind laut Fitbit Schlaf - Schlafpuls,
+// hohe HRV, kein Gang. b26 machte sie wach; mit der HRV-Regel bleiben sie Schlaf.
 // clang-format off
 static const FitbitAbschnitt s_fitbit_0910[] = {
   { "23:12", "06:57", 'l' },
@@ -1374,10 +1425,12 @@ void test_boulder_schlaf__echte_nacht_0910_neben_fitbit(void) {
   cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("23:16"));
   prv_neben_fitbit("Einschlafen 9.10.", s_ergebnis.einschlafen, "23:12");
   prv_neben_fitbit("Aufwachen 9.10.", s_ergebnis.aufwachen, "06:57");
-  // Je Minute: b26 58,8 %, V2 51,1 %. WENIGER, WEIL AUSSERHALB DER NACHT ALS WACH ZAEHLT: b26s
-  // 98 Minuten "wach in der Nacht" vor 23:12 trafen dort Fitbits "ausserhalb". Das Einschlafen
-  // misst diese Kennzahl nicht - das tun die Zeilen oben.
-  cl_assert(gleich >= 511 - UEBEREINSTIMMUNG_SPIEL);
+  cl_assert_equal_i(prv_minuten(&s_ergebnis, SchlafPhaseWach), 0);
+  // Je Minute: b26 58,8 %, V2 51,1 %, mit der HRV-Regel 55,6 %. WENIGER ALS b26, WEIL
+  // AUSSERHALB DER NACHT ALS WACH ZAEHLT: b26s 98 Minuten "wach in der Nacht" vor 23:12 trafen
+  // dort Fitbits "ausserhalb". Das Einschlafen misst diese Kennzahl nicht - das tun die Zeilen
+  // oben.
+  cl_assert(gleich >= 556 - UEBEREINSTIMMUNG_SPIEL);
 }
 
 // Fitbit: ins Bett 21:38, aus 05:46 (Wecker 06:00); wach 1:19, REM 1:20, leicht 4:28, tief
@@ -1409,4 +1462,51 @@ void test_boulder_schlaf__echte_nacht_1210_neben_fitbit(void) {
   prv_neben_fitbit("Aufwachen 12.10. (Wecker)", s_ergebnis.aufwachen, "06:00");
   // Je Minute: b26 und V2 49,1 %.
   cl_assert(gleich >= 491 - UEBEREINSTIMMUNG_SPIEL);
+}
+
+// Fitbit: ins Bett 21:32, "aus dem Bett" 05:23 - aufgewacht ist der Nutzer um 05:45, aufgestanden
+// um 06:00 (Nutzer, 14.10.). Wach 9 min, REM 1:58, leicht 4:16, tief 1:24 h. Von 05:23 bis 05:45
+// steht leicht. b26 machte 03:14-04:03 wach: ein Pulswert 78 um 03:40, sonst Schlafpuls, HRV 64,
+// 65 und 80 (Nacht 55), beim Umdrehen um 03:17 12 Schritte. Der Nutzer hat da geschlafen; Fitbit
+// sah leicht und ab 03:36 REM.
+// clang-format off
+static const FitbitAbschnitt s_fitbit_1310[] = {
+  { "21:32", "05:45", 'l' },
+  { "21:32", "21:39", 'w' }, { "23:04", "23:06", 'w' },
+  { "22:54", "23:03", 'r' }, { "23:06", "23:08", 'r' }, { "00:11", "00:26", 'r' },
+  { "01:30", "01:55", 'r' }, { "02:08", "02:27", 'r' }, { "03:36", "04:03", 'r' },
+  { "05:02", "05:23", 'r' },
+  { "21:52", "22:22", 't' }, { "22:36", "22:37", 't' }, { "23:28", "00:04", 't' },
+  { "02:58", "03:15", 't' },
+};
+// clang-format on
+
+void test_boulder_schlaf__echte_nacht_1310_neben_fitbit(void) {
+  int hrv_n = 0;
+  const int n = prv_lade_nacht("nacht-2026-10-13.csv", &hrv_n);
+  cl_assert_equal_i(n, 643);
+  cl_assert_equal_i(hrv_n, 31);
+  const SchlafEingabe e = prv_echte_eingabe(n, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  static char ref[SCHLAF_MINUTEN_MAX];
+  prv_lauf(lauf, n);
+  prv_fitbit(ref, n, s_fitbit_1310, ARRAY_LENGTH(s_fitbit_1310));
+  // Die Tabelle trifft Fitbits Summen.
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'w'), 9);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'r'), 118);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 't'), 84);
+  const int gleich = prv_uebereinstimmung(lauf, ref, n);
+  prv_bericht("1310", lauf, gleich);
+  // b26 schlief um 21:37 ein: vor der Regung um 21:38 lag nur eine Minute Schlaf.
+  cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("21:39"));
+  prv_neben_fitbit("Einschlafen 13.10.", s_ergebnis.einschlafen, "21:32");
+  prv_neben_fitbit("Aufwachen 13.10. (Nutzer)", s_ergebnis.aufwachen, "05:45");
+  for (int m = prv_minute_ab_20("03:14"); m < prv_minute_ab_20("04:03"); m++) {
+    cl_assert(prv_phase_bei(&s_ergebnis, m) != SchlafPhaseWach);
+  }
+  // Wach in der Nacht bleibt nur 05:23-05:29, wo man sich bewegte.
+  cl_assert_equal_i(prv_minuten(&s_ergebnis, SchlafPhaseWach), 7);
+  // Je Minute: b26 54,3 %, V2 ohne die HRV-Regel 54,7 %, mit ihr 64,2 %.
+  cl_assert(gleich >= 642 - UEBEREINSTIMMUNG_SPIEL);
 }

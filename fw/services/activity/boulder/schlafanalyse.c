@@ -152,6 +152,10 @@
 #define AUFWACH_LUECKE 10
 #define AUFWACH_REGUNGEN 3
 #define AUFWACH_PULS 13
+// Die HRV eines Schubs: auch die Fenster, die bis fuenf Minuten neben ihm
+// liegen. Sie kommen alle zehn bis fuenfzehn Minuten; ein kurzer Schub
+// enthielte sonst oft keines.
+#define SCHUB_HRV_RAND 5
 // So weit um die Minute herum zaehlt die Unruhe, in Minuten nach jeder Seite.
 #define UNRUHE_FENSTER 7
 // REM fruehestens eine Stunde nach dem Einschlafen.
@@ -412,6 +416,40 @@ static bool prv_puls_schiesst(const SchlafEingabe *e, const bool *wach, int ein,
   return hoch > 0 && 2 * hoch - grund2 >= 2 * AUFWACH_PULS;
 }
 
+#ifdef UNITTEST
+static bool s_hrv_regel = true;
+
+void schlafanalyse_test_hrv_regel(bool an) {
+  s_hrv_regel = an;
+}
+#else
+static const bool s_hrv_regel = true;
+#endif
+
+static int32_t prv_hrv_median2(const SchlafEingabe *e, int ein, int auf, int16_t *puffer);
+
+// Der Median der HRV-Fenster, die den Schub [von, bis) oder seinen Rand
+// beruehren, mal zwei; KEIN ohne Messung.
+static int32_t prv_schub_hrv2(const SchlafEingabe *e, int von, int bis, int16_t *puffer) {
+  int n = 0;
+  for (int k = 0; k < e->hrv_anzahl; k++) {
+    const int m = e->hrv[k].minute;
+    if (e->hrv[k].rmssd > 0 && m + 5 > von - SCHUB_HRV_RAND && m < bis + SCHUB_HRV_RAND) {
+      puffer[n++] = (int16_t)e->hrv[k].rmssd;
+    }
+  }
+  return n ? prv_median2(puffer, n) : KEIN;
+}
+
+static bool prv_gang_im(const SchlafEingabe *e, int von, int bis) {
+  for (int j = von; j < bis; j++) {
+    if (prv_gang_ab(e, j)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Die Aufwach-Schuebe zwischen Einschlafen und Aufwachen als wach markieren.
 // NUR MITTEN IN DER NACHT: ein Schub, der bis ans Aufwachen reicht, ist das
 // Aufstehen - dort setzt Cole-Kripke das Ende schon richtig. Erst sammeln,
@@ -422,6 +460,17 @@ static bool prv_puls_schiesst(const SchlafEingabe *e, const bool *wach, int ein,
 // bei Fitbit leicht und REM). Ruhig wach liegen (03:19-03:47) sieht in den
 // Minuten aber genauso aus: Regungen alle sieben bis neun Minuten, das Herz
 // beim Schlafpuls. Wer den Schub dort trennt, verliert beides.
+// HOHE HRV OHNE GANG BLEIBT SCHLAF (V2): liegt die HRV im Schub mindestens
+// beim Median der Nacht und ist man darin nicht gegangen, wird er nicht wach.
+// So sahen fuenf Schuebe aus, die Fitbit als Schlaf sah - Schlafpuls und ein
+// einzelner hoher Wert (7.10. 04:43, 9.10. 01:41, 02:34 und 04:38, 13.10.
+// 03:14-04:03; diesen bestaetigt der Nutzer). Zwei bleiben wach, ihre HRV liegt
+// knapp darunter (7.10. 02:43, 12.10. 22:42). Die Wachphasen, die Fitbit ganz
+// oder teils sah, bleiben: am 8.10. 01:41 macht schon Cole-Kripke sie wach, am
+// 12.10. 02:25 und 04:03 lag ein Gang darin. DER GANG AUS DEM VMC, wie beim
+// Aufstehen: im Bett zaehlt die Uhr bis zu 20 Schritte in einer Minute
+// (GEHEN_FACH), und Schritte fehlen in der Eingabe. Ob ruhiges Wachliegen mit
+// hoher HRV so zu Schlaf wird, zeigt noch keine Nacht (3.10. ohne HRV).
 static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein, int auf) {
   int anzahl = 0;
   int von = -1;
@@ -446,8 +495,18 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
     letzte = i;
     zahl = 1;
   }
+  // Der Puffer ist frei: prv_puls_schiesst braucht ihn nur beim Sammeln.
+  const int32_t nacht2 = prv_hrv_median2(e, ein, auf, w->sortiert2);
   for (int k = 0; k < anzahl; k++) {
-    for (int j = w->liste[k].von; j < w->liste[k].bis; j++) {
+    const int von_k = w->liste[k].von;
+    const int bis_k = w->liste[k].bis;
+    if (s_hrv_regel && nacht2 != KEIN && !prv_gang_im(e, von_k, bis_k)) {
+      const int32_t schub2 = prv_schub_hrv2(e, von_k, bis_k, w->sortiert2);
+      if (schub2 != KEIN && schub2 >= nacht2) {
+        continue;
+      }
+    }
+    for (int j = von_k; j < bis_k; j++) {
       w->wach[j] = true;
     }
   }

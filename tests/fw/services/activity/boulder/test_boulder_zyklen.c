@@ -554,6 +554,9 @@ void test_boulder_zyklen__initialize(void) {
   s_weckzeit = 0;
   pbl_cron_init();
   boulder_dauerteil_test_neustart();
+  // Der Bezug sind b26s Phasen und Saetze. Ohne die HRV-Regel von V2 rechnet die Analyse sie
+  // gleich (test_boulder_schlafkern); was die Regel aendert, prueft test_boulder_schlaf.
+  schlafanalyse_test_hrv_regel(false);
   cl_assert(activity_algorithm_init(&s_rate));
 }
 
@@ -562,6 +565,7 @@ void test_boulder_zyklen__cleanup(void) {
   activity_algorithm_deinit();
   fake_system_task_callbacks_invoke_pending();
   pbl_cron_deinit();
+  schlafanalyse_test_hrv_regel(true);
 }
 
 static const char *s_naechte[] = {
