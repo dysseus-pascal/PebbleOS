@@ -407,6 +407,16 @@
       ]
     },
     {
+      "kommentar": "Boulder: P3, Kieselstrasse (F6, aus b26) - nur mit dem Schalter; b26 gab ihr -103",
+      "id": -104,
+      "enum": "KIESELSTRASSE",
+      "md_fn": "kieselstrasse_app_get_info",
+      "color_argb8": "GColorCobaltBlueARGB8",
+      "ifdefs": [
+        "CONFIG_BOULDER_KIESELSTRASSE"
+      ]
+    },
+    {
       "id": -61,
       "enum": "SWAP_LAYER",
       "md_fn": "swap_layer_demo_get_app_info",

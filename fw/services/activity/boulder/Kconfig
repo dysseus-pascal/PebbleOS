@@ -14,6 +14,16 @@ config BOULDER_KIESELSPORT
       gibt es Kieselsport nur auf obelix und qemu_emery. Die anderen Boards behalten
       Pebbles Workout-App. Ohne Pulssensor gaebe es weder Zonen noch Pulskalorien.
 
+config BOULDER_KIESELSTRASSE
+    bool "Boulder: Kieselstrasse (naechster Schritt einer OsmAnd-Navigation)"
+    default y
+    depends on SERVICE_ACTIVITY_ALGORITHM_BOULDER
+    help
+      Kieselstrasse als System-App (aus b26) mit der Kennung der Store-App. Sie zeigt nur, was
+      Boulder von OsmAnd schickt, und braucht von der Variante nichts. Sie haengt trotzdem an
+      ihr: so bleiben die Boards ohne Variante bei Pebble, und es gibt sie wie Kieselsport nur
+      auf obelix und qemu_emery.
+
 config BOULDER_HEALTH_APP
     bool "Boulder: eigene Health-App (ohne Systemrechte, anstelle von Pebbles)"
     default y
