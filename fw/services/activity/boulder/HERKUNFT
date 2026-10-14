@@ -2,7 +2,7 @@
 # commit <Upstream-Commit des Originals>
 # kopie <Kopie> <Original> <SHA-256 des Originals zum Commit>
 # abweichung <Dn> <Beschreibung>
-commit daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
+commit 3e8d77c21d7188cfe873e8aa6312bf703f2566e3
 kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c b5442140345256c27bb33cb3259ae0587863c4b25b440f3dc27160ec90a5fdb0
 kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c 2bd08ba51370c17846d9e1f9781c749bbd626914cd4fef26e1f3c013caf2fa6d
 kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h 83b51cec41429c50e26b45bf10c45fe8a6ab721203e4d6c9cd78076ac28b31b7
