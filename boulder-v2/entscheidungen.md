@@ -231,6 +231,13 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   löscht `LockerAppPermission` in Fassung 48).
 - **F28: Cactus behalten** (gegen die Empfehlung, Cactus wegzulassen). Offline-Diktat wie bei Core; die
   Lizenzfrage für ein öffentliches APK bleibt offen.
+- **F29: Ring/Index lassen wie bei Core** (14.10., Empfehlung). Kein Eingriff ins Modul `experimental`:
+  Cores Teilen-Ziele „Index“ sind ab Werk aus und gehen erst mit gekoppeltem Ring an, die Ring-Rechte
+  werden ohne Ring nie erfragt. Damit bleiben `kotlin-reflect` (über das MCP-SDK) und die Ring-Bilder
+  im APK; Boulders Ausschlüsse dafür aus 0.53 kommen nicht mit.
+- **F30: Fassung 0.54.0** (14.10., Empfehlung) für die erste App auf Cores Grundlage.
+- **F31: Gerätetest per APK** (14.10., Empfehlung). Der Release-Build kommt zum Seitenladen; `main`
+  bleibt auf 0.53, bis der Gerätetest bestanden ist, dann `main` und Release `v0.54.0`.
 
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
