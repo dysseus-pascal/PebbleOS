@@ -100,6 +100,16 @@ M = [
     # b25, der am 5.10. 29 Minuten zu frueh einschlafen liess.
     ('S1-3', 'Schritt 1 K3', 'Waelz-Regel beim Einschlafen wie b25: 20 statt 30 min', VAR + 'schlafanalyse.c',
      '#define EINSCHLAF_RUHE     30', '#define EINSCHLAF_RUHE     20', ctest('^test_boulder_(naechte|schlaf)')),
+    # V2, F20/F21 (14.10.): ein Aufwach-Schub mit hoher HRV ohne Gang bleibt Schlaf.
+    ('H4a', 'V2 F20', 'HRV-Regel aus: jeder Schub wach wie in b26', VAR + 'schlafanalyse.c',
+     'if (s_hrv_regel && nacht2 != KEIN &&', 'if (false && nacht2 != KEIN &&',
+     ctest('^test_boulder_schlaf')),
+    ('H4b', 'V2 F21', 'Gang im Schub uebersehen', VAR + 'schlafanalyse.c',
+     '!prv_gang_im(e, von_k, bis_k)', '(!prv_gang_im(e, von_k, bis_k) || true)',
+     ctest('^test_boulder_schlaf$')),
+    ('H4c', 'V2 F20', 'HRV-Vergleich verkehrt: tiefe HRV haelt den Schlaf', VAR + 'schlafanalyse.c',
+     'if (schub2 != KEIN && schub2 >= nacht2) {', 'if (schub2 != KEIN && schub2 < nacht2) {',
+     ctest('^test_boulder_schlaf')),
     ('S1-4', 'Schritt 1 K4', 'Smart Alarm ohne Bewegung (auch im Tiefschlaf)', VAR + 'wecker.c',
      '  if (s_bewegt & WECKER_S1) {', '  if (true) {', ctest('^test_boulder_wecker')),
     ('S1-5', 'Schritt 1 K5', 'Velo nie erkannt', VAR + 'kontext.c',
