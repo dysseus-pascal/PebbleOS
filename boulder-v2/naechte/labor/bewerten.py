@@ -2,8 +2,9 @@
 
 Aufruf: bewerten.py [--wecker] [Variante ...]. Die Varianten sind Programme aus nacht_rechnen.c und
 schlafanalyse_var.c (siehe LIESMICH.md) im Verzeichnis NACHTLABOR_BIN, sonst labor/bin. Mit --wecker
-zaehlen am 8. und 12.10. die Minuten bis zum Wecker um 06:00 bei Fitbit als Schlaf (Nutzer, 13.10.;
-Fitbit endete 05:42 bzw. 05:46, die Uhr zeigt dort Schlafpuls und Stille)."""
+zaehlen bei Fitbit die Minuten bis zum Aufwachen als Schlaf, das der Nutzer angegeben hat: am 8. und
+12.10. bis zum Wecker um 06:00 (Fitbit endete 05:42 bzw. 05:46), am 13.10. bis 05:45 (Fitbit endete
+05:23). Die Uhr zeigt dort Schlafpuls und kaum Bewegung."""
 import json
 import os
 import subprocess
@@ -15,7 +16,7 @@ BIN = os.environ.get('NACHTLABOR_BIN', HIER + 'bin') + '/'
 WECKER = '--wecker' in sys.argv
 VARIANTEN = [a for a in sys.argv[1:] if a != '--wecker'] or [
     'v_b26', 'v_w30', 'v_o2', 'v_h2', 'v_o2h2', 'v_o2w30', 'v_o2h2w30', 'v_h3', 'v_o2h3w30', 'v_g20', 'v_o2g20w30',
-    'v_o2g25w30', 'v_o2hnw30']
+    'v_o2g25w30', 'v_o2hnw30', 'v_h4', 'v_o2h4w30']
 # Fitbit je Nacht: Schlafbeginn (Minute ab 20:00), Schlaf gesamt, wach im Bett; Quelle in Klammern
 NAECHTE = [
     ('29.9.', HIER + 'ref-09-29.csv', None, None),
@@ -29,7 +30,8 @@ NAECHTE = [
     ('12.10.', NAECHTE_DIR + 'nacht-2026-10-12.csv', {'ein': 104, 'schlaf': 423 if WECKER else 409, 'wach': 79},
      HIER + ('fitbit-12k.json' if WECKER else 'fitbit-12.json')),
     # 13.10.: erster Schlaf 21:39 aus dem Bild; Schlaf = Fitbits Summe ohne wach (458), Ende 05:23
-    ('13.10.', NAECHTE_DIR + 'nacht-2026-10-13.csv', {'ein': 99, 'schlaf': 458, 'wach': 9}, HIER + 'fitbit-13.json'),
+    ('13.10.', NAECHTE_DIR + 'nacht-2026-10-13.csv', {'ein': 99, 'schlaf': 481 if WECKER else 458, 'wach': 9},
+     HIER + ('fitbit-13k.json' if WECKER else 'fitbit-13.json')),
 ]
 
 

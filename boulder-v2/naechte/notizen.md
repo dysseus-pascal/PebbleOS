@@ -41,5 +41,8 @@
 - **Falsche Wachphase 03:14–04:03 (49 min):** Puls auf Schlafniveau, HRV 64/65/80 (Nacht 55), ein
   Pulswert 78 um 03:40. Fitbit: tief, leicht, ab 03:36 REM. H2 behebt sie nicht, weil die Uhr beim
   Umdrehen um 03:17 12 Schritte zählte. H2/20 (Gang erst ab 20 Schritten) behebt sie.
-- **Morgen:** 05:23–05:29 Bewegung, dann 16 min still mit Puls 49–53, Aufwachen 05:46. Offen, ob
-  man da noch geschlafen hat und wann man aufgestanden ist.
+- **Morgen:** 05:23–05:29 Bewegung, dann 16 min still mit Puls 49–53, Aufwachen 05:46.
+- **Nutzer (14.10.):** 03:14–04:03 geschlafen; aufgewacht um 05:45, aufgestanden um 06:00. Boulders
+  Aufwachen stimmt, Fitbits Ende (05:23) ist zu früh.
+- F20: A (H2/20 in V2). Offen F21: Gang aus dem VMC (H4) statt aus Schritten, weil die Firmware ohne
+  Schritte rechnet (`analyse-2026-10-14.md`, Abschnitt 5).

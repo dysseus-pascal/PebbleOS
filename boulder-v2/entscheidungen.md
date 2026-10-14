@@ -171,6 +171,15 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   der Befund vom 8.10.: Puls und HRV trennen ruhiges Wachliegen nicht vom Schlaf. Es braucht mehr
   Nächte mit Fitbit und HRV.
 
+## Schlaf: Nacht 13.→14.10. (14.10.2026, Analyse `naechte/analyse-2026-10-14.md`)
+- **Nutzer:** 03:14–04:03 geschlafen, Boulders Wachphase dort ist falsch. Aufgewacht um 05:45,
+  aufgestanden um 06:00: Boulders Aufwachen (05:46) stimmt, Fitbits Ende (05:23) ist zu früh.
+- **F20: A.** H2/20 in V2 übernehmen: Ein Aufwach-Schub bleibt Schlaf, wenn die HRV im Schub mindestens
+  beim Median der Nacht liegt und kein Gang darin ist (unter 20 Schritten).
+- **Offen F21:** Die Firmware rechnet ohne Schritte. Vorschlag H4: derselbe Entscheid, der Gang aber
+  aus dem VMC wie beim Aufstehen (`prv_gang_ab`). Rechnet alle Nächte wie H2/20 bis auf den 12.10.
+  02:25–03:12.
+
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
 - **F17: B.** Den ersten Start nach dem Boot misst `qemu_health.py` in einem zweiten Boot unter

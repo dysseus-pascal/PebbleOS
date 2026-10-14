@@ -14,6 +14,12 @@ extern int s_schrittminuten_im(int von, int bis);
 #define VAR_H2
 #endif
 #endif
+// H4: wie H2, aber Gang heisst zwei Gehminuten dicht hintereinander (prv_gang_ab, VMC).
+#ifdef VAR_H4
+#ifndef VAR_H2
+#define VAR_H2
+#endif
+#endif
 // H2 mit anderer Schrittgrenze, z. B. -DGANG_SCHRITTE=15.
 #ifndef GANG_SCHRITTE
 #define GANG_SCHRITTE 10
@@ -488,6 +494,12 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
       }
 #ifdef VAR_H3
       const bool gang = s_schrittminuten_im(w->liste[k].von, w->liste[k].bis) >= 2;
+#elif defined(VAR_H4)
+      // H4: Gang wie beim Aufstehen, aus dem VMC (prv_gang_ab), ohne Schritte.
+      bool gang = false;
+      for (int j = w->liste[k].von; j < w->liste[k].bis && !gang; j++) {
+        gang = prv_gang_ab(e, j);
+      }
 #else
       const bool gang = s_schritte_im(w->liste[k].von, w->liste[k].bis) >= GANG_SCHRITTE;
 #endif
