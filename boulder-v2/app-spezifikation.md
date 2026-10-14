@@ -247,3 +247,71 @@ Was Core seither geändert hat und Boulder trifft:
   ohne Rückfrage (Apps prüft Core im Locker, Firmware fragt nach). Effizienzteile aus 0.53
   (Arbeit nur mit Uhr, Log ab Info, Coil-Cache), Asset-Ausschluss und Cactus-`ios/lib` hängen
   teils am Entscheid zu Cores Ring/Index-Teilen.
+
+### AP7 (14.10.2026, `1654dcc86`, `a462a6c4e`, `3a9ef8118`)
+- **Diagnose-Schalter weg:** „Send app crashes“, „Send watch analytics“, „Send app analytics“. Sie
+  standen auf „an“, obwohl nichts gesammelt wird; „Send app crashes“ rief
+  `setCrashlyticsCollectionEnabled(it)` und schaltete Crashlytics nach aus/ein zur Laufzeit wieder ein.
+- **Sideload:** Kopie im Hintergrund statt auf dem Hauptfaden, höchstens 32 MB, Fehler gefangen (Core
+  kopierte ungebremst und warf bei einem abbrechenden Strom). Sprachpakete (`.pbl`) warten auf die
+  Rückfrage wie Firmware; Apps (`.pbw`) gehen wie bei Core in die Prüfung im Locker.
+  `SideloadRueckfrageTest` angepasst.
+- **Effizienz wie in 0.53:** Wetter und 6-h-Teil nur mit Uhr, Nachholen beim Verbinden; Log im
+  Release ab Info; Coil 15 % und leer im Hintergrund; Logdatei ohne `stat()` je Zeile.
+- **APK:** Cactus' `ios/lib` (16 MB ungepackt) ausgeschlossen: 36,9 → 31,7 MB.
+- **Symbol:** Felsbrocken als Vektor mit Monochrom, Benachrichtigungssymbol, Logo im Onboarding.
+- **Wächter** für `bestaetigt = pkjsBestaetigt(daneben)` jetzt in libpebble3 (Core hat keine Hosttests
+  in `:androidApp`); er bemerkt vier eingebaute Fehler.
+- **Cactus-Telemetrie aus:** Die vorgebaute Engine (`libcactus_engine.so`) schickt mit eingebautem
+  Schlüssel Ereignisse an einen Supabase-Server von Cactus (`/rest/v1/logs`, `/devices`, `/projects`);
+  Core startet sie bei jedem App-Start (`initCactus`). Im Maschinencode von `telemetry::init` und
+  `cactus_init` liest sie `CACTUS_NO_CLOUD_TELE` (jeder Wert ausser leer und „0“ schaltet ab);
+  `MainApplication` setzt ihn als Erstes. Am Binärprogramm geprüft, nicht im Betrieb gemessen.
+- **Entfallen durch F29:** Asset-Ausschluss (Ring-Bilder) und `kotlin-reflect` (hängt bei Core am
+  MCP-SDK des Index-Teils).
+
+### AP8 (14.10.2026, Fassung 0.54.0, `59f939c90`)
+- **Fassung 0.54.0** (F30) mit `.github/release/0.54.0.md`. Release-Build vom Stand `59f939c90`:
+  versionCode 2565, `ch.dysseus.boulder`, signiert mit dem CI-Schlüssel (SHA-256 `212e0ca4…`, wie
+  0.53), 31,7 MB; zum Seitenladen übergeben (F31). `main` bleibt auf 0.53.
+- **Prüfung:** alle Testaufgaben grün, 2 796 Tests (11 übersprungen, wie bei Core), dazu der
+  Exportwächter im Release-Bau.
+
+#### Netzwerkziele (aus dem Code, nicht im Betrieb gemessen)
+| Ziel | Wann | Bemerkung |
+|---|---|---|
+| `api.github.com`, `github.com`/`objects.githubusercontent.com` | Firmware-Prüfung alle 5 h, Download beim Installieren | nur `dysseus-pascal/boulder-firmware` |
+| `weather-api.repebble.com` | Wetter: im Hintergrund nur mit verbundener Uhr, beim Öffnen der App, falls noch nicht geholt | Cores Wetterdienst, mit Ort |
+| `appstore-api.repebble.com`, `appstore-api.rebble.io`, `binaries.rebble.io`, `assets2.rebble.io`, `apps.repebble.com` | Store und Locker beim Öffnen, Installieren | Core- und Rebble-Store |
+| `notif-app-icons.repebble.com` | Liste der Benachrichtigungs-Apps | Symbole |
+| `translate.repebble.com` | Sprachpaket laden | auf Wunsch |
+| `huggingface.co` | Cactus-Modell laden | auf Wunsch (Offline-Diktat) |
+| `cohorts.rebble.io` | Firmware-Prüfung alter Pebbles | nicht Boulders Uhr |
+| `nominatim.openstreetmap.org`, OSM-Kacheln (osmdroid) | Ortssuche von Kieselstrasse, Trainingskarte | auf Wunsch |
+| Uhr-Apps (PKJS) | je App | nach Cores Rechtemodell (F27) |
+| Wispr (`wispr.ai`, `platform-api.wisprflow.ai`) | nur wenn eingerichtet | Diktat-Dienst |
+| Index/Ring: `nenya.repebble.com`, `index-oauth.repebble.com`, Supabase (Core), Notion, Google Tasks | nur mit gekoppeltem Ring | F29 |
+| Google (Firebase), Mixpanel, Memfault, Cores Analysen (`bugUrl`) | nicht | Attrappe, Sammeln aus im Manifest, keine Tokens, `bugUrl` leer (F25) |
+| Cactus-Telemetrie (Supabase) | nicht | `CACTUS_NO_CLOUD_TELE` |
+
+#### Stand der Abnahmekriterien (Abschnitt 4)
+1. Basis: der Zweig enthält Core 1.15.0.1 mit Verlauf; Exportwächter grün. `main` folgt nach dem
+   Gerätetest.
+2. Update ohne Verlust: gleiche App-ID und Signatur, versionCode 2565 > 0.53; Migration 1045 → 1049
+   mit einer Zeile in jeder Tabelle (`DatenbankFassungTest.migration1045`). Ausnahme: Gravels
+   PKJS-Freigaben (F27).
+3. Daten der Uhr: Parser und Wege wie in 0.53 getestet (AP2); auf der Uhr offen (Gerätetest).
+4. Boulders Teile: alle übernommenen Tests grün; auf dem Telefon offen.
+5. Firmware: AP3, `FirmwareWegeTest`.
+6. Core bleibt Core: Cores Tests grün; Benachrichtigungen, PKJS, Locker, Wetter und Kalender auf dem
+   Telefon offen.
+7. Netz: Liste oben aus dem Code; im Betrieb nicht gemessen.
+8. Release und Gerät: Release-Build signiert mit dem CI-Schlüssel; Installation über 0.53 und eine
+   Nacht der Uhr: Gerätetest des Nutzers.
+
+#### Für den Gerätetest
+- Vorher in Boulder 0.53 eine Sicherung machen. Zurück auf 0.53 (`adb install -d`) legt 0.53 die
+  neuere Datenbank nach `databases/beiseite` und startet leer.
+- Uhr auf V2 (b27 oder neuer; F26).
+- Prüfen: Start ohne Absturz, Health mit den alten Daten, eine Nacht kommt an, Benachrichtigungen,
+  Locker (Kieselsport, Kieselstrasse), Firmware-Prüfung, Widget, Health Connect.
