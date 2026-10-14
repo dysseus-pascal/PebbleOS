@@ -238,7 +238,7 @@ Was Core seither geändert hat und Boulder trifft:
 - **Wetter:** zwei schnelle Updates der Reihe nach und als Transaktion (Core: das ältere gewann).
 - **Farbschema:** Boulder-Grün statt Cores Orange, vorgezogen aus AP7, weil die Kiesel-Farben
   darauf bauen (`FarbenTest`); Kontraste wie in 0.53. App-Symbol folgt in AP7.
-- **Tests:** 77 Kiesel-Tests (Robolectric), Health-Hilfen, Sport-Unterseite, Sync ohne Nächte,
+- **Tests:** 77 Kiesel-Testdateien (Robolectric), Health-Hilfen, Sport-Unterseite, Sync ohne Nächte,
   Messstufe, Wetterreihenfolge, Kontraste. `RechteTest` liest nur die Manifeste, die Core hat.
   Alle Testaufgaben grün: 2 779 Tests; der Release-Bau mit Exportwächter auch.
 - **Für AP7 gefunden:** Die Schalter „Send app crashes“/„Send watch analytics“/„Send app
