@@ -545,3 +545,24 @@ bleibt eingefroren (F18). Belege: `belege-vorab/v2-b29/`.
   für den Gerätetest ab dem 14.10. abends.
 - **Nicht geprüft:** ein Worker in QEMU (keine eingebaute App hat einen); belegt ist die Ursache, die
   Größe von `WorkerState`.
+
+## 14. Health-App: Unten blättert vorwärts (14.10.2026, `a3652f881`)
+
+F23 (Nutzer, auf der Uhr mit b29): „In Health sind die Buttons verkehrt. Nach unten soll vorwärts
+sein.“ Ersetzt F11 A. Belege: `belege-vorab/v2-b30/`.
+
+- **Umgesetzt:** Unten blättert zur nächsten Karte, Oben zurück, nach jedem Start. Bisher blätterte
+  Oben weiter wie in Pebbles Health-App, nach Quick Launch Unten gespiegelt; das Feld `gespiegelt`
+  fällt weg. Kreis und erste Karte bleiben wie bei Pebble: Nach Quick Launch führt Oben auf Today zum
+  Zifferblatt, Unten auf Settings tut nichts. Im Detail von Precision wählen Oben und Unten wie bisher
+  die Stufe.
+- **Bekannt:** Nach Quick Launch Oben fällt Pebbles Shutter beim Schliessen weiter nach unten, auch
+  wenn Oben die App schliesst.
+- **Tests:** `test_bh_einstieg`, `test_bh_einstiege` (gegen Pebbles Shell) und `test_bh_app` auf die
+  neue Regel umgestellt; `qemu_health.py` blättert mit Unten. Mutation K5a (Oben wieder vorwärts)
+  rot.
+- **Prüfung:** acht Bauten ohne Warnung, Host 440/440, alle Werkzeuge grün; QEMU zweimal grün (L1
+  höchstens 17,6 ms, erster Start 20,5 ms, L2 23,4 ms, L4 10,7 ms, L6 0,02 ms; Kernel-Heap ohne
+  Wachstum, kein Neustart). Die QEMU-Bilder, mit Unten aufgenommen, kommen in der Reihenfolge Today,
+  Night, Heart, Activity, Settings.
+- **Vorabversion b30:** `normal_obelix_pvt_v4.41.1-b30.pbz` (sha256 `c64063ce…78dde4`).

@@ -387,3 +387,8 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - F22 A: v4.41.1 vor dem Gerätetest (Worker von Apps starten wieder), `main` bleibt eingefroren.
   Bericht: `schritt3-abnahme.md`, Abschnitt 13.
 - Vorabversion b29 an den Nutzer. Der Gerätetest (Punkt 6) beginnt am 14.10. abends mit b29.
+
+## Stand nach F23 (14.10.2026, `a3652f881`)
+
+- Health-App: Unten blättert vorwärts (F23). Vorabversion b30 an den Nutzer; der Gerätetest läuft
+  damit. Bericht: `schritt3-abnahme.md`, Abschnitt 14.
