@@ -202,6 +202,14 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Kieselstrasse sie mitbenutzen (Maxpuls, Beckenlänge, wartende Trainings; der letzte
   Navigationsstand). b26 verhinderte das. **Nutzer: nichts ändern** – nur eigene Daten, nichts
   veröffentlicht. Die Release-Notiz rät weiter, eine doppelte Store-App einmal zu löschen (V9).
+- **Auf der Uhr getestet** (Nutzer, 14.10.): Kieselstrasse läuft mit b28.
+
+## Upstream v4.41.1 vor dem Gerätetest (14.10.2026, F22)
+- **F22: A.** Upstreams Patch-Fassung v4.41.1 (heute erschienen) kommt vor dem Gerätetest in V2,
+  als b29. Sie korrigiert die Worker von Apps: In v4.41.0 (und damit in b27/b28) startet kein Worker,
+  `WorkerState` ist 648 statt höchstens 640 Byte; ein fehlgeschlagener Start kann danach assertieren.
+  `main` bleibt eingefroren (F18): 36 weitere Commits, darunter Treiber-Umbauten (I2C, GPIO,
+  nPM1300 auf dem neuen Gerätemodell).
 
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
