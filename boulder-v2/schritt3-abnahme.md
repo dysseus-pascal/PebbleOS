@@ -518,5 +518,5 @@ Punkt 4 aus Abschnitt 7 (F6). Belege: `belege-vorab/v2-b28/`.
   einer Store-App die Persist-Datei ihrer Kennung. Kieselsport (Dienst) und Kieselstrasse benutzen
   sie mit; b26 sperrte das in `app_install_manager.c`. **Nutzer: nichts ändern** (nur eigene Daten,
   nichts veröffentlicht; `entscheidungen.md`).
-- **Nicht geprüft:** die Nachrichten von Boulder an die Uhr (wie bei Kieselsport über die Kennung der
-  Store-App), auf einer echten Uhr.
+- **Auf der Uhr (Nutzer, 14.10.):** Kieselstrasse mit b28 getestet, läuft. Damit ist auch der Weg
+  Boulder → Uhr über die Kennung der Store-App bestätigt.

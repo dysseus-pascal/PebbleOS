@@ -28,3 +28,5 @@ die `.pbz` direkt und öffnet sie in Boulder.
 | `qemu-a/`, `qemu-b/` | zwei QEMU-Läufe auf `fef08c2e`, alle Prüfungen grün: L1 höchstens 12,7 bzw. 17,6 ms, erster Start (icount) 19,5 ms, L2 18,6 ms, L4 8,8 ms, L6 höchstens 0,02 ms; Kernel-Heap ohne Wachstum (frei 52460 → 52384 → 52384 B, 256 B weniger als bei b27: der Ballast folgt jetzt 72480 B), kein Neustart |
 | `endstand-bauten.txt` | die acht Bauten noch einmal auf `fef08c2e` (Ballast 72480 B), ohne Warnung |
 | `skripte/` | Demo-Bau und -Bilder, Prüflauf, QEMU, Bau des Pakets |
+
+**Auf der Uhr (Nutzer, 14.10.):** Kieselstrasse getestet, läuft.

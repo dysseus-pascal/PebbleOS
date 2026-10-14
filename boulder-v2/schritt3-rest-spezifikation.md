@@ -379,4 +379,5 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Vorabversion b28 an den Nutzer (nicht signiert). Bericht: `schritt3-abnahme.md`, Abschnitt 12.
 - Befund beim Port: Löschen der Store-App löscht den Speicher der eingebauten App. Nutzer: nichts
   ändern (`entscheidungen.md`).
+- Auf der Uhr (Nutzer, 14.10.): Kieselstrasse mit b28 getestet, läuft.
 - Nächster Schritt: Punkt 6 (Gerätetest).
