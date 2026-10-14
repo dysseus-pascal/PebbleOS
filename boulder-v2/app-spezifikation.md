@@ -112,6 +112,9 @@ Was Core seither geändert hat und Boulder trifft:
 - **F26: A** nur Firmware V2; TimeStyle Bedrock entfällt.
 - **F27: A** PKJS-Rechte nach Cores Modell.
 - **F28:** Cactus bleibt.
+- **F29** Ring/Index wie bei Core; **F30** Fassung 0.54.0; **F31** Gerätetest per APK, `main` danach.
+- **Vorgabe:** Nichts über Boulders App oder Firmware an Core Devices; alles, was auf Bug-Reports oder
+  Absturzprotokolle hinweist, ist ausgeblendet.
 
 ## 6. Stand der Umsetzung
 
@@ -270,11 +273,21 @@ Was Core seither geändert hat und Boulder trifft:
 - **Entfallen durch F29:** Asset-Ausschluss (Ring-Bilder) und `kotlin-reflect` (hängt bei Core am
   MCP-SDK des Index-Teils).
 
-### AP8 (14.10.2026, Fassung 0.54.0, `59f939c90`)
-- **Fassung 0.54.0** (F30) mit `.github/release/0.54.0.md`. Release-Build vom Stand `59f939c90`:
-  versionCode 2565, `ch.dysseus.boulder`, signiert mit dem CI-Schlüssel (SHA-256 `212e0ca4…`, wie
-  0.53), 31,7 MB; zum Seitenladen übergeben (F31). `main` bleibt auf 0.53.
-- **Prüfung:** alle Testaufgaben grün, 2 796 Tests (11 übersprungen, wie bei Core), dazu der
+### AP8 (14.10.2026, Fassung 0.54.0, `59f939c90`, `319af1afe`, `da8a42613`)
+- **Fassung 0.54.0** (F30) mit `.github/release/0.54.0.md`. Release-Build vom Stand `da8a42613`:
+  versionCode 2567, `ch.dysseus.boulder`, signiert mit dem CI-Schlüssel (SHA-256 `212e0ca4…`, wie
+  0.53), 31,7 MB; zum Seitenladen übergeben (F31), ersetzt die Builds 2565 und 2566. `main` bleibt
+  auf 0.53.
+- **Nichts an Core Devices** (Vorgabe, `319af1afe`, `da8a42613`): ausgeblendet sind „Get Help“ (New
+  Bug Report, View My Bug Reports, „Getting Started & Troubleshooting“: Cores Hilfeseite führt zum
+  Bug-Report-Formular), „Bug Report“ im Screenshot-Dialog der Uhr, „Create a Core Dump“, im
+  Index-Teil „File Bug Report“, „Diagnostics“ und die Bug-Report-Benachrichtigungen, dazu die Deep
+  Links auf Bug-Reports; `BugReportButton` zeigt nichts. Cores Bug-Report-Seiten bleiben im Code,
+  ohne Einstieg. `KeinBugReportWegTest` meldet jeden Einstieg, den ein Core-Merge zurückbringt, mit
+  Datei und Zeile (am wieder eingesetzten Diagnose-Eintrag belegt). Die Antwort-Benachrichtigung
+  „Pebble Support message“ käme nur per Push, den Boulder nicht anmeldet. „Export logs“ aus 0.53
+  (Gravels lokale Ausfuhr) gibt es nicht mehr; Cores Schalter für ausführlichere Logs bleiben.
+- **Prüfung:** alle Testaufgaben grün, 2 798 Tests (11 übersprungen, wie bei Core), dazu der
   Exportwächter im Release-Bau.
 
 #### Netzwerkziele (aus dem Code, nicht im Betrieb gemessen)
@@ -292,12 +305,13 @@ Was Core seither geändert hat und Boulder trifft:
 | Wispr (`wispr.ai`, `platform-api.wisprflow.ai`) | nur wenn eingerichtet | Diktat-Dienst |
 | Index/Ring: `nenya.repebble.com`, `index-oauth.repebble.com`, Supabase (Core), Notion, Google Tasks | nur mit gekoppeltem Ring | F29 |
 | Google (Firebase), Mixpanel, Memfault, Cores Analysen (`bugUrl`) | nicht | Attrappe, Sammeln aus im Manifest, keine Tokens, `bugUrl` leer (F25) |
+| Cores Bug-Reports, Core Dumps, Support | nicht | kein Einstieg (Vorgabe), `bugUrl` leer, kein Push-Token |
 | Cactus-Telemetrie (Supabase) | nicht | `CACTUS_NO_CLOUD_TELE` |
 
 #### Stand der Abnahmekriterien (Abschnitt 4)
 1. Basis: der Zweig enthält Core 1.15.0.1 mit Verlauf; Exportwächter grün. `main` folgt nach dem
    Gerätetest.
-2. Update ohne Verlust: gleiche App-ID und Signatur, versionCode 2565 > 0.53; Migration 1045 → 1049
+2. Update ohne Verlust: gleiche App-ID und Signatur, versionCode 2567 > 0.53; Migration 1045 → 1049
    mit einer Zeile in jeder Tabelle (`DatenbankFassungTest.migration1045`). Ausnahme: Gravels
    PKJS-Freigaben (F27).
 3. Daten der Uhr: Parser und Wege wie in 0.53 getestet (AP2); auf der Uhr offen (Gerätetest).

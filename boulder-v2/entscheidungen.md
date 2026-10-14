@@ -238,6 +238,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **F30: Fassung 0.54.0** (14.10., Empfehlung) für die erste App auf Cores Grundlage.
 - **F31: Gerätetest per APK** (14.10., Empfehlung). Der Release-Build kommt zum Seitenladen; `main`
   bleibt auf 0.53, bis der Gerätetest bestanden ist, dann `main` und Release `v0.54.0`.
+- **Vorgabe** (Nutzer, 14.10.): „wir werden nichts an core devices senden das unsere app oder
+  firmware betrifft. alles was auf bug reports oder crash logs hinweist wird ausgeblendet“. Gilt auch
+  für Cores Ring/Index-Teil (F29 bleibt sonst): dort fallen „File Bug Report“ und „Diagnostics“ weg.
+  Gravels lokales „Export logs“ aus 0.53 kommt nicht zurück.
 
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
