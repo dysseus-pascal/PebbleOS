@@ -1,0 +1,10 @@
+Stand fef08c2e, Arbeitsbaum 0
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=501
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=501
+build rc=0 warnungen=0 fehler=0 uebersetzt=498
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=377
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=494
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=375
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=491
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=3
+CONFIG_BOULDER_PRUEFLAUF_HEAP=72480

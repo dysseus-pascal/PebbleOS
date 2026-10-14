@@ -268,6 +268,7 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
    `entscheidungen.md`).
    *Gebaut am 13.10. im Arbeitszweig von Boulder, siehe Abschnitt 11. Das Release steht aus.*
 4. Kieselstrasse nach V2 portieren (F6).
+   *Erledigt am 14.10. (`d4e15214`), siehe Abschnitt 12; Vorabversion b28.*
 5. ~~Vorher-Video von b26 (braucht die Uhr).~~ *Gestrichen am 14.10. (Nutzer): kein Video, die
    Einschätzung der Ladezeiten auf der Uhr durch den Nutzer genügt.*
 6. Gerätetest: 7 Nächte, Fitbit-Nächte, Velo- und Autofahrten, Messstufen, Ladezeiten auf der Uhr
@@ -476,3 +477,46 @@ antwortet).
   (`entscheidungen.md`, „Grundlage“); dort ist er der letzte Schritt („App-Teile“). **F19: A**
   (14.10.): 0.53 erscheint als Brücke für den Gerätetest, der Neubau folgt als „App-Teile“. `main`
   steht auf `aecd3350`.
+
+## 12. Kieselstrasse (14.10.2026, `18d1a41c`, `d4e15214`, `fef08c2e`)
+
+Punkt 4 aus Abschnitt 7 (F6). Belege: `belege-vorab/v2-b28/`.
+
+- **Port aus b26** (`main` `a7d8b16e1`, `src/fw/apps/system/kieselstrasse/` und die zwei Tests):
+  - Dieselbe Kennung, dieselben Schlüssel und derselbe Persist wie die Store-App. Der Persist bleibt
+    68 Byte: `time_t` ist im Firmware-Bau weiter 32 Bit (nachgeprüft mit SDK 0.1.11).
+  - Eigener Schalter `CONFIG_BOULDER_KIESELSTRASSE` (default y). Er hängt an der Variante, darum gibt
+    es Kieselstrasse wie Kieselsport nur auf obelix und qemu_emery. Jede `.c` steht ganz darunter.
+  - Registry-ID -104, direkt neben Kieselsport im selben Hunk (P3). In V2 trägt -103 Kieselsport.
+  - Kleine Anpassungen: Includes für V2, die Zeile je Nachricht als DEBUG statt INFO (Upstreams Regel
+    für Logs, die oft kommen), der Kommentar zur Store-App (V2 blendet sie nicht aus, V9).
+- **K1-Wächter** (`18d1a41c`): Die Ordner von Kieselstrasse sind frei. Im Registry-JSON muss jetzt
+  jeder neue Eintrag einen der App-Schalter in `"ifdefs"` tragen. Vorher genügte es, dass der Hunk
+  den Schalter von Kieselsport irgendwo nannte; das hätte einen zweiten Eintrag ohne Schalter gedeckt.
+  Sechs neue Gegenproben.
+- **Prüfbau-Ballast** (`fef08c2e`): Der Kernel-Heap von obelix im Release-Bau ist mit Kieselstrasse
+  72480 B (b27: 72576 B). Der Prüfbau stand noch auf 72736 B aus Schritt 3 AP6.
+- **Prüfung:**
+  - Acht Bauten ohne Warnung. Kieselstrasse steckt nur in den vier mit Variante (`nm`).
+  - Host 440/440, darunter `test_kieselstrasse_weg`, `test_kieselstrasse_app` und
+    `test_boulder_kieselstrasse_unbenutzt`. Alle Werkzeuge grün; im Prüfbau ist
+    `pruefe_ohne_rechte` wie bisher nur an der Fehlerprobe rot.
+  - Mutationen F6a–F6d rot: Registry-Eintrag ohne Schalter (Wächter), gleiche Abbiegeart an anderer
+    Lage übersehen, Summ-Pause 30 s, zu kurzer Persist gelesen.
+  - **Anzeige gegen b26:** Beide als Demo-Bau (`-DKST_DEMO`) in QEMU, je 20 Bilder aller Abbiegearten.
+    Sie sind Pixel für Pixel gleich bis auf die Minutenziffern von Uhrzeit und Ankunft (die Läufe
+    lagen zwei Minuten auseinander).
+  - QEMU-Messung der Health-App auf `fef08c2e`, zwei Läufe: alle Prüfungen grün. L1 höchstens 12,7
+    bzw. 17,6 ms, erster Start (icount) 19,5 ms, L2 18,6 ms, L4 8,8 ms, L6 höchstens 0,02 ms;
+    Kernel-Heap ohne Wachstum, frei 256 B weniger als bei b27 (der Ballast folgt jetzt 72480 B); kein
+    Neustart.
+  - Die acht Bauten noch einmal auf `fef08c2e`: ohne Warnung.
+- **Vorabversion b28:** `normal_obelix_pvt_v4.41.0-b28.pbz` (sha256 `8bb7e9b0…a14ec`), beide Slots
+  ohne Warnung, nicht signiert, an den Nutzer zum Öffnen in Boulder. Das Tag ist annotiert wie bei
+  b27: Der Bau liest nur annotierte Tags (ein leichtes ergab `v4.41.0-b27-3-gfef08c2e`).
+- **Befund: Store-App löschen löscht den Speicher der eingebauten App.** V2 entfernt beim Löschen
+  einer Store-App die Persist-Datei ihrer Kennung. Kieselsport (Dienst) und Kieselstrasse benutzen
+  sie mit; b26 sperrte das in `app_install_manager.c`. **Nutzer: nichts ändern** (nur eigene Daten,
+  nichts veröffentlicht; `entscheidungen.md`).
+- **Nicht geprüft:** die Nachrichten von Boulder an die Uhr (wie bei Kieselsport über die Kennung der
+  Store-App), auf einer echten Uhr.

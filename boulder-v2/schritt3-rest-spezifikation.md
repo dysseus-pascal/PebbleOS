@@ -370,3 +370,13 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
 - Offen: das Release 0.53.0 (Stand auf `main` bringen, die CI legt `v0.53.0` an).
 - Für V2: Tag `v4.41.0-bN`, sonst gilt sie in Boulder als unbekannte Firmware.
 - Nächster Schritt: Punkt 4 (Kieselstrasse nach V2).
+
+## Stand nach Kieselstrasse (14.10.2026, `fef08c2e`)
+
+- Punkt 4 aus Abschnitt 6 erledigt: Kieselstrasse aus b26, unter eigenem Schalter an der Variante
+  (`d4e15214`), K1-Wächter prüft die Registry je Eintrag (`18d1a41c`), Prüfbau-Ballast auf 72480 B
+  (`fef08c2e`). Die Anzeige gleicht b26 im Emulator Pixel für Pixel.
+- Vorabversion b28 an den Nutzer (nicht signiert). Bericht: `schritt3-abnahme.md`, Abschnitt 12.
+- Befund beim Port: Löschen der Store-App löscht den Speicher der eingebauten App. Nutzer: nichts
+  ändern (`entscheidungen.md`).
+- Nächster Schritt: Punkt 6 (Gerätetest).
