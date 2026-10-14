@@ -216,3 +216,34 @@ Was Core seither geändert hat und Boulder trifft:
   Wetter-Wettlauf (zwei schnelle Updates, das ältere gewann) → AP5; `kotlin-reflect` aus dem Release
   samt `DevConnectionOhneReflectTest` → AP7.
 - Alle Testaufgaben grün: 2 105 Tests; im Release-APK heisst der Provider `ch.dysseus.boulder.pebblekit`.
+
+### AP5 mit AP6 (14.10.2026, `ffe0382b9`)
+- **Zusammengelegt:** Die Kiesel-Teile rufen Rechtefrage und Export von `PlatformHealthSync` auf;
+  getrennt hätte AP5 nicht gebaut. Darum ein Commit für beide.
+- **Kiesel-Teile** (86 Dateien in `pebble/.../kiesel`, dazu Oberflächen, Ressourcen,
+  `boulderSettingsItems`, Modul `:osmand-api` unverändert): aus 0.53 übernommen und ohne eine
+  Anpassung gegen Core 1.15 gebaut. Begleiter (`BoulderBegleiter`) über `watchModule` an
+  `LibPebble.create`.
+- **Cores Health-Oberfläche entfernt** (`HealthScreen`, `HealthCharts`, `HealthStatsDialog`,
+  `HealthViewModel`, `HealthUtilsTest`), wie 0.53 Gravels Fassung entfernt hatte; der Reiter Health
+  zeigt zuerst die Kiesel-Ansicht. „Battery“ (Einstellungen, Uhrenmenü) führt auf Boulders
+  Akkuseite; Cores Seite lädt vom Server und braucht eine Anmeldung.
+- **Einstellungen:** SpO2 (Messung, Messrate, während Aktivitäten) und die Sektionen Sport,
+  Navigation, Boulder dazu; „Open Google Fit“, „Show Health Tab“, „View debug stats“ und Gravels
+  Kanal-Schalter weg. „Precision“ (`boulderMessstufe`) wieder in den Uhreinstellungen (V2 liest
+  den Schlüssel, Werte ausserhalb 1–5 gelten wie in der Firmware als 3).
+- **Health Connect:** Nächte mit Phasen, SpO2, Tagesblöcke, alle Rechte in einem Dialog, kein
+  doppelter Sync, Rechtefrage nur bei Neuem – wie in 0.53 (Drei-Wege-Merge sauber).
+- **Nachgeholt aus AP3:** Die Uhrenseite zeigt wieder „Firmware braucht neuere Boulder-Fassung“.
+- **Wetter:** zwei schnelle Updates der Reihe nach und als Transaktion (Core: das ältere gewann).
+- **Farbschema:** Boulder-Grün statt Cores Orange, vorgezogen aus AP7, weil die Kiesel-Farben
+  darauf bauen (`FarbenTest`); Kontraste wie in 0.53. App-Symbol folgt in AP7.
+- **Tests:** 77 Kiesel-Tests (Robolectric), Health-Hilfen, Sport-Unterseite, Sync ohne Nächte,
+  Messstufe, Wetterreihenfolge, Kontraste. `RechteTest` liest nur die Manifeste, die Core hat.
+  Alle Testaufgaben grün: 2 779 Tests; der Release-Bau mit Exportwächter auch.
+- **Für AP7 gefunden:** Die Schalter „Send app crashes“/„Send watch analytics“/„Send app
+  analytics“ stehen auf „an“; der erste ruft `setCrashlyticsCollectionEnabled` und schaltet
+  Crashlytics nach aus/ein zur Laufzeit ein (gegen F25). Core installiert Sprachpakete (`.pbl`)
+  ohne Rückfrage (Apps prüft Core im Locker, Firmware fragt nach). Effizienzteile aus 0.53
+  (Arbeit nur mit Uhr, Log ab Info, Coil-Cache), Asset-Ausschluss und Cactus-`ios/lib` hängen
+  teils am Entscheid zu Cores Ring/Index-Teilen.
