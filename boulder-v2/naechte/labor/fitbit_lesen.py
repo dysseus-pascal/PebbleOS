@@ -18,6 +18,8 @@ NAECHTE = {
     '08': ('hell', {'wach': (788, 854), 'rem': (1182, 1244), 'leicht': (1371, 1439), 'tief': (1566, 1633)}, 152, 582),
     '09': ('hell', {'wach': (940, 999), 'rem': (1330, 1392), 'leicht': (1519, 1587), 'tief': (1714, 1782)}, 192, 657),
     '12': ('dunkel', {'wach': (872, 940), 'rem': (1262, 1330), 'leicht': (1457, 1525), 'tief': (1652, 1720)}, 98, 586),
+    # Die Wach-Zeile ist hier nur duenn belegt; ihre Spur (765-833) steht 390 px ueber REM wie am 12.
+    '13': ('dunkel', {'wach': (765, 833), 'rem': (1155, 1223), 'leicht': (1350, 1418), 'tief': (1545, 1613)}, 92, 563),
 }
 
 
@@ -71,7 +73,8 @@ def lesen(pfad, nacht):
 
 def angleichen(minuten, soll):
     """Die gezeichneten Breiten weichen um runde Enden und Raender ab. Jeder Abschnitt von wach,
-    REM und tief wird um seine Mitte auf Fitbits Summe gestreckt oder gestaucht; leicht fuellt."""
+    REM und tief wird um seine Mitte auf Fitbits Summe gestreckt oder gestaucht, einer am Rand der
+    Nacht von diesem Rand aus; leicht fuellt."""
     m = list(minuten)
     for stufe in ('wach', 'rem', 'tief'):
         c = CODE[stufe]
@@ -99,6 +102,11 @@ def angleichen(minuten, soll):
             rest -= laenge
             mitte = (a + b) / 2
             von = max(0, int(round(mitte - laenge / 2)))
+            # Bettzeit und Aufstehen sind genau: ein Abschnitt am Rand bleibt am Rand.
+            if a == 0:
+                von = 0
+            elif b == len(m):
+                von = len(m) - laenge
             for k in range(von, min(len(m), von + laenge)):
                 if m[k] == CODE['leicht']:
                     m[k] = c
@@ -107,7 +115,9 @@ def angleichen(minuten, soll):
 
 SOLL = {'08': {'wach': 17, 'leicht': 228, 'tief': 75, 'rem': 110},
         '09': {'wach': 16, 'leicht': 291, 'tief': 70, 'rem': 88},
-        '12': {'wach': 79, 'leicht': 268, 'tief': 61, 'rem': 80}}
+        '12': {'wach': 79, 'leicht': 268, 'tief': 61, 'rem': 80},
+        # 13.10.: Fitbits Summen ergeben 467 min, die Spanne 471; die 4 min fuellt leicht.
+        '13': {'wach': 9, 'leicht': 256, 'tief': 84, 'rem': 118}}
 
 if __name__ == '__main__':
     nacht = sys.argv[2]

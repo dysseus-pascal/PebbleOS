@@ -6,6 +6,18 @@
 #include <string.h>
 // Schritte je Minute, nur fuer die Varianten (die Rechnung der Uhr kennt sie nicht)
 extern int s_schritte_im(int von, int bis);
+extern int s_schrittminuten_im(int von, int bis);
+// H3: wie H2, aber Gang heisst Schritte in mindestens zwei Minuten. Ein Umdrehen im Bett zaehlt
+// manchmal ein Dutzend Schritte in einer Minute (13.10. 03:17: 12 bei VMC 4066).
+#ifdef VAR_H3
+#ifndef VAR_H2
+#define VAR_H2
+#endif
+#endif
+// H2 mit anderer Schrittgrenze, z. B. -DGANG_SCHRITTE=15.
+#ifndef GANG_SCHRITTE
+#define GANG_SCHRITTE 10
+#endif
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
@@ -474,7 +486,12 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
           schub[ns++] = (int16_t)e->hrv[h].rmssd;
         }
       }
-      if (ns > 0 && prv_median2(schub, ns) >= nacht2 && s_schritte_im(w->liste[k].von, w->liste[k].bis) < 10) {
+#ifdef VAR_H3
+      const bool gang = s_schrittminuten_im(w->liste[k].von, w->liste[k].bis) >= 2;
+#else
+      const bool gang = s_schritte_im(w->liste[k].von, w->liste[k].bis) >= GANG_SCHRITTE;
+#endif
+      if (ns > 0 && prv_median2(schub, ns) >= nacht2 && !gang) {
         continue;
       }
     }

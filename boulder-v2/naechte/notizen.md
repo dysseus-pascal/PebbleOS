@@ -31,3 +31,15 @@
   (05:42, 05:46) ist zu früh, wie am 7.10.
 - 9.10. 22:50–23:04 (rund 260 Schritte): vermutlich ein Toilettengang; davor wach im Bett.
 - Umgesetzt in V2 (13.10.): O2 und W30 (`12b28664`, `4ea6fb64`), siehe `analyse-2026-10-13.md`, Abschnitt 7.
+
+## 13.→14.10.2026 (b26, Messstufe 4)
+- Export und Fitbit-Bild: `nacht-2026-10-13.csv`, `fitbit-2026-10-13.png`. Analyse:
+  `analyse-2026-10-14.md`.
+- **Fitbit:** im Bett 21:32, erster Schlaf 21:39, Ende 05:23. Wach 9 min (beim Zubettgehen und um
+  23:04), REM 1 h 58, leicht 4 h 16, tief 1 h 24. Die Summen ergeben 467 min, die Spanne 471.
+- **Boulder:** eingeschlafen 21:37 (V2: 21:39), aufgewacht 05:46, 7 h 13. Ruhepuls 51, HRV 54.
+- **Falsche Wachphase 03:14–04:03 (49 min):** Puls auf Schlafniveau, HRV 64/65/80 (Nacht 55), ein
+  Pulswert 78 um 03:40. Fitbit: tief, leicht, ab 03:36 REM. H2 behebt sie nicht, weil die Uhr beim
+  Umdrehen um 03:17 12 Schritte zählte. H2/20 (Gang erst ab 20 Schritten) behebt sie.
+- **Morgen:** 05:23–05:29 Bewegung, dann 16 min still mit Puls 49–53, Aufwachen 05:46. Offen, ob
+  man da noch geschlafen hat und wann man aufgestanden ist.

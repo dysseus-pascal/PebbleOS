@@ -13,6 +13,7 @@ static bool s_gueltig[SCHLAF_MINUTEN_MAX];
 static int s_phase_uhr[SCHLAF_MINUTEN_MAX];
 static int s_schritte[SCHLAF_MINUTEN_MAX];
 int s_schritte_im(int von, int bis) { int z = 0; for (int i = von; i < bis; i++) z += s_schritte[i]; return z; }
+int s_schrittminuten_im(int von, int bis) { int z = 0; for (int i = von; i < bis; i++) z += (s_schritte[i] > 0); return z; }
 static SchlafHrv s_hrv[SCHLAF_HRV_MAX];
 static SchlafArbeit s_arbeit;
 static SchlafErgebnis s_erg;

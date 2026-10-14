@@ -94,3 +94,94 @@ Fitbits Wachphasen:
   05:00 B ----------------------RRRRRRRRRRRRRRRRRRRRRRRRRR-----------                                                
         F ----------------------------------RRRRRRRRRRRR                                                             
 
+## Nacht 13.10. (b26, Uhr)
+Boulder: Einschlafen 21:37, Aufwachen 05:46, Schlaf 433 min, Ruhepuls 51, HRV 54
+Fitbit:  im Bett 21:32, erster Schlaf 21:39, letzter Schlaf bis 05:23, aus dem Bett 05:23, Schlaf 462 min
+  wach   Boulder   56 min  Fitbit    9 min
+  REM    Boulder   66 min  Fitbit  118 min
+  leicht Boulder  256 min  Fitbit  260 min
+  tief   Boulder  111 min  Fitbit   84 min
+Schlaf/Wach gleich: 425/494 min (86 %), Kappa 0.19
+Phase gleich (wo beide Schlaf): 248/413 (60 %), Kappa 0.31
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            156     17     65
+  tief               45     66      0
+  REM                38      0     26
+Schlafpuls (Median in Boulders Schlaf): 57
+Boulders Wachphasen in der Nacht:
+  03:14-04:03 ( 49 min) Fitbit: leicht 21, tief 1, REM 27 | Puls 49-78 (Median 54), VMC max 4066, Regungen>=450 11, Schritte 12, HRV [64, 65, 80]
+  05:23-05:30 (  7 min) Fitbit: aus 7 | Puls 54-54 (Median 54), VMC max 3540, Regungen>=450 5, Schritte 12, HRV []
+Fitbits Wachphasen:
+  21:32-21:39 (  7 min) Boulder: aus 5, leicht 2 | Puls 59-83 (Median 67), VMC max 3041, Regungen>=450 4, Schritte 0, HRV [39]
+  23:04-23:06 (  2 min) Boulder: REM 2 | Puls 73-73 (Median 73), VMC max 1970, Regungen>=450 2, Schritte 0, HRV [47]
+  21:00 B                                      ----------------___________________________------------------------RRRRRRR------RRR
+        F                                 WWWWWWW-------------______________________________--------------_-----------------RRRRRR
+  23:00 B RRRRRRRRRR--------------__________________________________------------------------------RRRRRRRR------------------------
+        F RRR-WWRR--------------------____________________________________-------RRRRRRRRRRRRRRR----------------------------------
+  01:00 B -----------RRRRRR------------RRRRRRRR-----------------------------------------------------RRRRRRR_______________________
+        F ------------------------------RRRRRRRRRRRRRRRRRRRRRRRRR-------------RRRRRRRRRRRRRRRRRRR-------------------------------__
+  03:00 B _______-------WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWRRRRRR-----------------------____________________--------
+        F _______________---------------------RRRRRRRRRRRRRRRRRRRRRRRRRRR---------------------------------------------------------
+  05:00 B ------------RRRRRRRRRRRWWWWWWW----------------                                                         
+        F --RRRRRRRRRRRRRRRRRRRRR                                                                                
+
+## Nacht 13.10. (V2 nachgerechnet)
+Boulder: Einschlafen 21:39, Aufwachen 05:46, Schlaf 431 min, Ruhepuls 51, HRV 54
+Fitbit:  im Bett 21:32, erster Schlaf 21:39, letzter Schlaf bis 05:23, aus dem Bett 05:23, Schlaf 462 min
+  wach   Boulder   56 min  Fitbit    9 min
+  REM    Boulder   66 min  Fitbit  118 min
+  leicht Boulder  254 min  Fitbit  260 min
+  tief   Boulder  111 min  Fitbit   84 min
+Schlaf/Wach gleich: 427/494 min (86 %), Kappa 0.23
+Phase gleich (wo beide Schlaf): 248/413 (60 %), Kappa 0.31
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            156     17     65
+  tief               45     66      0
+  REM                38      0     26
+Schlafpuls (Median in Boulders Schlaf): 57.0
+Boulders Wachphasen in der Nacht:
+  03:14-04:03 ( 49 min) Fitbit: leicht 21, tief 1, REM 27 | Puls 49-78 (Median 54), VMC max 4066, Regungen>=450 11, Schritte 12, HRV [64, 65, 80]
+  05:23-05:30 (  7 min) Fitbit: aus 7 | Puls 54-54 (Median 54), VMC max 3540, Regungen>=450 5, Schritte 12, HRV []
+Fitbits Wachphasen:
+  21:32-21:39 (  7 min) Boulder: aus 7 | Puls 59-83 (Median 67), VMC max 3041, Regungen>=450 4, Schritte 0, HRV [39]
+  23:04-23:06 (  2 min) Boulder: REM 2 | Puls 73-73 (Median 73), VMC max 1970, Regungen>=450 2, Schritte 0, HRV [47]
+  21:00 B                                        --------------___________________________------------------------RRRRRRR------RRR
+        F                                 WWWWWWW-------------______________________________--------------_-----------------RRRRRR
+  23:00 B RRRRRRRRRR--------------__________________________________------------------------------RRRRRRRR------------------------
+        F RRR-WWRR--------------------____________________________________-------RRRRRRRRRRRRRRR----------------------------------
+  01:00 B -----------RRRRRR------------RRRRRRRR-----------------------------------------------------RRRRRRR_______________________
+        F ------------------------------RRRRRRRRRRRRRRRRRRRRRRRRR-------------RRRRRRRRRRRRRRRRRRR-------------------------------__
+  03:00 B _______-------WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWRRRRRR-----------------------____________________--------
+        F _______________---------------------RRRRRRRRRRRRRRRRRRRRRRRRRRR---------------------------------------------------------
+  05:00 B ------------RRRRRRRRRRRWWWWWWW----------------                                                         
+        F --RRRRRRRRRRRRRRRRRRRRR                                                                                
+
+## Nacht 13.10. (V2 + H2/20, nachgerechnet; H3 rechnet diese Nacht gleich)
+Boulder: Einschlafen 21:39, Aufwachen 05:46, Schlaf 480 min, Ruhepuls 51, HRV 54
+Fitbit:  im Bett 21:32, erster Schlaf 21:39, letzter Schlaf bis 05:23, aus dem Bett 05:23, Schlaf 462 min
+  wach   Boulder    7 min  Fitbit    9 min
+  REM    Boulder   92 min  Fitbit  118 min
+  leicht Boulder  277 min  Fitbit  260 min
+  tief   Boulder  111 min  Fitbit   84 min
+Schlaf/Wach gleich: 476/494 min (96 %), Kappa 0.59
+Phase gleich (wo beide Schlaf): 295/462 (64 %), Kappa 0.39
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            177     18     66
+  tief               45     66      0
+  REM                38      0     52
+Schlafpuls (Median in Boulders Schlaf): 57
+Boulders Wachphasen in der Nacht:
+  05:23-05:30 (  7 min) Fitbit: aus 7 | Puls 54-54 (Median 54), VMC max 3540, Regungen>=450 5, Schritte 12, HRV []
+Fitbits Wachphasen:
+  21:32-21:39 (  7 min) Boulder: aus 7 | Puls 59-83 (Median 67), VMC max 3041, Regungen>=450 4, Schritte 0, HRV [39]
+  23:04-23:06 (  2 min) Boulder: REM 2 | Puls 73-73 (Median 73), VMC max 1970, Regungen>=450 2, Schritte 0, HRV [47]
+  21:00 B                                        --------------___________________________------------------------RRRRRRR------RRR
+        F                                 WWWWWWW-------------______________________________--------------_-----------------RRRRRR
+  23:00 B RRRRRRRRRR--------------__________________________________------------------------------RRRRRRRR------------------------
+        F RRR-WWRR--------------------____________________________________-------RRRRRRRRRRRRRRR----------------------------------
+  01:00 B -----------RRRRRR------------RRRRRRRR-----------------------------------------------------RRRRRRR_______________________
+        F ------------------------------RRRRRRRRRRRRRRRRRRRRRRRRR-------------RRRRRRRRRRRRRRRRRRR-------------------------------__
+  03:00 B _______------------------------------RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR-----------------------____________________--------
+        F _______________---------------------RRRRRRRRRRRRRRRRRRRRRRRRRRR---------------------------------------------------------
+  05:00 B ------------RRRRRRRRRRRWWWWWWW----------------                                                         
+        F --RRRRRRRRRRRRRRRRRRRRR                                                                                
