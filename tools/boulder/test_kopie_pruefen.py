@@ -318,6 +318,40 @@ def arbeitsbaum(unversioniert):
         return k1_waechter.pruefe(repo)
 
 
+def patchfassung(tag):
+    """pruefe() an einem echten Git-Repo: upstream/main bei v1.0, daneben eine Patch-Fassung mit
+    einer Korrektur in einer Pebble-Datei (Tag `tag` oder keins), Boulders Zweig hat sie gemergt."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = pathlib.Path(tmp)
+
+        def git(*args):
+            subprocess.run(['git', '-C', tmp, '-c', 'user.name=k1', '-c', 'user.email=k1@test',
+                            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', *args],
+                           check=True, capture_output=True)
+        pebble = repo / 'fw/process_management/worker_manager.c'
+        pebble.parent.mkdir(parents=True)
+        pebble.write_text('int a;\n')
+        git('init', '-q', '-b', 'boulder')
+        git('add', '.')
+        git('commit', '-q', '-m', 'Pebble')
+        git('tag', 'v1.0')
+        git('remote', 'add', 'upstream', tmp)
+        git('update-ref', 'refs/remotes/upstream/main', 'HEAD')
+        git('checkout', '-q', '-b', 'patch')
+        pebble.write_text('int a = 1;\n')
+        git('commit', '-q', '-am', 'Upstream-Korrektur')
+        if tag:
+            git('tag', tag)
+        git('checkout', '-q', 'boulder')
+        eigen = repo / 'fw/services/activity/boulder/a.c'
+        eigen.parent.mkdir(parents=True)
+        eigen.write_text('int b;\n')
+        git('add', '.')
+        git('commit', '-q', '-m', 'Boulder')
+        git('merge', '-q', '--no-edit', 'patch')
+        return k1_waechter.pruefe(repo)
+
+
 def proben_arbeitsbaum():
     # Eine Kacheldatei vor dem ersten git add: git diff zeigt sie nicht, ihr Inhalt zaehlt trotzdem.
     yield 'Arbeitsbaum: Kacheldatei unversioniert', not arbeitsbaum({KACHEL: KACHEL_TEXT})
@@ -328,6 +362,11 @@ def proben_arbeitsbaum():
     yield 'Arbeitsbaum: andere Datei unversioniert', rot(
         arbeitsbaum({'fw/apps/system/launcher/default/app_glance_x.c': KACHEL_TEXT}),
         'ausserhalb der eigenen Ordner')
+    # Eine gemergte Patch-Fassung (wie v4.41.1) liegt nicht auf main, ist aber Upstream.
+    yield 'Patch-Fassung mit Upstream-Tag', not patchfassung('v1.0.1')
+    yield 'Patch-Fassung ohne Tag', rot(patchfassung(None), 'ausserhalb der erlaubten Stellen')
+    yield 'Patch-Fassung mit Boulder-Tag', rot(patchfassung('v1.0-b1'),
+                                               'ausserhalb der erlaubten Stellen')
 
 
 def main():

@@ -5,8 +5,9 @@
 
 Aufruf: k1_waechter.py <repo>
 
-Liest `git diff <merge-base HEAD upstream/main>` mit dem Arbeitsbaum (auch
-Uncommittetes) und die unversionierten Dateien. Die Funktion eines Hunks kommt aus
+Liest `git diff <Basis>` mit dem Arbeitsbaum (auch Uncommittetes) und die unversionierten
+Dateien. Basis ist `merge-base HEAD upstream/main`, ausser ein juengeres Upstream-Tag in HEAD
+zweigt von dort ab (eine gemergte Patch-Fassung wie v4.41.1, siehe basis()). Die Funktion eines Hunks kommt aus
 `git diff -U0`: Ohne Kontextzeilen nennt der Kopf die Funktion der ersten geaenderten
 Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - eine Pebble-Datei ausserhalb der Liste unten geaendert ist,
@@ -367,13 +368,27 @@ def git(repo, *args):
                           text=True).stdout
 
 
+def basis(repo):
+    """Der Upstream-Stand in HEAD. Eine Patch-Fassung wie v4.41.1 zweigt von main ab, dort kommen
+    ihre Korrekturen nur als Cherry-Picks; gemergt ist sie trotzdem Upstream und kein Boulder-Code.
+    Boulders eigene Tags (vX.Y.Z-bN) zaehlen nicht."""
+    main = git(repo, 'merge-base', 'HEAD', 'upstream/main').strip()
+    tag = subprocess.run(['git', '-C', str(repo), 'describe', '--tags', '--abbrev=0',
+                          '--match', 'v[0-9]*', '--exclude', 'v*-b[0-9]*', 'HEAD'],
+                         capture_output=True, text=True, check=False).stdout.strip()
+    if tag and subprocess.run(['git', '-C', str(repo), 'merge-base', '--is-ancestor', main, tag],
+                              capture_output=True, check=False).returncode == 0:
+        return git(repo, 'rev-parse', tag + '^{commit}').strip()
+    return main
+
+
 def pruefe(repo):
     if 'upstream' not in git(repo, 'remote').split():
         return ['Remote "upstream" fehlt (git remote add upstream '
                 'https://github.com/coredevices/PebbleOS.git)']
-    basis = git(repo, 'merge-base', 'HEAD', 'upstream/main').strip()
-    diff = git(repo, 'diff', basis)
-    diff_u0 = git(repo, 'diff', '-U0', basis)
+    ab = basis(repo)
+    diff = git(repo, 'diff', ab)
+    diff_u0 = git(repo, 'diff', '-U0', ab)
     unversioniert = [z[3:] for z in git(repo, 'status', '--porcelain', '-z').split('\0')
                      if z.startswith('?? ')]
     # Eine eigene Datei, noch nicht im Index: git diff zeigt sie nicht, geprueft wird sie trotzdem.
