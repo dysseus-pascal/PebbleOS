@@ -1,0 +1,42 @@
+[09:31:57.047] I - 09:31:57.227 weg.c:241> Art 0 -> 1, 800 m : NEUER SCHRITT
+[09:31:57.048] I - 09:31:57.227 kieselstrasse.c:132> Demo 0
+[09:32:02.051] I - 09:32:02.213 weg.c:241> Art 1 -> 2, 250 m : NEUER SCHRITT
+[09:32:02.051] I - 09:32:02.213 kieselstrasse.c:132> Demo 1
+[09:32:05.710] I - 09:32:05.914 weg.c:241> Art 2 -> 3, 120 m : NEUER SCHRITT
+[09:32:05.710] I - 09:32:05.915 kieselstrasse.c:132> Demo 2
+[09:32:09.412] I - 09:32:09.617 weg.c:241> Art 3 -> 4, 60 m : NEUER SCHRITT
+[09:32:09.413] I - 09:32:09.617 kieselstrasse.c:132> Demo 3
+[09:32:13.114] I - 09:32:13.319 weg.c:241> Art 4 -> 5, 15 m : NEUER SCHRITT
+[09:32:13.114] I - 09:32:13.319 kieselstrasse.c:132> Demo 4
+[09:32:16.816] I - 09:32:16.021 weg.c:241> Art 5 -> 6, 1200 m : NEUER SCHRITT
+[09:32:16.816] I - 09:32:16.021 kieselstrasse.c:132> Demo 5
+[09:32:20.518] I - 09:32:20.722 weg.c:241> Art 6 -> 7, 90 m : NEUER SCHRITT
+[09:32:20.518] I - 09:32:20.723 kieselstrasse.c:132> Demo 6
+[09:32:24.220] I - 09:32:24.425 weg.c:241> Art 7 -> 8, 2400 m : NEUER SCHRITT
+[09:32:24.220] I - 09:32:24.425 kieselstrasse.c:132> Demo 7
+[09:32:27.922] I - 09:32:27.127 weg.c:241> Art 8 -> 9, 450 m : NEUER SCHRITT
+[09:32:27.923] I - 09:32:27.127 kieselstrasse.c:132> Demo 8
+[09:32:31.623] I - 09:32:31.828 weg.c:241> Art 9 -> 10, 30 m : NEUER SCHRITT
+[09:32:31.624] I - 09:32:31.829 kieselstrasse.c:132> Demo 9
+[09:32:35.326] I - 09:32:35.531 weg.c:241> Art 10 -> 11, 200 m : NEUER SCHRITT
+[09:32:35.326] I - 09:32:35.531 kieselstrasse.c:132> Demo 10
+[09:32:39.028] I - 09:32:39.233 weg.c:241> Art 11 -> 12, 350 m : NEUER SCHRITT
+[09:32:39.028] I - 09:32:39.233 kieselstrasse.c:132> Demo 11
+[09:32:42.730] I - 09:32:42.935 weg.c:241> Art 12 -> 13, 180 m : NEUER SCHRITT
+[09:32:42.731] I - 09:32:42.936 kieselstrasse.c:132> Demo 12
+[09:32:46.432] I - 09:32:46.638 weg.c:241> Art 13 -> 14, 180 m : NEUER SCHRITT
+[09:32:46.433] I - 09:32:46.638 kieselstrasse.c:132> Demo 13
+[09:32:50.135] I - 09:32:50.340 weg.c:241> Art 14 -> 5, 280 m : NEUER SCHRITT
+[09:32:50.135] I - 09:32:50.340 kieselstrasse.c:132> Demo 14
+[09:32:53.837] I - 09:32:53.041 weg.c:241> Art 5 -> 6, 150 m : NEUER SCHRITT
+[09:32:53.837] I - 09:32:53.043 kieselstrasse.c:132> Demo 15
+[09:32:57.539] I - 09:32:57.744 weg.c:241> Art 6 -> 13, 120 m : NEUER SCHRITT
+[09:32:57.539] I - 09:32:57.744 kieselstrasse.c:132> Demo 16
+[09:33:01.241] I - 09:33:01.445 weg.c:241> Art 13 -> 0, -1 m : derselbe
+[09:33:01.241] I - 09:33:01.446 kieselstrasse.c:132> Demo 17
+[09:33:04.943] I - 09:33:04.148 weg.c:241> Art 0 -> 13, 90 m : NEUER SCHRITT
+[09:33:04.946] I - 09:33:04.148 kieselstrasse.c:132> Demo 18
+[09:33:08.645] I - 09:33:08.850 weg.c:241> Art 13 -> 14, 90 m : NEUER SCHRITT
+[09:33:08.645] I - 09:33:08.850 kieselstrasse.c:132> Demo 19
+[09:33:12.347] I - 09:33:12.552 weg.c:241> Art 14 -> 1, 800 m : NEUER SCHRITT
+[09:33:12.347] I - 09:33:12.552 kieselstrasse.c:132> Demo 0

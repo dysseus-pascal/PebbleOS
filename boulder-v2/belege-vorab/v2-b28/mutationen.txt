@@ -1,0 +1,11 @@
+rot        F6a   V2 F6         Kieselstrasse ohne Schalter in der Registry (auf jedem Board) (fw/shell/normal/system_app_registry_list.json)
+           | Kriterium 1 verletzt (tools/boulder/k1_waechter.py):
+           |   fw/shell/normal/system_app_registry_list.json: Eintrag ""id": -104," ohne einen von ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE') in "ifdefs"
+rot        F6b   V2 F6         Gleiche Abbiegeart: Lage der Abzweigung uebersehen (fw/apps/system/kieselstrasse/weg.c)
+           | 1/1 Test #94: test_kieselstrasse_weg ...........***Failed    0.01 sec
+rot        F6c   V2 F6         Summ-Pause 30 statt 20 s (fw/apps/system/kieselstrasse/kieselstrasse.c)
+           | 1/1 Test #95: test_kieselstrasse_app ...........***Failed    0.27 sec
+rot        F6d   V2 F6         Zu kurzer Persist wird gelesen (fw/apps/system/kieselstrasse/weg.c)
+           | 1/1 Test #94: test_kieselstrasse_weg ...........***Failed    0.01 sec
+4/4 rot
+rc=0

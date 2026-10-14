@@ -1,0 +1,24 @@
+Kieselstrasse-Demo (-DKST_DEMO, qemu_emery): b26 a7d8b16e1 gegen V2 (Arbeitsstand vor d4e15214)
+Unterschiede je Bild (Kasten x0,y0,x1,y1; Kopf = Uhrzeit y<30):
+00: Kopf (95, 15, 103, 24), darunter (153, 208, 162, 222)
+01: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+02: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+03: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+04: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+05: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+06: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+07: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+08: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+09: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+10: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+11: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+12: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+13: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+14: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+15: Kopf (95, 15, 103, 24), darunter (153, 208, 161, 222)
+16: Kopf (95, 10, 103, 24), darunter (153, 208, 161, 222)
+17: Kopf (95, 10, 103, 24), darunter None
+18: Kopf (95, 10, 103, 24), darunter (153, 212, 161, 217)
+19: Kopf (95, 10, 103, 24), darunter (153, 212, 161, 217)
+Darunter liegt jeder Unterschied in x 153-162, y 208-222: die Minutenziffer der Ankunft.
+Die Laeufe lagen zwei Minuten auseinander (9:30 und 9:32); sonst sind die Bilder gleich.

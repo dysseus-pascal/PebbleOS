@@ -191,7 +191,17 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **V2 jetzt veröffentlichen** (Nutzer): b27 mit der HRV-Regel, Kieselstrasse kommt danach (F6
   geändert: nicht mehr vor der ersten Vorabversion).
 - **Kein Vorher-Video von b26** (Punkt 5 gestrichen): Die Ladezeiten auf der Uhr beurteilt der Nutzer
-  selbst; seine Einschätzung genügt für Kriterium 6.
+  selbst; diese Einschätzung genügt für Kriterium 6.
+
+## Kieselstrasse in V2 (14.10.2026, F6)
+- **Port aus b26** (Vorabversion b28): eigene System-App unter `CONFIG_BOULDER_KIESELSTRASSE`. Der
+  Schalter hängt an der Variante, die Boards ohne sie bleiben bei Pebble. Registry-ID -104 (b26: -103;
+  in V2 trägt -103 Kieselsport). Kennung, Schlüssel und Persist wie die Store-App.
+- **Store-App löschen löscht auch den Speicher der eingebauten App** (Befund beim Port): V2 entfernt
+  beim Löschen einer Store-App die Persist-Datei ihrer Kennung, auch wenn Kieselsport oder
+  Kieselstrasse sie mitbenutzen (Maxpuls, Beckenlänge, wartende Trainings; der letzte
+  Navigationsstand). b26 verhinderte das. **Nutzer: nichts ändern** – nur eigene Daten, nichts
+  veröffentlicht. Die Release-Notiz rät weiter, eine doppelte Store-App einmal zu löschen (V9).
 
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**

@@ -16,6 +16,7 @@ ENV = dict(os.environ)
 ENV['PATH'] = f'{R}/.venv/bin:{SDK}/arm-none-eabi/bin:' + ENV['PATH']
 APP = 'fw/apps/system/boulder_health/'
 VAR = 'fw/services/activity/boulder/'
+KST = 'fw/apps/system/kieselstrasse/'
 
 
 def ctest(regex):
@@ -110,6 +111,19 @@ M = [
     ('H4c', 'V2 F20', 'HRV-Vergleich verkehrt: tiefe HRV haelt den Schlaf', VAR + 'schlafanalyse.c',
      'if (schub2 != KEIN && schub2 >= nacht2) {', 'if (schub2 != KEIN && schub2 < nacht2) {',
      ctest('^test_boulder_schlaf')),
+    # V2, F6 (14.10.): Kieselstrasse aus b26.
+    ('F6a', 'V2 F6', 'Kieselstrasse ohne Schalter in der Registry (auf jedem Board)',
+     'fw/shell/normal/system_app_registry_list.json',
+     '      "color_argb8": "GColorCobaltBlueARGB8",\n      "ifdefs": [\n'
+     '        "CONFIG_BOULDER_KIESELSTRASSE"\n      ]\n',
+     '      "color_argb8": "GColorCobaltBlueARGB8"\n', werkzeug('k1_waechter.py', str(R))),
+    ('F6b', 'V2 F6', 'Gleiche Abbiegeart: Lage der Abzweigung uebersehen', KST + 'weg.c',
+     '#define KST_LAGE_M 30', '#define KST_LAGE_M 3000', ctest('^test_kieselstrasse_weg$')),
+    ('F6c', 'V2 F6', 'Summ-Pause 30 statt 20 s', KST + 'kieselstrasse.c',
+     '#define KST_SUMM_PAUSE_S 20', '#define KST_SUMM_PAUSE_S 30', ctest('^test_kieselstrasse_app$')),
+    ('F6d', 'V2 F6', 'Zu kurzer Persist wird gelesen', KST + 'weg.c',
+     'if (persist_read_data(PERSIST_WEG, &s_weg, sizeof(s_weg)) != (int)sizeof(s_weg)) {',
+     'if (persist_read_data(PERSIST_WEG, &s_weg, sizeof(s_weg)) < 0) {', ctest('^test_kieselstrasse_weg$')),
     ('S1-4', 'Schritt 1 K4', 'Smart Alarm ohne Bewegung (auch im Tiefschlaf)', VAR + 'wecker.c',
      '  if (s_bewegt & WECKER_S1) {', '  if (true) {', ctest('^test_boulder_wecker')),
     ('S1-5', 'Schritt 1 K5', 'Velo nie erkannt', VAR + 'kontext.c',
