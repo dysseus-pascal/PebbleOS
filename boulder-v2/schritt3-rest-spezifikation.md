@@ -381,3 +381,9 @@ und L6 stehen im geretteten Bau-Skript. Neu ist nur die Zahl für L4 (Auffrische
   ändern (`entscheidungen.md`).
 - Auf der Uhr (Nutzer, 14.10.): Kieselstrasse mit b28 getestet, läuft.
 - Nächster Schritt: Punkt 6 (Gerätetest).
+
+## Stand nach Upstream v4.41.1 (14.10.2026, `8075766d8`)
+
+- F22 A: v4.41.1 vor dem Gerätetest (Worker von Apps starten wieder), `main` bleibt eingefroren.
+  Bericht: `schritt3-abnahme.md`, Abschnitt 13.
+- Vorabversion b29 an den Nutzer. Der Gerätetest (Punkt 6) beginnt am 14.10. abends mit b29.

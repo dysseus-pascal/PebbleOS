@@ -1,0 +1,10 @@
+Stand 8075766d8, Arbeitsbaum 0
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=501
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=501
+build rc=0 warnungen=0 fehler=0 uebersetzt=498
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=375
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=492
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=373
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=489
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=0
+CONFIG_BOULDER_PRUEFLAUF_HEAP=72512

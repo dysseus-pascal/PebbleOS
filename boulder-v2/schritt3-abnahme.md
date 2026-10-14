@@ -520,3 +520,28 @@ Punkt 4 aus Abschnitt 7 (F6). Belege: `belege-vorab/v2-b28/`.
   nichts veröffentlicht; `entscheidungen.md`).
 - **Auf der Uhr (Nutzer, 14.10.):** Kieselstrasse mit b28 getestet, läuft. Damit ist auch der Weg
   Boulder → Uhr über die Kennung der Store-App bestätigt.
+
+## 13. Upstream v4.41.1 (14.10.2026, `cf8a54f66`, `d3d17b338`, `8075766d8`)
+
+F22 A (`entscheidungen.md`): Upstreams Patch-Fassung v4.41.1 vor dem Gerätetest, als b29. `main`
+bleibt eingefroren (F18). Belege: `belege-vorab/v2-b29/`.
+
+- **Was v4.41.1 korrigiert:** die Worker von Apps. Seit v4.41.0 war `WorkerState` 648 statt
+  höchstens 640 Byte groß; `worker_state_configure()` scheiterte, kein Worker startete (in b28
+  nachgemessen). Ein so gescheiterter Start blieb als laufend stehen, der nächste assertierte. Jetzt
+  640 Byte, der Bau prüft die Größe, und ein gescheiterter Start wird zurückgerollt.
+- **Merge** (`d3d17b338`): ohne Konflikt, keine Boulder-Stelle berührt. Kraepelin-Originale und
+  Vertragsdateien unverändert, auch bis zum heutigen `main`; HERKUNFT nennt v4.41.1.
+- **K1-Wächter** (`cf8a54f66`): v4.41.1 zweigt von v4.41.0 ab und liegt nicht auf `main`. Der Wächter
+  nimmt jetzt das jüngste Upstream-Tag in HEAD als Basis, wenn es von der merge-base mit `main`
+  abzweigt; sonst wie bisher. Drei Gegenproben an echten Git-Repos, mit der alten Regel ist die erste
+  rot.
+- **Prüfbau-Ballast** (`8075766d8`): Kernel-Heap von obelix im Release-Bau 72512 B (b28: 72480 B).
+- **Prüfung:** acht Bauten ohne Warnung (Merge und Endstand), Host 440/440, alle Werkzeuge grün.
+  QEMU zweimal grün: L1 höchstens 12,7 ms, erster Start 19,5 bzw. 20,5 ms, L2 24,4 bzw. 14,6 ms, L4
+  höchstens 8,8 ms, L6 0,02 ms; Kernel-Heap ohne Wachstum, kein Neustart. L2 kam in Lauf a auf
+  24,4 ms (bisher höchstens 19,5); Lauf b 14,6 ms. Das schwankt mit dem Host, die Grenze ist 30 ms.
+- **Vorabversion b29:** `normal_obelix_pvt_v4.41.1-b29.pbz` (sha256 `f1e053e3…8bd31`), an den Nutzer
+  für den Gerätetest ab dem 14.10. abends.
+- **Nicht geprüft:** ein Worker in QEMU (keine eingebaute App hat einen); belegt ist die Ursache, die
+  Größe von `WorkerState`.

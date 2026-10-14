@@ -1,0 +1,884 @@
+[11:12:12.060] I - 20:01:01.135 oulder_health.c:398> bh t=81133 main
+[11:12:12.061] I - 20:01:01.137 oulder_health.c:360> bh t=81137 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:12.062] I - 20:01:01.139 oulder_health.c:365> bh t=81139 daten
+[11:12:12.062] I - 20:01:01.166 oulder_health.c:95> bh t=81166 bild
+[11:12:13.580] I - 20:01:02.653 oulder_health.c:398> bh t=82652 main
+[11:12:13.582] I - 20:01:02.653 oulder_health.c:360> bh t=82653 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:13.582] I - 20:01:02.653 oulder_health.c:365> bh t=82653 daten
+[11:12:13.583] I - 20:01:02.662 oulder_health.c:95> bh t=82662 bild
+[11:12:15.072] I - 20:01:04.143 oulder_health.c:398> bh t=84143 main
+[11:12:15.073] I - 20:01:04.143 oulder_health.c:360> bh t=84143 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:15.073] I - 20:01:04.144 oulder_health.c:365> bh t=84144 daten
+[11:12:15.074] I - 20:01:04.150 oulder_health.c:95> bh t=84150 bild
+[11:12:16.561] I - 20:01:05.632 oulder_health.c:398> bh t=85632 main
+[11:12:16.563] I - 20:01:05.632 oulder_health.c:360> bh t=85632 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:16.564] I - 20:01:05.632 oulder_health.c:365> bh t=85632 daten
+[11:12:16.565] I - 20:01:05.638 oulder_health.c:95> bh t=85638 bild
+[11:12:18.055] I - 20:01:07.123 oulder_health.c:398> bh t=87123 main
+[11:12:18.057] I - 20:01:07.123 oulder_health.c:360> bh t=87123 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:18.058] I - 20:01:07.124 oulder_health.c:365> bh t=87124 daten
+[11:12:18.058] I - 20:01:07.129 oulder_health.c:95> bh t=87129 bild
+[11:12:19.549] I - 20:01:08.620 oulder_health.c:398> bh t=88619 main
+[11:12:19.550] I - 20:01:08.620 oulder_health.c:360> bh t=88620 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:19.550] I - 20:01:08.621 oulder_health.c:365> bh t=88621 daten
+[11:12:19.551] I - 20:01:08.628 oulder_health.c:95> bh t=88628 bild
+[11:12:21.040] I - 20:01:10.112 oulder_health.c:398> bh t=90111 main
+[11:12:21.041] I - 20:01:10.112 oulder_health.c:360> bh t=90112 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:21.043] I - 20:01:10.112 oulder_health.c:365> bh t=90112 daten
+[11:12:21.043] I - 20:01:10.118 oulder_health.c:95> bh t=90118 bild
+[11:12:22.495] I - 20:01:11.604 oulder_health.c:398> bh t=91604 main
+[11:12:22.496] I - 20:01:11.604 oulder_health.c:360> bh t=91604 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:22.497] I - 20:01:11.605 oulder_health.c:365> bh t=91605 daten
+[11:12:22.502] I - 20:01:11.611 oulder_health.c:95> bh t=91611 bild
+[11:12:24.021] I - 20:01:12.088 oulder_health.c:398> bh t=93088 main
+[11:12:24.022] I - 20:01:12.088 oulder_health.c:360> bh t=93088 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:24.023] I - 20:01:12.088 oulder_health.c:365> bh t=93088 daten
+[11:12:24.023] I - 20:01:12.095 oulder_health.c:95> bh t=93095 bild
+[11:12:25.513] I - 20:01:14.585 oulder_health.c:398> bh t=94585 main
+[11:12:25.514] I - 20:01:14.586 oulder_health.c:360> bh t=94586 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:25.514] I - 20:01:14.587 oulder_health.c:365> bh t=94587 daten
+[11:12:25.515] I - 20:01:14.596 oulder_health.c:95> bh t=94596 bild
+[11:12:27.016] I - 20:01:15.089 oulder_health.c:398> bh t=96089 main
+[11:12:27.018] I - 20:01:15.089 oulder_health.c:360> bh t=96089 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:27.018] I - 20:01:15.090 oulder_health.c:365> bh t=96090 daten
+[11:12:27.018] I - 20:01:15.099 oulder_health.c:95> bh t=96099 bild
+[11:12:28.521] I - 20:01:17.593 oulder_health.c:398> bh t=97593 main
+[11:12:28.521] I - 20:01:17.593 oulder_health.c:360> bh t=97593 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:28.521] I - 20:01:17.594 oulder_health.c:365> bh t=97594 daten
+[11:12:28.522] I - 20:01:17.601 oulder_health.c:95> bh t=97601 bild
+[11:12:30.025] I - 20:01:18.097 oulder_health.c:398> bh t=99097 main
+[11:12:30.026] I - 20:01:18.098 oulder_health.c:360> bh t=99097 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:30.027] I - 20:01:18.098 oulder_health.c:365> bh t=99098 daten
+[11:12:30.027] I - 20:01:18.108 oulder_health.c:95> bh t=99108 bild
+[11:12:31.529] I - 20:01:20.600 oulder_health.c:398> bh t=100600 main
+[11:12:31.530] I - 20:01:20.601 oulder_health.c:360> bh t=100601 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:31.531] I - 20:01:20.602 oulder_health.c:365> bh t=100602 daten
+[11:12:31.531] I - 20:01:20.611 oulder_health.c:95> bh t=100610 bild
+[11:12:33.021] I - 20:01:21.094 oulder_health.c:398> bh t=102094 main
+[11:12:33.023] I - 20:01:21.094 oulder_health.c:360> bh t=102094 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:33.025] I - 20:01:21.095 oulder_health.c:365> bh t=102095 daten
+[11:12:33.026] I - 20:01:21.106 oulder_health.c:95> bh t=102105 bild
+[11:12:34.525] I - 20:01:23.593 oulder_health.c:398> bh t=103593 main
+[11:12:34.526] I - 20:01:23.593 oulder_health.c:360> bh t=103593 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:34.527] I - 20:01:23.594 oulder_health.c:365> bh t=103594 daten
+[11:12:34.527] I - 20:01:23.600 oulder_health.c:95> bh t=103600 bild
+[11:12:36.016] I - 20:01:24.088 oulder_health.c:398> bh t=105088 main
+[11:12:36.017] I - 20:01:24.088 oulder_health.c:360> bh t=105088 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:36.017] I - 20:01:24.089 oulder_health.c:365> bh t=105089 daten
+[11:12:36.018] I - 20:01:24.095 oulder_health.c:95> bh t=105095 bild
+[11:12:37.504] I - 20:01:26.575 oulder_health.c:398> bh t=106575 main
+[11:12:37.505] I - 20:01:26.576 oulder_health.c:360> bh t=106576 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:37.506] I - 20:01:26.576 oulder_health.c:365> bh t=106576 daten
+[11:12:37.507] I - 20:01:26.583 oulder_health.c:95> bh t=106583 bild
+[11:12:38.999] I - 20:01:27.067 oulder_health.c:398> bh t=108067 main
+[11:12:38.999] I - 20:01:27.067 oulder_health.c:360> bh t=108067 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:39.000] I - 20:01:27.068 oulder_health.c:365> bh t=108068 daten
+[11:12:39.000] I - 20:01:27.074 oulder_health.c:95> bh t=108074 bild
+[11:12:40.488] I - 20:01:29.560 oulder_health.c:398> bh t=109560 main
+[11:12:40.489] I - 20:01:29.561 oulder_health.c:360> bh t=109560 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:12:40.490] I - 20:01:29.561 oulder_health.c:365> bh t=109561 daten
+[11:12:40.491] I - 20:01:29.567 oulder_health.c:95> bh t=109567 bild
+[11:12:41.980] I - 20:01:30.051 oulder_health.c:398> bh t=111051 main
+[11:12:41.981] I - 20:01:30.051 oulder_health.c:360> bh t=111051 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:41.982] I - 20:01:30.052 oulder_health.c:365> bh t=111052 daten
+[11:12:41.983] I - 20:01:30.061 oulder_health.c:95> bh t=111061 bild
+[11:12:43.472] I - 20:01:32.544 oulder_health.c:398> bh t=112544 main
+[11:12:43.474] I - 20:01:32.544 oulder_health.c:360> bh t=112544 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:43.474] I - 20:01:32.545 oulder_health.c:365> bh t=112545 daten
+[11:12:43.475] I - 20:01:32.552 oulder_health.c:95> bh t=112552 bild
+[11:12:44.969] I - 20:01:33.039 oulder_health.c:398> bh t=114039 main
+[11:12:44.970] I - 20:01:33.039 oulder_health.c:360> bh t=114039 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:44.971] I - 20:01:33.040 oulder_health.c:365> bh t=114040 daten
+[11:12:44.972] I - 20:01:33.046 oulder_health.c:95> bh t=114046 bild
+[11:12:46.460] I - 20:01:35.532 oulder_health.c:398> bh t=115531 main
+[11:12:46.461] I - 20:01:35.532 oulder_health.c:360> bh t=115532 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:46.462] I - 20:01:35.532 oulder_health.c:365> bh t=115532 daten
+[11:12:46.463] I - 20:01:35.540 oulder_health.c:95> bh t=115540 bild
+[11:12:47.953] I - 20:01:36.023 oulder_health.c:398> bh t=117023 main
+[11:12:47.954] I - 20:01:36.023 oulder_health.c:360> bh t=117023 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:47.955] I - 20:01:36.024 oulder_health.c:365> bh t=117024 daten
+[11:12:47.955] I - 20:01:36.031 oulder_health.c:95> bh t=117031 bild
+[11:12:49.445] I - 20:01:38.517 oulder_health.c:398> bh t=118517 main
+[11:12:49.446] I - 20:01:38.518 oulder_health.c:360> bh t=118518 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:49.447] I - 20:01:38.518 oulder_health.c:365> bh t=118518 daten
+[11:12:49.447] I - 20:01:38.530 oulder_health.c:95> bh t=118530 bild
+[11:12:50.944] I - 20:01:39.015 oulder_health.c:398> bh t=120015 main
+[11:12:50.946] I - 20:01:39.015 oulder_health.c:360> bh t=120015 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:50.946] I - 20:01:39.016 oulder_health.c:365> bh t=120016 daten
+[11:12:50.947] I - 20:01:39.022 oulder_health.c:95> bh t=120022 bild
+[11:12:52.436] I - 20:01:41.508 oulder_health.c:398> bh t=121508 main
+[11:12:52.438] I - 20:01:41.508 oulder_health.c:360> bh t=121508 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:52.438] I - 20:01:41.509 oulder_health.c:365> bh t=121508 daten
+[11:12:52.439] I - 20:01:41.515 oulder_health.c:95> bh t=121515 bild
+[11:12:53.928] I - 20:01:42.999 oulder_health.c:398> bh t=122999 main
+[11:12:53.929] I - 20:01:42.999 oulder_health.c:360> bh t=122999 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:53.930] I - 20:01:42.999 oulder_health.c:365> bh t=122999 daten
+[11:12:53.930] I - 20:01:42.007 oulder_health.c:95> bh t=123007 bild
+[11:12:55.425] I - 20:01:44.496 oulder_health.c:398> bh t=124496 main
+[11:12:55.426] I - 20:01:44.496 oulder_health.c:360> bh t=124496 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:55.427] I - 20:01:44.497 oulder_health.c:365> bh t=124497 daten
+[11:12:55.428] I - 20:01:44.503 oulder_health.c:95> bh t=124503 bild
+[11:12:56.916] I - 20:01:45.987 oulder_health.c:398> bh t=125987 main
+[11:12:56.917] I - 20:01:45.988 oulder_health.c:360> bh t=125988 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:56.918] I - 20:01:45.988 oulder_health.c:365> bh t=125988 daten
+[11:12:56.918] I - 20:01:45.995 oulder_health.c:95> bh t=125995 bild
+[11:12:58.409] I - 20:01:47.479 oulder_health.c:398> bh t=127479 main
+[11:12:58.410] I - 20:01:47.480 oulder_health.c:360> bh t=127480 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:58.411] I - 20:01:47.480 oulder_health.c:365> bh t=127480 daten
+[11:12:58.412] I - 20:01:47.487 oulder_health.c:95> bh t=127487 bild
+[11:12:59.901] I - 20:01:48.971 oulder_health.c:398> bh t=128971 main
+[11:12:59.902] I - 20:01:48.971 oulder_health.c:360> bh t=128971 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:12:59.902] I - 20:01:48.972 oulder_health.c:365> bh t=128972 daten
+[11:12:59.902] I - 20:01:48.978 oulder_health.c:95> bh t=128978 bild
+[11:13:01.392] I - 20:01:50.465 oulder_health.c:398> bh t=130464 main
+[11:13:01.393] I - 20:01:50.465 oulder_health.c:360> bh t=130465 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:01.394] I - 20:01:50.466 oulder_health.c:365> bh t=130466 daten
+[11:13:01.395] I - 20:01:50.473 oulder_health.c:95> bh t=130473 bild
+[11:13:02.884] I - 20:01:51.955 oulder_health.c:398> bh t=131955 main
+[11:13:02.885] I - 20:01:51.955 oulder_health.c:360> bh t=131955 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:02.886] I - 20:01:51.956 oulder_health.c:365> bh t=131955 daten
+[11:13:02.886] I - 20:01:51.962 oulder_health.c:95> bh t=131962 bild
+[11:13:04.376] I - 20:01:53.447 oulder_health.c:398> bh t=133447 main
+[11:13:04.377] I - 20:01:53.448 oulder_health.c:360> bh t=133448 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:04.378] I - 20:01:53.448 oulder_health.c:365> bh t=133448 daten
+[11:13:04.378] I - 20:01:53.456 oulder_health.c:95> bh t=133456 bild
+[11:13:05.872] I - 20:01:54.945 oulder_health.c:398> bh t=134945 main
+[11:13:05.874] I - 20:01:54.946 oulder_health.c:360> bh t=134946 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:05.874] I - 20:01:54.946 oulder_health.c:365> bh t=134946 daten
+[11:13:05.875] I - 20:01:54.957 oulder_health.c:95> bh t=134957 bild
+[11:13:07.365] I - 20:01:56.436 oulder_health.c:398> bh t=136436 main
+[11:13:07.366] I - 20:01:56.436 oulder_health.c:360> bh t=136436 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:07.367] I - 20:01:56.437 oulder_health.c:365> bh t=136437 daten
+[11:13:07.368] I - 20:01:56.444 oulder_health.c:95> bh t=136444 bild
+[11:13:08.856] I - 20:01:57.928 oulder_health.c:398> bh t=137928 main
+[11:13:08.857] I - 20:01:57.928 oulder_health.c:360> bh t=137928 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:08.858] I - 20:01:57.928 oulder_health.c:365> bh t=137928 daten
+[11:13:08.859] I - 20:01:57.936 oulder_health.c:95> bh t=137936 bild
+[11:13:10.354] I - 20:01:59.423 oulder_health.c:398> bh t=139423 main
+[11:13:10.354] I - 20:01:59.424 oulder_health.c:360> bh t=139424 start grund=6 knopf=0 aktion=0 argument=1 Night kreis=1 spiegel=0
+[11:13:10.355] I - 20:01:59.424 oulder_health.c:365> bh t=139424 daten
+[11:13:10.356] I - 20:01:59.435 oulder_health.c:95> bh t=139434 bild
+[11:13:11.845] I - 20:02:00.916 oulder_health.c:398> bh t=140916 main
+[11:13:11.847] I - 20:02:00.916 oulder_health.c:360> bh t=140916 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:11.847] I - 20:02:00.917 oulder_health.c:365> bh t=140917 daten
+[11:13:11.847] I - 20:02:00.928 oulder_health.c:95> bh t=140927 bild
+[11:13:13.337] I - 20:02:02.409 oulder_health.c:398> bh t=142408 main
+[11:13:13.338] I - 20:02:02.409 oulder_health.c:360> bh t=142409 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:13.339] I - 20:02:02.410 oulder_health.c:365> bh t=142410 daten
+[11:13:13.339] I - 20:02:02.416 oulder_health.c:95> bh t=142416 bild
+[11:13:14.828] I - 20:02:03.923 oulder_health.c:398> bh t=143923 main
+[11:13:14.829] I - 20:02:03.923 oulder_health.c:360> bh t=143923 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:14.830] I - 20:02:03.923 oulder_health.c:365> bh t=143923 daten
+[11:13:14.830] I - 20:02:03.929 oulder_health.c:95> bh t=143929 bild
+[11:13:16.333] I - 20:02:05.403 oulder_health.c:398> bh t=145403 main
+[11:13:16.335] I - 20:02:05.403 oulder_health.c:360> bh t=145403 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:16.336] I - 20:02:05.404 oulder_health.c:365> bh t=145404 daten
+[11:13:16.336] I - 20:02:05.411 oulder_health.c:95> bh t=145411 bild
+[11:13:17.832] I - 20:02:06.914 oulder_health.c:398> bh t=146914 main
+[11:13:17.833] I - 20:02:06.915 oulder_health.c:360> bh t=146914 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:17.834] I - 20:02:06.916 oulder_health.c:365> bh t=146916 daten
+[11:13:17.834] I - 20:02:06.921 oulder_health.c:95> bh t=146921 bild
+[11:13:19.333] I - 20:02:08.402 oulder_health.c:398> bh t=148402 main
+[11:13:19.334] I - 20:02:08.402 oulder_health.c:360> bh t=148402 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:19.335] I - 20:02:08.403 oulder_health.c:365> bh t=148403 daten
+[11:13:19.335] I - 20:02:08.410 oulder_health.c:95> bh t=148410 bild
+[11:13:20.832] I - 20:02:09.904 oulder_health.c:398> bh t=149904 main
+[11:13:20.833] I - 20:02:09.905 oulder_health.c:360> bh t=149905 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:20.834] I - 20:02:09.905 oulder_health.c:365> bh t=149905 daten
+[11:13:20.834] I - 20:02:09.910 oulder_health.c:95> bh t=149910 bild
+[11:13:22.320] I - 20:02:11.391 oulder_health.c:398> bh t=151391 main
+[11:13:22.322] I - 20:02:11.391 oulder_health.c:360> bh t=151391 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:22.323] I - 20:02:11.391 oulder_health.c:365> bh t=151391 daten
+[11:13:22.323] I - 20:02:11.397 oulder_health.c:95> bh t=151397 bild
+[11:13:23.812] I - 20:02:12.883 oulder_health.c:398> bh t=152883 main
+[11:13:23.813] I - 20:02:12.883 oulder_health.c:360> bh t=152883 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:23.814] I - 20:02:12.884 oulder_health.c:365> bh t=152884 daten
+[11:13:23.814] I - 20:02:12.889 oulder_health.c:95> bh t=152889 bild
+[11:13:25.309] I - 20:02:14.380 oulder_health.c:398> bh t=154380 main
+[11:13:25.310] I - 20:02:14.381 oulder_health.c:360> bh t=154381 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:25.310] I - 20:02:14.381 oulder_health.c:365> bh t=154381 daten
+[11:13:25.311] I - 20:02:14.389 oulder_health.c:95> bh t=154389 bild
+[11:13:26.800] I - 20:02:15.871 oulder_health.c:398> bh t=155871 main
+[11:13:26.802] I - 20:02:15.872 oulder_health.c:360> bh t=155872 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:26.802] I - 20:02:15.872 oulder_health.c:365> bh t=155872 daten
+[11:13:26.803] I - 20:02:15.877 oulder_health.c:95> bh t=155877 bild
+[11:13:28.293] I - 20:02:17.366 oulder_health.c:398> bh t=157366 main
+[11:13:28.294] I - 20:02:17.367 oulder_health.c:360> bh t=157367 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:28.295] I - 20:02:17.368 oulder_health.c:365> bh t=157368 daten
+[11:13:28.296] I - 20:02:17.378 oulder_health.c:95> bh t=157378 bild
+[11:13:29.784] I - 20:02:18.855 oulder_health.c:398> bh t=158855 main
+[11:13:29.786] I - 20:02:18.855 oulder_health.c:360> bh t=158855 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:29.786] I - 20:02:18.856 oulder_health.c:365> bh t=158856 daten
+[11:13:29.787] I - 20:02:18.864 oulder_health.c:95> bh t=158864 bild
+[11:13:31.277] I - 20:02:20.349 oulder_health.c:398> bh t=160349 main
+[11:13:31.278] I - 20:02:20.350 oulder_health.c:360> bh t=160350 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:31.279] I - 20:02:20.351 oulder_health.c:365> bh t=160350 daten
+[11:13:31.279] I - 20:02:20.359 oulder_health.c:95> bh t=160359 bild
+[11:13:32.781] I - 20:02:21.852 oulder_health.c:398> bh t=161852 main
+[11:13:32.783] I - 20:02:21.852 oulder_health.c:360> bh t=161852 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:32.783] I - 20:02:21.853 oulder_health.c:365> bh t=161853 daten
+[11:13:32.784] I - 20:02:21.858 oulder_health.c:95> bh t=161858 bild
+[11:13:34.272] I - 20:02:23.345 oulder_health.c:398> bh t=163345 main
+[11:13:34.273] I - 20:02:23.345 oulder_health.c:360> bh t=163345 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:34.274] I - 20:02:23.346 oulder_health.c:365> bh t=163346 daten
+[11:13:34.274] I - 20:02:23.351 oulder_health.c:95> bh t=163351 bild
+[11:13:35.764] I - 20:02:24.835 oulder_health.c:398> bh t=164835 main
+[11:13:35.765] I - 20:02:24.835 oulder_health.c:360> bh t=164835 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:35.766] I - 20:02:24.836 oulder_health.c:365> bh t=164835 daten
+[11:13:35.766] I - 20:02:24.840 oulder_health.c:95> bh t=164840 bild
+[11:13:37.256] I - 20:02:26.327 oulder_health.c:398> bh t=166327 main
+[11:13:37.257] I - 20:02:26.327 oulder_health.c:360> bh t=166327 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:37.258] I - 20:02:26.328 oulder_health.c:365> bh t=166328 daten
+[11:13:37.260] I - 20:02:26.333 oulder_health.c:95> bh t=166333 bild
+[11:13:38.749] I - 20:02:27.822 oulder_health.c:398> bh t=167822 main
+[11:13:38.750] I - 20:02:27.823 oulder_health.c:360> bh t=167823 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:38.750] I - 20:02:27.824 oulder_health.c:365> bh t=167824 daten
+[11:13:38.751] I - 20:02:27.834 oulder_health.c:95> bh t=167834 bild
+[11:13:40.241] I - 20:02:29.312 oulder_health.c:398> bh t=169312 main
+[11:13:40.242] I - 20:02:29.313 oulder_health.c:360> bh t=169313 start grund=6 knopf=0 aktion=0 argument=0 Activity kreis=1 spiegel=0
+[11:13:40.243] I - 20:02:29.313 oulder_health.c:365> bh t=169313 daten
+[11:13:40.243] I - 20:02:29.318 oulder_health.c:95> bh t=169318 bild
+[11:13:41.741] I - 20:02:30.807 oulder_health.c:398> bh t=170807 main
+[11:13:41.743] I - 20:02:30.807 oulder_health.c:360> bh t=170807 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:13:41.744] I - 20:02:30.808 oulder_health.c:365> bh t=170808 daten
+[11:13:41.744] I - 20:02:30.814 oulder_health.c:95> bh t=170814 bild
+[11:13:42.136] I - 20:02:31.200 oulder_health.c:301> bh t=171200 taste
+[11:13:42.138] I - 20:02:31.200 oulder_health.c:304> bh t=171200 karte Night
+[11:13:42.138] I - 20:02:31.208 oulder_health.c:95> bh t=171208 bild
+[11:13:42.392] I - 20:02:31.500 oulder_health.c:323> bh t=171499 taste
+[11:13:42.392] I - 20:02:31.500 oulder_health.c:331> bh t=171500 detail Night
+[11:13:42.395] I - 20:02:31.503 oulder_health.c:108> bh t=171503 zeichnen
+[11:13:42.403] I - 20:02:31.512 oulder_health.c:114> bh t=171512 bild
+[11:13:43.792] I - 20:02:32.901 oulder_health.c:301> bh t=172901 taste
+[11:13:43.793] I - 20:02:32.902 oulder_health.c:304> bh t=172902 karte Heart
+[11:13:43.794] I - 20:02:32.903 oulder_health.c:164> bh t=172903 puls an
+[11:13:43.808] I - 20:02:32.917 oulder_health.c:95> bh t=172917 bild
+[11:13:44.094] I - 20:02:33.202 oulder_health.c:323> bh t=173202 taste
+[11:13:44.095] I - 20:02:33.203 oulder_health.c:331> bh t=173203 detail Heart
+[11:13:44.097] I - 20:02:33.206 oulder_health.c:164> bh t=173205 puls aus
+[11:13:44.098] I - 20:02:33.207 oulder_health.c:108> bh t=173206 zeichnen
+[11:13:44.118] I - 20:02:33.227 oulder_health.c:114> bh t=173227 bild
+[11:13:44.594] I - 20:02:33.703 oulder_health.c:164> bh t=173703 puls an
+[11:13:45.495] I - 20:02:34.604 oulder_health.c:301> bh t=174604 taste
+[11:13:45.495] I - 20:02:34.604 oulder_health.c:304> bh t=174604 karte Activity
+[11:13:45.496] I - 20:02:34.604 oulder_health.c:164> bh t=174604 puls aus
+[11:13:45.501] I - 20:02:34.610 oulder_health.c:95> bh t=174610 bild
+[11:13:45.796] I - 20:02:34.904 oulder_health.c:323> bh t=174904 taste
+[11:13:45.797] I - 20:02:34.905 oulder_health.c:331> bh t=174904 detail Sessions
+[11:13:45.797] I - 20:02:34.906 oulder_health.c:108> bh t=174906 zeichnen
+[11:13:45.804] I - 20:02:34.910 oulder_health.c:114> bh t=174910 bild
+[11:13:47.202] I - 20:02:36.310 oulder_health.c:301> bh t=176310 taste
+[11:13:47.203] I - 20:02:36.311 oulder_health.c:304> bh t=176311 karte Settings
+[11:13:47.210] I - 20:02:36.319 oulder_health.c:95> bh t=176319 bild
+[11:13:47.501] I - 20:02:36.610 oulder_health.c:323> bh t=176610 taste
+[11:13:47.502] I - 20:02:36.610 oulder_health.c:331> bh t=176610 detail Precision
+[11:13:47.502] I - 20:02:36.611 oulder_health.c:108> bh t=176611 zeichnen
+[11:13:47.505] I - 20:02:36.614 oulder_health.c:114> bh t=176614 bild
+[11:13:48.902] I - 20:02:37.011 oulder_health.c:301> bh t=178011 taste
+[11:13:48.903] I - 20:02:37.012 oulder_health.c:304> bh t=178012 karte Today
+[11:13:48.907] I - 20:02:37.016 oulder_health.c:95> bh t=178016 bild
+[11:13:49.203] I - 20:02:38.312 oulder_health.c:323> bh t=178312 taste
+[11:13:49.205] I - 20:02:38.313 oulder_health.c:328> bh t=178313 nichts
+[11:13:49.704] I - 20:02:38.813 oulder_health.c:301> bh t=178813 taste
+[11:13:49.704] I - 20:02:38.813 oulder_health.c:304> bh t=178813 karte Night
+[11:13:49.710] I - 20:02:38.819 oulder_health.c:95> bh t=178819 bild
+[11:13:50.006] I - 20:02:39.114 oulder_health.c:323> bh t=179114 taste
+[11:13:50.006] I - 20:02:39.115 oulder_health.c:331> bh t=179115 detail Night
+[11:13:50.007] I - 20:02:39.116 oulder_health.c:108> bh t=179116 zeichnen
+[11:13:50.012] I - 20:02:39.121 oulder_health.c:114> bh t=179121 bild
+[11:13:51.406] I - 20:02:40.515 oulder_health.c:301> bh t=180515 taste
+[11:13:51.406] I - 20:02:40.515 oulder_health.c:304> bh t=180515 karte Heart
+[11:13:51.407] I - 20:02:40.515 oulder_health.c:164> bh t=180515 puls an
+[11:13:51.413] I - 20:02:40.522 oulder_health.c:95> bh t=180522 bild
+[11:13:51.706] I - 20:02:40.815 oulder_health.c:323> bh t=180815 taste
+[11:13:51.707] I - 20:02:40.816 oulder_health.c:331> bh t=180816 detail Heart
+[11:13:51.708] I - 20:02:40.816 oulder_health.c:164> bh t=180816 puls aus
+[11:13:51.708] I - 20:02:40.817 oulder_health.c:108> bh t=180817 zeichnen
+[11:13:51.717] I - 20:02:40.826 oulder_health.c:114> bh t=180826 bild
+[11:13:52.207] I - 20:02:41.316 oulder_health.c:164> bh t=181316 puls an
+[11:13:53.108] I - 20:02:42.217 oulder_health.c:301> bh t=182217 taste
+[11:13:53.109] I - 20:02:42.217 oulder_health.c:304> bh t=182217 karte Activity
+[11:13:53.110] I - 20:02:42.217 oulder_health.c:164> bh t=182217 puls aus
+[11:13:53.114] I - 20:02:42.223 oulder_health.c:95> bh t=182223 bild
+[11:13:53.408] I - 20:02:42.517 oulder_health.c:323> bh t=182517 taste
+[11:13:53.409] I - 20:02:42.517 oulder_health.c:331> bh t=182517 detail Sessions
+[11:13:53.409] I - 20:02:42.518 oulder_health.c:108> bh t=182518 zeichnen
+[11:13:53.412] I - 20:02:42.521 oulder_health.c:114> bh t=182521 bild
+[11:13:54.810] I - 20:02:43.919 oulder_health.c:301> bh t=183919 taste
+[11:13:54.811] I - 20:02:43.919 oulder_health.c:304> bh t=183919 karte Settings
+[11:13:54.815] I - 20:02:43.924 oulder_health.c:95> bh t=183923 bild
+[11:13:55.111] I - 20:02:44.219 oulder_health.c:323> bh t=184219 taste
+[11:13:55.111] I - 20:02:44.220 oulder_health.c:331> bh t=184220 detail Precision
+[11:13:55.112] I - 20:02:44.221 oulder_health.c:108> bh t=184221 zeichnen
+[11:13:55.114] I - 20:02:44.223 oulder_health.c:114> bh t=184223 bild
+[11:13:56.513] I - 20:02:45.621 oulder_health.c:301> bh t=185621 taste
+[11:13:56.513] I - 20:02:45.621 oulder_health.c:304> bh t=185621 karte Today
+[11:13:56.518] I - 20:02:45.626 oulder_health.c:95> bh t=185626 bild
+[11:13:56.814] I - 20:02:45.923 oulder_health.c:323> bh t=185923 taste
+[11:13:56.815] I - 20:02:45.923 oulder_health.c:328> bh t=185923 nichts
+[11:13:57.315] I - 20:02:46.424 oulder_health.c:301> bh t=186423 taste
+[11:13:57.315] I - 20:02:46.424 oulder_health.c:304> bh t=186424 karte Night
+[11:13:57.328] I - 20:02:46.437 oulder_health.c:95> bh t=186437 bild
+[11:13:57.615] I - 20:02:46.724 oulder_health.c:323> bh t=186724 taste
+[11:13:57.615] I - 20:02:46.724 oulder_health.c:331> bh t=186724 detail Night
+[11:13:57.616] I - 20:02:46.725 oulder_health.c:108> bh t=186725 zeichnen
+[11:13:57.621] I - 20:02:46.730 oulder_health.c:114> bh t=186730 bild
+[11:13:59.016] I - 20:02:48.125 oulder_health.c:301> bh t=188125 taste
+[11:13:59.017] I - 20:02:48.126 oulder_health.c:304> bh t=188125 karte Heart
+[11:13:59.017] I - 20:02:48.126 oulder_health.c:164> bh t=188126 puls an
+[11:13:59.026] I - 20:02:48.135 oulder_health.c:95> bh t=188135 bild
+[11:13:59.317] I - 20:02:48.426 oulder_health.c:323> bh t=188426 taste
+[11:13:59.318] I - 20:02:48.426 oulder_health.c:331> bh t=188426 detail Heart
+[11:13:59.318] I - 20:02:48.427 oulder_health.c:164> bh t=188427 puls aus
+[11:13:59.319] I - 20:02:48.427 oulder_health.c:108> bh t=188427 zeichnen
+[11:13:59.329] I - 20:02:48.438 oulder_health.c:114> bh t=188438 bild
+[11:13:59.818] I - 20:02:48.927 oulder_health.c:164> bh t=188927 puls an
+[11:14:00.718] I - 20:02:49.827 oulder_health.c:301> bh t=189827 taste
+[11:14:00.718] I - 20:02:49.827 oulder_health.c:304> bh t=189827 karte Activity
+[11:14:00.719] I - 20:02:49.827 oulder_health.c:164> bh t=189827 puls aus
+[11:14:00.723] I - 20:02:49.832 oulder_health.c:95> bh t=189832 bild
+[11:14:01.019] I - 20:02:50.127 oulder_health.c:323> bh t=190127 taste
+[11:14:01.019] I - 20:02:50.128 oulder_health.c:331> bh t=190128 detail Sessions
+[11:14:01.021] I - 20:02:50.130 oulder_health.c:108> bh t=190130 zeichnen
+[11:14:01.026] I - 20:02:50.134 oulder_health.c:114> bh t=190134 bild
+[11:14:02.420] I - 20:02:51.529 oulder_health.c:301> bh t=191529 taste
+[11:14:02.421] I - 20:02:51.529 oulder_health.c:304> bh t=191529 karte Settings
+[11:14:02.423] I - 20:02:51.532 oulder_health.c:95> bh t=191532 bild
+[11:14:02.722] I - 20:02:51.830 oulder_health.c:323> bh t=191830 taste
+[11:14:02.723] I - 20:02:51.830 oulder_health.c:331> bh t=191830 detail Precision
+[11:14:02.724] I - 20:02:51.831 oulder_health.c:108> bh t=191831 zeichnen
+[11:14:02.726] I - 20:02:51.835 oulder_health.c:114> bh t=191835 bild
+[11:14:04.124] I - 20:02:53.231 oulder_health.c:301> bh t=193231 taste
+[11:14:04.124] I - 20:02:53.232 oulder_health.c:304> bh t=193231 karte Today
+[11:14:04.130] I - 20:02:53.239 oulder_health.c:95> bh t=193238 bild
+[11:14:04.423] I - 20:02:53.532 oulder_health.c:323> bh t=193532 taste
+[11:14:04.424] I - 20:02:53.532 oulder_health.c:328> bh t=193532 nichts
+[11:14:04.925] I - 20:02:53.033 oulder_health.c:301> bh t=194032 taste
+[11:14:04.925] I - 20:02:53.033 oulder_health.c:304> bh t=194033 karte Night
+[11:14:04.935] I - 20:02:53.043 oulder_health.c:95> bh t=194043 bild
+[11:14:05.224] I - 20:02:54.333 oulder_health.c:323> bh t=194333 taste
+[11:14:05.225] I - 20:02:54.333 oulder_health.c:331> bh t=194333 detail Night
+[11:14:05.226] I - 20:02:54.335 oulder_health.c:108> bh t=194335 zeichnen
+[11:14:05.234] I - 20:02:54.343 oulder_health.c:114> bh t=194343 bild
+[11:14:06.626] I - 20:02:55.735 oulder_health.c:301> bh t=195735 taste
+[11:14:06.627] I - 20:02:55.735 oulder_health.c:304> bh t=195735 karte Heart
+[11:14:06.628] I - 20:02:55.736 oulder_health.c:164> bh t=195736 puls an
+[11:14:06.638] I - 20:02:55.747 oulder_health.c:95> bh t=195747 bild
+[11:14:06.926] I - 20:02:55.035 oulder_health.c:323> bh t=196035 taste
+[11:14:06.927] I - 20:02:55.035 oulder_health.c:331> bh t=196035 detail Heart
+[11:14:06.928] I - 20:02:55.036 oulder_health.c:164> bh t=196036 puls aus
+[11:14:06.928] I - 20:02:55.037 oulder_health.c:108> bh t=196037 zeichnen
+[11:14:06.937] I - 20:02:55.046 oulder_health.c:114> bh t=196046 bild
+[11:14:07.427] I - 20:02:56.536 oulder_health.c:164> bh t=196536 puls an
+[11:14:08.328] I - 20:02:57.437 oulder_health.c:301> bh t=197436 taste
+[11:14:08.330] I - 20:02:57.437 oulder_health.c:304> bh t=197437 karte Activity
+[11:14:08.331] I - 20:02:57.437 oulder_health.c:164> bh t=197437 puls aus
+[11:14:08.334] I - 20:02:57.443 oulder_health.c:95> bh t=197443 bild
+[11:14:08.628] I - 20:02:57.737 oulder_health.c:323> bh t=197737 taste
+[11:14:08.631] I - 20:02:57.737 oulder_health.c:331> bh t=197737 detail Sessions
+[11:14:08.632] I - 20:02:57.738 oulder_health.c:108> bh t=197738 zeichnen
+[11:14:08.632] I - 20:02:57.741 oulder_health.c:114> bh t=197741 bild
+[11:14:10.030] I - 20:02:59.139 oulder_health.c:301> bh t=199139 taste
+[11:14:10.030] I - 20:02:59.139 oulder_health.c:304> bh t=199139 karte Settings
+[11:14:10.036] I - 20:02:59.145 oulder_health.c:95> bh t=199145 bild
+[11:14:10.330] I - 20:02:59.439 oulder_health.c:323> bh t=199439 taste
+[11:14:10.331] I - 20:02:59.439 oulder_health.c:331> bh t=199439 detail Precision
+[11:14:10.331] I - 20:02:59.440 oulder_health.c:108> bh t=199440 zeichnen
+[11:14:10.334] I - 20:02:59.443 oulder_health.c:114> bh t=199443 bild
+[11:14:11.732] I - 20:03:00.841 oulder_health.c:301> bh t=200841 taste
+[11:14:11.733] I - 20:03:00.841 oulder_health.c:304> bh t=200841 karte Today
+[11:14:11.740] I - 20:03:00.849 oulder_health.c:95> bh t=200848 bild
+[11:14:11.905] I - 20:03:00.014 oulder_health.c:201> bh t=201014 auffrischen
+[11:14:11.911] I - 20:03:00.020 oulder_health.c:95> bh t=201020 bild
+[11:14:12.033] I - 20:03:01.141 oulder_health.c:323> bh t=201141 taste
+[11:14:12.033] I - 20:03:01.141 oulder_health.c:328> bh t=201141 nichts
+[11:14:13.637] I - 20:03:02.746 oulder_health.c:398> bh t=202746 main
+[11:14:13.638] I - 20:03:02.747 oulder_health.c:360> bh t=202747 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:14:13.639] I - 20:03:02.747 oulder_health.c:365> bh t=202747 daten
+[11:14:13.644] I - 20:03:02.753 oulder_health.c:95> bh t=202753 bild
+[11:15:11.944] I - 20:04:00.012 oulder_health.c:201> bh t=261011 auffrischen
+[11:15:11.945] I - 20:04:00.017 oulder_health.c:95> bh t=261017 bild
+[11:16:11.904] I - 20:05:00.013 oulder_health.c:201> bh t=321013 auffrischen
+[11:16:11.913] I - 20:05:00.022 oulder_health.c:95> bh t=321022 bild
+[11:17:11.902] I - 20:06:00.011 oulder_health.c:201> bh t=381010 auffrischen
+[11:17:11.907] I - 20:06:00.016 oulder_health.c:95> bh t=381016 bild
+[11:17:35.139] I - 20:06:24.248 oulder_health.c:398> bh t=404248 main
+[11:17:35.141] I - 20:06:24.250 probe.c:610> bh syscall sys_boulder_lage 1
+[11:17:35.143] I - 20:06:24.252 probe.c:610> bh syscall sys_boulder_nacht 1
+[11:17:35.145] I - 20:06:24.254 probe.c:610> bh syscall sys_boulder_naechte 1
+[11:17:35.147] I - 20:06:24.256 probe.c:610> bh syscall sys_boulder_herz 2
+[11:17:35.149] I - 20:06:24.258 probe.c:610> bh syscall sys_boulder_woche 2
+[11:17:35.150] I - 20:06:24.260 probe.c:610> bh syscall sys_boulder_spo2 1
+[11:17:35.152] I - 20:06:24.261 probe.c:610> bh syscall sys_activity_get_metric 1
+[11:17:35.154] I - 20:06:24.263 probe.c:610> bh syscall sys_activity_get_sessions 1
+[11:17:35.156] I - 20:06:24.265 probe.c:610> bh syscall sys_get_time 1
+[11:17:35.156] I - 20:06:24.265 probe.c:613> bh syscall fertig 100
+[11:17:35.340] I - 20:06:24.410 oulder_health.c:398> bh t=404409 main
+[11:17:35.341] I - 20:06:24.410 oulder_health.c:360> bh t=404410 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:17:35.342] I - 20:06:24.411 oulder_health.c:365> bh t=404411 daten
+[11:17:35.342] I - 20:06:24.419 oulder_health.c:95> bh t=404419 bild
+[11:17:36.516] I - 20:06:25.577 oulder_health.c:301> bh t=405577 taste
+[11:17:36.517] I - 20:06:25.578 oulder_health.c:304> bh t=405577 karte Night
+[11:17:36.518] I - 20:06:25.587 oulder_health.c:95> bh t=405587 bild
+[11:17:38.136] I - 20:06:27.205 oulder_health.c:323> bh t=407205 taste
+[11:17:38.137] I - 20:06:27.205 oulder_health.c:331> bh t=407205 detail Night
+[11:17:38.138] I - 20:06:27.206 oulder_health.c:108> bh t=407206 zeichnen
+[11:17:38.138] I - 20:06:27.211 oulder_health.c:114> bh t=407211 bild
+[11:17:42.485] I - 20:06:31.547 oulder_health.c:301> bh t=411547 taste
+[11:17:42.486] I - 20:06:31.547 oulder_health.c:304> bh t=411547 karte Heart
+[11:17:42.487] I - 20:06:31.548 oulder_health.c:164> bh t=411548 puls an
+[11:17:42.488] I - 20:06:31.559 oulder_health.c:95> bh t=411559 bild
+[11:17:44.088] I - 20:06:33.154 oulder_health.c:323> bh t=413153 taste
+[11:17:44.089] I - 20:06:33.154 oulder_health.c:331> bh t=413154 detail Heart
+[11:17:44.090] I - 20:06:33.155 oulder_health.c:164> bh t=413155 puls aus
+[11:17:44.090] I - 20:06:33.155 oulder_health.c:108> bh t=413155 zeichnen
+[11:17:44.091] I - 20:06:33.164 oulder_health.c:114> bh t=413164 bild
+[11:17:47.556] I - 20:06:36.620 oulder_health.c:164> bh t=416620 puls an
+[11:17:48.411] I - 20:06:37.520 oulder_health.c:301> bh t=417520 taste
+[11:17:48.412] I - 20:06:37.520 oulder_health.c:304> bh t=417520 karte Activity
+[11:17:48.413] I - 20:06:37.521 oulder_health.c:164> bh t=417521 puls aus
+[11:17:48.416] I - 20:06:37.525 oulder_health.c:95> bh t=417525 bild
+[11:17:50.059] I - 20:06:39.120 oulder_health.c:323> bh t=419120 taste
+[11:17:50.059] I - 20:06:39.120 oulder_health.c:331> bh t=419120 detail Sessions
+[11:17:50.059] I - 20:06:39.121 oulder_health.c:108> bh t=419121 zeichnen
+[11:17:50.059] I - 20:06:39.124 oulder_health.c:114> bh t=419124 bild
+[11:17:54.384] I - 20:06:43.449 oulder_health.c:301> bh t=423449 taste
+[11:17:54.385] I - 20:06:43.450 oulder_health.c:304> bh t=423449 karte Settings
+[11:17:54.386] I - 20:06:43.453 oulder_health.c:95> bh t=423453 bild
+[11:17:55.996] I - 20:06:44.064 oulder_health.c:323> bh t=425064 taste
+[11:17:55.997] I - 20:06:44.064 oulder_health.c:331> bh t=425064 detail Precision
+[11:17:55.998] I - 20:06:44.066 oulder_health.c:108> bh t=425065 zeichnen
+[11:17:55.998] I - 20:06:44.068 oulder_health.c:114> bh t=425068 bild
+[11:17:57.524] I - 20:06:46.588 oulder_health.c:108> bh t=426588 zeichnen
+[11:17:57.524] I - 20:06:46.591 oulder_health.c:114> bh t=426591 bild
+[11:17:57.779] I - 20:06:46.888 oulder_health.c:108> bh t=426888 zeichnen
+[11:17:57.782] I - 20:06:46.891 oulder_health.c:114> bh t=426891 bild
+[11:18:00.298] I - 20:06:49.407 oulder_health.c:301> bh t=429407 taste
+[11:18:00.300] I - 20:06:49.408 oulder_health.c:304> bh t=429408 karte Today
+[11:18:00.304] I - 20:06:49.413 oulder_health.c:95> bh t=429413 bild
+[11:18:02.432] I - 20:06:51.504 oulder_health.c:398> bh t=431504 main
+[11:18:02.434] I - 20:06:51.504 oulder_health.c:360> bh t=431504 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:02.435] I - 20:06:51.505 oulder_health.c:365> bh t=431505 daten
+[11:18:02.436] I - 20:06:51.512 oulder_health.c:95> bh t=431512 bild
+[11:18:02.824] I - 20:06:51.891 oulder_health.c:301> bh t=431891 taste
+[11:18:02.825] I - 20:06:51.892 oulder_health.c:304> bh t=431891 karte Night
+[11:18:02.825] I - 20:06:51.901 oulder_health.c:95> bh t=431901 bild
+[11:18:03.086] I - 20:06:52.195 oulder_health.c:301> bh t=432194 taste
+[11:18:03.087] I - 20:06:52.196 oulder_health.c:304> bh t=432195 karte Heart
+[11:18:03.087] I - 20:06:52.196 oulder_health.c:164> bh t=432196 puls an
+[11:18:03.095] I - 20:06:52.204 oulder_health.c:95> bh t=432204 bild
+[11:18:04.516] I - 20:06:53.583 oulder_health.c:301> bh t=433583 taste
+[11:18:04.517] I - 20:06:53.583 oulder_health.c:304> bh t=433583 karte Activity
+[11:18:04.518] I - 20:06:53.583 oulder_health.c:164> bh t=433583 puls aus
+[11:18:04.519] I - 20:06:53.587 oulder_health.c:95> bh t=433587 bild
+[11:18:05.904] I - 20:06:54.971 oulder_health.c:301> bh t=434971 taste
+[11:18:05.904] I - 20:06:54.971 oulder_health.c:304> bh t=434971 karte Heart
+[11:18:05.905] I - 20:06:54.971 oulder_health.c:164> bh t=434971 puls an
+[11:18:05.906] I - 20:06:54.979 oulder_health.c:95> bh t=434979 bild
+[11:18:06.764] I - 20:06:55.872 oulder_health.c:164> bh t=435872 puls aus
+[11:18:11.836] I - 20:07:00.905 oulder_health.c:398> bh t=440905 main
+[11:18:11.837] I - 20:07:00.905 oulder_health.c:360> bh t=440905 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:11.838] I - 20:07:00.906 oulder_health.c:365> bh t=440906 daten
+[11:18:11.838] I - 20:07:00.912 oulder_health.c:95> bh t=440912 bild
+[11:18:13.328] I - 20:07:02.399 oulder_health.c:398> bh t=442399 main
+[11:18:13.329] I - 20:07:02.399 oulder_health.c:360> bh t=442399 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:13.330] I - 20:07:02.399 oulder_health.c:365> bh t=442399 daten
+[11:18:13.331] I - 20:07:02.405 oulder_health.c:95> bh t=442405 bild
+[11:18:14.824] I - 20:07:03.891 oulder_health.c:398> bh t=443891 main
+[11:18:14.824] I - 20:07:03.892 oulder_health.c:360> bh t=443891 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:14.824] I - 20:07:03.892 oulder_health.c:365> bh t=443892 daten
+[11:18:14.825] I - 20:07:03.899 oulder_health.c:95> bh t=443899 bild
+[11:18:16.328] I - 20:07:05.399 oulder_health.c:398> bh t=445399 main
+[11:18:16.329] I - 20:07:05.399 oulder_health.c:360> bh t=445399 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:16.330] I - 20:07:05.399 oulder_health.c:365> bh t=445399 daten
+[11:18:16.331] I - 20:07:05.405 oulder_health.c:95> bh t=445405 bild
+[11:18:17.821] I - 20:07:06.892 oulder_health.c:398> bh t=446891 main
+[11:18:17.822] I - 20:07:06.892 oulder_health.c:360> bh t=446892 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:17.822] I - 20:07:06.892 oulder_health.c:365> bh t=446892 daten
+[11:18:17.823] I - 20:07:06.898 oulder_health.c:95> bh t=446898 bild
+[11:18:19.317] I - 20:07:08.387 oulder_health.c:398> bh t=448387 main
+[11:18:19.318] I - 20:07:08.388 oulder_health.c:360> bh t=448388 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:19.318] I - 20:07:08.389 oulder_health.c:365> bh t=448389 daten
+[11:18:19.319] I - 20:07:08.396 oulder_health.c:95> bh t=448396 bild
+[11:18:20.809] I - 20:07:09.880 oulder_health.c:398> bh t=449880 main
+[11:18:20.810] I - 20:07:09.880 oulder_health.c:360> bh t=449880 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:20.811] I - 20:07:09.881 oulder_health.c:365> bh t=449881 daten
+[11:18:20.812] I - 20:07:09.887 oulder_health.c:95> bh t=449887 bild
+[11:18:22.302] I - 20:07:11.371 oulder_health.c:398> bh t=451370 main
+[11:18:22.303] I - 20:07:11.371 oulder_health.c:360> bh t=451371 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:22.304] I - 20:07:11.371 oulder_health.c:365> bh t=451371 daten
+[11:18:22.304] I - 20:07:11.377 oulder_health.c:95> bh t=451377 bild
+[11:18:23.850] I - 20:07:12.958 oulder_health.c:398> bh t=452958 main
+[11:18:23.852] I - 20:07:12.959 oulder_health.c:360> bh t=452959 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:23.854] I - 20:07:12.960 oulder_health.c:365> bh t=452960 daten
+[11:18:23.870] I - 20:07:12.976 oulder_health.c:95> bh t=452976 bild
+[11:18:25.381] I - 20:07:14.454 oulder_health.c:398> bh t=454453 main
+[11:18:25.382] I - 20:07:14.454 oulder_health.c:360> bh t=454454 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:25.382] I - 20:07:14.455 oulder_health.c:365> bh t=454455 daten
+[11:18:25.383] I - 20:07:14.465 oulder_health.c:95> bh t=454464 bild
+[11:18:26.876] I - 20:07:15.948 oulder_health.c:398> bh t=455947 main
+[11:18:26.877] I - 20:07:15.948 oulder_health.c:360> bh t=455948 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:26.878] I - 20:07:15.948 oulder_health.c:365> bh t=455948 daten
+[11:18:26.878] I - 20:07:15.954 oulder_health.c:95> bh t=455954 bild
+[11:18:28.368] I - 20:07:17.439 oulder_health.c:398> bh t=457439 main
+[11:18:28.369] I - 20:07:17.439 oulder_health.c:360> bh t=457439 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:28.370] I - 20:07:17.440 oulder_health.c:365> bh t=457440 daten
+[11:18:28.371] I - 20:07:17.446 oulder_health.c:95> bh t=457446 bild
+[11:18:29.864] I - 20:07:18.935 oulder_health.c:398> bh t=458935 main
+[11:18:29.866] I - 20:07:18.935 oulder_health.c:360> bh t=458935 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:29.866] I - 20:07:18.936 oulder_health.c:365> bh t=458936 daten
+[11:18:29.866] I - 20:07:18.942 oulder_health.c:95> bh t=458942 bild
+[11:18:31.361] I - 20:07:20.432 oulder_health.c:398> bh t=460431 main
+[11:18:31.362] I - 20:07:20.432 oulder_health.c:360> bh t=460432 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:31.363] I - 20:07:20.432 oulder_health.c:365> bh t=460432 daten
+[11:18:31.364] I - 20:07:20.438 oulder_health.c:95> bh t=460438 bild
+[11:18:32.856] I - 20:07:21.928 oulder_health.c:398> bh t=461928 main
+[11:18:32.858] I - 20:07:21.929 oulder_health.c:360> bh t=461928 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:32.858] I - 20:07:21.929 oulder_health.c:365> bh t=461929 daten
+[11:18:32.859] I - 20:07:21.935 oulder_health.c:95> bh t=461935 bild
+[11:18:34.348] I - 20:07:23.419 oulder_health.c:398> bh t=463419 main
+[11:18:34.349] I - 20:07:23.419 oulder_health.c:360> bh t=463419 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:34.352] I - 20:07:23.420 oulder_health.c:365> bh t=463420 daten
+[11:18:34.352] I - 20:07:23.426 oulder_health.c:95> bh t=463425 bild
+[11:18:35.840] I - 20:07:24.911 oulder_health.c:398> bh t=464911 main
+[11:18:35.841] I - 20:07:24.911 oulder_health.c:360> bh t=464911 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:35.842] I - 20:07:24.911 oulder_health.c:365> bh t=464911 daten
+[11:18:35.843] I - 20:07:24.917 oulder_health.c:95> bh t=464917 bild
+[11:18:37.332] I - 20:07:26.403 oulder_health.c:398> bh t=466403 main
+[11:18:37.333] I - 20:07:26.403 oulder_health.c:360> bh t=466403 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:37.334] I - 20:07:26.404 oulder_health.c:365> bh t=466404 daten
+[11:18:37.335] I - 20:07:26.409 oulder_health.c:95> bh t=466409 bild
+[11:18:38.825] I - 20:07:27.895 oulder_health.c:398> bh t=467895 main
+[11:18:38.826] I - 20:07:27.896 oulder_health.c:360> bh t=467896 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:38.826] I - 20:07:27.897 oulder_health.c:365> bh t=467897 daten
+[11:18:38.827] I - 20:07:27.903 oulder_health.c:95> bh t=467903 bild
+[11:18:40.316] I - 20:07:29.387 oulder_health.c:398> bh t=469387 main
+[11:18:40.318] I - 20:07:29.388 oulder_health.c:360> bh t=469388 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:40.320] I - 20:07:29.388 oulder_health.c:365> bh t=469388 daten
+[11:18:40.320] I - 20:07:29.394 oulder_health.c:95> bh t=469394 bild
+[11:18:41.809] I - 20:07:30.880 oulder_health.c:398> bh t=470880 main
+[11:18:41.810] I - 20:07:30.881 oulder_health.c:360> bh t=470881 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:41.811] I - 20:07:30.881 oulder_health.c:365> bh t=470881 daten
+[11:18:41.811] I - 20:07:30.890 oulder_health.c:95> bh t=470890 bild
+[11:18:43.301] I - 20:07:32.371 oulder_health.c:398> bh t=472371 main
+[11:18:43.302] I - 20:07:32.372 oulder_health.c:360> bh t=472371 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:43.302] I - 20:07:32.372 oulder_health.c:365> bh t=472372 daten
+[11:18:43.303] I - 20:07:32.378 oulder_health.c:95> bh t=472378 bild
+[11:18:44.794] I - 20:07:33.864 oulder_health.c:398> bh t=473864 main
+[11:18:44.794] I - 20:07:33.865 oulder_health.c:360> bh t=473864 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:44.795] I - 20:07:33.865 oulder_health.c:365> bh t=473865 daten
+[11:18:44.795] I - 20:07:33.872 oulder_health.c:95> bh t=473872 bild
+[11:18:46.285] I - 20:07:35.358 oulder_health.c:398> bh t=475358 main
+[11:18:46.286] I - 20:07:35.358 oulder_health.c:360> bh t=475358 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:46.289] I - 20:07:35.359 oulder_health.c:365> bh t=475359 daten
+[11:18:46.289] I - 20:07:35.367 oulder_health.c:95> bh t=475367 bild
+[11:18:47.778] I - 20:07:36.848 oulder_health.c:398> bh t=476848 main
+[11:18:47.778] I - 20:07:36.848 oulder_health.c:360> bh t=476848 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:47.779] I - 20:07:36.849 oulder_health.c:365> bh t=476849 daten
+[11:18:47.779] I - 20:07:36.858 oulder_health.c:95> bh t=476858 bild
+[11:18:49.269] I - 20:07:38.339 oulder_health.c:398> bh t=478339 main
+[11:18:49.270] I - 20:07:38.339 oulder_health.c:360> bh t=478339 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:49.271] I - 20:07:38.340 oulder_health.c:365> bh t=478340 daten
+[11:18:49.272] I - 20:07:38.346 oulder_health.c:95> bh t=478345 bild
+[11:18:50.760] I - 20:07:39.831 oulder_health.c:398> bh t=479831 main
+[11:18:50.761] I - 20:07:39.832 oulder_health.c:360> bh t=479831 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:50.761] I - 20:07:39.832 oulder_health.c:365> bh t=479832 daten
+[11:18:50.762] I - 20:07:39.839 oulder_health.c:95> bh t=479839 bild
+[11:18:52.248] I - 20:07:41.319 oulder_health.c:398> bh t=481319 main
+[11:18:52.250] I - 20:07:41.319 oulder_health.c:360> bh t=481319 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:52.250] I - 20:07:41.319 oulder_health.c:365> bh t=481319 daten
+[11:18:52.251] I - 20:07:41.325 oulder_health.c:95> bh t=481325 bild
+[11:18:53.741] I - 20:07:42.811 oulder_health.c:398> bh t=482811 main
+[11:18:53.742] I - 20:07:42.812 oulder_health.c:360> bh t=482812 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:53.743] I - 20:07:42.812 oulder_health.c:365> bh t=482812 daten
+[11:18:53.743] I - 20:07:42.821 oulder_health.c:95> bh t=482821 bild
+[11:18:55.236] I - 20:07:44.310 oulder_health.c:398> bh t=484310 main
+[11:18:55.238] I - 20:07:44.310 oulder_health.c:360> bh t=484310 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:55.239] I - 20:07:44.311 oulder_health.c:365> bh t=484311 daten
+[11:18:55.239] I - 20:07:44.319 oulder_health.c:95> bh t=484319 bild
+[11:18:56.728] I - 20:07:45.801 oulder_health.c:398> bh t=485801 main
+[11:18:56.729] I - 20:07:45.802 oulder_health.c:360> bh t=485801 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:56.730] I - 20:07:45.802 oulder_health.c:365> bh t=485802 daten
+[11:18:56.730] I - 20:07:45.812 oulder_health.c:95> bh t=485812 bild
+[11:18:58.233] I - 20:07:47.305 oulder_health.c:398> bh t=487305 main
+[11:18:58.234] I - 20:07:47.306 oulder_health.c:360> bh t=487306 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:58.234] I - 20:07:47.306 oulder_health.c:365> bh t=487306 daten
+[11:18:58.235] I - 20:07:47.315 oulder_health.c:95> bh t=487315 bild
+[11:18:59.729] I - 20:07:48.799 oulder_health.c:398> bh t=488799 main
+[11:18:59.731] I - 20:07:48.799 oulder_health.c:360> bh t=488799 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:18:59.731] I - 20:07:48.799 oulder_health.c:365> bh t=488799 daten
+[11:18:59.732] I - 20:07:48.807 oulder_health.c:95> bh t=488807 bild
+[11:19:01.220] I - 20:07:50.293 oulder_health.c:398> bh t=490293 main
+[11:19:01.222] I - 20:07:50.294 oulder_health.c:360> bh t=490294 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:01.223] I - 20:07:50.295 oulder_health.c:365> bh t=490295 daten
+[11:19:01.223] I - 20:07:50.305 oulder_health.c:95> bh t=490305 bild
+[11:19:02.717] I - 20:07:51.787 oulder_health.c:398> bh t=491787 main
+[11:19:02.717] I - 20:07:51.788 oulder_health.c:360> bh t=491788 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:02.718] I - 20:07:51.788 oulder_health.c:365> bh t=491788 daten
+[11:19:02.719] I - 20:07:51.795 oulder_health.c:95> bh t=491795 bild
+[11:19:04.209] I - 20:07:53.282 oulder_health.c:398> bh t=493282 main
+[11:19:04.210] I - 20:07:53.283 oulder_health.c:360> bh t=493283 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:04.210] I - 20:07:53.283 oulder_health.c:365> bh t=493283 daten
+[11:19:04.211] I - 20:07:53.290 oulder_health.c:95> bh t=493290 bild
+[11:19:05.704] I - 20:07:54.777 oulder_health.c:398> bh t=494776 main
+[11:19:05.705] I - 20:07:54.777 oulder_health.c:360> bh t=494777 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:05.706] I - 20:07:54.778 oulder_health.c:365> bh t=494778 daten
+[11:19:05.706] I - 20:07:54.788 oulder_health.c:95> bh t=494788 bild
+[11:19:07.204] I - 20:07:56.275 oulder_health.c:398> bh t=496275 main
+[11:19:07.206] I - 20:07:56.275 oulder_health.c:360> bh t=496275 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:07.207] I - 20:07:56.276 oulder_health.c:365> bh t=496276 daten
+[11:19:07.207] I - 20:07:56.282 oulder_health.c:95> bh t=496282 bild
+[11:19:08.701] I - 20:07:57.767 oulder_health.c:398> bh t=497767 main
+[11:19:08.702] I - 20:07:57.767 oulder_health.c:360> bh t=497767 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:08.703] I - 20:07:57.768 oulder_health.c:365> bh t=497768 daten
+[11:19:08.704] I - 20:07:57.775 oulder_health.c:95> bh t=497775 bild
+[11:19:10.193] I - 20:07:59.263 oulder_health.c:398> bh t=499263 main
+[11:19:10.194] I - 20:07:59.264 oulder_health.c:360> bh t=499264 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:10.195] I - 20:07:59.264 oulder_health.c:365> bh t=499264 daten
+[11:19:10.196] I - 20:07:59.270 oulder_health.c:95> bh t=499270 bild
+[11:19:11.685] I - 20:08:00.755 oulder_health.c:398> bh t=500755 main
+[11:19:11.686] I - 20:08:00.755 oulder_health.c:360> bh t=500755 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:11.686] I - 20:08:00.756 oulder_health.c:365> bh t=500756 daten
+[11:19:11.688] I - 20:08:00.762 oulder_health.c:95> bh t=500762 bild
+[11:19:13.177] I - 20:08:02.247 oulder_health.c:398> bh t=502247 main
+[11:19:13.178] I - 20:08:02.247 oulder_health.c:360> bh t=502247 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:13.179] I - 20:08:02.247 oulder_health.c:365> bh t=502247 daten
+[11:19:13.179] I - 20:08:02.253 oulder_health.c:95> bh t=502253 bild
+[11:19:14.672] I - 20:08:03.743 oulder_health.c:398> bh t=503743 main
+[11:19:14.673] I - 20:08:03.743 oulder_health.c:360> bh t=503743 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:14.674] I - 20:08:03.744 oulder_health.c:365> bh t=503744 daten
+[11:19:14.674] I - 20:08:03.750 oulder_health.c:95> bh t=503750 bild
+[11:19:16.165] I - 20:08:05.235 oulder_health.c:398> bh t=505235 main
+[11:19:16.167] I - 20:08:05.236 oulder_health.c:360> bh t=505236 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:16.168] I - 20:08:05.236 oulder_health.c:365> bh t=505236 daten
+[11:19:16.168] I - 20:08:05.243 oulder_health.c:95> bh t=505243 bild
+[11:19:17.656] I - 20:08:06.728 oulder_health.c:398> bh t=506727 main
+[11:19:17.657] I - 20:08:06.728 oulder_health.c:360> bh t=506728 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:17.658] I - 20:08:06.728 oulder_health.c:365> bh t=506728 daten
+[11:19:17.658] I - 20:08:06.734 oulder_health.c:95> bh t=506734 bild
+[11:19:19.148] I - 20:08:08.221 oulder_health.c:398> bh t=508221 main
+[11:19:19.150] I - 20:08:08.222 oulder_health.c:360> bh t=508222 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:19.150] I - 20:08:08.222 oulder_health.c:365> bh t=508222 daten
+[11:19:19.151] I - 20:08:08.232 oulder_health.c:95> bh t=508232 bild
+[11:19:20.649] I - 20:08:09.721 oulder_health.c:398> bh t=509721 main
+[11:19:20.650] I - 20:08:09.722 oulder_health.c:360> bh t=509721 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:20.651] I - 20:08:09.723 oulder_health.c:365> bh t=509723 daten
+[11:19:20.651] I - 20:08:09.733 oulder_health.c:95> bh t=509733 bild
+[11:19:22.140] I - 20:08:11.212 oulder_health.c:398> bh t=511212 main
+[11:19:22.141] I - 20:08:11.212 oulder_health.c:360> bh t=511212 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:22.142] I - 20:08:11.212 oulder_health.c:365> bh t=511212 daten
+[11:19:22.142] I - 20:08:11.219 oulder_health.c:95> bh t=511219 bild
+[11:19:23.633] I - 20:08:12.705 oulder_health.c:398> bh t=512705 main
+[11:19:23.634] I - 20:08:12.705 oulder_health.c:360> bh t=512705 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:23.635] I - 20:08:12.706 oulder_health.c:365> bh t=512706 daten
+[11:19:23.636] I - 20:08:12.713 oulder_health.c:95> bh t=512713 bild
+[11:19:25.125] I - 20:08:14.195 oulder_health.c:398> bh t=514195 main
+[11:19:25.126] I - 20:08:14.195 oulder_health.c:360> bh t=514195 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:25.126] I - 20:08:14.196 oulder_health.c:365> bh t=514196 daten
+[11:19:25.126] I - 20:08:14.201 oulder_health.c:95> bh t=514201 bild
+[11:19:29.472] I - 20:08:18.543 oulder_health.c:398> bh t=518542 main
+[11:19:29.473] I - 20:08:18.543 oulder_health.c:360> bh t=518543 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:29.474] I - 20:08:18.544 oulder_health.c:365> bh t=518544 daten
+[11:19:29.475] I - 20:08:18.554 oulder_health.c:95> bh t=518554 bild
+[11:19:30.972] I - 20:08:19.048 oulder_health.c:398> bh t=520048 main
+[11:19:30.974] I - 20:08:19.049 oulder_health.c:360> bh t=520049 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:30.976] I - 20:08:19.049 oulder_health.c:365> bh t=520049 daten
+[11:19:30.976] I - 20:08:19.058 oulder_health.c:95> bh t=520058 bild
+[11:19:32.465] I - 20:08:21.536 oulder_health.c:398> bh t=521536 main
+[11:19:32.466] I - 20:08:21.536 oulder_health.c:360> bh t=521536 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:32.467] I - 20:08:21.537 oulder_health.c:365> bh t=521537 daten
+[11:19:32.467] I - 20:08:21.543 oulder_health.c:95> bh t=521543 bild
+[11:19:33.956] I - 20:08:22.027 oulder_health.c:398> bh t=523027 main
+[11:19:33.957] I - 20:08:22.027 oulder_health.c:360> bh t=523027 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:33.958] I - 20:08:22.028 oulder_health.c:365> bh t=523028 daten
+[11:19:33.958] I - 20:08:22.034 oulder_health.c:95> bh t=523034 bild
+[11:19:35.449] I - 20:08:24.519 oulder_health.c:398> bh t=524519 main
+[11:19:35.450] I - 20:08:24.519 oulder_health.c:360> bh t=524519 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:35.450] I - 20:08:24.520 oulder_health.c:365> bh t=524520 daten
+[11:19:35.451] I - 20:08:24.526 oulder_health.c:95> bh t=524526 bild
+[11:19:36.941] I - 20:08:25.012 oulder_health.c:398> bh t=526012 main
+[11:19:36.942] I - 20:08:25.012 oulder_health.c:360> bh t=526012 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:36.944] I - 20:08:25.013 oulder_health.c:365> bh t=526013 daten
+[11:19:36.944] I - 20:08:25.021 oulder_health.c:95> bh t=526021 bild
+[11:19:38.433] I - 20:08:27.503 oulder_health.c:398> bh t=527503 main
+[11:19:38.433] I - 20:08:27.503 oulder_health.c:360> bh t=527503 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:38.434] I - 20:08:27.504 oulder_health.c:365> bh t=527504 daten
+[11:19:38.434] I - 20:08:27.510 oulder_health.c:95> bh t=527510 bild
+[11:19:39.925] I - 20:08:28.995 oulder_health.c:398> bh t=528995 main
+[11:19:39.926] I - 20:08:28.996 oulder_health.c:360> bh t=528996 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:39.926] I - 20:08:28.996 oulder_health.c:365> bh t=528996 daten
+[11:19:39.927] I - 20:08:28.003 oulder_health.c:95> bh t=529003 bild
+[11:19:41.420] I - 20:08:30.491 oulder_health.c:398> bh t=530491 main
+[11:19:41.421] I - 20:08:30.491 oulder_health.c:360> bh t=530491 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:41.422] I - 20:08:30.492 oulder_health.c:365> bh t=530492 daten
+[11:19:41.422] I - 20:08:30.497 oulder_health.c:95> bh t=530497 bild
+[11:19:42.912] I - 20:08:31.983 oulder_health.c:398> bh t=531983 main
+[11:19:42.913] I - 20:08:31.983 oulder_health.c:360> bh t=531983 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:42.914] I - 20:08:31.984 oulder_health.c:365> bh t=531984 daten
+[11:19:42.914] I - 20:08:31.990 oulder_health.c:95> bh t=531990 bild
+[11:19:44.407] I - 20:08:33.473 oulder_health.c:398> bh t=533473 main
+[11:19:44.407] I - 20:08:33.474 oulder_health.c:360> bh t=533474 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:44.407] I - 20:08:33.474 oulder_health.c:365> bh t=533474 daten
+[11:19:44.408] I - 20:08:33.480 oulder_health.c:95> bh t=533480 bild
+[11:19:45.897] I - 20:08:34.973 oulder_health.c:398> bh t=534973 main
+[11:19:45.898] I - 20:08:34.974 oulder_health.c:360> bh t=534974 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:45.899] I - 20:08:34.974 oulder_health.c:365> bh t=534974 daten
+[11:19:45.899] I - 20:08:34.981 oulder_health.c:95> bh t=534981 bild
+[11:19:47.388] I - 20:08:36.459 oulder_health.c:398> bh t=536459 main
+[11:19:47.390] I - 20:08:36.460 oulder_health.c:360> bh t=536460 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:47.390] I - 20:08:36.460 oulder_health.c:365> bh t=536460 daten
+[11:19:47.391] I - 20:08:36.467 oulder_health.c:95> bh t=536467 bild
+[11:19:48.881] I - 20:08:37.951 oulder_health.c:398> bh t=537951 main
+[11:19:48.882] I - 20:08:37.951 oulder_health.c:360> bh t=537951 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:48.883] I - 20:08:37.952 oulder_health.c:365> bh t=537952 daten
+[11:19:48.884] I - 20:08:37.958 oulder_health.c:95> bh t=537958 bild
+[11:19:50.372] I - 20:08:39.443 oulder_health.c:398> bh t=539443 main
+[11:19:50.373] I - 20:08:39.443 oulder_health.c:360> bh t=539443 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:50.374] I - 20:08:39.444 oulder_health.c:365> bh t=539444 daten
+[11:19:50.374] I - 20:08:39.449 oulder_health.c:95> bh t=539449 bild
+[11:19:51.865] I - 20:08:40.935 oulder_health.c:398> bh t=540935 main
+[11:19:51.866] I - 20:08:40.935 oulder_health.c:360> bh t=540935 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:51.867] I - 20:08:40.936 oulder_health.c:365> bh t=540936 daten
+[11:19:51.868] I - 20:08:40.943 oulder_health.c:95> bh t=540943 bild
+[11:19:53.360] I - 20:08:42.431 oulder_health.c:398> bh t=542431 main
+[11:19:53.361] I - 20:08:42.432 oulder_health.c:360> bh t=542431 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:53.362] I - 20:08:42.432 oulder_health.c:365> bh t=542432 daten
+[11:19:53.362] I - 20:08:42.438 oulder_health.c:95> bh t=542438 bild
+[11:19:54.853] I - 20:08:43.925 oulder_health.c:398> bh t=543925 main
+[11:19:54.854] I - 20:08:43.926 oulder_health.c:360> bh t=543926 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:54.855] I - 20:08:43.927 oulder_health.c:365> bh t=543927 daten
+[11:19:54.855] I - 20:08:43.933 oulder_health.c:95> bh t=543933 bild
+[11:19:56.349] I - 20:08:45.419 oulder_health.c:398> bh t=545419 main
+[11:19:56.350] I - 20:08:45.419 oulder_health.c:360> bh t=545419 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:56.351] I - 20:08:45.420 oulder_health.c:365> bh t=545420 daten
+[11:19:56.353] I - 20:08:45.425 oulder_health.c:95> bh t=545425 bild
+[11:19:57.842] I - 20:08:46.911 oulder_health.c:398> bh t=546911 main
+[11:19:57.843] I - 20:08:46.912 oulder_health.c:360> bh t=546911 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:57.844] I - 20:08:46.912 oulder_health.c:365> bh t=546912 daten
+[11:19:57.845] I - 20:08:46.918 oulder_health.c:95> bh t=546918 bild
+[11:19:59.333] I - 20:08:48.407 oulder_health.c:398> bh t=548406 main
+[11:19:59.334] I - 20:08:48.407 oulder_health.c:360> bh t=548407 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:19:59.334] I - 20:08:48.407 oulder_health.c:365> bh t=548407 daten
+[11:19:59.335] I - 20:08:48.416 oulder_health.c:95> bh t=548416 bild
+[11:20:00.824] I - 20:08:49.895 oulder_health.c:398> bh t=549895 main
+[11:20:00.825] I - 20:08:49.895 oulder_health.c:360> bh t=549895 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:00.825] I - 20:08:49.896 oulder_health.c:365> bh t=549895 daten
+[11:20:00.826] I - 20:08:49.901 oulder_health.c:95> bh t=549901 bild
+[11:20:02.312] I - 20:08:51.383 oulder_health.c:398> bh t=551383 main
+[11:20:02.313] I - 20:08:51.383 oulder_health.c:360> bh t=551383 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:02.315] I - 20:08:51.384 oulder_health.c:365> bh t=551384 daten
+[11:20:02.315] I - 20:08:51.390 oulder_health.c:95> bh t=551390 bild
+[11:20:03.804] I - 20:08:52.875 oulder_health.c:398> bh t=552875 main
+[11:20:03.805] I - 20:08:52.875 oulder_health.c:360> bh t=552875 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:03.806] I - 20:08:52.876 oulder_health.c:365> bh t=552875 daten
+[11:20:03.806] I - 20:08:52.882 oulder_health.c:95> bh t=552882 bild
+[11:20:05.297] I - 20:08:54.369 oulder_health.c:398> bh t=554369 main
+[11:20:05.298] I - 20:08:54.370 oulder_health.c:360> bh t=554370 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:05.299] I - 20:08:54.370 oulder_health.c:365> bh t=554370 daten
+[11:20:05.300] I - 20:08:54.379 oulder_health.c:95> bh t=554379 bild
+[11:20:06.789] I - 20:08:55.863 oulder_health.c:398> bh t=555862 main
+[11:20:06.790] I - 20:08:55.863 oulder_health.c:360> bh t=555863 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:06.790] I - 20:08:55.864 oulder_health.c:365> bh t=555864 daten
+[11:20:06.792] I - 20:08:55.874 oulder_health.c:95> bh t=555874 bild
+[11:20:08.297] I - 20:08:57.367 oulder_health.c:398> bh t=557367 main
+[11:20:08.298] I - 20:08:57.367 oulder_health.c:360> bh t=557367 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:08.300] I - 20:08:57.368 oulder_health.c:365> bh t=557368 daten
+[11:20:08.300] I - 20:08:57.376 oulder_health.c:95> bh t=557376 bild
+[11:20:09.789] I - 20:08:58.862 oulder_health.c:398> bh t=558861 main
+[11:20:09.792] I - 20:08:58.862 oulder_health.c:360> bh t=558862 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:09.794] I - 20:08:58.863 oulder_health.c:365> bh t=558863 daten
+[11:20:09.795] I - 20:08:58.873 oulder_health.c:95> bh t=558872 bild
+[11:20:11.292] I - 20:09:00.364 oulder_health.c:398> bh t=560364 main
+[11:20:11.294] I - 20:09:00.364 oulder_health.c:360> bh t=560364 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:11.294] I - 20:09:00.365 oulder_health.c:365> bh t=560365 daten
+[11:20:11.294] I - 20:09:00.372 oulder_health.c:95> bh t=560372 bild
+[11:20:12.785] I - 20:09:01.855 oulder_health.c:398> bh t=561855 main
+[11:20:12.786] I - 20:09:01.855 oulder_health.c:360> bh t=561855 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:12.786] I - 20:09:01.856 oulder_health.c:365> bh t=561856 daten
+[11:20:12.787] I - 20:09:01.862 oulder_health.c:95> bh t=561862 bild
+[11:20:14.278] I - 20:09:03.348 oulder_health.c:398> bh t=563348 main
+[11:20:14.279] I - 20:09:03.349 oulder_health.c:360> bh t=563349 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:14.280] I - 20:09:03.349 oulder_health.c:365> bh t=563349 daten
+[11:20:14.281] I - 20:09:03.357 oulder_health.c:95> bh t=563357 bild
+[11:20:15.768] I - 20:09:04.844 oulder_health.c:398> bh t=564844 main
+[11:20:15.769] I - 20:09:04.845 oulder_health.c:360> bh t=564845 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:15.770] I - 20:09:04.846 oulder_health.c:365> bh t=564845 daten
+[11:20:15.770] I - 20:09:04.855 oulder_health.c:95> bh t=564854 bild
+[11:20:17.276] I - 20:09:06.345 oulder_health.c:398> bh t=566345 main
+[11:20:17.278] I - 20:09:06.346 oulder_health.c:360> bh t=566346 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:17.279] I - 20:09:06.347 oulder_health.c:365> bh t=566347 daten
+[11:20:17.279] I - 20:09:06.357 oulder_health.c:95> bh t=566357 bild
+[11:20:18.777] I - 20:09:07.848 oulder_health.c:398> bh t=567848 main
+[11:20:18.778] I - 20:09:07.849 oulder_health.c:360> bh t=567849 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:18.779] I - 20:09:07.849 oulder_health.c:365> bh t=567849 daten
+[11:20:18.779] I - 20:09:07.855 oulder_health.c:95> bh t=567855 bild
+[11:20:20.268] I - 20:09:09.339 oulder_health.c:398> bh t=569339 main
+[11:20:20.269] I - 20:09:09.339 oulder_health.c:360> bh t=569339 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:20.270] I - 20:09:09.340 oulder_health.c:365> bh t=569340 daten
+[11:20:20.270] I - 20:09:09.348 oulder_health.c:95> bh t=569348 bild
+[11:20:21.768] I - 20:09:10.839 oulder_health.c:398> bh t=570839 main
+[11:20:21.770] I - 20:09:10.839 oulder_health.c:360> bh t=570839 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:21.771] I - 20:09:10.839 oulder_health.c:365> bh t=570839 daten
+[11:20:21.771] I - 20:09:10.846 oulder_health.c:95> bh t=570846 bild
+[11:20:23.260] I - 20:09:12.331 oulder_health.c:398> bh t=572331 main
+[11:20:23.262] I - 20:09:12.332 oulder_health.c:360> bh t=572331 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:23.262] I - 20:09:12.332 oulder_health.c:365> bh t=572332 daten
+[11:20:23.263] I - 20:09:12.338 oulder_health.c:95> bh t=572338 bild
+[11:20:24.753] I - 20:09:13.824 oulder_health.c:398> bh t=573824 main
+[11:20:24.754] I - 20:09:13.824 oulder_health.c:360> bh t=573824 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:24.754] I - 20:09:13.824 oulder_health.c:365> bh t=573824 daten
+[11:20:24.755] I - 20:09:13.830 oulder_health.c:95> bh t=573830 bild
+[11:20:26.248] I - 20:09:15.317 oulder_health.c:398> bh t=575317 main
+[11:20:26.249] I - 20:09:15.318 oulder_health.c:360> bh t=575318 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:26.250] I - 20:09:15.318 oulder_health.c:365> bh t=575318 daten
+[11:20:26.251] I - 20:09:15.325 oulder_health.c:95> bh t=575325 bild
+[11:20:27.741] I - 20:09:16.811 oulder_health.c:398> bh t=576811 main
+[11:20:27.742] I - 20:09:16.811 oulder_health.c:360> bh t=576811 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:27.742] I - 20:09:16.812 oulder_health.c:365> bh t=576812 daten
+[11:20:27.743] I - 20:09:16.817 oulder_health.c:95> bh t=576817 bild
+[11:20:29.232] I - 20:09:18.303 oulder_health.c:398> bh t=578303 main
+[11:20:29.233] I - 20:09:18.303 oulder_health.c:360> bh t=578303 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:29.234] I - 20:09:18.304 oulder_health.c:365> bh t=578304 daten
+[11:20:29.234] I - 20:09:18.310 oulder_health.c:95> bh t=578310 bild
+[11:20:30.724] I - 20:09:19.795 oulder_health.c:398> bh t=579795 main
+[11:20:30.726] I - 20:09:19.795 oulder_health.c:360> bh t=579795 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:30.726] I - 20:09:19.796 oulder_health.c:365> bh t=579796 daten
+[11:20:30.727] I - 20:09:19.802 oulder_health.c:95> bh t=579802 bild
+[11:20:32.217] I - 20:09:21.287 oulder_health.c:398> bh t=581287 main
+[11:20:32.217] I - 20:09:21.287 oulder_health.c:360> bh t=581287 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:32.218] I - 20:09:21.288 oulder_health.c:365> bh t=581288 daten
+[11:20:32.219] I - 20:09:21.294 oulder_health.c:95> bh t=581294 bild
+[11:20:33.708] I - 20:09:22.779 oulder_health.c:398> bh t=582779 main
+[11:20:33.709] I - 20:09:22.779 oulder_health.c:360> bh t=582779 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:33.710] I - 20:09:22.780 oulder_health.c:365> bh t=582780 daten
+[11:20:33.711] I - 20:09:22.786 oulder_health.c:95> bh t=582786 bild
+[11:20:35.201] I - 20:09:24.273 oulder_health.c:398> bh t=584273 main
+[11:20:35.202] I - 20:09:24.274 oulder_health.c:360> bh t=584274 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:35.203] I - 20:09:24.274 oulder_health.c:365> bh t=584274 daten
+[11:20:35.204] I - 20:09:24.280 oulder_health.c:95> bh t=584280 bild
+[11:20:36.693] I - 20:09:25.767 oulder_health.c:398> bh t=585767 main
+[11:20:36.694] I - 20:09:25.767 oulder_health.c:360> bh t=585767 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:36.695] I - 20:09:25.768 oulder_health.c:365> bh t=585768 daten
+[11:20:36.695] I - 20:09:25.780 oulder_health.c:95> bh t=585779 bild
+[11:20:38.200] I - 20:09:27.273 oulder_health.c:398> bh t=587273 main
+[11:20:38.201] I - 20:09:27.273 oulder_health.c:360> bh t=587273 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:38.202] I - 20:09:27.274 oulder_health.c:365> bh t=587273 daten
+[11:20:38.203] I - 20:09:27.280 oulder_health.c:95> bh t=587280 bild
+[11:20:39.696] I - 20:09:28.768 oulder_health.c:398> bh t=588768 main
+[11:20:39.697] I - 20:09:28.768 oulder_health.c:360> bh t=588768 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:39.698] I - 20:09:28.768 oulder_health.c:365> bh t=588768 daten
+[11:20:39.699] I - 20:09:28.774 oulder_health.c:95> bh t=588774 bild
+[11:20:41.193] I - 20:09:30.264 oulder_health.c:398> bh t=590264 main
+[11:20:41.194] I - 20:09:30.264 oulder_health.c:360> bh t=590264 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:41.194] I - 20:09:30.264 oulder_health.c:365> bh t=590264 daten
+[11:20:41.195] I - 20:09:30.270 oulder_health.c:95> bh t=590270 bild
+[11:20:42.685] I - 20:09:31.756 oulder_health.c:398> bh t=591756 main
+[11:20:42.686] I - 20:09:31.757 oulder_health.c:360> bh t=591756 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:42.687] I - 20:09:31.757 oulder_health.c:365> bh t=591757 daten
+[11:20:42.687] I - 20:09:31.766 oulder_health.c:95> bh t=591766 bild
+[11:20:47.253] I - 20:09:36.322 oulder_health.c:398> bh t=596322 main
+[11:20:52.260] I - 20:09:41.326 fehlerprobe.c:27> bh fehlerprobe schreibt 0x20027aa0
+[11:20:55.476] I - 20:09:44.546 oulder_health.c:398> bh t=604546 main
+[11:20:55.478] I - 20:09:44.546 oulder_health.c:360> bh t=604546 start grund=0 knopf=0 aktion=0 argument=0 Today kreis=1 spiegel=0
+[11:20:55.478] I - 20:09:44.547 oulder_health.c:365> bh t=604547 daten
+[11:20:55.479] I - 20:09:44.553 oulder_health.c:95> bh t=604553 bild
