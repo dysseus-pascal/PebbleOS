@@ -1,0 +1,5 @@
+Worker der Apps: sizeof(WorkerState) im Release-Bau obelix (arm-none-eabi-gdb, print sizeof(WorkerState))
+  b28 (fef08c2e, v4.41.0):  648  -> worker_state_configure() scheitert, kein Worker startet (Platz: 640)
+  d3d17b338 (v4.41.1):      640  -> passt; CONFIG_WORKER_RAM_SEGMENT_SIZE=11648, CONFIG_WORKER_RAM_RUNTIME_SIZE=640,
+                                    Worker-RAM 12288 B; der Bau prueft die Groesse jetzt selbst
+Kernel-Heap obelix Release (_heap_end - _heap_start): b28 72480 B, v4.41.1 72512 B -> Pruefbau-Ballast 72512 (8075766d8)
