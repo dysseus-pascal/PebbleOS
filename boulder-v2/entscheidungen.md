@@ -178,9 +178,14 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **F18: A.** Upstream v4.41.0 jetzt nachziehen. Danach bleibt der Upstream-Stand **eingefroren bis
   nach dem Gerätetest**: Der Gerätetest prüft den Code, der bleibt.
 
-## Boulder-App (13.10.2026)
-- **Boulder baut nicht mehr auf Gravel auf** (Nutzer: „wir haben gesagt, dass wir nicht mehr auf Gravel
-  aufbauen, da es ein Fork ist“). Keine Gravel-Fassungen mehr nachziehen. Der Punkt „Gravel 0.3.4“ auf
-  der Liste bis zur Vorabversion war falsch; er ist aus Boulder 0.53 wieder entfernt. Letzter
-  übernommener Stand bleibt 0.3.3. Für V2 war 0.3.4 nicht nötig: Boulder liest V2s Minutendaten
+## Boulder-App (13.10.2026, berichtigt 14.10.)
+- **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
+  ([coredevices/mobileapp](https://github.com/coredevices/mobileapp)). Das ist der Entscheid vom
+  05.10. unter „Grundlage“: Neubau auf dem aktuellen Stand von Core Devices, für App und Firmware.
+  Der Neubau der App ist dort der letzte Schritt („App-Teile“). Bis dahin läuft das bisherige
+  Boulder als Brücke, und es kommen keine Gravel-Fassungen mehr hinein.
+- Der Punkt „Gravel 0.3.4“ auf der Liste bis zur Vorabversion war falsch; er ist aus Boulder 0.53
+  wieder entfernt (`aecd3350`). Für V2 war 0.3.4 nicht nötig: Boulder liest V2s Minutendaten
   (Fassung 14) seit b25.
+- Mein Eintrag in Boulders CLAUDE.md vom 13.10. sagt nur „nicht mehr auf Gravel“, nicht wohin.
+  Ihn zu berichtigen ist offen.

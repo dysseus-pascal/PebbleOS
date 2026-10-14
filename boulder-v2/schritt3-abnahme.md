@@ -470,3 +470,8 @@ antwortet).
   den Satz liest, prüft `test_boulder_schnittstelle`), Telefon und Emulator.
 - **Release:** Fassung 0.53.0 mit Notiz liegt im Arbeitszweig. Das Release legt die CI an, sobald der
   Stand auf `main` ist (Tag `v0.53.0`, APK). Das braucht dein Okay.
+- **Grundlage (Nachtrag 14.10.):** 0.53 steht auf dem bisherigen Boulder, also auf Gravel 0.3.3. Der
+  Entscheid vom 05.10. verlangt den Neubau der App auf dem Original von Core Devices
+  (`entscheidungen.md`, „Grundlage“); dort ist er der letzte Schritt („App-Teile“). Offen ist **F19**:
+  0.53 als Brücke für den Gerätetest veröffentlichen, oder den Neubau der App vor die erste
+  Vorabversion ziehen.
