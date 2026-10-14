@@ -189,3 +189,6 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   (Fassung 14) seit b25.
 - Mein Eintrag in Boulders CLAUDE.md vom 13.10. sagt nur „nicht mehr auf Gravel“, nicht wohin.
   Ihn zu berichtigen ist offen.
+- **F19: A** (14.10.). Boulder 0.53 erscheint als Brücke für den Gerätetest, nur mit Boulders eigenen
+  Teilen (Goals, V2-Erkennung). Der Neubau der App auf dem Original von Core Devices folgt wie am
+  05.10. geplant als Schritt „App-Teile“. `main` steht auf `aecd3350`; die CI legt `v0.53.0` an.

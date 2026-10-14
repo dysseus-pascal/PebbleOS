@@ -472,6 +472,6 @@ antwortet).
   Stand auf `main` ist (Tag `v0.53.0`, APK). Das braucht dein Okay.
 - **Grundlage (Nachtrag 14.10.):** 0.53 steht auf dem bisherigen Boulder, also auf Gravel 0.3.3. Der
   Entscheid vom 05.10. verlangt den Neubau der App auf dem Original von Core Devices
-  (`entscheidungen.md`, „Grundlage“); dort ist er der letzte Schritt („App-Teile“). Offen ist **F19**:
-  0.53 als Brücke für den Gerätetest veröffentlichen, oder den Neubau der App vor die erste
-  Vorabversion ziehen.
+  (`entscheidungen.md`, „Grundlage“); dort ist er der letzte Schritt („App-Teile“). **F19: A**
+  (14.10.): 0.53 erscheint als Brücke für den Gerätetest, der Neubau folgt als „App-Teile“. `main`
+  steht auf `aecd3350`.
