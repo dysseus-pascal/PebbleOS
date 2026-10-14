@@ -187,6 +187,12 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **F18: A.** Upstream v4.41.0 jetzt nachziehen. Danach bleibt der Upstream-Stand **eingefroren bis
   nach dem Gerätetest**: Der Gerätetest prüft den Code, der bleibt.
 
+## Erste Vorabversion V2 (14.10.2026)
+- **V2 jetzt veröffentlichen** (Nutzer): b27 mit der HRV-Regel, Kieselstrasse kommt danach (F6
+  geändert: nicht mehr vor der ersten Vorabversion).
+- **Kein Vorher-Video von b26** (Punkt 5 gestrichen): Die Ladezeiten auf der Uhr beurteilt der Nutzer
+  selbst; seine Einschätzung genügt für Kriterium 6.
+
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
   ([coredevices/mobileapp](https://github.com/coredevices/mobileapp)). Das ist der Entscheid vom

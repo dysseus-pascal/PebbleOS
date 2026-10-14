@@ -268,9 +268,10 @@ Spezifikation). Mutation S1-3 setzt seither 30 auf 20 und ist auf `4ea6fb64` rot
    `entscheidungen.md`).
    *Gebaut am 13.10. im Arbeitszweig von Boulder, siehe Abschnitt 11. Das Release steht aus.*
 4. Kieselstrasse nach V2 portieren (F6).
-5. Vorher-Video von b26 (braucht die Uhr).
+5. ~~Vorher-Video von b26 (braucht die Uhr).~~ *Gestrichen am 14.10. (Nutzer): kein Video, seine
+   Einschätzung der Ladezeiten auf der Uhr genügt.*
 6. Gerätetest: 7 Nächte, Fitbit-Nächte, Velo- und Autofahrten, Messstufen, Ladezeiten auf der Uhr
-   (Kriterium 6), dazu die Grenzen oben.
+   (Kriterium 6, nach der Einschätzung des Nutzers), dazu die Grenzen oben.
 7. Ruff: 45 ältere Befunde in den Boulder-Werkzeugen (`tools/boulder/`, zwei Testhelfer). Upstreams
    Python ist sauber, und die CI von PebbleOS prüft Ruff bei Pull Requests.
 
