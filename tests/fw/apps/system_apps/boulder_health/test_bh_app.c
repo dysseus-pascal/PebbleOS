@@ -758,11 +758,11 @@ void test_bh_app__erste_karte(void) {
   }
 }
 
-// Oben und Unten zeichnen die neue Karte; nach Quick Launch Oben fuehrt Unten auf Today zum
-// Zifferblatt, ohne noch etwas zu zeichnen.
+// Oben und Unten zeichnen die neue Karte; nach Quick Launch fuehrt Oben auf Today zum
+// Zifferblatt, ohne noch etwas zu zeichnen (F23: Unten blaettert vorwaerts).
 void test_bh_app__tasten(void) {
   prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_UP, APP_QUICK_LAUNCH_ACTION_TAP, 0);
-  s_druecke = "oo";
+  s_druecke = "uu";
   prv_starten();
   cl_assert_equal_s(s_titel, "Heart");
   cl_assert_equal_i(s_punkt_x, prv_punkt_x(2));
@@ -771,14 +771,14 @@ void test_bh_app__tasten(void) {
 
   test_bh_app__initialize();
   prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_UP, APP_QUICK_LAUNCH_ACTION_TAP, 0);
-  s_druecke = "ouu";
+  s_druecke = "uoo";
   prv_starten();
   cl_assert(s_alle_weg);
   cl_assert_equal_i(s_bilder, 3);
   cl_assert_equal_s(s_titel, "Today");
   cl_assert_equal_i(s_offen, 0);
 
-  // Gespiegelt nach Quick Launch Unten.
+  // Nach Quick Launch Unten genauso.
   test_bh_app__initialize();
   prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_DOWN, APP_QUICK_LAUNCH_ACTION_TAP, 0);
   s_druecke = "uoo";
@@ -786,9 +786,9 @@ void test_bh_app__tasten(void) {
   cl_assert(s_alle_weg);
   cl_assert_equal_i(s_bilder, 3);
 
-  // Im Kreis aus dem Startmenue: Unten auf Today fuehrt zu Settings.
+  // Im Kreis aus dem Startmenue: Oben auf Today fuehrt zu Settings.
   test_bh_app__initialize();
-  s_druecke = "u";
+  s_druecke = "o";
   prv_starten();
   cl_assert_equal_s(s_titel, "Settings");
   cl_assert_equal_i(s_punkt_x, prv_punkt_x(4));
@@ -798,7 +798,7 @@ void test_bh_app__tasten(void) {
 // keinen Start-Syscall mehr, laedt nichts nach und frischt nichts auf - ohne den Schalter des
 // Pruefbaus ruft sie dort ueberhaupt keinen Syscall. Gelesen wird einmal vor dem ersten Bild.
 void test_bh_app__tasten_ohne_syscall(void) {
-  s_druecke = "ouuo";
+  s_druecke = "uoou";
   prv_starten();
   const char *nach_dem_start = strchr(s_reihe, 'e');
   cl_assert(nach_dem_start != NULL);
@@ -806,13 +806,13 @@ void test_bh_app__tasten_ohne_syscall(void) {
   cl_assert(strchr(s_reihe, 'D') < strchr(s_reihe, 'w'));
 #ifndef CONFIG_BOULDER_HEALTH_ZEITEN
   cl_assert(strpbrk(nach_dem_start, "tg") == NULL);
-  cl_assert_equal_s(s_reihe, "aRBQADwclpTEeodududodXULWf");
+  cl_assert_equal_s(s_reihe, "aRBQADwclpTEeudododudXULWf");
 #endif
 }
 
 // L4 (2.6.2): Gelesen wird danach nur im Minutentakt, und jede Minute zeichnet die Karte neu.
 void test_bh_app__auffrischen_im_minutentakt(void) {
-  s_druecke = "omum";
+  s_druecke = "umom";
   prv_starten();
   const char *nach_dem_start = strchr(s_reihe, 'e');
   cl_assert(strpbrk(nach_dem_start, "DN") == NULL);
@@ -824,7 +824,7 @@ void test_bh_app__auffrischen_im_minutentakt(void) {
       ohne_zeit[strlen(ohne_zeit)] = *c;
     }
   }
-  cl_assert_equal_s(ohne_zeit, "eodmFdudmFdXULWf");
+  cl_assert_equal_s(ohne_zeit, "eudmFdodmFdXULWf");
 }
 
 // Pebbles erster Takt nach dem Anmelden (ohne MINUTE_UNIT) liest nichts: Phase 1 hat eben gelesen.
@@ -880,10 +880,10 @@ void test_bh_app__details(void) {
     BhDetail detail;
     const char *titel;
   } faelle[] = {
-    {"os", BhDetailNight, "Night"},
-    {"oos", BhDetailHeart, "Heart"},
-    {"ooos", BhDetailSessions, "Sessions"},
-    {"oooos", BhDetailPrecision, "Precision"},
+    {"us", BhDetailNight, "Night"},
+    {"uus", BhDetailHeart, "Heart"},
+    {"uuus", BhDetailSessions, "Sessions"},
+    {"uuuus", BhDetailPrecision, "Precision"},
   };
   for (size_t i = 0; i < sizeof(faelle) / sizeof(faelle[0]); i++) {
     test_bh_app__initialize();
@@ -904,11 +904,11 @@ void test_bh_app__details(void) {
   }
   // Precision rollt nicht, die anderen schon.
   test_bh_app__initialize();
-  s_druecke = "oooos";
+  s_druecke = "uuuus";
   prv_starten();
   cl_assert(strchr(s_reihe, 'y') == NULL);
   test_bh_app__initialize();
-  s_druecke = "os";
+  s_druecke = "us";
   prv_starten();
   cl_assert(strchr(s_reihe, 'y') != NULL);
 
@@ -922,7 +922,7 @@ void test_bh_app__details(void) {
 
 // Schliesst die App mit offenem Detail, ist danach trotzdem alles frei.
 void test_bh_app__schliessen_mit_detail(void) {
-  s_druecke = "oos";
+  s_druecke = "uus";
   prv_starten();
   cl_assert_equal_i(s_fenster_offen, 0);
   cl_assert_equal_i(s_flaechen_offen, 0);
@@ -933,12 +933,12 @@ void test_bh_app__schliessen_mit_detail(void) {
 // Precision (F4): markiert die geltende Stufe, Oben und Unten waehlen ohne Kreis, Select setzt sie
 // ueber S4 und schliesst die Liste; die Karte zeigt sie sofort.
 void test_bh_app__precision(void) {
-  s_druecke = "oooos";
+  s_druecke = "uuuus";
   prv_starten();
   cl_assert_equal_i(s_auswahl_gezeichnet, 2); // Stufe 3, wie die Lage sagt
 
   test_bh_app__initialize();
-  s_druecke = "oooosuuuus";
+  s_druecke = "uuuusuuuus";
   prv_starten();
   cl_assert_equal_i(s_gesetzte_stufe, 5);
   cl_assert_equal_i(s_inhalt_karte, BhKarteSettings);
@@ -946,7 +946,7 @@ void test_bh_app__precision(void) {
   cl_assert_equal_i(s_fenster_offen, 0);
 
   test_bh_app__initialize();
-  s_druecke = "oooosoooooos";
+  s_druecke = "uuuusoooooos";
   prv_starten();
   cl_assert_equal_i(s_gesetzte_stufe, 1);
 }
@@ -954,7 +954,7 @@ void test_bh_app__precision(void) {
 // V3: Puls im Sekundentakt nur auf Heart und hoechstens zwei Minuten; zurueck auf die Vorgabe,
 // sobald die App Heart verlaesst, die Zeit um ist oder die App endet.
 void test_bh_app__puls_live(void) {
-  s_druecke = "oo";
+  s_druecke = "uu";
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 2); // an auf Heart, aus beim Schliessen
   cl_assert_equal_i(s_pulstakt, 0);
@@ -963,28 +963,28 @@ void test_bh_app__puls_live(void) {
   cl_assert_equal_i(s_puls_ablauf, 2 * 60);
 
   test_bh_app__initialize();
-  s_druecke = "oou";
+  s_druecke = "uuo";
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 2); // an auf Heart, aus auf Night
   cl_assert_equal_i(s_pulstakt, 0);
   cl_assert_equal_i(prv_timer_offen(), 0);
 
   test_bh_app__initialize();
-  s_druecke = "ooq";
+  s_druecke = "uuq";
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 2); // an, nach zwei Minuten aus; das Ende setzt nichts
   cl_assert_equal_i(s_pulstakt, 0);
 
   // Today, Settings und Activity lassen den Takt in Ruhe.
   test_bh_app__initialize();
-  s_druecke = "uu";
+  s_druecke = "oo";
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 0);
 }
 
 // Ein Health-Ereignis frischt nur auf Heart den Puls auf, ohne die anderen Quellen zu lesen.
 void test_bh_app__puls_ereignis(void) {
-  s_druecke = "oo";
+  s_druecke = "uu";
   prv_starten();
   cl_assert(s_ereignis == NULL); // abgemeldet
   test_bh_app__initialize();
@@ -999,13 +999,13 @@ void test_bh_app__puls_ereignis(void) {
 void test_bh_app__zeitstempel(void) {
   prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_UP, APP_QUICK_LAUNCH_ACTION_TAP, 0);
   s_druecke =
-      "oooooo"
-      "uuuuuu";
+      "uuuuuu"
+      "oooooo";
   prv_starten();
 #ifdef CONFIG_BOULDER_HEALTH_ZEITEN
   static const char *const soll[] = {
     "bh t=4711 main",
-    "bh t=4711 start grund=5 knopf=1 aktion=2 argument=0 Today kreis=0 spiegel=0",
+    "bh t=4711 start grund=5 knopf=1 aktion=2 argument=0 Today kreis=0",
     "bh t=4711 daten",
     "bh t=4711 bild",
     "bh t=4711 taste",
@@ -1019,7 +1019,7 @@ void test_bh_app__zeitstempel(void) {
   for (size_t i = 0; i < sizeof(soll) / sizeof(soll[0]); i++) {
     cl_assert_equal_s(s_protokoll[i], soll[i]);
   }
-  // Settings ist die letzte Karte: Oben tut dort nichts. Zuletzt Unten auf Today.
+  // Settings ist die letzte Karte: Unten tut dort nichts. Zuletzt Oben auf Today.
   cl_assert_equal_s(s_protokoll[s_zeilen - 1], "bh t=4711 zifferblatt");
   bool nichts = false;
   for (int i = 0; i < s_zeilen; i++) {
@@ -1037,11 +1037,11 @@ void test_bh_app__zeitstempel(void) {
 // (die Attrappe schlaegt sonst fehl, wie Pebble freien Speicher laese). Auch mit offenem Detail
 // beim Ende der App.
 void test_bh_app__detail_frei_in_der_richtigen_reihenfolge(void) {
-  s_druecke = "osx";
+  s_druecke = "usx";
   prv_starten();
   cl_assert_equal_i(s_rollen_offen, 0);
   test_bh_app__initialize();
-  s_druecke = "oos";
+  s_druecke = "uus";
   prv_starten();
   cl_assert_equal_i(s_flaechen_offen, 0);
 }
@@ -1049,13 +1049,13 @@ void test_bh_app__detail_frei_in_der_richtigen_reihenfolge(void) {
 // Gegenpruefung A7: Puls live nur auf der Karte Heart - nicht in ihrem Detail, wieder zurueck auf
 // der Karte.
 void test_bh_app__puls_nur_auf_der_karte(void) {
-  s_druecke = "oos";
+  s_druecke = "uus";
   prv_starten();
   // an auf Heart, aus im Detail; das Ende setzt nichts mehr.
   cl_assert_equal_i(s_pulstakt_setzen, 2);
   cl_assert_equal_i(s_pulstakt, 0);
   test_bh_app__initialize();
-  s_druecke = "oosxM";
+  s_druecke = "uusxM";
   prv_starten();
   // an, aus im Detail, an zurueck auf Heart, aus beim Schliessen
   cl_assert_equal_i(s_pulstakt_setzen, 4);
@@ -1066,18 +1066,18 @@ void test_bh_app__puls_nur_auf_der_karte(void) {
 // und Heart keinen Puls live; Precision bleibt bedienbar.
 void test_bh_app__tracking_aus(void) {
   s_tracking = false;
-  s_druecke = "os";
+  s_druecke = "us";
   prv_starten();
   cl_assert_equal_i(s_detail_gezeichnet, BhDetailKeins);
   cl_assert_equal_i(s_fenster_offen, 0);
   test_bh_app__initialize();
   s_tracking = false;
-  s_druecke = "oo";
+  s_druecke = "uu";
   prv_starten();
   cl_assert_equal_i(s_pulstakt_setzen, 0);
   test_bh_app__initialize();
   s_tracking = false;
-  s_druecke = "oooos";
+  s_druecke = "uuuus";
   prv_starten();
   cl_assert_equal_i(s_detail_gezeichnet, BhDetailPrecision);
 }
@@ -1085,7 +1085,7 @@ void test_bh_app__tracking_aus(void) {
 // Gegenpruefung A4, L3 an allen Tasten: Auch Select, Zurueck und die Tasten von Precision lesen
 // nichts neu.
 void test_bh_app__alle_tasten_ohne_lesen(void) {
-  s_druecke = "osxosxosxosuus";
+  s_druecke = "usxusxusxusuus";
   prv_starten();
   const char *nach_dem_start = strchr(s_reihe, 'e');
   cl_assert(nach_dem_start != NULL);
@@ -1098,13 +1098,13 @@ void test_bh_app__alle_tasten_ohne_lesen(void) {
 void test_bh_app__detail_waechst_mit_den_daten(void) {
   s_offen_beim_laden = BhQuelleNacht;
   s_nachfragen_bis_da = 1;
-  s_druecke = "os";
+  s_druecke = "us";
   prv_starten();
   cl_assert_equal_i(s_rollen_inhalt.h, 60);
   test_bh_app__initialize();
   s_offen_beim_laden = BhQuelleNacht;
   s_nachfragen_bis_da = 1;
-  s_druecke = "osn";
+  s_druecke = "usn";
   prv_starten();
   cl_assert_equal_i(s_rollen_inhalt.h, 332);
 }

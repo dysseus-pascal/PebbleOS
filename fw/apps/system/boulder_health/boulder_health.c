@@ -357,9 +357,9 @@ static void prv_start(void) {
   app->einstieg = bh_einstieg(grund, knopf, aktion, argument);
   app->karte = app->einstieg.karte;
   app->bild_offen = true;
-  BH_PROTOKOLL("start grund=%d knopf=%d aktion=%d argument=%lu %s kreis=%d spiegel=%d", (int)grund,
+  BH_PROTOKOLL("start grund=%d knopf=%d aktion=%d argument=%lu %s kreis=%d", (int)grund,
                (int)knopf, (int)aktion, (unsigned long)argument, bh_karte_titel(app->karte),
-               (int)app->einstieg.kreis, (int)app->einstieg.gespiegelt);
+               (int)app->einstieg.kreis);
   // Phase 1: alle Daten vor dem ersten Bild; fehlendes holt Phase 2.
   bh_daten_laden(&app->daten);
   BH_ZEIT("daten");

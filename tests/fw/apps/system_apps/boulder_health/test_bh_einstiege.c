@@ -261,17 +261,16 @@ void test_bh_einstiege__cleanup(void) {
   fake_app_timer_deinit();
 }
 
-// Was ein Start ergibt: Karte, Kreis, Spiegel, die Uebergaenge beim Oeffnen und Schliessen und
-// welche Taste auf der ersten Karte zum Zifferblatt fuehrt ("-" wenn keine).
-static void prv_pruefe(const char *soll_karte, bool soll_kreis, bool soll_spiegel,
-                       const char *soll_auf, const char *soll_zu, const char *soll_zurueck) {
+// Was ein Start ergibt: Karte, Kreis, die Uebergaenge beim Oeffnen und Schliessen und welche
+// Taste auf der ersten Karte zum Zifferblatt fuehrt ("-" wenn keine).
+static void prv_pruefe(const char *soll_karte, bool soll_kreis, const char *soll_auf,
+                       const char *soll_zu, const char *soll_zurueck) {
   // Pebbles Shell waehlt den Uebergang, bevor die App laeuft (app_manager.c:701-702) ...
   const CompositorTransition *auf =
       shell_get_open_compositor_animation(ZIFFERBLATT, APP_ID_HEALTH_APP, &s_start.common);
   const BhEinstieg e = prv_app_startet();
   cl_assert_equal_s(bh_karte_titel(e.karte), soll_karte);
   cl_assert_equal_b(e.kreis, soll_kreis);
-  cl_assert_equal_b(e.gespiegelt, soll_spiegel);
   cl_assert_equal_s(prv_name(auf), soll_auf);
   // ... und beim Schliessen nach dem Kontext der laufenden App (shell.c:48-54, :87-90).
   stub_pebble_tasks_set_current(PebbleTask_KernelMain);
@@ -294,11 +293,11 @@ static void prv_pruefe(const char *soll_karte, bool soll_kreis, bool soll_spiege
 // --- Quick Launch (T3.2) und Uebergang (T3.3) ---
 
 // Tippen Oben: Today ohne Kreis. Der Shutter oeffnet nach oben und faellt beim Schliessen nach
-// unten; dorthin fuehrt Unten auf Today.
+// unten. Zum Zifferblatt fuehrt Oben auf Today: Oben blaettert zurueck (F23).
 void test_bh_einstiege__tippen_oben(void) {
   prv_tippen(BUTTON_ID_UP);
   cl_assert_equal_i(s_start.common.reason, APP_LAUNCH_QUICK_LAUNCH);
-  prv_pruefe("Today", false, false, "Shutter oben schwarz", "Shutter unten schwarz", "unten");
+  prv_pruefe("Today", false, "Shutter oben schwarz", "Shutter unten schwarz", "oben");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_TAP);
   // Das Argument bleibt der App verborgen: Pebble reicht es nur fuer "Open App" durch
   // (process_manager.c:712-718), hier traegt es die Geste.
@@ -307,34 +306,34 @@ void test_bh_einstiege__tippen_oben(void) {
 
 void test_bh_einstiege__halten_oben(void) {
   prv_halten(BUTTON_ID_UP);
-  prv_pruefe("Today", false, false, "Shutter oben schwarz", "Shutter unten schwarz", "unten");
+  prv_pruefe("Today", false, "Shutter oben schwarz", "Shutter unten schwarz", "oben");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_HOLD);
 }
 
-// Unten: Die App schiebt sich von unten herein, ohne Shutter, und schliesst gespiegelt nach oben;
-// dorthin fuehrt Oben auf Today.
+// Unten: Die App schiebt sich von unten herein, ohne Shutter, und schliesst nach oben; dorthin
+// fuehrt Oben auf Today.
 void test_bh_einstiege__tippen_unten(void) {
   prv_tippen(BUTTON_ID_DOWN);
-  prv_pruefe("Today", false, true, "App schiebt nach oben", "Shutter oben schwarz", "oben");
+  prv_pruefe("Today", false, "App schiebt nach oben", "Shutter oben schwarz", "oben");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_TAP);
 }
 
 void test_bh_einstiege__halten_unten(void) {
   prv_halten(BUTTON_ID_DOWN);
-  prv_pruefe("Today", false, true, "App schiebt nach oben", "Shutter oben schwarz", "oben");
+  prv_pruefe("Today", false, "App schiebt nach oben", "Shutter oben schwarz", "oben");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_HOLD);
 }
 
 // Select- und Back-Halten: im Kreis, kein Weg zum Zifferblatt ueber die Karten.
 void test_bh_einstiege__halten_select(void) {
   prv_halten(BUTTON_ID_SELECT);
-  prv_pruefe("Today", true, false, "Shutter oben schwarz", "Shutter unten schwarz", "-");
+  prv_pruefe("Today", true, "Shutter oben schwarz", "Shutter unten schwarz", "-");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_HOLD);
 }
 
 void test_bh_einstiege__halten_zurueck(void) {
   prv_halten(BUTTON_ID_BACK);
-  prv_pruefe("Today", true, false, "Shutter oben schwarz", "Shutter unten schwarz", "-");
+  prv_pruefe("Today", true, "Shutter oben schwarz", "Shutter unten schwarz", "-");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_HOLD);
 }
 
@@ -342,14 +341,14 @@ void test_bh_einstiege__halten_zurueck(void) {
 void test_bh_einstiege__zurueck_und_oben(void) {
   prv_kombination(BUTTON_ID_BACK, BUTTON_ID_UP);
   cl_assert_equal_i(s_start.common.button, BUTTON_ID_BACK);
-  prv_pruefe("Today", true, false, "Shutter oben schwarz", "Shutter unten schwarz", "-");
+  prv_pruefe("Today", true, "Shutter oben schwarz", "Shutter unten schwarz", "-");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_COMBO);
 }
 
 void test_bh_einstiege__oben_und_unten(void) {
   prv_kombination(BUTTON_ID_UP, BUTTON_ID_DOWN);
   cl_assert_equal_i(s_start.common.button, BUTTON_ID_UP);
-  prv_pruefe("Today", true, false, "Shutter oben schwarz", "Shutter unten schwarz", "-");
+  prv_pruefe("Today", true, "Shutter oben schwarz", "Shutter unten schwarz", "-");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_COMBO);
 }
 
@@ -370,6 +369,6 @@ void test_bh_einstiege__vom_telefon(void) {
   memcpy(&nachricht[1], &s_health_uuid, sizeof(Uuid));
   app_run_state_protocol_msg_callback(NULL, nachricht, sizeof(nachricht));
   cl_assert_equal_i(s_start.common.reason, APP_LAUNCH_PHONE);
-  prv_pruefe("Today", true, false, "Shutter oben schwarz", "Shutter unten schwarz", "-");
+  prv_pruefe("Today", true, "Shutter oben schwarz", "Shutter unten schwarz", "-");
   cl_assert_equal_i(s_aktion, APP_QUICK_LAUNCH_ACTION_NONE);
 }

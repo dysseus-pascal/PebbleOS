@@ -279,7 +279,7 @@ class Messung:
         for _ in range(runden):
             for _karte in range(5):
                 stand = self.k.stand()
-                self.emu.taste('o')
+                self.emu.taste('u')  # Unten blaettert vorwaerts (F23)
                 self.k.warte(r'bh t=\d+ bild', stand, 3)
                 w = spanne(stempel(self.k.ab(stand)), 'taste', 'bild')
                 if w is not None:
@@ -346,7 +346,7 @@ class Messung:
                 self.emu.bild(ordner / f'd_{name}_unten.png')
                 self.emu.taste('b')
                 time.sleep(0.6)
-            self.emu.taste('o')
+            self.emu.taste('u')
             time.sleep(0.6)
         app = self.k.befehl('boulder app')
         self.heap_hoch = zahl(r'Hoechststand (\d+)', app)
@@ -355,14 +355,14 @@ class Messung:
 
     def puls(self):
         self.app_auf(f'app launch {APP_HEALTH}')
-        self.emu.taste('o')
-        self.emu.taste('o')  # Heart
+        self.emu.taste('u')
+        self.emu.taste('u')  # Heart
         time.sleep(1.0)
         auf_heart = zahl(r'Sekundentakt: (\d)', self.k.befehl('boulder app'))
-        self.emu.taste('o')  # Activity
+        self.emu.taste('u')  # Activity
         time.sleep(1.0)
         weg = zahl(r'Sekundentakt: (\d)', self.k.befehl('boulder app'))
-        self.emu.taste('u')  # zurueck auf Heart, dann die App schliessen
+        self.emu.taste('o')  # zurueck auf Heart, dann die App schliessen
         time.sleep(0.6)
         self.app_zu()
         time.sleep(1.0)

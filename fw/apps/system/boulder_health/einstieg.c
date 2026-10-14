@@ -19,7 +19,6 @@ BhEinstieg bh_einstieg(AppLaunchReason grund, ButtonId knopf, AppQuickLaunchActi
   BhEinstieg einstieg = {
     .karte = BhKarteToday,
     .kreis = !gerichtet,
-    .gespiegelt = gerichtet && (knopf == BUTTON_ID_DOWN),
   };
   // Die Pins legt Pebbles activity_insights.c mit derselben Struktur an (prv_set_open_app_action).
   if (grund == APP_LAUNCH_TIMELINE_ACTION) {
@@ -37,7 +36,7 @@ BhSchritt bh_blaettern(const BhEinstieg *einstieg, BhKarte *karte, ButtonId knop
   if ((knopf != BUTTON_ID_UP) && (knopf != BUTTON_ID_DOWN)) {
     return BhSchrittNichts;
   }
-  const bool weiter = einstieg->gespiegelt ? (knopf == BUTTON_ID_DOWN) : (knopf == BUTTON_ID_UP);
+  const bool weiter = (knopf == BUTTON_ID_DOWN);
   const int neu = (int)*karte + (weiter ? 1 : -1);
   if (neu < 0) {
     if (!einstieg->kreis) {
