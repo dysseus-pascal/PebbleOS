@@ -112,3 +112,43 @@ Was Core seither geändert hat und Boulder trifft:
 - **F26: A** nur Firmware V2; TimeStyle Bedrock entfällt.
 - **F27: A** PKJS-Rechte nach Cores Modell.
 - **F28:** Cactus bleibt.
+
+## 6. Stand der Umsetzung
+
+### AP0 (14.10.2026)
+- **Grundlage:** Merge-Commit `3256eabfc` im Boulder-Zweig `claude/exciting-cerf-m8apu2`. Erster
+  Elternteil Core 1.15.0.1 (`ec2156cc`, mit Cores ganzem Verlauf, 2 342 Commits), zweiter Boulder 0.53
+  (`aecd3350`). Der Baum ist Cores Baum mit Boulders Rahmen (`.github`, `CLAUDE.md`, `README.md`,
+  `CONTRIBUTING.md`, `SECURITY.md`, `BOULDER_VERSION`, `ci/`, `LICENSE-Inter-OFL`); nicht übernommen:
+  Cores `.github`, `LICENSE-COMMERCIAL`, Gravels `DESIGN_NOTES.md` und `KNOWN_ISSUES.md`.
+  Abweichung von 2.1: der Merge steht am Anfang statt am Schluss, weil der Zweig ohne Force-Push
+  weiterwachsen muss. `main` bleibt bis AP8 auf 0.53.
+- `CLAUDE.md` ist unverändert übernommen und beschreibt noch Gravel; berichtigen kann es nur der
+  Nutzer.
+- **Bau:** `applicationId ch.dysseus.boulder`; versionName aus `BOULDER_VERSION`, versionCode = Zahl der
+  Commits (jetzt über 2 550, 0.53 hatte 210); nur arm64-v8a; App-Name „Boulder“. Signatur wie 0.53:
+  `LOCAL_RELEASE_BUILD=true` signiert mit dem festen Schlüssel aus `ci/debug.keystore`.
+- **Google still (F25 A):** `androidApp/google-services.json` ist eine Attrappe für
+  `ch.dysseus.boulder`; im Manifest `firebase_crashlytics_collection_enabled=false` und
+  `firebase_messaging_auto_init_enabled=false`; Anmeldung (Google, Apple, GitHub) aus wie in 0.53;
+  Mixpanel und Memfault ohne Token aus (Core prüft auf null).
+- **CI:** JDK 17 (Core pinnt die Toolchain), Tests `testDebugUnitTest testAndroidHostTest jvmTest`.
+- **Exporte:** Cores Release exportiert `androidx.compose.ui.tooling.PreviewActivity` ohne Schutz
+  (jede App kann darüber Composables der App starten). Wie in 0.53 fällt ui-tooling aus dem
+  Release, und `pruefe<Variante>Exporte` bricht den Release-Bau ab, wenn etwas exportiert ist,
+  das nicht auf der Liste steht. Auf der Liste stehen auch Cores Ring-Teile (Teilen an „Index“,
+  Boot-Empfänger) – ob sie bleiben, entscheidet AP7.
+- **APK:** 36 MB; darin liegen auch iOS-Bibliotheken von Cactus (`ios/lib/…`, rund 4,5 MB gepackt),
+  die Android nie lädt: Ausschluss in AP7.
+- **Geprüft:** `assembleRelease` mit `LOCAL_RELEASE_BUILD` (signiert mit dem CI-Schlüssel,
+  SHA-256 `212e0ca4…`; `ch.dysseus.boulder`; nur arm64; Manifest-Schalter aus; 25 erlaubte
+  Exporte, keine PreviewActivity) und `testDebugUnitTest testAndroidHostTest jvmTest`: 1 817 Tests
+  in Cores Modulen, keine Fehler, 9 übersprungen. Commits `3256eabfc` (Merge), `878046fbb` (Bau),
+  `74b35dc2e` (`.gitignore`), `879e1fee1` (CI), gepusht auf `claude/exciting-cerf-m8apu2`.
+- **CI von 0.53:** Der Lauf auf `main` (`aecd3350`) scheiterte nach grünen Tests und grünem Bau beim
+  Hochladen des APK („Artifact storage quota has been hit“); darum fehlt das Release `v0.53.0`.
+  Ab jetzt bleiben Artefakte nur einen Tag; die alten belegen das Kontingent, bis sie ablaufen oder
+  gelöscht werden (Nutzer).
+- **Offen aus AP0:** Die Schalter „Send app crashes“ und „Send watch analytics“ stehen ab Werk auf
+  „an“, sammeln aber nichts (Manifest, kein Token): ausblenden in AP5/AP7. Cactus-Telemetrie
+  (`cactusSetTelemetryEnvironment`) und die übrigen Netzziele: AP8.
