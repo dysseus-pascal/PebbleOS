@@ -43,6 +43,10 @@
   Umdrehen um 03:17 12 Schritte zählte. H2/20 (Gang erst ab 20 Schritten) behebt sie.
 - **Morgen:** 05:23–05:29 Bewegung, dann 16 min still mit Puls 49–53, Aufwachen 05:46.
 - **Nutzer (14.10.):** 03:14–04:03 geschlafen; aufgewacht um 05:45, aufgestanden um 06:00. Boulders
-  Aufwachen stimmt, Fitbits Ende (05:23) ist zu früh.
+  Aufwachen stimmt, Fitbits Aufstehzeit (05:23) stimmt nicht.
+- **Fitbits Aufstehzeit („Time out of bed“)** war in vier von fünf Nächten mit Angabe des Nutzers zu
+  früh: 7.10. 05:13, 8.10. 05:42, 12.10. 05:46 (jeweils statt 06:00), 13.10. 05:23 (statt 05:45/06:00).
+  Nur am 9.10. ohne Wecker stimmte sie (06:57, Boulder 07:00). Für das Aufwachen gilt deshalb die
+  Angabe des Nutzers, nicht Fitbit.
 - F20: A (H2/20 in V2). Offen F21: Gang aus dem VMC (H4) statt aus Schritten, weil die Firmware ohne
   Schritte rechnet (`analyse-2026-10-14.md`, Abschnitt 5).
