@@ -90,6 +90,9 @@ P1 = ['+#ifdef CONFIG_BOULDER_KIESELSPORT', '+  save_session &= !boulder_x();  /
 REGISTRY = 'fw/shell/normal/system_app_registry_list.json'
 P3 = ['+    {', '+      "kommentar": "Boulder: P3",', '+      "id": -103,',
       '+      "ifdefs": ["CONFIG_BOULDER_KIESELSPORT"]', '+    },']
+# Kieselstrasse (F6) im selben Hunk, "ifdefs" mehrzeilig wie in der echten Datei.
+P3_KST = ['+    {', '+      "kommentar": "Boulder: P3, Kieselstrasse",', '+      "id": -104,',
+          '+      "ifdefs": [', '+        "CONFIG_BOULDER_KIESELSTRASSE"', '+      ]', '+    },']
 
 
 def proben_kieselsport(pruefe):
@@ -139,7 +142,18 @@ def proben_kieselsport(pruefe):
     yield 'P1 zu viele Zeilen', pruefe(hunk(DIENST, P1 * 9, STOPP), [])
     yield 'P3 Registry', not pruefe(hunk(REGISTRY, P3), [])
     yield 'P3 ohne Schalter', rot(pruefe(hunk(REGISTRY, [z for z in P3 if 'ifdefs' not in z]), []),
-                                  'ohne CONFIG_BOULDER_KIESELSPORT')
+                                  'in "ifdefs"')
+    yield 'P3 mit Kieselstrasse', not pruefe(hunk(REGISTRY, P3 + P3_KST), [])
+    # Der Schalter von Kieselsport im selben Hunk deckt den zweiten Eintrag nicht.
+    ohne = [z for z in P3_KST if 'CONFIG_' not in z and 'ifdefs' not in z and z != '+      ]']
+    yield 'P3 Kieselstrasse ohne Schalter', rot(pruefe(hunk(REGISTRY, P3 + ohne), []), '-104')
+    nur_kommentar = [z.replace('Kieselstrasse"', 'Kieselstrasse, CONFIG_BOULDER_KIESELSTRASSE"')
+                     for z in ohne]
+    yield 'P3 Schalter nur im Kommentar', rot(pruefe(hunk(REGISTRY, P3 + nur_kommentar), []), '-104')
+    fremd = [z.replace('CONFIG_BOULDER_KIESELSTRASSE', 'CONFIG_DEMO_APP_SWAP_LAYER') for z in P3_KST]
+    yield 'P3 fremder Schalter', rot(pruefe(hunk(REGISTRY, P3 + fremd), []), '-104')
+    yield 'P3 Hunk ohne Eintrag', rot(pruefe(hunk(REGISTRY, ['+  // Boulder: CONFIG_BOULDER_KIESELSPORT']),
+                                             []), 'ohne neuen Eintrag')
     zwei = hunks(REGISTRY, ('', P3), ('', P3))
     yield 'P3 zweiter Eintrag', pruefe(zwei, [], zwei)
     yield 'P4 Satz', not pruefe(hunk(
@@ -152,7 +166,9 @@ def proben_kieselsport(pruefe):
         'void activity_sessions_prv_add_activity_session(ActivitySession *session) {'), [])
     yield 'App-Ordner frei', not pruefe('', ['fw/apps/system/kieselsport/lauf_window.c'])
     yield 'Testordner der App frei', not pruefe('', ['tests/fw/apps/system_apps/kieselsport/test_x.c'])
-    yield 'anderer App-Ordner', pruefe('', ['fw/apps/system/kieselstrasse/x.c'])
+    yield 'Kieselstrasse frei', not pruefe('', ['fw/apps/system/kieselstrasse/weg.c',
+                                                'tests/fw/apps/system_apps/kieselstrasse/test_x.c'])
+    yield 'anderer App-Ordner', pruefe('', ['fw/apps/system/kieselweg/x.c'])
     yield from proben_startmenue(pruefe)
 
 

@@ -16,13 +16,14 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - eine Datei mehr Hunks (ohne Kontext gezaehlt) hat als erlaubt,
   - ein Hunk einer Kieselsport-Stelle Pebbles Code ausserhalb von
     #ifdef CONFIG_BOULDER_KIESELSPORT aendert (neue Zeile davor, danach oder im #else,
-    entfernte Zeile; auch ein Include) - im Registry-JSON: den Schalter nicht nennt,
+    entfernte Zeile; auch ein Include) - im Registry-JSON: ein neuer Eintrag keinen der
+    App-Schalter (APP_SCHALTER) in "ifdefs" nennt,
   - eine eigene Datei in Pebbles Ordnern (EIGENE_DATEIEN) Pebbles Zeilen aendert, kein
     "Boulder:" traegt oder als .c nicht ganz unter dem Schalter steht,
   - ein CMake-Hunk (P7) Pebbles Zeilen entfernt oder als Code etwas anderes bringt als genau
     if(<Schalter>), die erlaubten Zeilen und endif(),
   - der Remote `upstream` fehlt.
-Die eigenen Ordner der Variante, von Kieselsport und der Health-App sind frei.
+Die eigenen Ordner der Variante, von Kieselsport, Kieselstrasse und der Health-App sind frei.
 """
 import collections
 import pathlib
@@ -42,6 +43,9 @@ EIGENE_ORDNER = (
     # Boulders Health-App (Schritt 3); Pebbles fw/apps/system/health/ bleibt Pebble-Code.
     'fw/apps/system/boulder_health/',
     'tests/fw/apps/system_apps/boulder_health/',
+    # Kieselstrasse (F6, aus b26): eine System-App ohne Dienst und ohne Pebble-Haken.
+    'fw/apps/system/kieselstrasse/',
+    'tests/fw/apps/system_apps/kieselstrasse/',
     # Kein Firmware-Code: meldet tools/boulder/sitzung-start.sh als Start-Hook der Cloud-Sitzungen an.
     '.claude/settings.json',
 )
@@ -62,6 +66,9 @@ EIGENE_DATEIEN = (
 Stelle = collections.namedtuple('Stelle', 'zeilen funktion hunks schalter cmake',
                                 defaults=(None, None, None, None))
 SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
+# Die Schalter der System-Apps in der Registry (P3). Beide haengen an der Variante, jeder neue
+# Eintrag muss einen davon in "ifdefs" tragen: sonst stuende er auf jedem Board.
+APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE')
 # Ein CMake-Block: if(schalter), darin genau die Zeilen `inhalt`, endif().
 CMakeBlock = collections.namedtuple('CMakeBlock', 'schalter inhalt')
 
@@ -85,8 +92,9 @@ PEBBLE = {
     # P2 Workout-App ausgeblendet: eine Stelle im Prozess-Eintrag.
     'fw/apps/system/workout/workout.c': Stelle(
         4, r'workout_app_get_info\(', hunks=1, schalter=True),
-    # P3 Registry-Eintrag (JSON ohne Kommentare: "Boulder:" steht im Schluessel "kommentar").
-    'fw/shell/normal/system_app_registry_list.json': Stelle(10, hunks=1, schalter=True),
+    # P3 Registry-Eintraege (JSON ohne Kommentare: "Boulder:" steht im Schluessel "kommentar"):
+    # Kieselsport und Kieselstrasse (F6) nebeneinander in einem Hunk, je zehn Zeilen.
+    'fw/shell/normal/system_app_registry_list.json': Stelle(20, hunks=1, schalter=True),
     # P4 DLS 84 Fassung 7 mit `manual` (F4 = A).
     'include/pbl/services/activity/activity_private.h': Stelle(10, schalter=True),
     'fw/services/activity/activity_sessions.c': Stelle(
@@ -121,6 +129,9 @@ SCHALTER_AUF = re.compile(r'#\s*ifdef\s+' + SCHALTER)
 IF = re.compile(r'#\s*if')
 ELSE = re.compile(r'#\s*(?:else|elif)\b')
 ENDIF = re.compile(r'#\s*endif\b')
+# Ein App-Schalter als Element von "ifdefs", auf einer Zeile mit "ifdefs" oder allein.
+JSON_SCHALTER = re.compile(r'\s*(?:"ifdefs"\s*:\s*\[.*)?"(?:' + '|'.join(APP_SCHALTER) + r')"')
+JSON_ID = re.compile(r'\s*"id"\s*:')
 
 
 def eigen(pfad):
@@ -199,17 +210,35 @@ def ausserhalb_des_schalters(zeilen):
     return aussen
 
 
+def json_eintraege(zeilen):
+    """Die neuen Registry-Eintraege eines Hunks: je neue "id"-Zeile ihre neuen Zeilen bis zur
+    naechsten. "ifdefs" steht im Eintrag nach "id"; was vor der ersten "id" kommt ("{",
+    "kommentar"), aendert keinen Eintrag allein."""
+    eintraege = []
+    for zeile in zeilen:
+        if not zeile.startswith('+'):
+            continue
+        if JSON_ID.match(zeile[1:]):
+            eintraege.append([])
+        if eintraege:
+            eintraege[-1].append(zeile[1:])
+    return eintraege
+
+
 def schalterfehler(pfad, kopf, zeilen):
-    """Ein Hunk einer Kieselsport-Stelle: C ganz unter dem Schalter, JSON nennt ihn ("ifdefs")."""
+    """Ein Hunk einer Kieselsport-Stelle: C ganz unter dem Schalter; im JSON traegt jeder neue
+    Eintrag einen App-Schalter in "ifdefs" - je Eintrag, weil der Hunk zwei Apps fuehrt."""
     if pfad.endswith(('.c', '.h')):
         aussen = ausserhalb_des_schalters(zeilen)
         if aussen:
             return [f'{pfad}: Hunk "{kopf}" aendert ausserhalb von #ifdef {SCHALTER}: '
                     f'"{aussen[0].strip()}"']
         return []
-    if not any(SCHALTER in z for z in zeilen):
-        return [f'{pfad}: Hunk "{kopf}" ohne {SCHALTER}']
-    return []
+    eintraege = json_eintraege(zeilen)
+    if not eintraege:
+        return [f'{pfad}: Hunk "{kopf}" ohne neuen Eintrag mit einem von {APP_SCHALTER}']
+    return [f'{pfad}: Eintrag "{e[0].strip()}" ohne einen von {APP_SCHALTER} in "ifdefs"'
+            for e in eintraege if not any(JSON_SCHALTER.match(z) for z in e)]
 
 
 def cmake_code(text):
