@@ -178,3 +178,41 @@ Was Core seither geändert hat und Boulder trifft:
 - „Populate fake health data“ ist weg (löschte alle echten Daten; `DebugDatenTest`).
 - Cores `HealthDataParserTest` und `PlatformHealthSyncTest` nur an `ParsedHealthData`/`distanceM`
   angepasst. Alle Testaufgaben grün: 1 961 Tests.
+
+### AP3 (14.10.2026, `07b567e7c`)
+- **Quelle:** Core-Uhren fragen `GithubReleases` (Releases von `boulder-firmware`) statt Cores
+  `EngDashOta` (dash.repebble.com, ohne Signatur); ältere Pebbles bleiben bei Cohorts. Prüfabstand 5 h
+  wie in 0.53.
+- **Geprüft installiert:** aus Gravel 0.3.2 mit Boulders Änderungen `VerifiedFirmwareInstaller`
+  (Download mit Grössendeckel, sha256, Ed25519 über Tag, Dateiname, Grösse und sha256, PBZ-Manifest),
+  `FirmwareArtifactExpectations`, `FirmwareReleaseSelection`, `ForkFirmwareInstallUi`; dazu Boulders
+  `FirmwareSignatur`, `MindestApp`, `Ed25519`.
+- **Alle vier Wege** gehen über den Installer: `WatchesScreen`, `WatchOnboardingScreen` (dort
+  automatisch), `FirmwareUpdateUiTracker` („Update Now“), `DebugFirmwareSideload` („Update FW“).
+  `FirmwareWegeTest` schlägt an, wenn Produktivcode wieder Cores `updateFirmware` ruft.
+- Gravels Kanal-Schalter entfällt (die Auswahl fragt fest „Soaked“). Gravels Erwartungen aus Cohorts
+  kommen nicht mit: für alte Pebbles verweigert der Installer, statt ungeprüft zu installieren (F26).
+- GitHub nur mit System-CAs (`network_security_config.xml`). Alle Testaufgaben grün: 2 068 Tests.
+
+### AP4 (14.10.2026, `bf97db520`)
+- **Begleiter:** `BuiltInCompanions` aus 0.53 in libpebble3; `LibPebble.create` nimmt sie (Vorgabe
+  `NoBuiltInCompanions`). Ein eingebauter Begleiter startet zuerst, auch für Systemapps ohne PBW
+  (Kieselsport); neben PebbleKit JS ersetzt er den Weg zu Android-Apps, PebbleKit JS bestätigt dann
+  nicht selbst. Die Begleiter selbst (Kieselsport, Drinktervall, SupCycle, Kieselstrasse) und ihr
+  Einhängen in `watchModule` kommen mit AP5.
+- **Fehler in Cores Weg, wie in 0.53 behoben:** Eingang je Begleiter 256 statt 64, darüber geht die
+  älteste mit Log (Core verwarf die neuesten still); ein unlesbares Tupel beendete den Empfang aller
+  AppMessages der Verbindung (jetzt nur diese Nachricht, mit NACK); `replyNACK` schickte ein ACK;
+  eine Einstellungsseite durfte `javascript:` oder `file:` sein (Cores `mayOpen` prüft nur http/https
+  gegen die Netzregeln); ein DELETE an die Timeline endete mit 500.
+- **Systemapps:** Kieselsport statt Workout, dazu Kieselstrasse; TimeStyle Bedrock entfällt (F26). Ein
+  bestehender Locker verliert Systemapps ohne Gegenstück in der Firmware (Workout, TimeStyle aus 0.53),
+  eine Store-Kopie wird zur Systemapp, eine neue steht hinter ihrem Vorgänger.
+- **PebbleKit 2:** Provider `${applicationId}.pebblekit` – Clients suchen `<Paket>.pebblekit`
+  (`PebbleKitProviderContract`), Cores feste Kennung passte nur zu Cores Paket.
+- **Nicht übernommen:** Gravels Rechte-Teile (F27; Core räumt die Rechte entfernter Apps selbst auf),
+  Boulders Locker-Oberfläche für TimeStyle. Cores eigener Bereich „Active“ ersetzt Boulders Karussell-Fix.
+- **Für später gefunden:** `boulderMessstufe` (V2 liest den Schlüssel, Einstellung „Precision“) und der
+  Wetter-Wettlauf (zwei schnelle Updates, das ältere gewann) → AP5; `kotlin-reflect` aus dem Release
+  samt `DevConnectionOhneReflectTest` → AP7.
+- Alle Testaufgaben grün: 2 105 Tests; im Release-APK heisst der Provider `ch.dysseus.boulder.pebblekit`.
