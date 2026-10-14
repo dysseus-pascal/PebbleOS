@@ -218,6 +218,20 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   erste Karte bleiben wie bei Pebble; nach Quick Launch führt Oben auf Today zum Zifferblatt.
   Umgesetzt in V2 `a3652f881`, Vorabversion b30.
 
+## Schritt „App-Teile“: Boulder auf Core Devices (14.10.2026, Entwurf `app-spezifikation.md`)
+- **Auftrag** (Nutzer): Boulder auf die App von Core Devices aufbauen, „so dass wir nicht einen Fork
+  forken“.
+- **F24** (Vorschlag, nicht gefragt): Basis Core 1.15.0.1 (`ec2156cc`, 08.10.), danach eingefroren bis
+  zum Gerätetest der neuen App.
+- **F25: A.** Google-Teile von Core bleiben drin, stillgelegt: Attrappe für `google-services.json`,
+  keine Tokens, Sammeln aus; ein Kriterium listet die Netzwerkziele.
+- **F26: A.** Die neue App unterstützt nur noch die Firmware V2 (b27 und neuer). TimeStyle Bedrock
+  fällt weg; wer b26 braucht, bleibt bei 0.53.
+- **F27: A.** PKJS-Rechte nach Cores Modell. Gravels Freigaben aus 0.53 gehen dabei verloren (Core
+  löscht `LockerAppPermission` in Fassung 48).
+- **F28: Cactus behalten** (gegen die Empfehlung, Cactus wegzulassen). Offline-Diktat wie bei Core; die
+  Lizenzfrage für ein öffentliches APK bleibt offen.
+
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**
   ([coredevices/mobileapp](https://github.com/coredevices/mobileapp)). Das ist der Entscheid vom

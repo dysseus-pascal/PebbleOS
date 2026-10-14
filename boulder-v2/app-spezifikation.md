@@ -105,17 +105,10 @@ Was Core seither geändert hat und Boulder trifft:
 8. **Release und Gerät:** Der Release-Build ist mit dem CI-Schlüssel signiert, lässt sich über 0.53
    installieren, und eine Nacht der Uhr kommt an.
 
-## 5. Offene Fragen
+## 5. Entscheide (14.10.2026, `entscheidungen.md`)
 
-- **F24 Basis:** Core 1.15.0.1 (= `master` vom 08.10.), danach eingefroren bis zum Gerätetest der App.
-  Empfehlung: ja.
-- **F25 Google:** Core bringt Firebase (Auth, Firestore, Crashlytics), Push (FCM), Google-Login,
-  Play-Update und Mixpanel mit. A: so lassen, aber stillgelegt (Attrappe für `google-services.json`,
-  keine Tokens, Sammeln aus); B: Gravels Ent-Googlung nachbauen (rund 1 600 Zeilen plus Löschungen,
-  bei jedem Core-Merge zu pflegen).
-- **F26 Firmware:** nur noch V2 (b27 und neuer)? Dann entfällt TimeStyle Bedrock samt Vorschau.
-- **F27 PKJS-Rechte:** Cores Modell (ab Werk Netz und Standort für jedes PKJS, bis Core seine Rechte
-  einschaltet) oder Gravels Sperre nachbauen.
-- **F28 Spracherkennung:** Cactus (proprietär, 68 MB, nicht frei lizenziert) behalten, weglassen oder
-  whisper.cpp aus Gravel (rund 12 000 Zeilen). Ohne Cactus diktiert Core über die Spracherkennung des
-  Telefons (Modus `PlatformOnly`, Einstellung „System Speech Model“).
+- **F24** Basis Core 1.15.0.1, eingefroren bis zum Gerätetest der App (Vorschlag).
+- **F25: A** Google-Teile drin, stillgelegt (Attrappe, keine Tokens, Sammeln aus).
+- **F26: A** nur Firmware V2; TimeStyle Bedrock entfällt.
+- **F27: A** PKJS-Rechte nach Cores Modell.
+- **F28:** Cactus bleibt.
