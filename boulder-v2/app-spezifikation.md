@@ -152,3 +152,29 @@ Was Core seither geändert hat und Boulder trifft:
 - **Offen aus AP0:** Die Schalter „Send app crashes“ und „Send watch analytics“ stehen ab Werk auf
   „an“, sammeln aber nichts (Manifest, kein Token): ausblenden in AP5/AP7. Cactus-Telemetrie
   (`cactusSetTelemetryEnvironment`) und die übrigen Netzziele: AP8.
+
+### AP1 (14.10.2026, `9f68d7f49`)
+- `libpebble3.db` zählt weiter mit Versatz: Fassung **1049** (Core 49). Cores vier Schritte 45 → 49
+  laufen als **eine** AutoMigration 1045 → 1049 (Spec `AutoMigration48` löscht `LockerAppPermission`,
+  F27). Einzelne Schritte bräuchten Schemas 1046–1048, die nie gebaut wurden; künftige einzelne
+  Core-Schritte werden wieder je eine AutoMigration (`UPSTREAM_VERSATZ + N`).
+- Boulders alte Zählung vor 0.50 (45 → 50) trug dieselben Nummern wie Cores 46–49. Im Schema-Ordner
+  bleiben Cores Dateien; Boulders alte Schritte stehen als SQL in `database/boulder/Fassungen.kt`,
+  ihre Schemas als Testdaten. Dort liegen auch `UPSTREAM_VERSATZ`, `DATENBANK_VERSION` und der
+  `DowngradeSchutz` (statt in Cores `Database.kt`).
+- Room läuft auch für die JVM (`kspJvm`, wie in 0.53), sonst fehlt den Datenbanktests `Database_Impl`.
+- Tests: Migration von 0.53 (1045) mit Daten in jeder Tabelle, alte Kette 45–50, Downgrade beider
+  Datenbanken, Schema-Wächter gegen Cores 49 (und 1045 gegen 45), Backup-Regeln.
+
+### AP2 (14.10.2026, `591ffb62e`)
+- Drei-Wege-Merge Gravel 0.3.3 → Boulder 0.53 auf Core 1.15 (Gravel hatte diese Dateien nicht
+  geändert). Konflikte nur in `Datalogging.kt`, `DataLoggingService.kt`, `HealthDataParser.kt`,
+  `LibPebble.kt`, `HealthDataEntity.kt`.
+- Datalogging: Cores Weitergabe an PebbleKit-2-Begleiter bleibt; „erst sichern, dann ACK“ gilt für
+  alle Pakete; bei vollem Puffer der Begleiter kein ACK statt Verwerfen. Health-Tags wie bei Core nur
+  für die System-UUID, dazu Boulders Tags (88/89, 0x4001/0x4002, Quarantäne für 0x4000–0x40FF).
+- Parser aus 0.53, dazu Cores Regel „Bit 0 der Sitzungsfassung gelöscht = nicht lesbar“ (steht so in
+  `activity_private.h` der Firmware). Sitzungsdistanz heisst `distanceM` (Spalte `distanceCm`).
+- „Populate fake health data“ ist weg (löschte alle echten Daten; `DebugDatenTest`).
+- Cores `HealthDataParserTest` und `PlatformHealthSyncTest` nur an `ParsedHealthData`/`distanceM`
+  angepasst. Alle Testaufgaben grün: 1 961 Tests.
