@@ -146,7 +146,7 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 ## Schritt 3, Rest (12.10.2026, Spezifikation `schritt3-rest-spezifikation.md`)
 - Der alte PC ist zurückgesetzt; gebaut wird in der Cloud (Zweig `v2`, Start-Hook `tools/boulder/sitzung-start.sh`), Notizen im Zweig `notizen`.
 - **F11–F16 wie empfohlen:**
-  - F11 A: Taste Oben blättert wie bei Pebble zur nächsten Karte.
+  - F11 A: Taste Oben blättert wie bei Pebble zur nächsten Karte. *Ersetzt durch F23 (14.10.): Unten vorwärts.*
   - F12 A: Today hat kein Detail, Select tut dort nichts.
   - F13 A: „Last nights“ im Night-Detail entfällt.
   - F14: Kartenfarben Today Orange, Night Indigo, Heart Folly, Activity DarkGreen, Settings DarkGray.
@@ -210,6 +210,13 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `WorkerState` ist 648 statt höchstens 640 Byte; ein fehlgeschlagener Start kann danach assertieren.
   `main` bleibt eingefroren (F18): 36 weitere Commits, darunter Treiber-Umbauten (I2C, GPIO,
   nPM1300 auf dem neuen Gerätemodell).
+
+## Health-App: Unten blättert vorwärts (14.10.2026, F23)
+- **F23** (Nutzer, auf der Uhr mit b29): „In Health sind die Buttons verkehrt. Nach unten soll
+  vorwärts sein.“ Ersetzt F11 A (Oben zur nächsten Karte wie bei Pebble, nach Quick Launch Unten
+  gespiegelt). Jetzt: Unten blättert zur nächsten Karte, Oben zurück, nach jedem Start. Kreis und
+  erste Karte bleiben wie bei Pebble; nach Quick Launch führt Oben auf Today zum Zifferblatt.
+  Umgesetzt in V2 `a3652f881`, Vorabversion b30.
 
 ## Boulder-App (13.10.2026, berichtigt 14.10.)
 - **Die App baut nicht auf Gravel auf, sondern auf dem Original von Core Devices**

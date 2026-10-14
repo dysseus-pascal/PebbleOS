@@ -70,9 +70,10 @@ M = [
     ('K4b', 'K4', 'Ruhepuls "as usual" mit 3 statt 2 bpm Spanne', APP + 'rechnung.c',
      '#define RUHEPULS_SPANNE   2', '#define RUHEPULS_SPANNE   3', ctest('^test_bh_rechnung$')),
     # K5 Einstiege
-    ('K5a', 'K5', 'Quick Launch Oben gespiegelt statt Unten', APP + 'einstieg.c',
-     '.gespiegelt = gerichtet && (knopf == BUTTON_ID_DOWN)',
-     '.gespiegelt = gerichtet && (knopf == BUTTON_ID_UP)', ctest('^test_bh_einstiege?$')),
+    # Seit F23 (14.10.) blaettert Unten vorwaerts, nach jedem Start; vorher: Quick Launch gespiegelt.
+    ('K5a', 'K5', 'Oben blaettert vorwaerts wie bis b29', APP + 'einstieg.c',
+     'const bool weiter = (knopf == BUTTON_ID_DOWN);',
+     'const bool weiter = (knopf == BUTTON_ID_UP);', ctest('^test_bh_einstiege?$')),
     ('K5b', 'K5', 'Pebbles Health-App nur noch mit dem Schalter (asterix ohne)',
      'fw/shell/normal/system_app_registry_list.json',
      '      "md_fn": "health_app_get_info",\n      "color_argb8": "GColorSunsetOrangeARGB8"\n',
