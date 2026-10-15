@@ -289,6 +289,15 @@ Was Core seither geändert hat und Boulder trifft:
   (Gravels lokale Ausfuhr) gibt es nicht mehr; Cores Schalter für ausführlichere Logs bleiben.
 - **Prüfung:** alle Testaufgaben grün, 2 798 Tests (11 übersprungen, wie bei Core), dazu der
   Exportwächter im Release-Bau.
+- **Testwettlauf** (`b5e806882`, 15.10.): Der CI-Lauf von 0.53 scheiterte zweimal in
+  `BegleiterAblaufTest` (`ein_glas_dessen_erster_versuch_...`) nach 10 s. Der Arbeiter versucht das
+  Eintragen, schreibt dann ins Protokoll und benennt die Datei erst danach als gemeldet um; ein
+  zweiter Start in dieser Lücke fasste den alten Namen, sein Auftrag lief ins Leere. In der App
+  harmlos (die Datei wartet bis zum nächsten Start). Die Tests für Glas und Training warten jetzt auf
+  den Vermerk im Namen, wie es der Nachbartest schon tat; `warte()` nennt bei einer
+  Zeitüberschreitung die Bedingung. Belegt mit 300 ms Verzögerung im Arbeiter (nur für die Probe):
+  vorher genau diese zwei Fehler wie in der CI, danach 17 von 17 grün.
+- **Release-Notiz** (`77975acc7`): nennt den Gerätetest statt „nicht auf deinem Telefon geprüft“.
 
 #### Netzwerkziele (aus dem Code, nicht im Betrieb gemessen)
 | Ziel | Wann | Bemerkung |
@@ -314,14 +323,16 @@ Was Core seither geändert hat und Boulder trifft:
 2. Update ohne Verlust: gleiche App-ID und Signatur, versionCode 2567 > 0.53; Migration 1045 → 1049
    mit einer Zeile in jeder Tabelle (`DatenbankFassungTest.migration1045`). Ausnahme: Gravels
    PKJS-Freigaben (F27).
-3. Daten der Uhr: Parser und Wege wie in 0.53 getestet (AP2); auf der Uhr offen (Gerätetest).
+3. Daten der Uhr: Parser und Wege wie in 0.53 getestet (AP2); auf dem Telefon kam die Nacht
+   vom 14. auf den 15.10. mit Phasen an (Nutzer).
 4. Boulders Teile: alle übernommenen Tests grün; auf dem Telefon offen.
 5. Firmware: AP3, `FirmwareWegeTest`.
 6. Core bleibt Core: Cores Tests grün; Benachrichtigungen, PKJS, Locker, Wetter und Kalender auf dem
    Telefon offen.
 7. Netz: Liste oben aus dem Code; im Betrieb nicht gemessen.
 8. Release und Gerät: Release-Build signiert mit dem CI-Schlüssel. Installation über 0.53: bestanden
-   (Nutzer, 14.10.: 2567 „installiert und läuft“). Eine Nacht der Uhr: offen.
+   (Nutzer, 14.10.: 2567 „installiert und läuft“). Eine Nacht der Uhr: bestanden (15.10., „nacht
+   ist da, mit phasen“). Release `v0.54.0` über die CI: siehe unten.
 
 #### Für den Gerätetest
 - Vorher in Boulder 0.53 eine Sicherung machen. Zurück auf 0.53 (`adb install -d`) legt 0.53 die
@@ -331,6 +342,8 @@ Was Core seither geändert hat und Boulder trifft:
   Locker (Kieselsport, Kieselstrasse), Firmware-Prüfung, Widget, Health Connect.
 - **Stand 14.10. abends:** 2567 über 0.53 installiert, startet und läuft (Nutzer). Die erste Nacht
   steht aus; danach `main` (Fast-Forward von `aecd3350`) und Release über die CI (F31).
+- **Stand 15.10.:** Die Nacht kam mit Phasen an, der Gerätetest ist bestanden. `main` steht seit
+  18:07 UTC per Fast-Forward auf `77975acc7` (0.54.0, versionCode 2569); CI-Lauf 77.
 
 #### Sperre in der CI (14.10.)
 - Der Lauf von 0.53 auf `main` scheiterte beim Hochladen des APK: „Failed to CreateArtifact:
@@ -340,3 +353,11 @@ Was Core seither geändert hat und Boulder trifft:
 - Ein Push nach `main` scheitert genauso, bis der Nutzer die alten Artefakte löscht (die Werkzeuge
   hier können keine Artefakte löschen) und GitHub neu gerechnet hat. Danach: Lauf 76 (0.53) neu
   starten für `v0.53.0`, dann `main` vorziehen für `v0.54.0`.
+- **15.10.:** Der Nutzer löschte gegen 05:35 UTC die 36 grünen Läufe samt APKs (76 → 40 Läufe). Die
+  übrigen Repos halten kaum Artefakte (Uhr-Apps je etwa 0,3 MB; die Firmware-Läufe im PebbleOS-Fork
+  scheiterten alle ohne Artefakt, die Workflows dort sind abgeschaltet). Lauf 76 in fünf weiteren
+  Versuchen: zweimal der Testwettlauf (nur im Stand von 0.53, oben), dreimal grün bis zum Hochladen,
+  das noch am Kontingent scheiterte (08:09, 12:02, 13:22 UTC – knapp 8 h nach dem Löschen nicht
+  verrechnet). **`v0.53.0` entfällt** (angekündigt für den Fall des Wettlaufs; 0.54 ersetzt 0.53).
+- Ausweg, falls das Kontingent hängen bleibt: die Übergabe an den Release-Job über den Cache statt
+  über Artefakte (der Cache zählt nicht zum Kontingent); die Rechtetrennung bleibt.
