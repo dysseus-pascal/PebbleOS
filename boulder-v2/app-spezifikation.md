@@ -332,7 +332,10 @@ Was Core seither geändert hat und Boulder trifft:
 7. Netz: Liste oben aus dem Code; im Betrieb nicht gemessen.
 8. Release und Gerät: Release-Build signiert mit dem CI-Schlüssel. Installation über 0.53: bestanden
    (Nutzer, 14.10.: 2567 „installiert und läuft“). Eine Nacht der Uhr: bestanden (15.10., „nacht
-   ist da, mit phasen“). Release `v0.54.0` über die CI: siehe unten.
+   ist da, mit phasen“). Release `v0.54.0` am 15.10. um 20:40 UTC über die CI (Lauf 80, `02f06f2c5`,
+   versionCode 2572, APK 31,6 MB): erfüllt. Offen bleiben die Netzliste im Betrieb (7) und, auf dem
+   Telefon nicht einzeln bestätigt, Benachrichtigungen, Locker, Firmware-Prüfung, Widget und Health
+   Connect (4, 6).
 
 #### Für den Gerätetest
 - Vorher in Boulder 0.53 eine Sicherung machen. Zurück auf 0.53 (`adb install -d`) legt 0.53 die
@@ -361,3 +364,22 @@ Was Core seither geändert hat und Boulder trifft:
   verrechnet). **`v0.53.0` entfällt** (angekündigt für den Fall des Wettlaufs; 0.54 ersetzt 0.53).
 - Ausweg, falls das Kontingent hängen bleibt: die Übergabe an den Release-Job über den Cache statt
   über Artefakte (der Cache zählt nicht zum Kontingent); die Rechtetrennung bleibt.
+
+#### Die ersten CI-Läufe von 0.54 auf `main` (15.10.)
+- **Lauf 77** (`77975acc7`): neun Tests rot mit `UnsupportedClassVersionError` –
+  `com/viktormykhailiv/kmp/health/HealthDataType` hat Klassendatei-Fassung 65, health-kmp 1.4.0 ist
+  ganz für Java 21 übersetzt. AP0 hatte die CI auf JDK 17 gestellt wie Core; Cores Tests berühren
+  die Bibliothek nicht, Boulders Health-Tests schon (0.53 lief noch auf 21). Lokal mit JDK 17 genau so
+  nachgestellt. **Fix `933b5aeeb`:** CI auf JDK 21; Cores `jvmToolchain(17)` nimmt das JDK 17 des
+  Runners.
+- **Lauf 78:** Tests grün, dann „The runner has received a shutdown signal“ drei Minuten in R8. Der
+  Runner hat 7 GB; der Kotlin-Daemon der Tests (alle Module, bis 6 GB Heap) lief neben Gradle (4 GB).
+  Lokal gemessen (Summe der Java-Prozesse): 6,4 GB wie bisher, 4,6 GB mit frischem Gradle, Kotlin im
+  Prozess und `-Xmx3g`, gleiche Dauer. **Fix `dda06b7e5`:** so im Bauschritt.
+- **Lauf 79:** Tests und Bau grün, Hochladen wieder am Kontingent (20:17 UTC, knapp 15 h nach dem
+  Löschen). **Fix `02f06f2c5`:** APK über `actions/cache` (Schlüssel `boulder-apk-<sha>`, nur bei
+  neuer Fassung) an den Release-Job, `fail-on-cache-miss`.
+- **Lauf 80:** grün, Release `v0.54.0` (Titel „0.54.0 - Neu gebaut auf der App von Core Devices“,
+  `boulder.apk` 31 638 612 Bytes).
+- Das Artefakt-Kontingent des Kontos bleibt voll, bis GitHub neu rechnet; bis dahin scheitert auch
+  das Hochladen von Artefakten in den Repos der Uhr-Apps (Drinktervall, SupCycle).
