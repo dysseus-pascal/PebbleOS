@@ -113,29 +113,37 @@ Nicht vorgesehen: Cores Nenya (Daten an Core), Cactus als Analyst (zu schwach), 
 - Die Gravel-Hälfte von Boulders `CLAUDE.md` beschreibt nicht mehr den Bau (Firebase-Stubs, whisper,
   `experimental` ausgesteckt). Ändern kann sie nur der Nutzer.
 
-## 7. Entscheid und Entwurf: eigener Server in Podman (16.10.2026)
+## 7. Entscheid und Bau: eigener Server in Podman (16.10.2026)
 
 **F34** (Nutzer): „wir machen eine kleine server applikation. sagen wir etwas das in podman läuft“.
-Damit wird aus Weg C ein selbst betriebener Server statt eines fremden Relays.
+Dazu Spiegel auf dem Server und Zugang über einen Cloudflare Tunnel. Damit wird aus Weg C ein selbst
+betriebener Server statt eines fremden Relays. Die Entscheide stehen in `entscheidungen.md`.
 
-Entwurf, noch nicht gebaut:
+Gebaut für Boulder 0.55.0:
 
-- **Ein Container, ein Prozess:** Kotlin/JVM mit Ktor und dem Server-Teil des kotlin-sdk (dieselbe
-  Bibliothek wie Cores `mcp/`), Daten in SQLite in einem Volume. Bau mit `podman build`, Start mit
-  `podman run`, Autostart als Quadlet.
-- **Zwei Eingänge, zwei Tokens:**
-  - `POST /sync`: Boulder schickt neue Tage, Nächte, Trainings und auf Wunsch Minuten.
-    Idempotent, Schlüssel ist der Zeitpunkt.
-  - `/mcp` (Streamable HTTP): Claude fragt mit den nur lesenden Werkzeugen aus Abschnitt 4. Token im
-    Header (Connector „Request headers“). Auf Wunsch nur Anthropics Bereich 160.79.104.0/21, den
-    Anthropic für MCP-Aufrufe nach aussen nennt.
-- **TLS** für den öffentlichen Zugang über einen Reverse-Proxy davor, etwa Caddy mit Let's Encrypt.
-  Im LAN reichen HTTP und Token für Claude Code oder Desktop.
-- **Boulder:** Einstellung „Server“ mit URL, Token, Kategorien und Status. Gesendet wird nach jedem
-  Abgleich mit der Uhr, sonst alle 30 min; jedes Senden steht im Protokoll.
-- **Code:** neues Modul `server/` im Boulder-Repo. Es teilt Werkzeug- und Datentypen mit der App.
-- **Daten:** nur auf dem eigenen Server; nichts an Core oder Google. Claude bekommt nur, was ein
-  Werkzeug liefert.
-
-Offen: Daten auf dem Server spiegeln oder jede Frage live ans Telefon durchreichen; Zugang öffentlich
-für die Claude-App, nur im LAN oder beides.
+- **Module im Boulder-Repo:** `austausch/` (das Format, KMP für App und Server) und `server/`
+  (Kotlin/JVM, Ktor CIO, SQLite, Server-Teil des kotlin-sdk 0.15.0).
+- **`POST /sync`** mit dem Sync-Token: Boulder schickt neue oder geänderte Tage, Nächte, Trainings
+  und auf Wunsch Minuten. Der Server ersetzt per Upsert (Schlüssel Datum, Beginn, Kennung, Minute);
+  Minuten hält er 90 Tage.
+- **`/mcp`** (Streamable HTTP, zustandslos) mit sechs nur lesenden Werkzeugen: `stand`, `tage`
+  (≤ 366 Tage), `nacht`, `trainings`, `puls` (5-Minuten-Blöcke, ≤ 24 h), `minuten` (≤ 6 h). Zugang
+  mit dem MCP-Token als festem Header oder per OAuth. Auf Wunsch lässt der Server an `/mcp` nur
+  Anthropics Netz 160.79.104.0/21 zu.
+- **OAuth 2.1** für die Claude-App, weil feste Header dort eine Beta für einige Organisationen
+  sind. Der Server bietet Metadaten nach RFC 9728/8414, Registrierung nur für Claudes Rückweg oder
+  Loopback, PKCE S256, Zugang 1 h, Erneuerung 90 Tage mit Rotation und eine Sperre nach 10
+  Fehlversuchen. Gespeichert ist nur ein HMAC mit dem MCP-Token, ein neues Token meldet also alle
+  ab. Die Anmeldeseite fragt das MCP-Token.
+- **Betrieb:** `:server:distTar` baut das Bündel `boulder-server-<fassung>.tar.gz`: bin/lib,
+  Containerfile (Temurin 21 JRE, Nutzer 10001), Quadlet-Pod (Server und cloudflared, kein
+  veröffentlichter Port), Volume, drei Podman-Secrets als Dateien. Die Anleitung steht in
+  `server/LIESMICH.md`.
+- **Boulder:** unter Settings → Boulder server. Eingetragen werden Adresse (nur https) und Sync-Token.
+  Dazu kommen Schalter je Art und die Knöpfe „Send now“, „Send everything again“ und „Remove“.
+  - Boulder sendet eine Minute nach jedem Schub der Uhr, sonst alle 30 Minuten.
+  - Gesendet wird nur Geändertes (Abdruck je Tag, Nacht und Training). Als gesendet gilt es erst
+    nach der Quittung.
+  - Die Token-Datei geht in kein Backup und zu keinem Geräteumzug mit.
+- **Daten:** liegen auf dem eigenen Server. Cloudflare sieht den Verkehr, weil TLS dort endet.
+  Claude bekommt nur, was ein Werkzeug liefert. Nichts geht an Core oder Google.

@@ -235,6 +235,26 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Boulder `eb84e7d51`, Fassung 0.54.2 (`310e2c869`, versionCode 2578), APK zum Seitenladen; `main`
   nach dem Gerätetest.
 
+## KI-Einbindung über MCP (16.10.2026, F34–F36, Konzept `ki-mcp-konzept.md`)
+- **Auftrag** (Nutzer): „sieh dir den upstream an und überlege dir die ki einbindung über einen mcp“.
+- **F34** (Nutzer): „wir machen eine kleine server applikation. sagen wir etwas das in podman läuft“.
+  Dazu die Daten als Spiegel auf dem Server (Empfehlung angenommen) und der Zugang über einen
+  Cloudflare Tunnel („wir richten einen cloudflare tunnel ein“).
+- **Anmeldung** (ohne Rückfrage, 16.10.): Feste Request-Header gibt es bei Claudes Connectors nur
+  als Beta für einige Organisationen (Anthropic-Doku „Authentication for connectors“). Damit es mit
+  jedem Konto geht, kann der Server OAuth 2.1 mit Registrierung, PKCE und Erneuerung. Freigegeben
+  wird im Browser mit dem MCP-Token. Der feste Header bleibt für Claude Code.
+- **F35** (nicht beantwortet, Vorschlag umgesetzt): Tage, Nächte und Trainings sind an, die
+  Minutendaten aus. Jede Art lässt sich in Boulder schalten.
+- **F36** entfällt: Claude läuft in der Claude-App des Nutzers, Boulder braucht weder einen
+  API-Schlüssel noch zahlt es je Token.
+- **Abweichungen vom Konzept (§7):**
+  - Ins Protokoll kommen nur Fehler und deren Ende, nicht jedes Senden: bei einem Senden alle
+    15 Minuten wären die 100 Zeilen nach einem Tag voll. Der Stand steht auf der Einstellungsseite.
+  - TLS liefert der Tunnel, nicht Caddy.
+  - Tage gehen nur mit ganz gelesener Akte hinaus. Im Hintergrund ohne Leserecht fehlten Wasser
+    und Koffein, und der Server hätte die Tage ohne sie ersetzt.
+
 ## Schritt „App-Teile“: Boulder auf Core Devices (14.10.2026, Entwurf `app-spezifikation.md`)
 - **Auftrag** (Nutzer): Boulder auf die App von Core Devices aufbauen, „so dass wir nicht einen Fork
   forken“.
