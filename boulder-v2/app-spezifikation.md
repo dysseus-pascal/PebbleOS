@@ -416,3 +416,35 @@ Was Core seither geändert hat und Boulder trifft:
   dem Ruhepuls (233 Minuten, p75 +31, p90 +39). Die Schwelle von +20 trennt Haushalt und Fahrt also kaum.
   Echte Fahrten (positive Seite) fehlen noch. Weiter mit F32 (Firmware b31: Velo nur mit Puls, ab
   +30) und F33 (Minutenexport, Vorschlag beim Nutzer), siehe `entscheidungen.md`.
+
+### 0.55.0 (16.10.2026): Eigener Server für Claude (F34, `entscheidungen.md`, `ki-mcp-konzept.md` §7)
+- **Server** (`0190bada2`, `2a0c8f929`, `bc1f84c87`, `5beee491e`): Module `austausch/` und
+  `server/`. Der Server nimmt Lieferungen an `/sync` an (Sync-Token) und bietet sechs nur lesende
+  MCP-Werkzeuge an `/mcp`. Claude meldet sich mit dem MCP-Token als festem Header an oder per OAuth
+  2.1. OAuth ist nötig, weil feste Header bei Claudes Connectors eine Beta für einige Organisationen
+  sind.
+  - Bündel `:server:distTar` mit Containerfile und Quadlet-Pod (Server und cloudflared, kein Port);
+    die Anleitung steht in `server/LIESMICH.md`.
+  - Quadlet 5.8.6 und 6.1.1 erzeugen die Units ohne Warnung.
+  - Hier mit Podman 4.9.3 genau mit deren `podman run`-Aufrufen im Pod geprüft: Sync, alle Werkzeuge,
+    OAuth bis zur Werkzeugliste, Neustart mit erhaltenen Daten, cloudflared liest sein Token aus dem
+    Secret.
+  - Lieferung mit 280 Tagen, 365 Nächten und 129 600 Minuten (12 MB): 0,9 s, danach 216 MB, im
+    Leerlauf 139 MB.
+  - `ReadOnly` fiel weg: Unter `--read-only` liessen sich die Secrets nicht nach `/run/secrets`
+    einhängen.
+- **Boulder** (`0f7caac84`, `f259aba68`): Settings → Boulder server (`Spiegel`, `Spiegelrechnung`,
+  `SpiegelAnsicht`).
+  - Gesendet wird eine Minute nach `healthDataUpdated` (ab `beimProzessstart`) und sonst alle
+    30 Minuten, nur Geändertes (Abdruck je Tag, Nacht und Training). Es gilt erst nach der Quittung
+    als gesendet.
+  - Nächte der letzten 7 Tage werden neu geprüft; Tage gehen nur mit ganz gelesener Akte hinaus.
+  - Minuten gehen in Tagesteilen hinaus, höchstens bis zur Zeit des Telefons.
+  - `boulder-server.xml` ist aus Cloud-Backup und Geräteumzug ausgenommen.
+  - Ins Protokoll kommen nur ein neuer Fehler und sein Ende.
+- **Geprüft:**
+  - 2867 Tests (11 übersprungen), davon 39 Server, 3 Austauschformat, 20 Spiegel.
+  - Mutationen M1–M20 (Server, Anmeldung) und MA1–MA13 (App) schlagen alle an.
+  - Die CI führt `:server:test` mit aus.
+- **Fassung 0.55.0** (`687af187e`, versionCode 2585).
+
