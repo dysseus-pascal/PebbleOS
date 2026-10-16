@@ -14,6 +14,11 @@
 // sind an gestellten Faellen geprueft und muessen an echten Fahrten eingestellt werden
 // (getrennte Einstell- und Pruefmenge, Spezifikation 9).
 //
+// DER PULS TRENNT VELO VON ARMARBEIT: Zu Hause fallen kaum Schritte, die Arme bewegen sich und
+// die Lage bleibt - fuer Schritte, VMC und Lage wie Haende am Lenker. Dort lag der Puls im
+// Median 23 ueber dem Ruhepuls, auf der Fahrt vom 29.9. ab 66. Ohne Pulswerte fragt die Uhr
+// darum nicht nach Velo.
+//
 // ZURUECKHALTEN (D3): Schon die erste fahrtartige Minute haelt die Minutensaetze zurueck,
 // sonst laege der Fahrtbeginn bereits ungenullt in DLS 81, wenn die Kandidatin nach zehn
 // Minuten entsteht. Bis zum Entscheid bleibt alles ab dem Fahrtbeginn im Puffer; die zweite
@@ -55,7 +60,7 @@
 #define KONTEXT_FENSTER 10
 #define KONTEXT_VELO_ARTIG 8
 #define KONTEXT_VELO_LAGE 6
-#define KONTEXT_VELO_FENSTER_PULS 20     //< Fenstermedian ueber dem Ruhepuls
+#define KONTEXT_VELO_FENSTER_PULS 30     //< Fenstermedian ueber dem Ruhepuls
 #define KONTEXT_FENSTER_PULSWERTE 3      //< erst ab so vielen Pulswerten zaehlt der Puls
 #define KONTEXT_AUTO_ARTIG 8
 #define KONTEXT_AUTO_LAGE 7

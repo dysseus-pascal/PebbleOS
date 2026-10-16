@@ -167,8 +167,9 @@ static BoulderFahrtArt prv_kandidatin(uint8_t ruhe) {
   }
   const bool mit_puls = n_puls >= KONTEXT_FENSTER_PULSWERTE;
   const int median = mit_puls ? puls[n_puls / 2] : 0;
-  if (velo >= KONTEXT_VELO_ARTIG && lage >= KONTEXT_VELO_LAGE &&
-      (!mit_puls || median >= ruhe + KONTEXT_VELO_FENSTER_PULS)) {
+  // Velo nur mit Puls (kontext.h): ohne ihn sieht Armarbeit zu Hause aus wie eine Fahrt.
+  if (velo >= KONTEXT_VELO_ARTIG && lage >= KONTEXT_VELO_LAGE && mit_puls &&
+      median >= ruhe + KONTEXT_VELO_FENSTER_PULS) {
     return FahrtArtVelo;
   }
   if (autos >= KONTEXT_AUTO_ARTIG && lage >= KONTEXT_AUTO_LAGE &&

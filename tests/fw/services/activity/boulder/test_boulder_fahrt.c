@@ -872,6 +872,68 @@ void test_boulder_fahrt__keine_kandidatin_ohne_fahrt(void) {
   cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
 }
 
+// Echte Minuten vom 12.10.2026, 20:00-20:16 (nacht-2026-10-12.csv): Armarbeit zu Hause, kaum
+// Schritte, ruhige Lage. Gemessen 73 bei Ruhepuls 49, also 24 darueber.
+static const struct {
+  uint8_t schritte;
+  uint16_t vmc;
+  uint8_t lage;
+} ABEND_12_10[] = {
+  {0, 6942, 84}, {28, 7062, 101}, {0, 3367, 85}, {0, 3981, 85}, {9, 4943, 85}, {0, 8208, 84},
+  {0, 3766, 85}, {0, 3779, 85}, {10, 3781, 85}, {0, 1966, 85}, {0, 1429, 100}, {0, 3615, 101},
+  {0, 2448, 85}, {0, 3685, 100}, {17, 4161, 83}, {10, 4396, 83}, {0, 5168, 84},
+};
+
+static void prv_abend_12_10(uint8_t puls_ueber_ruhe) {
+  for (size_t i = 0; i < ARRAY_LENGTH(ABEND_12_10); i++) {
+    const uint8_t puls = puls_ueber_ruhe ? prv_puls(60 + puls_ueber_ruhe) : 0;
+    prv_minute(ABEND_12_10[i].schritte, ABEND_12_10[i].vmc, ABEND_12_10[i].lage, puls);
+  }
+}
+
+// Fuer Schritte, VMC und Lage sieht der Abend aus wie Haende am Lenker; ab der Vorstufe misst
+// die Uhr dicht, und erst der Puls (wie gemessen 24 ueber dem Ruhepuls) haelt die Frage zurueck.
+void test_boulder_fahrt__armarbeit_zu_hause_fragt_nicht(void) {
+  prv_gehen(15);
+  prv_abend_12_10(24);
+  cl_assert(g_fake_puls_aktiv);
+  prv_gehen(15);
+  cl_assert_equal_i(s_ui.dialoge, 0);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+}
+
+// Ohne Pulswerte (Sensor ohne Messung, Abo pausiert) fragt die Uhr nicht nach Velo.
+void test_boulder_fahrt__ohne_puls_keine_velofrage(void) {
+  prv_gehen(15);
+  prv_abend_12_10(0);
+  prv_gehen(15);
+  cl_assert_equal_i(s_ui.dialoge, 0);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
+}
+
+static void prv_velo_puls(int minuten, uint8_t puls) {
+  for (int i = 0; i < minuten; i++) {
+    const int k = s_minute_nr;
+    prv_minute((uint8_t)(3 + (k * 7) % 16), (uint16_t)(700 + (k * 37) % 600),
+               (k % 5 == 4) ? 0x38 : 0x37, prv_puls(puls));
+  }
+}
+
+// Die Schwelle des Fensterpulses: 29 ueber dem Ruhepuls fragt nicht, 30 fragt (kein Ruhepuls
+// eingestellt: 60).
+void test_boulder_fahrt__velo_ab_30_ueber_dem_ruhepuls(void) {
+  prv_gehen(15);
+  prv_velo_puls(15, 60 + 29);
+  cl_assert_equal_i(s_ui.dialoge, 0);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKeine);
+  prv_gehen(15);
+  prv_velo_puls(15, 60 + 30);
+  cl_assert_equal_i(s_ui.dialoge, 1);
+  cl_assert_equal_i(boulder_kontext_zustand(), FahrtKandidatin);
+}
+
 // V7: Fahrt ueber Mitternacht. Abgezogen wird nur der Anteil von heute; beim Telefon sind alle
 // Fahrtminuten genullt.
 void test_boulder_fahrt__mitternacht(void) {
