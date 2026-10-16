@@ -231,7 +231,9 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Vorschlag vom 16.10.: Beginn (Datum, Uhrzeit) und Dauer (30 min bis 24 h oder Endzeit), Schnellwahl
   aus den letzten Kieselsport-Trainings (±15 min), Vorschauzeile, höchstens 7 Tage; CSV im Format des
   Nachtexports mit Ruhepuls, Firmware und Markierungen (Trainings, bestätigte Fahrten, Schlaf); als
-  Datei teilen. Gebaut wird erst nach dem OK.
+  Datei teilen. Gebaut wird erst nach dem OK. **OK des Nutzers (16.10.): „passt so“.** Umgesetzt in
+  Boulder `eb84e7d51`, Fassung 0.54.2 (`310e2c869`, versionCode 2578), APK zum Seitenladen; `main`
+  nach dem Gerätetest.
 
 ## Schritt „App-Teile“: Boulder auf Core Devices (14.10.2026, Entwurf `app-spezifikation.md`)
 - **Auftrag** (Nutzer): Boulder auf die App von Core Devices aufbauen, „so dass wir nicht einen Fork
