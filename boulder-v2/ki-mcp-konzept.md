@@ -112,3 +112,30 @@ Nicht vorgesehen: Cores Nenya (Daten an Core), Cactus als Analyst (zu schwach), 
   aus; ein Grund mehr, einen eigenen Server nur mit Token und nur im WLAN zu betreiben.
 - Die Gravel-Hälfte von Boulders `CLAUDE.md` beschreibt nicht mehr den Bau (Firebase-Stubs, whisper,
   `experimental` ausgesteckt). Ändern kann sie nur der Nutzer.
+
+## 7. Entscheid und Entwurf: eigener Server in Podman (16.10.2026)
+
+**F34** (Nutzer): „wir machen eine kleine server applikation. sagen wir etwas das in podman läuft“.
+Damit wird aus Weg C ein selbst betriebener Server statt eines fremden Relays.
+
+Entwurf, noch nicht gebaut:
+
+- **Ein Container, ein Prozess:** Kotlin/JVM mit Ktor und dem Server-Teil des kotlin-sdk (dieselbe
+  Bibliothek wie Cores `mcp/`), Daten in SQLite in einem Volume. Bau mit `podman build`, Start mit
+  `podman run`, Autostart als Quadlet.
+- **Zwei Eingänge, zwei Tokens:**
+  - `POST /sync`: Boulder schickt neue Tage, Nächte, Trainings und auf Wunsch Minuten.
+    Idempotent, Schlüssel ist der Zeitpunkt.
+  - `/mcp` (Streamable HTTP): Claude fragt mit den nur lesenden Werkzeugen aus Abschnitt 4. Token im
+    Header (Connector „Request headers“). Auf Wunsch nur Anthropics Bereich 160.79.104.0/21, den
+    Anthropic für MCP-Aufrufe nach aussen nennt.
+- **TLS** für den öffentlichen Zugang über einen Reverse-Proxy davor, etwa Caddy mit Let's Encrypt.
+  Im LAN reichen HTTP und Token für Claude Code oder Desktop.
+- **Boulder:** Einstellung „Server“ mit URL, Token, Kategorien und Status. Gesendet wird nach jedem
+  Abgleich mit der Uhr, sonst alle 30 min; jedes Senden steht im Protokoll.
+- **Code:** neues Modul `server/` im Boulder-Repo. Es teilt Werkzeug- und Datentypen mit der App.
+- **Daten:** nur auf dem eigenen Server; nichts an Core oder Google. Claude bekommt nur, was ein
+  Werkzeug liefert.
+
+Offen: Daten auf dem Server spiegeln oder jede Frage live ans Telefon durchreichen; Zugang öffentlich
+für die Claude-App, nur im LAN oder beides.
