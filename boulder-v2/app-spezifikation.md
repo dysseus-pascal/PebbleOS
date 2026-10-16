@@ -383,3 +383,26 @@ Was Core seither geändert hat und Boulder trifft:
   `boulder.apk` 31 638 612 Bytes).
 - Das Artefakt-Kontingent des Kontos bleibt voll, bis GitHub neu rechnet; bis dahin scheitert auch
   das Hochladen von Artefakten in den Repos der Uhr-Apps (Drinktervall, SupCycle).
+
+### 0.54.1 (16.10.2026): Kieselstrasse ohne Hinweise (`f22ef2a22`, `5e609e110`, `70267ad97`)
+- **Meldung:** Während einer Velofahrt mit Kieselsport öffnete sich Kieselstrasse, zeigte aber keine
+  Abzweigungen.
+- **Ursache:** Die Keep-Regel `-keep class net.osmand.aidlapi.** { *; }` (seit 0.28.2 in
+  `androidApp/proguard-rules.pro`) fiel in AP0 weg, weil die Datei von Core kam. R8 benannte `ALatLon`
+  in `k` um. OsmAnd schreibt `ALatLon` mit Klassennamen ins Bundle von `AppInfoParams`; `getAppInfo`
+  wirft `BadParcelableException`, `frageAb` verwirft jede Antwort. Das Abo gelingt (nur einfache Werte),
+  darum zeigten die Einstellungen „abonniert“. Am Gerät mit OsmAnd war Kieselstrasse in AP8 nicht geprüft.
+  Die übrigen Boulder-Regeln aus 0.53 (GMS-`dontwarn`, kotlin-reflect) braucht 0.54 nicht.
+- **Fix `f22ef2a22`:** Regel in `osmand-api/consumer-rules.pro`, sie reist mit dem Modul.
+  `pruefeReleaseOsmandNamen` liest das R8-Mapping und bricht bei umbenannten oder entfernten Klassen
+  ab. Gegen das Mapping von 0.54.0 schlägt sie an (14 Klassen), der neue Bau besteht (212 Klassen).
+  APK +49 KB.
+- **Fix `5e609e110`:** `Kieselstrasse.begleite` startet aus `MainApplication.onCreate` (über
+  `PebbleAndroidDelegate.beimProzessstart`), nicht mehr nur aus `MainActivity`. Startete Android den
+  Prozess ohne Oberfläche neu (`PebbleService` ist `START_STICKY`), fehlte die Brücke – schon in 0.53.
+  Wächter `BrueckeBeimProzessstartTest`, drei Gegenproben.
+- **Fassung 0.54.1** (`70267ad97`, versionCode 2575): 2800 Tests (11 übersprungen). APK
+  31 723 854 Bytes zum Seitenladen. Gerätetest mit OsmAnd offen, `main` danach (wie F31).
+- **Ebenfalls gemeldet (Firmware):** Beim Gehen fragt die Uhr nach einer Velofahrt. Die Schwellen in
+  `kontext.h` sind Startwerte. Die Abstimmung wartet auf eine Sicherung mit den Zeiten der Fehlfragen
+  und einer echten Fahrt.
