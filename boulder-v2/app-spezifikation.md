@@ -446,5 +446,10 @@ Was Core seither geändert hat und Boulder trifft:
   - 2867 Tests (11 übersprungen), davon 39 Server, 3 Austauschformat, 20 Spiegel.
   - Mutationen M1–M20 (Server, Anmeldung) und MA1–MA13 (App) schlagen alle an.
   - Die CI führt `:server:test` mit aus.
-- **Fassung 0.55.0** (`687af187e`, versionCode 2585).
+- **Fassung 0.55.0** (`687af187e`, versionCode 2585):
+  - Release-APK mit 31 796 506 Bytes (+73 KB gegen 0.54.1), signiert mit dem CI-Schlüssel.
+  - Die Worker-Namen bleiben unter R8 erhalten.
+  - Server-Bündel `boulder-server-0.55.0.tar.gz` mit 24 297 534 Bytes; das Image daraus lief noch
+    einmal im Pod.
+  - Beides zum Seitenladen an den Nutzer. Gerätetest offen; `main` erst danach.
 
