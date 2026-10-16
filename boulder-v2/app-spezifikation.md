@@ -402,7 +402,16 @@ Was Core seither geändert hat und Boulder trifft:
   Prozess ohne Oberfläche neu (`PebbleService` ist `START_STICKY`), fehlte die Brücke – schon in 0.53.
   Wächter `BrueckeBeimProzessstartTest`, drei Gegenproben.
 - **Fassung 0.54.1** (`70267ad97`, versionCode 2575): 2800 Tests (11 übersprungen). APK
-  31 723 854 Bytes zum Seitenladen. Gerätetest mit OsmAnd offen, `main` danach (wie F31).
+  31 723 854 Bytes zum Seitenladen. **Gerätetest bestanden** (16.10.): Navigation mit OsmAnd bei
+  laufendem Kieselsport-Training. Release-Notiz ergänzt (`7bce8a2f9`), `main` per Fast-Forward;
+  Lauf 81 grün, Release `v0.54.1` um 10:53 UTC (`boulder.apk` 31 687 768 Bytes).
 - **Ebenfalls gemeldet (Firmware):** Beim Gehen fragt die Uhr nach einer Velofahrt. Die Schwellen in
-  `kontext.h` sind Startwerte. Die Abstimmung wartet auf eine Sicherung mit den Zeiten der Fehlfragen
-  und einer echten Fahrt.
+  `kontext.h` sind Startwerte. Die Sicherung taugt für die Abstimmung nicht: Sie enthält nur
+  Tageswerte, keine Minuten. Nachgestellt an den Wachminuten der echten Nächte (Abend vor dem
+  Einschlafen, Morgen nach dem Aufwachen, 9 Tage): 726 von 796 bewegten Minuten (VMC ≥ 250) gelten
+  als velo-artig, weil zu Hause kaum Schritte fallen. Drei Tage hätten ein Kandidatinnen-Fenster
+  (03.10. 07:24, 09.10. 07:57, 12.10. 20:09), alle mit fast 0 Schritten, hoher VMC (Median
+  1100–4000), gleicher Lage und höchstens einem Pulswert. Die Fensterprüfung auf den Puls fiel
+  dort also ganz weg. In den velo-artigen Wachminuten mit Puls lag dieser im Median 24 Schläge über
+  dem Ruhepuls (p75 +31, p90 +38). Die Schwelle von +20 trennt Haushalt und Fahrt also kaum.
+  Echte Fahrten (positive Seite) fehlen noch.
