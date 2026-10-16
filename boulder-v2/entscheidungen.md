@@ -218,6 +218,21 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   erste Karte bleiben wie bei Pebble; nach Quick Launch führt Oben auf Today zum Zifferblatt.
   Umgesetzt in V2 `a3652f881`, Vorabversion b30.
 
+## Velo-Frage beim Gehen (16.10.2026, F32, F33)
+- **Meldung** (Nutzer, mit b30): „while walking around the watch asks me if i am biking. the detection
+  seems a bit agressiv.“ Nachgestellt an den Wachminuten der echten Nächte: Armarbeit zu Hause sieht
+  für Schritte, VMC und Lage aus wie Hände am Lenker; der Puls lag dort im Median 23 über dem
+  Ruhepuls, die Fensterschwelle war +20 und entfiel ohne Pulswerte ganz.
+- **F32** (Nutzer: „wir machen beides“): Sofortmassnahme in der Firmware. Velo nur mit mindestens drei
+  Pulswerten im Fenster und einem Median ab 30 über dem Ruhepuls. Ruhige Fahrten unter +30 fragen nicht
+  mehr. Umgesetzt in V2 `b3d0828de`, Vorabversion b31.
+- **F33** (Nutzer): Minutenexport im Debug-Teil der App, um die Schwellen an echten Fahrten einzustellen.
+  Der Nutzer will zuerst einen Vorschlag, mit dem sich gezielt eine bestimmte Dauer exportieren lässt.
+  Vorschlag vom 16.10.: Beginn (Datum, Uhrzeit) und Dauer (30 min bis 24 h oder Endzeit), Schnellwahl
+  aus den letzten Kieselsport-Trainings (±15 min), Vorschauzeile, höchstens 7 Tage; CSV im Format des
+  Nachtexports mit Ruhepuls, Firmware und Markierungen (Trainings, bestätigte Fahrten, Schlaf); als
+  Datei teilen. Gebaut wird erst nach dem OK.
+
 ## Schritt „App-Teile“: Boulder auf Core Devices (14.10.2026, Entwurf `app-spezifikation.md`)
 - **Auftrag** (Nutzer): Boulder auf die App von Core Devices aufbauen, „so dass wir nicht einen Fork
   forken“.

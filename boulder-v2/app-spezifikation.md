@@ -414,4 +414,5 @@ Was Core seither geändert hat und Boulder trifft:
   1100–4000), gleicher Lage und höchstens einem Pulswert. Die Fensterprüfung auf den Puls fiel
   dort also ganz weg. In den velo-artigen Wachminuten mit Puls lag dieser im Median 23 Schläge über
   dem Ruhepuls (233 Minuten, p75 +31, p90 +39). Die Schwelle von +20 trennt Haushalt und Fahrt also kaum.
-  Echte Fahrten (positive Seite) fehlen noch.
+  Echte Fahrten (positive Seite) fehlen noch. Weiter mit F32 (Firmware b31: Velo nur mit Puls, ab
+  +30) und F33 (Minutenexport, Vorschlag beim Nutzer), siehe `entscheidungen.md`.

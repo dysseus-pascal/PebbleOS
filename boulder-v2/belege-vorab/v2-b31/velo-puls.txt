@@ -1,0 +1,3 @@
+velo-artige Wachminuten mit Puls: 233 Puls ueber Ruhe: min 3 p25 18 median 23 p75 31 p90 39 max 58
+Anteil >= +20: 0.68 >= +30: 0.3 >= +35: 0.19
+vmc dieser Minuten: p25 1073 median 2589 p75 5147 n 697

@@ -566,3 +566,25 @@ sein.“ Ersetzt F11 A. Belege: `belege-vorab/v2-b30/`.
   Wachstum, kein Neustart). Die QEMU-Bilder, mit Unten aufgenommen, kommen in der Reihenfolge Today,
   Night, Heart, Activity, Settings.
 - **Vorabversion b30:** `normal_obelix_pvt_v4.41.1-b30.pbz` (sha256 `c64063ce…78dde4`).
+
+## 15. Velo nur mit Puls (16.10.2026, `b3d0828de`)
+
+Meldung des Nutzers (mit b30): Beim Herumgehen fragt die Uhr nach einer Velofahrt. Entscheid F32.
+Belege: `belege-vorab/v2-b31/`.
+
+- **Nachgestellt:** Wachminuten der echten Nächte, 8 Tage (Abend vor dem Einschlafen, Morgen nach dem
+  Aufwachen). 656 von 723 bewegten Minuten waren velo-artig; an drei Tagen entstand ein
+  Kandidatinnen-Fenster (03.10. 07:24, 09.10. 07:57, 12.10. 20:09). Diese Fenster hatten fast 0
+  Schritte, VMC-Median 1100–4000, gleiche Lage und höchstens einen Pulswert, die Pulsprüfung entfiel
+  also ganz. Puls in den velo-artigen Wachminuten: Median +23 über dem Ruhepuls (p75 +31, p90 +39).
+  Die echte Fahrt vom 29.9. lag ab +66.
+- **Umgesetzt:** Velo verlangt mindestens drei Pulswerte im Fenster (die Vorstufe misst ab der dritten
+  velo-artigen Minute dicht) und einen Median ab 30 über dem Ruhepuls (`KONTEXT_VELO_FENSTER_PULS`,
+  bisher 20). Auto bleibt.
+- **Tests:** `armarbeit_zu_hause_fragt_nicht` (echte Minuten vom 12.10. abends, Puls wie gemessen +24),
+  `ohne_puls_keine_velofrage`, `velo_ab_30_ueber_dem_ruhepuls` (+29 nein, +30 ja). Mutationen:
+  Schwelle +20 macht den ersten und dritten rot, Fenster ohne Puls den zweiten.
+- **Prüfung:** acht Bauten ohne Warnung, Host 440/440, alle Werkzeuge grün (im Prüfbau nur die
+  Fehlerprobe rot). QEMU nicht wiederholt: eine Bedingung je Minute ohne Zeitbedarf.
+- **Vorabversion b31:** `normal_obelix_pvt_v4.41.1-b31.pbz` (sha256 `484ee31e…010b0d`).
+- **Offen:** echte Fahrten für die positive Seite. Sie kommen mit dem Minutenexport (F33).
