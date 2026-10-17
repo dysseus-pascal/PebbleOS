@@ -147,7 +147,8 @@ pbl_clar_test(test_boulder_vertraege_ohne_kieselsport
 
 # Die Schlafrechnung selbst: die Naechte neben einem Fitbit und die Regeln an gebauten Naechten.
 # Aus b26 (main a7d8b16e1) uebernommen; seit V2 rechnet sie anders als b26 (Waelz-Fenster,
-# Einschlafen nach den Aufwach-Schueben) und prueft dazu die Naechte vom 7. bis 12.10.
+# Einschlafen nach den Aufwach-Schueben, HRV der Schuebe, Stille) und prueft dazu die Naechte vom
+# 7. bis 16.10.
 pbl_clar_test(test_boulder_schlaf
   SOURCES
     fw/services/activity/boulder/schlafanalyse.c

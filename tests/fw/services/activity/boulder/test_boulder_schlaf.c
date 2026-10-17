@@ -1110,11 +1110,15 @@ void test_boulder_schlaf__gang_in_der_letzten_stunde(void) {
       const int ab = auf - vorher;
       const int echt = prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, ab, false);
       const int kraeftiger = prv_nacht_mit_gang(naechte[k].datei, naechte[k].mit_hrv, ab, true);
-      if (echt != auf || (vorher >= 55 && kraeftiger != auf)) {
+      // WIEDER EINGESCHLAFEN IST, WER STILL LIEGT (V2): am 30.9. bleiben nach einem Gang 35
+      // Minuten vor dem Aufwachen vier stille Minuten vor den Regungen des Aufwachens
+      // (06:00-06:07). Der Schlaf danach beginnt unruhig, die Nacht endet am Gang.
+      const bool am_gang = !strcmp(naechte[k].datei, "nacht-2026-09-30.csv") && vorher == 35;
+      if (echt != (am_gang ? ab : auf) || (vorher >= 55 && kraeftiger != auf)) {
         printf("%s, Gang %d Minuten vor dem Aufwachen: echt %d, kraeftiger %d, ohne %d\n",
                naechte[k].datei, vorher, echt, kraeftiger, auf);
       }
-      cl_assert_equal_i(echt, auf);
+      cl_assert_equal_i(echt, am_gang ? ab : auf);
       if (vorher >= 55) {
         cl_assert_equal_i(kraeftiger, auf);
       }
@@ -1259,6 +1263,66 @@ void test_boulder_schlaf__unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit(vo
   cl_assert(s_ergebnis.einschlafen > 24);
   cl_assert(s_ergebnis.einschlafen <= 24 + 30);
   cl_assert(s_ergebnis.schlaf_minuten >= 300);
+}
+
+// STILL heisst ganz ohne Bewegung. RUHIG (oben) ist das nicht: in diesen gebauten Naechten
+// beginnt deshalb kein Lauf still, und die Regeln der Stille greifen nicht.
+#define STILL 0
+// Mit dem Handy im Bett: jede Minute ein wenig Bewegung, Regungen und alle zehn Minuten eine
+// kraeftige, nur jede zehnte Minute ganz still.
+#define HANDY 40
+static const uint8_t s_handy[] = { HANDY, HANDY, 70, HANDY, STILL, HANDY, 95, HANDY, HANDY, 70 };
+
+static void prv_handy(int von, int bis) {
+  for (int i = von; i < bis; i++) {
+    const int b = s_handy[(i - von) % ARRAY_LENGTH(s_handy)];
+    s_bewegung[i] = b * b;
+  }
+}
+
+// EINGESCHLAFEN IST, WER STILL LIEGT (V2): drei Stunden mit dem Handy im Bett, dann Schlaf ohne
+// jede Bewegung. Die Waelzregel allein liesse die Nacht eine halbe Stunde nach dem Hinlegen
+// beginnen; eingeschlafen ist man erst, wo zwei Drittel einer halben Stunde still sind.
+void test_boulder_schlaf__handy_im_bett_ist_kein_schlaf(void) {
+  const int b[][3] = { { 20, WACH, 80 }, { 180, HANDY, 62 }, { 240, STILL, 55 }, { 20, WACH, 80 } };
+  const int n = prv_bloecke(b, 4);
+  prv_handy(20, 200);
+  const SchlafEingabe e = prv_eingabe(n, 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  // Hoechstens elf Minuten vor der Stille: ab dort sind 20 Minuten in 30 still.
+  cl_assert(s_ergebnis.einschlafen >= 200 - 11);
+  cl_assert(s_ergebnis.einschlafen <= 200);
+  cl_assert_equal_i(s_ergebnis.aufwachen, 440);
+}
+
+// WIEDER EINGESCHLAFEN IST, WER STILL LIEGT (V2): fuenf Stunden stiller Schlaf, dann ein paar
+// Schritte (drei Gehminuten, zum Aufstehen zu wenig) und zwanzig Minuten, in denen man nicht mehr
+// still liegt - mit dem Handy im Bett. Sie verlaengern die Nacht nicht. Liegt man nach den
+// Schritten still, waechst die Nacht wie nach einem Toilettengang.
+void test_boulder_schlaf__unruhig_nach_dem_aufwachen_verlaengert_die_nacht_nicht(void) {
+  const int b[][3] = { { 20, WACH, 80 }, { 300, STILL, 55 }, { 3, GEHEN, 90 }, { 5, WACH, 80 },
+                       { 20, HANDY, 62 }, { 20, WACH, 80 } };
+  const int n = prv_bloecke(b, 6);
+  prv_handy(328, 348);
+  const SchlafEingabe e = prv_eingabe(n, 0);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 320);
+
+  for (int i = 328; i < 348; i++) {
+    s_bewegung[i] = 0;
+  }
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 348);
+
+  // NUR DER ANFANG ZAEHLT: wer still wieder einschlaeft und sich spaeter regt, hat geschlafen.
+  // Eine Viertelstunde still, dann zwanzig Minuten mit dem Handy: ueber den ganzen Lauf waeren
+  // das kaum mehr als zwei Fuenftel stille Minuten.
+  const int c[][3] = { { 20, WACH, 80 }, { 300, STILL, 55 }, { 3, GEHEN, 90 }, { 5, WACH, 80 },
+                       { 15, STILL, 55 }, { 20, HANDY, 62 }, { 20, WACH, 80 } };
+  const SchlafEingabe f = prv_eingabe(prv_bloecke(c, 7), 0);
+  prv_handy(343, 363);
+  cl_assert(schlafanalyse_werte(&f, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.aufwachen, 363);
 }
 
 void test_boulder_schlaf__rem_aus_dem_herz(void) {
@@ -1509,4 +1573,63 @@ void test_boulder_schlaf__echte_nacht_1310_neben_fitbit(void) {
   cl_assert_equal_i(prv_minuten(&s_ergebnis, SchlafPhaseWach), 7);
   // Je Minute: b26 54,3 %, V2 ohne die HRV-Regel 54,7 %, mit ihr 64,2 %.
   cl_assert(gleich >= 642 - UEBEREINSTIMMUNG_SPIEL);
+}
+
+// Fitbit: ins Bett 01:38, aus 06:57; wach 48 min, REM 42, leicht 3:08, tief 41 min. Fitbits
+// Schlafzeit stimmt (Nutzer, 17.10.): bis 01:38 lag der Nutzer wach mit dem Handy im Bett - jede
+// Minute ein wenig Bewegung, kaum eine ganz still. Bis b31 begann die Nacht deshalb um 22:14 (die
+// Waelzregel schob nur eine halbe Stunde) und endete um 07:24: um 07:00 ein paar Schritte, dann
+// zehn Minuten, die nicht still waren.
+// clang-format off
+static const FitbitAbschnitt s_fitbit_1610[] = {
+  { "01:38", "06:57", 'l' },
+  { "01:38", "01:46", 'w' }, { "05:14", "05:21", 'w' }, { "06:06", "06:38", 'w' },
+  { "06:56", "06:57", 'w' },
+  { "03:00", "03:07", 'r' }, { "04:15", "04:22", 'r' }, { "04:28", "04:51", 'r' },
+  { "04:55", "04:57", 'r' }, { "05:10", "05:13", 'r' },
+  { "02:06", "02:28", 't' }, { "03:42", "04:01", 't' },
+};
+// clang-format on
+
+void test_boulder_schlaf__echte_nacht_1610_neben_fitbit(void) {
+  int hrv_n = 0;
+  const int n = prv_lade_nacht("nacht-2026-10-16.csv", &hrv_n);
+  cl_assert_equal_i(n, 720);
+  cl_assert_equal_i(hrv_n, 38);
+  const SchlafEingabe e = prv_echte_eingabe(n, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  static char lauf[SCHLAF_MINUTEN_MAX + 1];
+  static char ref[SCHLAF_MINUTEN_MAX];
+  prv_lauf(lauf, n);
+  prv_fitbit(ref, n, s_fitbit_1610, ARRAY_LENGTH(s_fitbit_1610));
+  // Die Tabelle trifft Fitbits Summen.
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'w'), 48);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'r'), 42);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 't'), 41);
+  cl_assert_equal_i(prv_ref_minuten(ref, n, 'l'), 188);
+  const int gleich = prv_uebereinstimmung(lauf, ref, n);
+  prv_bericht("1610", lauf, gleich);
+  cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("01:39"));
+  cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("06:57"));
+  prv_neben_fitbit("Einschlafen 16.10.", s_ergebnis.einschlafen, "01:38");
+  prv_neben_fitbit("Aufwachen 16.10. (Nutzer)", s_ergebnis.aufwachen, "06:57");
+  // Je Minute: bis b31 28,4 %, mit der Stille 34,5 %. Weniger als in den anderen Naechten:
+  // Boulder sieht hier viel mehr REM als Fitbit (168 gegen 42 Minuten).
+  cl_assert(gleich >= 345 - UEBEREINSTIMMUNG_SPIEL);
+}
+
+// OHNE STILLE WIE BISHER: dieselbe Nacht, nur kommt das VMC nie auf 0 (jede 0 als 1). Dann gibt
+// es keine stille halbe Stunde, und kein Schlaflauf beginnt still: die Nacht rechnet wie bis b31
+// (22:14 bis 07:24). Fiele das VMC nach einer Aenderung an der Bewegungsrechnung nie mehr auf 0,
+// ginge so keine Nacht verloren.
+void test_boulder_schlaf__ohne_vmc_null_wie_bisher(void) {
+  int hrv_n = 0;
+  const int n = prv_lade_nacht("nacht-2026-10-16.csv", &hrv_n);
+  for (int i = 0; i < n; i++) {
+    s_bewegung[i] = s_bewegung[i] ? s_bewegung[i] : 1;
+  }
+  const SchlafEingabe e = prv_echte_eingabe(n, hrv_n);
+  cl_assert(schlafanalyse_werte(&e, &s_arbeit, &s_ergebnis));
+  cl_assert_equal_i(s_ergebnis.einschlafen, prv_minute_ab_20("22:14"));
+  cl_assert_equal_i(s_ergebnis.aufwachen, prv_minute_ab_20("07:24"));
 }

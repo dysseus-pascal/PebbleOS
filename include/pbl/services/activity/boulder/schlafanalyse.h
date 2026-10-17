@@ -13,14 +13,17 @@
 // WACH ODER SCHLAF kommt aus Kiesel-Helper (Schlafanalyse.kt): Cole-Kripke
 // auf der Bewegung, die Regeln von Webster, ein hoher Puls als Wachsein ohne
 // Bewegung. Dazu, eingestellt an Naechten neben einem Fitbit (29.9., 30.9. und
-// 2.10.2026, nur das Einschlafen auch am 5.10. und - in V2 - 7. bis 13.10.):
-// Aufwach-Schuebe - Regungen dicht hintereinander mit einem Pulsstoss - sind
-// ganz wach, auch zwischen den Regungen, ausser die HRV liegt hoch und man ist
-// nicht gegangen (V2); eingeschlafen ist man erst, wenn das Herumwaelzen
-// aufhoert (keine zwei kraeftigen Regungen mehr in dreissig Minuten), und ein
-// Wegnicken vor einem Schub zaehlt nicht; wer nach dem Aufwachen gegangen ist
-// (VMC, nicht Schritte), schlaeft nur weiter, wenn es haelt (30 Schlafminuten
-// in 45) - der Kaffee danach ist keine Nacht. DIE PHASEN: Tiefschlaf ist eine
+// 2.10.2026, nur das Einschlafen auch am 5.10. und - in V2 - 7. bis 13.10. und
+// 16.10.): Aufwach-Schuebe - Regungen dicht hintereinander mit einem
+// Pulsstoss - sind ganz wach, auch zwischen den Regungen, ausser die HRV liegt
+// hoch und man ist nicht gegangen (V2); eingeschlafen ist man erst, wenn das
+// Herumwaelzen aufhoert (keine zwei kraeftigen Regungen mehr in dreissig
+// Minuten) und man still liegt (V2: zwei Drittel einer halben Stunde ganz ohne
+// Bewegung - das Handy im Bett ist kein Schlaf), und ein Wegnicken vor einem
+// Schub zaehlt nicht; wer nach dem Aufwachen gegangen ist (VMC, nicht
+// Schritte), schlaeft nur weiter, wenn es haelt (30 Schlafminuten in 45) - der
+// Kaffee danach ist keine Nacht -, und ein spaeterer Schlaf verlaengert die
+// Nacht nur, wenn er still ist (V2). DIE PHASEN: Tiefschlaf ist eine
 // Viertelstunde ohne jede Regung bei ruhigem Herz, REM ein unregelmaessiges
 // Herz bei ruhendem Koerper (ohne dichten Puls: der zuckende Koerper). Der
 // Host-Test rechnet alle Naechte nach.

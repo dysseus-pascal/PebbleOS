@@ -7,9 +7,10 @@
 
 // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
 // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
-// eingestellt, das Einschlafen zuletzt an den Naechten 7. bis 12.10. (V2), das
-// Aufstehen am zweiten Export der Nacht 5./6.10. bis 07:24 (der Host-Test
-// test_boulder_schlaf rechnet alle Naechte nach).
+// eingestellt, das Einschlafen zuletzt an den Naechten 7. bis 12.10. und 16.10.
+// (V2), das Aufstehen am zweiten Export der Nacht 5./6.10. bis 07:24, das Ende
+// der Nacht zuletzt am 16.10. (V2; der Host-Test test_boulder_schlaf rechnet
+// alle Naechte nach).
 // Der Puls relativ zu seiner Umgebung traf Fitbits
 // Tiefschlaf nur zufaellig. Was traf, war der Koerper: im Tiefschlaf liegt er
 // lange ganz still. Beim REM traf das Herz: es schlaegt unregelmaessig,
@@ -68,6 +69,18 @@
 // KNAPP UNTER DER GRENZE. Hoeher setzen hiesse aber, unruhigen Schlaf weiter
 // wegzuschieben (Test unruhiger_schlaf_schiebt_das_einschlafen_nicht_weit).
 #define EINSCHLAF_SCHIEBEN_MAX 30
+// EINGESCHLAFEN IST, WER STILL LIEGT (V2): in den EINSCHLAF_RUHE Minuten ab dem
+// Einschlafen mindestens EINSCHLAF_STILL ganz ohne Bewegung. Wer wach im Bett
+// das Handy haelt, regt sich jede Minute ein wenig (VMC 100 bis 700): unter
+// Cole-Kripkes Schwelle und meist unter der Waelz-Regung. Am 16.10. lag der
+// Nutzer so bis 01:38 im Bett (Fitbit, vom Nutzer bestaetigt); die Waelzregel
+// schob das Einschlafen nur bis an ihre Grenze, 22:14. Still waren dort
+// hoechstens 40 % einer halben Stunde, ab dem Einschlafen in allen Naechten mit
+// Angabe 77 bis 100 %. MITTEN IM BEREICH: von 15 bis 25 Minuten beginnt der
+// 16.10. um 01:39, und keine andere Nacht aendert sich. GANZ OHNE BEWEGUNG:
+// mit VMC unter 50 als still waren es in der Handy-Zeit schon 63 %, und 0 ist
+// in jeder Einheit der Eingabe 0.
+#define EINSCHLAF_STILL 20
 // WER AUFGESTANDEN IST, SCHLAEFT NUR NOCH WEITER, WENN ES HAELT (b26). Nach
 // dem Aufwachen bleibt die Nacht in nacht.c noch zwei Stunden offen, damit sie
 // nach dem Toilettengang weiterwaechst. Am 5.10. wuchs sie so auch nach dem
@@ -139,6 +152,25 @@
 #define NACH_DEM_AUFSTEHEN_FENSTER 45
 #define SCHLAF_NACH_DEM_AUFSTEHEN 30
 #define GANG_LUECKE 2
+// WIEDER EINGESCHLAFEN IST, WER STILL LIEGT (V2): ein spaeterer Schlaflauf
+// verlaengert die Nacht nur, wenn in seinen ersten WIEDER_STILL_KOPF Minuten
+// (im kuerzeren Lauf: in ihm) mindestens die Haelfte ganz ohne Bewegung ist.
+// Am 16.10. stand der Nutzer um 06:57 auf (Fitbit, bestaetigt), ging ein paar
+// Schritte - drei Gehminuten, fuer das Aufstehen zu wenig - und war bis 07:24
+// nicht ganz still, vier von zehn Minuten; die Nacht wuchs bis 07:24. Die
+// spaeteren Laeufe aller anderen Naechte beginnen still, mit 60 bis 100 %
+// ihrer ersten Viertelstunde, auch nach einem eingefuegten Toilettengang.
+// MITTEN IM BEREICH: die Haelfte liegt mitten zwischen 40 und 60 %.
+// NUR DER ANFANG ZAEHLT: ob man wieder eingeschlafen ist, nicht wie man
+// aufwacht. Am Ende eines Laufs liegen oft schon die Regungen des Aufwachens:
+// am 30.9. mit einem eingefuegten Gang um 05:28 ist der Lauf danach ueber alles
+// zu 53 % still (06:00-06:07 Regungen), in seiner ersten Viertelstunde zu 60 %.
+// NUR WO DIE UHR STILLE KENNT: beginnt kein Schlaflauf der Nacht still, gilt die
+// Regel nicht - fiele das VMC nie auf 0, endete sonst jede Nacht am ersten
+// Lauf. BEKANNTE GRENZE: ein Schlaf, der unruhig beginnt, verlaengert die Nacht
+// nicht; liegt er am Datenende und haelt laenger als NACHT_WACH_ENDGUELTIG,
+// schliesst nacht.c die Nacht vor ihm.
+#define WIEDER_STILL_KOPF 15
 // AUFWACHEN MITTEN IN DER NACHT: mindestens drei Regungen, keine mehr als zehn
 // Minuten nach der vorigen, und das Herz schiesst dabei um dreizehn Schlaege
 // ueber den Schlafpuls ringsum. Dann ist der ganze Schub wach, auch die
@@ -248,6 +280,22 @@ static bool prv_waelzen(const SchlafEingabe *e, int i) {
 // Eine Minute mit Bewegung wie beim Gehen (GEHEN_FACH).
 static bool prv_gehen(const SchlafEingabe *e, int i) {
   return e->gueltig[i] && e->bewegung[i] >= GEHEN_FACH * e->schwelle;
+}
+
+// Eine Minute ganz ohne Bewegung (EINSCHLAF_STILL, WIEDER_STILL_KOPF).
+static bool prv_still(const SchlafEingabe *e, int i) {
+  return e->gueltig[i] && e->bewegung[i] == 0;
+}
+
+// Ob der Lauf [von, bis) still beginnt (WIEDER_STILL_KOPF): die Haelfte seiner
+// ersten Minuten ganz ohne Bewegung.
+static bool prv_beginnt_still(const SchlafEingabe *e, int von, int bis) {
+  const int ende = (bis - von > WIEDER_STILL_KOPF) ? von + WIEDER_STILL_KOPF : bis;
+  int still = 0;
+  for (int j = von; j < ende; j++) {
+    still += prv_still(e, j) ? 1 : 0;
+  }
+  return 2 * still >= ende - von;
 }
 
 // Ist man zwischen `von` und `bis` gegangen - AUFSTEHEN_GEHMINUTEN in
@@ -384,6 +432,29 @@ static int prv_zur_ruhe(const SchlafEingabe *e, const bool *wach, int ein, int a
     s++;
   }
   return s;
+}
+
+// Das Einschlafen dahin schieben, wo man still liegt: die erste Schlafminute ab
+// `ein`, ab der in EINSCHLAF_RUHE Minuten mindestens EINSCHLAF_STILL still
+// sind. Am Ende der Daten zaehlt, was da ist, im selben Verhaeltnis (wie
+// prv_haelt). Kommt keine solche Minute, bleibt `ein` - ohne VMC 0 ginge sonst
+// die ganze Nacht verloren.
+static int prv_still_liegen(const SchlafEingabe *e, const bool *wach, int ein, int auf) {
+  for (int s = ein; s < auf; s++) {
+    if (wach[s]) {
+      continue;
+    }
+    int alle = 0;
+    int still = 0;
+    for (int j = s; j < s + EINSCHLAF_RUHE && j < e->anzahl; j++) {
+      alle++;
+      still += prv_still(e, j) ? 1 : 0;
+    }
+    if (EINSCHLAF_RUHE * still >= EINSCHLAF_STILL * alle) {
+      return s;
+    }
+  }
+  return ein;
 }
 
 // Schiesst das Herz waehrend des Schubs [von, bis) ueber den Schlafpuls
@@ -899,6 +970,12 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   // genug ist, um einer zu sein. DOESEN ZAEHLT NICHT: ein Schlaf, der nicht
   // haelt, ist das Wegnicken vor dem Einschlafen.
   const int laeufe = prv_laeufe(w->wach, n, w->liste);
+  bool stille = false;  // WIEDER_STILL_KOPF: kennt die Uhr in dieser Nacht Stille?
+  for (int k = 0; k < laeufe && !stille; k++) {
+    const SchlafAbschnitt *l = &w->liste[k];
+    stille = !l->phase && l->bis - l->von >= MIN_SCHLAFLAUF &&
+             prv_beginnt_still(e, l->von, l->bis);
+  }
   int ein = -1;
   int auf = -1;
   for (int k = 0; k < laeufe; k++) {
@@ -921,6 +998,11 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
       // dem Kaffee noch einmal lange hin, zaehlt die Ruhe dazwischen als
       // Schlaf, wie bis b25.
       continue;
+    } else if (stille && !prv_beginnt_still(e, l->von, l->bis)) {
+      // UNRUHIG BEGONNENER SCHLAF verlaengert die Nacht nicht (WIEDER_STILL_KOPF);
+      // wie die Ruhe nach dem Aufstehen bleibt er Schlaf, falls ein stiller Lauf
+      // die Nacht spaeter doch verlaengert.
+      continue;
     }
     auf = l->bis;
   }
@@ -935,6 +1017,18 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   ein = prv_nach_den_schueben(w->wach, ein, auf);
   if (ein >= auf) {
     return false;
+  }
+  // STILL LIEGEN ZULETZT (EINSCHLAF_STILL): die Schuebe sehen so die Minuten ab
+  // dem Einschlafen der Regeln davor. Schiebt die Stille das Einschlafen, gilt
+  // ab dort die Waelzregel wieder: am 16.10. lagen um 01:29, 01:37 und 01:38
+  // noch Waelz-Regungen - das Handy weg, hinlegen -, und Fitbit sah den Nutzer
+  // ab 01:38 im Bett.
+  const int still = prv_still_liegen(e, w->wach, ein, auf);
+  if (still != ein) {
+    ein = prv_zur_ruhe(e, w->wach, still, auf);
+    if (ein >= auf) {
+      return false;
+    }
   }
 
   int schlaf = 0;
