@@ -451,5 +451,9 @@ Was Core seither geändert hat und Boulder trifft:
   - Die Worker-Namen bleiben unter R8 erhalten.
   - Server-Bündel `boulder-server-0.55.0.tar.gz` mit 24 297 534 Bytes; das Image daraus lief noch
     einmal im Pod.
-  - Beides zum Seitenladen an den Nutzer. Gerätetest offen; `main` erst danach.
+  - Beides zum Seitenladen an den Nutzer.
+- **Gerätetest bestanden** (Nutzer, 17.10.).
+  - Release-Notiz ergänzt (`4376acc6d`).
+  - Die CI legt das Server-Bündel jetzt mit ins Release (`0ca75f9b2`).
+  - `main` per Fast-Forward auf `4376acc6d`; Lauf 82 baut das Release `v0.55.0`.
 
