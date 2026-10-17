@@ -15,6 +15,7 @@ NAECHTE = [
     ('9.10.', N + 'nacht-2026-10-09.csv', HIER + 'fitbit-09.json'),
     ('12.10.', N + 'nacht-2026-10-12.csv', HIER + 'fitbit-12.json'),
     ('13.10.', N + 'nacht-2026-10-13.csv', HIER + 'fitbit-13.json'),
+    ('16.10.', N + 'nacht-2026-10-16.csv', HIER + 'fitbit-16.json'),
 ]
 # 7.10.: Fitbit nur aus den Notizen (naechte/notizen.md): diese drei Wachphasen sind Schlaf/REM.
 SCHLAF_7 = [(57 + 4 * 60, 67 + 4 * 60), (6 * 60 + 43, 7 * 60 + 27), (8 * 60 + 43, 8 * 60 + 56)]

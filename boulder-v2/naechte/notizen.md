@@ -50,3 +50,22 @@
   Angabe des Nutzers, nicht Fitbit.
 - F20: A, F21: A: Ein Schub mit hoher HRV ohne Gang (aus dem VMC) bleibt Schlaf. Umgesetzt in V2
   `14e34d2e` (`analyse-2026-10-14.md`, Abschnitte 5 und 6).
+
+## 16.→17.10.2026 (V2, Messstufe 4)
+- Export und Fitbit-Bild: `nacht-2026-10-16.csv`, `fitbit-2026-10-16.png`. Analyse:
+  `analyse-2026-10-17.md`.
+- **Fitbit:** im Bett 01:38, erster Schlaf 01:46, Ende 06:57. Wach 48 min (01:38–01:46, 05:14–05:21,
+  06:06–06:38), REM 42 min, leicht 3 h 08, tief 41 min, Unruhe 18 min.
+- **Boulder (V2, Uhr):** eingeschlafen 22:14, aufgewacht 07:24, 7 h 48. Ruhepuls 51, HRV 65. Die Uhr
+  rechnet wie V2 (0 von 720 Minuten anders).
+- **22:14–01:25 nach den Minuten wach und unruhig:**
+  - 20 Wälz-Regungen und 37 Lagewechsel je Stunde, VMC 0 nur in 20 % der Minuten.
+  - 152 Schritte in 13 Minuten, also mehrmals kurz auf.
+  - V2 sieht das als Schlaf: Die Bewegung bleibt unter Cole-Kripkes Schwelle, und die Wälzregel
+    schiebt das Einschlafen höchstens 30 min weit (21:47 → 22:14).
+- **Variante E1b** (eingeschlafen ist, wer in 30 min mindestens 20 ganz still liegt, geprüft nach den
+  Schüben): Einschlafen 01:25, Schlaf 317 min. Keine ältere Nacht ändert sich. Offen als F37.
+- **Morgen:** Fitbit wach 06:06–06:38, Ende 06:57. Um 07:00–07:07 47 Schritte, danach bis 07:24 kaum
+  Bewegung; Boulder endet um 07:24. Angabe des Nutzers fehlt noch.
+- **H4 bestätigt:** Der Schub 04:00–04:10 (Schritte 12 + 12, Puls 82, HRV 78) bleibt Schlaf; Fitbit
+  sieht dort Schlaf.

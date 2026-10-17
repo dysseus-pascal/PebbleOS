@@ -400,6 +400,35 @@ static int prv_zur_ruhe(const SchlafEingabe *e, const bool *wach, int ein, int a
   return s;
 }
 
+#ifdef VAR_STILL
+#ifndef STILL_FENSTER
+#define STILL_FENSTER 30
+#endif
+// E1 (Nacht 16.10.): eingeschlafen ist erst, wer still liegt - in den STILL_FENSTER Minuten ab dem
+// Einschlafen mindestens VAR_STILL Minuten ganz ohne Bewegung (VMC 0). Wer wach liegt und sich
+// staendig ein wenig regt (VMC 100 bis 700), bleibt unter der Schwelle von Cole-Kripke und unter
+// der Waelz-Regung. Am Datenende zaehlt, was da ist, im selben Verhaeltnis (wie prv_haelt).
+static int prv_still(const SchlafEingabe *e, const bool *wach, int ein, int auf) {
+  for (int s = ein; s < auf; s++) {
+    if (wach[s]) {
+      continue;
+    }
+    int alle = 0;
+    int still = 0;
+    for (int j = s; j < s + STILL_FENSTER && j < e->anzahl; j++) {
+      alle++;
+      still += (e->gueltig[j] && e->bewegung[j] == 0) ? 1 : 0;
+    }
+    if (STILL_FENSTER * still >= VAR_STILL * alle) {
+      return s;
+    }
+  }
+  // Ohne eine stille halbe Stunde bleibt das Einschlafen der anderen Regeln: die Nacht ginge sonst
+  // ganz verloren, etwa wenn das VMC nie auf 0 faellt.
+  return ein;
+}
+#endif
+
 // Schiesst das Herz waehrend des Schubs [von, bis) ueber den Schlafpuls
 // ringsum (eine Stunde davor und danach)? Ohne Puls ringsum: kein Beleg.
 // EIN WERT REICHT, auch wenn er ein Messfehler sein koennte: am 3.10. trug um
@@ -907,6 +936,12 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   if (ein >= auf) {
     return false;
   }
+#if defined(VAR_STILL) && !defined(VAR_STILL_SPAET)
+  ein = prv_still(e, w->wach, ein, auf);
+  if (ein >= auf) {
+    return false;
+  }
+#endif
   prv_aufwach_schuebe(e, w, ein, auf);
 #ifdef VAR_O2
   // O2: Bleibt nach den Schueben am Einschlafen nur ein Wegnicken (kuerzer als MIN_SCHLAFLAUF),
@@ -948,6 +983,14 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
       return false;
     }
     ein = neu;
+  }
+#endif
+#if defined(VAR_STILL) && defined(VAR_STILL_SPAET)
+  // E1b: die Stille erst nach den Schueben pruefen. Die Schuebe und ihr Grundpuls sehen so die
+  // Minuten ab dem Einschlafen von V2.
+  ein = prv_still(e, w->wach, ein, auf);
+  if (ein >= auf) {
+    return false;
   }
 #endif
 

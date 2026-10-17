@@ -1,0 +1,95 @@
+== still: VMC < 1
+  30.9.   ab Einschlafen   77 %  davor hoechstens   53 %
+  3.10.   ab Einschlafen  100 %  davor hoechstens   60 %
+  5.10.   ab Einschlafen   93 %  davor hoechstens   90 %
+  7.10.   ab Einschlafen  100 %  davor hoechstens   83 %
+  8.10.   ab Einschlafen   97 %  davor hoechstens   57 %  in Fitbits Schlaf mindestens   70 % (unter 50 %: 0 von 393)
+  9.10.   ab Einschlafen   90 %  davor hoechstens   67 %  in Fitbits Schlaf mindestens   73 % (unter 50 %: 0 von 419)
+  12.10.  ab Einschlafen   90 %  davor hoechstens   73 %  in Fitbits Schlaf mindestens   37 % (unter 50 %: 13 von 452)
+  13.10.  ab Einschlafen   97 %  davor hoechstens   73 %  in Fitbits Schlaf mindestens   60 % (unter 50 %: 0 von 434)
+  16.10.  ab Einschlafen   90 %  davor hoechstens   40 %  in Fitbits Schlaf mindestens   67 % (unter 50 %: 0 von 280)
+== still: VMC < 50
+  30.9.   ab Einschlafen   77 %  davor hoechstens   60 %
+  3.10.   ab Einschlafen  100 %  davor hoechstens   73 %
+  5.10.   ab Einschlafen   97 %  davor hoechstens   93 %
+  7.10.   ab Einschlafen  100 %  davor hoechstens   87 %
+  8.10.   ab Einschlafen   97 %  davor hoechstens   63 %  in Fitbits Schlaf mindestens   70 % (unter 50 %: 0 von 393)
+  9.10.   ab Einschlafen   90 %  davor hoechstens   67 %  in Fitbits Schlaf mindestens   77 % (unter 50 %: 0 von 419)
+  12.10.  ab Einschlafen   90 %  davor hoechstens   80 %  in Fitbits Schlaf mindestens   40 % (unter 50 %: 12 von 452)
+  13.10.  ab Einschlafen   97 %  davor hoechstens   73 %  in Fitbits Schlaf mindestens   67 % (unter 50 %: 0 von 434)
+  16.10.  ab Einschlafen   93 %  davor hoechstens   70 %  in Fitbits Schlaf mindestens   67 % (unter 50 %: 0 von 280)
+== still: VMC < 100
+  30.9.   ab Einschlafen   80 %  davor hoechstens   67 %
+  3.10.   ab Einschlafen  100 %  davor hoechstens   80 %
+  5.10.   ab Einschlafen   97 %  davor hoechstens   93 %
+  7.10.   ab Einschlafen  100 %  davor hoechstens   90 %
+  8.10.   ab Einschlafen   97 %  davor hoechstens   70 %  in Fitbits Schlaf mindestens   73 % (unter 50 %: 0 von 393)
+  9.10.   ab Einschlafen   93 %  davor hoechstens   67 %  in Fitbits Schlaf mindestens   77 % (unter 50 %: 0 von 419)
+  12.10.  ab Einschlafen   90 %  davor hoechstens   80 %  in Fitbits Schlaf mindestens   40 % (unter 50 %: 7 von 452)
+  13.10.  ab Einschlafen  100 %  davor hoechstens   77 %  in Fitbits Schlaf mindestens   67 % (unter 50 %: 0 von 434)
+  16.10.  ab Einschlafen   93 %  davor hoechstens   80 %  in Fitbits Schlaf mindestens   73 % (unter 50 %: 0 von 280)
+== still: VMC < 250
+  30.9.   ab Einschlafen   83 %  davor hoechstens   70 %
+  3.10.   ab Einschlafen  100 %  davor hoechstens   80 %
+  5.10.   ab Einschlafen   97 %  davor hoechstens   93 %
+  7.10.   ab Einschlafen  100 %  davor hoechstens   97 %
+  8.10.   ab Einschlafen   97 %  davor hoechstens   80 %  in Fitbits Schlaf mindestens   77 % (unter 50 %: 0 von 393)
+  9.10.   ab Einschlafen   97 %  davor hoechstens   70 %  in Fitbits Schlaf mindestens   77 % (unter 50 %: 0 von 419)
+  12.10.  ab Einschlafen   93 %  davor hoechstens   87 %  in Fitbits Schlaf mindestens   43 % (unter 50 %: 5 von 452)
+  13.10.  ab Einschlafen  100 %  davor hoechstens   80 %  in Fitbits Schlaf mindestens   70 % (unter 50 %: 0 von 434)
+  16.10.  ab Einschlafen   93 %  davor hoechstens   90 %  in Fitbits Schlaf mindestens   73 % (unter 50 %: 0 von 280)
+== 16.10., gleitend: Fensterbeginn, still bei VMC 0 / < 50 / < 100 / < 250
+  21:30  10 %   30 %   33 %   43 %
+  21:35  10 %   23 %   27 %   30 %
+  21:40  10 %   17 %   23 %   27 %
+  21:45  10 %   17 %   23 %   23 %
+  21:50   7 %   13 %   23 %   23 %
+  21:55  10 %   20 %   30 %   30 %
+  22:00   7 %   10 %   20 %   23 %
+  22:05   7 %   10 %   20 %   23 %
+  22:10   7 %   10 %   17 %   20 %
+  22:15  10 %   13 %   20 %   23 %
+  22:20  13 %   20 %   23 %   27 %
+  22:25  13 %   20 %   23 %   30 %
+  22:30  20 %   27 %   30 %   37 %
+  22:35  23 %   30 %   33 %   40 %
+  22:40  23 %   30 %   33 %   47 %
+  22:45  20 %   27 %   30 %   47 %
+  22:50  20 %   23 %   27 %   47 %
+  22:55  17 %   20 %   23 %   40 %
+  23:00  10 %   13 %   17 %   33 %
+  23:05  10 %   17 %   20 %   40 %
+  23:10  10 %   17 %   23 %   40 %
+  23:15  13 %   20 %   27 %   43 %
+  23:20  17 %   27 %   33 %   50 %
+  23:25  20 %   30 %   37 %   57 %
+  23:30  23 %   37 %   47 %   67 %
+  23:35  20 %   30 %   40 %   60 %
+  23:40  20 %   30 %   37 %   67 %
+  23:45  17 %   27 %   33 %   60 %
+  23:50  10 %   17 %   23 %   47 %
+  23:55   7 %   17 %   23 %   47 %
+  00:00   3 %   13 %   20 %   40 %
+  00:05  13 %   23 %   27 %   47 %
+  00:10  23 %   33 %   37 %   43 %
+  00:15  27 %   40 %   43 %   50 %
+  00:20  27 %   43 %   47 %   60 %
+  00:25  30 %   40 %   53 %   63 %
+  00:30  33 %   43 %   53 %   63 %
+  00:35  30 %   43 %   57 %   67 %
+  00:40  30 %   50 %   63 %   73 %
+  00:45  37 %   60 %   73 %   83 %
+  00:50  40 %   63 %   77 %   83 %
+  00:55  37 %   67 %   77 %   87 %
+  01:00  30 %   57 %   67 %   87 %
+  01:05  30 %   60 %   70 %   87 %
+  01:10  30 %   53 %   63 %   80 %
+  01:15  37 %   53 %   63 %   80 %
+  01:20  50 %   63 %   73 %   87 %
+  01:25  67 %   73 %   77 %   87 %
+  01:30  83 %   90 %   93 %   93 %
+  01:35  87 %   87 %   87 %   87 %
+  01:40  90 %   93 %   93 %   93 %
+  01:45  90 %   93 %   93 %   93 %
+  01:50  90 %   93 %   93 %   93 %
+  01:55  87 %   90 %   90 %   90 %
