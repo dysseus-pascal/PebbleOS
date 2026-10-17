@@ -1,4 +1,4 @@
-"""Welche Naechte eine Variante anders rechnet als V2, mit Einschlafen, Schlaf und Zahl der anderen Minuten.
+"""Welche Naechte eine Variante anders rechnet als V2 (oder GEGEN), mit Einschlafen, Schlaf und Zahl der anderen Minuten.
 
 Aufruf: gegen_v2.py <Variante ...>. Die Programme liegen wie bei bewerten.py in NACHTLABOR_BIN, sonst labor/bin;
 V2 ist dort v_o2h4w30 (rechnet alle Naechte wie schlafanalyse.c in V2 seit 14e34d2e)."""
@@ -27,8 +27,9 @@ def rechnen(var, csv):
     return {k: int(v) for k, v in kopf.items()}, ph
 
 
-basis = {n: rechnen('v_o2h4w30', c) for n, c in NAECHTE}
-print('V2: ' + '  '.join(f"{n} {uhr(k['einschlafen'])}-{uhr(k['aufwachen'])} {k['schlaf']}"
+# Mit GEGEN=<Programm> gilt eine andere Fassung als Bezug, etwa v_o2h4w30e1b.
+basis = {n: rechnen(os.environ.get('GEGEN', 'v_o2h4w30'), c) for n, c in NAECHTE}
+print(os.environ.get('GEGEN', 'V2') + ': ' + '  '.join(f"{n} {uhr(k['einschlafen'])}-{uhr(k['aufwachen'])} {k['schlaf']}"
                          for n, (k, _) in basis.items()))
 for var in sys.argv[1:]:
     teile = []

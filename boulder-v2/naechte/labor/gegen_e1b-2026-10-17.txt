@@ -1,0 +1,14 @@
+v_o2h4w30e1b: 29.9. 21:40-06:00 472  30.9. 22:00-06:08 460  3.10. 22:27-06:30 337  5.10. 22:14-06:00 461  5.10.m 22:14-06:00 461  7.10. 21:18-06:00 425  8.10. 22:35-06:00 435  9.10. 23:16-07:00 464  12.10. 21:42-05:59 396  13.10. 21:39-05:46 480  16.10. 01:25-07:24 317
+v_e2_20        wie V2
+v_e2_30        wie V2
+v_e2_40        wie V2
+v_e2_45        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_50        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_55        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_60        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_67        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_70        16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_75        9.10. ein 23:16 schlaf 445 (19 min anders); 16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_80        3.10. ein 22:27 schlaf 244 (206 min anders); 9.10. ein 23:16 schlaf 445 (19 min anders); 16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_85        29.9. ein 21:40 schlaf 282 (221 min anders); 30.9. ein 22:00 schlaf 402 (64 min anders); 3.10. ein 22:27 schlaf 244 (206 min anders); 9.10. ein 23:16 schlaf 445 (19 min anders); 12.10. ein 21:42 schlaf 172 (339 min anders); 16.10. ein 01:25 schlaf 316 (36 min anders)
+v_e2_90        29.9. ein 21:40 schlaf 282 (221 min anders); 30.9. ein 22:00 schlaf 402 (64 min anders); 3.10. ein 22:27 schlaf 244 (206 min anders); 7.10. ein 21:18 schlaf 181 (331 min anders); 9.10. ein 23:16 schlaf 387 (77 min anders); 12.10. ein 21:42 schlaf 172 (339 min anders); 16.10. ein 01:25 schlaf 90 (253 min anders)

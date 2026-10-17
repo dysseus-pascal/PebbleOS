@@ -64,8 +64,13 @@
   - V2 sieht das als Schlaf: Die Bewegung bleibt unter Cole-Kripkes Schwelle, und die Wälzregel
     schiebt das Einschlafen höchstens 30 min weit (21:47 → 22:14).
 - **Variante E1b** (eingeschlafen ist, wer in 30 min mindestens 20 ganz still liegt, geprüft nach den
-  Schüben): Einschlafen 01:25, Schlaf 317 min. Keine ältere Nacht ändert sich. Offen als F37.
+  Schüben): Einschlafen 01:25, Schlaf 317 min. Keine ältere Nacht ändert sich.
 - **Morgen:** Fitbit wach 06:06–06:38, Ende 06:57. Um 07:00–07:07 47 Schritte, danach bis 07:24 kaum
-  Bewegung; Boulder endet um 07:24. Angabe des Nutzers fehlt noch.
+  Bewegung; Boulder endet um 07:24. Laut Nutzer stimmt Fitbits Ende.
 - **H4 bestätigt:** Der Schub 04:00–04:10 (Schritte 12 + 12, Puls 82, HRV 78) bleibt Schlaf; Fitbit
   sieht dort Schlaf.
+- **Nutzer (17.10.):** „fitbit is the correct one with yhe slerp time. I used the phone long into the
+  night ling in bed“. Fitbits Schlafzeit (01:38–06:57) stimmt; bis dahin lag der Nutzer mit dem Handy im Bett.
+- **Variante E2** (ein späterer Schlaflauf verlängert die Nacht nur, wenn drei Fünftel seiner Minuten
+  still sind): Ende 06:57 statt 07:24, wie Fitbit. Keine ältere Nacht ändert sich. Offen als F37
+  (A: E1b und E2, B: nur E1b, C: keins), `analyse-2026-10-17.md`, Abschnitt 9.

@@ -927,6 +927,20 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
       // Schlaf, wie bis b25.
       continue;
     }
+#ifdef VAR_STILL_ENDE
+    // E2 (Nacht 16.10.): ein spaeterer Schlaflauf verlaengert die Nacht nur, wenn mindestens
+    // VAR_STILL_ENDE Prozent seiner Minuten ganz ohne Bewegung sind (VMC 0). Wer nach dem Aufwachen
+    // sitzt oder im Bett das Handy haelt, regt sich ein wenig, bleibt aber unter Cole-Kripkes Schwelle.
+    if (ein != l->von) {
+      int still = 0;
+      for (int j = l->von; j < l->bis; j++) {
+        still += (e->gueltig[j] && e->bewegung[j] == 0) ? 1 : 0;
+      }
+      if (100 * still < VAR_STILL_ENDE * (l->bis - l->von)) {
+        continue;
+      }
+    }
+#endif
     auf = l->bis;
   }
   if (ein < 0) {
