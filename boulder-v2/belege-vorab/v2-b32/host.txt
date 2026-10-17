@@ -1,0 +1,1618 @@
+-- Unit tests: 426
+-- Configuring done (5.4s)
+-- Generating done (0.7s)
+-- Build files have been written to: /home/user/pebbleos-v2/build-test
+[0/2] Re-checking globbed directories...
+[1/671] Generating common.pb.c
+[2/671] Generating event.pb.c
+[3/671] Building C object vendor/duma/CMakeFiles/duma.dir/print.c.o
+[4/671] Generating payload.pb.c
+[5/671] Building C object vendor/duma/CMakeFiles/duma.dir/duma.c.o
+[6/671] Building C object vendor/duma/CMakeFiles/duma.dir/sem_inc.c.o
+[7/671] Generating activity.pb.c
+[8/671] Generating measurements.pb.c
+[9/671] Generating startmenue_mit/shell/system_app_registry_list.auto.h, startmenue_mit/shell/system_app_ids.auto.h
+[10/668] Linking C static library vendor/duma/libduma.a
+[11/668] Building C object fw/services/protobuf_log/proto/CMakeFiles/protobuf_log_schemas.dir/activity.pb.c.o
+[12/668] Generating bh_startmenue_asterix/shell/system_app_registry_list.auto.h, bh_startmenue_asterix/shell/system_app_ids.auto.h
+[13/665] Building C object fw/services/protobuf_log/proto/CMakeFiles/protobuf_log_schemas.dir/common.pb.c.o
+[14/665] Generating bh_startmenue_obelix/shell/system_app_registry_list.auto.h, bh_startmenue_obelix/shell/system_app_ids.auto.h
+[15/659] Generating startmenue_ohne/shell/system_app_registry_list.auto.h, startmenue_ohne/shell/system_app_ids.auto.h
+[16/656] Building C object fw/services/protobuf_log/proto/CMakeFiles/protobuf_log_schemas.dir/event.pb.c.o
+[17/656] Building C object lib/util/CMakeFiles/libutil.dir/buffer.c.o
+[18/656] Building C object lib/util/CMakeFiles/libutil.dir/base64.c.o
+[19/656] Building C object fw/services/protobuf_log/proto/CMakeFiles/protobuf_log_schemas.dir/payload.pb.c.o
+[20/656] Building C object fw/services/protobuf_log/proto/CMakeFiles/protobuf_log_schemas.dir/measurements.pb.c.o
+[21/656] Building C object lib/util/CMakeFiles/libutil.dir/circular_cache.c.o
+[22/656] Building C object lib/util/CMakeFiles/libutil.dir/generic_attr.c.o
+[23/656] Building C object lib/util/CMakeFiles/libutil.dir/build_id.c.o
+[24/656] Building C object lib/util/CMakeFiles/libutil.dir/circular_buffer.c.o
+[25/656] Building C object lib/util/CMakeFiles/libutil.dir/hash.c.o
+[26/656] Building C object lib/util/CMakeFiles/libutil.dir/iterator.c.o
+[27/656] Building C object lib/util/CMakeFiles/libutil.dir/hexdump.c.o
+[28/656] Building C object lib/util/CMakeFiles/libutil.dir/heap.c.o
+[29/656] Building C object lib/util/CMakeFiles/libutil.dir/math_fixed.c.o
+[30/656] Building C object lib/util/CMakeFiles/libutil.dir/platform.c.o
+[31/656] Building C object lib/util/CMakeFiles/libutil.dir/keyed_circular_cache.c.o
+[32/656] Building C object lib/util/CMakeFiles/libutil.dir/math.c.o
+[33/656] Building C object lib/util/CMakeFiles/libutil.dir/order.c.o
+[34/656] Building C object lib/util/CMakeFiles/libutil.dir/list.c.o
+[35/656] Building C object lib/util/CMakeFiles/libutil.dir/pstring.c.o
+[36/656] Building C object lib/util/CMakeFiles/libutil.dir/shared_cbuf.c.o
+[37/656] Building C object lib/util/CMakeFiles/libutil.dir/sort.c.o
+[38/656] Building C object lib/util/CMakeFiles/libutil.dir/string_list.c.o
+[39/656] Building C object lib/util/CMakeFiles/libutil.dir/stats.c.o
+[40/656] Building C object lib/util/CMakeFiles/libutil.dir/slist.c.o
+[41/656] Building C object lib/util/CMakeFiles/libutil.dir/time.c.o
+[42/656] Building C object lib/util/CMakeFiles/libutil.dir/string.c.o
+[43/656] Building C object lib/util/CMakeFiles/libutil.dir/utf8.c.o
+[44/656] Building C object lib/util/CMakeFiles/libutil.dir/trig.c.o
+[45/656] Building C object lib/btutil/CMakeFiles/libbtutil.dir/sm_util.c.o
+[46/656] Building C object lib/btutil/CMakeFiles/libbtutil.dir/bt_device.c.o
+[47/656] Building C object lib/util/CMakeFiles/libutil.dir/uuid.c.o
+[48/656] Building C object lib/btutil/CMakeFiles/libbtutil.dir/bt_uuid.c.o
+[49/656] Building C object libcrc/CMakeFiles/libcrc.dir/crc8.c.o
+[50/656] Building C object libcrc/CMakeFiles/libcrc.dir/crc32_legacy.c.o
+[51/656] Linking C static library lib/btutil/liblibbtutil.a
+[52/656] Linking C static library lib/util/liblibutil.a
+[53/656] Linking C static library fw/services/protobuf_log/proto/libprotobuf_log_schemas.a
+[54/656] Building C object libcrc/CMakeFiles/libcrc.dir/crc32.c.o
+[55/656] Linking C static library libcrc/liblibcrc.a
+[56/656] Building fw/services/clock/time.c
+[57/656] Building fw/flash_region/filesystem_regions.c
+[58/656] Building fw/services/activity/activity_metrics.c
+[59/656] Building lib/c/time/mktime.c
+[60/656] Building lib/c/time/gmtime.c
+[61/656] Building fw/flash_region/flash_region.c
+[62/656] Building tests/fakes/fake_rtc.c
+[63/656] Building fw/services/regular_timer/service.c
+[64/656] Building fw/services/activity/activity.c
+[65/656] Building fw/services/filesystem/flash_translation.c
+[66/656] Building fw/services/settings/settings_raw_iter.c
+[67/656] Building fw/services/settings/settings_file.c
+[68/656] Building tests/fakes/fake_accel_service.c
+[69/656] Building fw/flash_region/flash_region.c
+[70/656] Building tests/fakes/fake_rtc.c
+[71/656] Building fw/services/filesystem/pfs.c
+[72/656] Building tests/fakes/fake_events.c
+[73/656] Building tests/fakes/fake_spi_flash.c
+[74/656] Building fw/flash_region/filesystem_regions.c
+[75/656] Building lib/c/time/gmtime.c
+[76/656] Building fw/services/clock/time.c
+[77/656] Building lib/c/time/mktime.c
+[78/656] Building fw/services/regular_timer/service.c
+[79/656] Building fw/services/activity/boulder/takt.c
+[80/656] Building fw/services/activity/boulder/szene.c
+[81/656] Building fw/services/filesystem/flash_translation.c
+[82/656] Building fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+[83/656] Building fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+[84/656] Building fw/services/filesystem/pfs.c
+[85/656] Building tests/fakes/fake_events.c
+[86/656] Building tests/fakes/fake_spi_flash.c
+[87/656] Building fw/services/settings/settings_file.c
+[88/656] Building fw/services/settings/settings_raw_iter.c
+[89/656] Generating clar harness for test_boulder_schlaf
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_schlaf
+  test_boulder_schlaf (40 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_schlaf"
+[90/656] Building tests/fakes/fake_accel_service.c
+[91/656] Generating clar harness for test_boulder_schlafkern
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_schlafkern
+  test_boulder_schlafkern (10 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_schlafkern"
+[92/656] Building fw/services/activity/boulder/nachlauf.c
+[93/656] Building fw/services/activity/boulder/eingang.c
+[94/656] Generating clar harness for test_boulder_zyklen
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_zyklen
+  test_boulder_zyklen (16 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_zyklen"
+[95/656] Building fw/services/activity/boulder/schlafanalyse.c
+[96/656] Building fw/services/activity/boulder/live.c
+[97/656] Building fw/services/activity/activity_sessions.c
+[98/656] Building fw/services/activity/boulder/kalorien.c
+[99/656] Building fw/services/activity/boulder/nacht.c
+[100/656] Building fw/services/activity/boulder/dauerteil.c
+[101/656] Building fw/services/activity/boulder/eingang.c
+[102/656] Building fw/services/activity/boulder/nachlauf.c
+[103/656] Building fw/services/activity/boulder/spo2.c
+[104/656] Building fw/services/activity/boulder/wecker.c
+[105/656] Building tests/fw/services/activity/boulder/fake_heap.c
+[106/656] Building fw/services/activity/boulder/ausgabe.c
+[107/656] Building fw/services/activity/boulder/diagnose.c
+[108/656] Building fw/services/activity/boulder/speicher.c
+[109/656] Building fw/services/activity/boulder/zyklen.c
+[110/656] Building fw/services/activity/boulder/schlafanalyse.c
+[111/656] Building fw/services/activity/boulder/umzug_prefs.c
+[112/656] Building tests/fw/services/activity/boulder/fake_nachfrage.c
+[113/656] Building tests/fw/services/activity/boulder/fake_messung.c
+[114/656] Building subsys/cron/cron.c
+[115/656] Generating clar harness for test_boulder_messung
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_messung
+  test_boulder_messung (16 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_messung"
+[116/656] Building fw/services/activity/boulder/umzug.c
+[117/656] Building fw/services/activity/boulder/hrv.c
+[118/656] Building fw/services/activity/boulder/kontext.c
+[119/656] Building fw/services/activity/boulder/takt.c
+[120/656] Building fw/services/activity/boulder/messstufe.c
+[121/656] Building fw/flash_region/flash_region.c
+[122/656] Building fw/flash_region/filesystem_regions.c
+[123/656] Building fw/services/filesystem/flash_translation.c
+[124/656] Building fw/services/hrm/hrm_manager.c
+[125/656] Building fw/services/activity/boulder/puls.c
+[126/656] Building kernel/tick.c
+[127/656] Building tests/fakes/fake_accel_service.c
+[128/656] Building fw/services/filesystem/pfs.c
+[129/656] Building fw/services/settings/settings_raw_iter.c
+[130/656] Building tests/fakes/fake_events.c
+[131/656] Building tests/fakes/fake_rtc.c
+[132/656] Building fw/services/settings/settings_file.c
+[133/656] Building tests/fakes/fake_spi_flash.c
+[134/656] Building fw/services/activity/boulder/live.c
+[135/656] Building fw/services/activity/boulder/dauerteil.c
+[136/656] Building fw/services/activity/boulder/eingang.c
+[137/656] Building fw/services/activity/boulder/nachlauf.c
+[138/656] Building fw/services/activity/boulder/nacht.c
+[139/656] Building fw/services/activity/boulder/schlafanalyse.c
+[140/656] Building fw/services/activity/boulder/zyklen.c
+[141/656] Generating clar harness for test_boulder_fahrt
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_fahrt
+  test_boulder_fahrt (22 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_fahrt"
+[142/656] Building fw/flash_region/flash_region.c
+[143/656] Building fw/services/clock/time.c
+[144/656] Building fw/flash_region/filesystem_regions.c
+[145/656] Building fw/services/activity/boulder/speicher.c
+[146/656] Building fw/services/activity/boulder/ausgabe.c
+[147/656] Building fw/services/activity/boulder/umzug.c
+[148/656] Building lib/c/time/gmtime.c
+[149/656] Building fw/services/filesystem/flash_translation.c
+[150/656] Building lib/c/time/mktime.c
+[151/656] Building fw/services/regular_timer/service.c
+[152/656] Building fw/services/settings/settings_file.c
+[153/656] Building fw/services/settings/settings_raw_iter.c
+[154/656] Building tests/fakes/fake_rtc.c
+[155/656] Building fw/services/filesystem/pfs.c
+[156/656] Building tests/fakes/fake_spi_flash.c
+[157/656] Building tests/fakes/fake_accel_service.c
+[158/656] Building tests/fakes/fake_events.c
+[159/656] Building fw/services/activity/activity_sessions.c
+[160/656] Building fw/services/activity/hr_util.c
+[161/656] Building fw/services/activity/activity_calculators.c
+[162/656] Building fw/services/activity/workout_service.c
+[163/656] Building fw/services/activity/boulder/takt.c
+[164/656] Building fw/services/activity/boulder/kalorien.c
+[165/656] Building fw/services/activity/boulder/dauerteil.c
+[166/656] Building fw/services/activity/boulder/live.c
+[167/656] Building fw/services/activity/boulder/nacht.c
+[168/656] Building fw/services/activity/boulder/szene.c
+[169/656] Building fw/services/activity/boulder/eingang.c
+[170/656] Building fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
+[171/656] Building fw/services/activity/boulder/zyklen.c
+[172/656] Building fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
+[173/656] Building fw/services/activity/boulder/schlafanalyse.c
+[174/656] Building fw/services/activity/boulder/nachlauf.c
+[175/656] Building fw/services/activity/boulder/spo2.c
+[176/656] Building fw/services/activity/boulder/wecker.c
+[177/656] Building tests/fw/services/activity/boulder/fake_heap.c
+[178/656] Building fw/services/activity/boulder/speicher.c
+[179/656] Building fw/services/activity/boulder/ausgabe.c
+[180/656] Building fw/services/activity/boulder/diagnose.c
+[181/656] Building fw/services/activity/boulder/umzug.c
+[182/656] Building fw/services/activity/boulder/umzug_prefs.c
+[183/656] Building tests/fw/services/activity/boulder/fake_messung.c
+[184/656] Building fw/services/activity/boulder/nachfrage.c
+[185/656] Building fw/services/activity/boulder/kontext.c
+[186/656] Building subsys/cron/cron.c
+[187/656] Generating clar harness for test_boulder_diagnose
+folder: /home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_diagnose
+  test_boulder_diagnose (4 tests)
+Written Clar suite to "/home/user/pebbleos-v2/build-test/fw/services/activity/boulder/test_boulder_diagnose"
+[188/656] Building tests/fw/services/activity/boulder/fake_heap.c
+[189/656] Building fw/services/activity/boulder/diagnose.c
+[190/656] Building fw/services/activity/boulder/dauerteil.c
+[191/656] Building fw/services/activity/boulder/takt.c
+[192/656] Building fw/services/activity/boulder/live.c
+[193/656] Building fw/services/activity/boulder/nacht.c
+[194/656] Building fw/services/activity/boulder/eingang.c
+[195/656] Building fw/services/activity/boulder/nachlauf.c
+[196/656] Building fw/services/activity/boulder/schlafanalyse.c
+[197/656] Building fw/services/activity/boulder/ausgabe.c
+[198/656] Building fw/services/activity/boulder/zyklen.c
+[199/656] Building fw/services/activity/boulder/speicher.c
+[200/656] Building fw/services/activity/boulder/umzug.c
+[201/656] Building fw/services/protobuf_log/protobuf_log.c
+[202/656] Building fw/services/protobuf_log/protobuf_log_hr.c
+[203/656] Building fw/services/activity/boulder/schnittstelle.c
+[204/656] Building tests/fw/services/protobuf_log/protobuf_log_test_helpers.c
+[205/656] Building fw/services/activity/activity.c
+[206/656] Building fw/services/protobuf_log/protobuf_log_util.c
+[207/656] Building fw/services/activity/activity_metrics.c
+[208/656] Building fw/services/protobuf_log/protobuf_log_activity_sessions.c
+[209/656] Building fw/services/protobuf_log/protobuf_log_test.c
+[210/656] Building C object CMakeFiles/test_boulder_schlaf.dir/fw/services/activity/boulder/test_boulder_schlaf.c.o
+[211/656] Building C object CMakeFiles/test_boulder_schlafkern.dir/fw/services/activity/boulder/test_boulder_schlafkern/clar_main.c.o
+[212/656] Building C object CMakeFiles/test_boulder_schlafkern.dir/fw/services/activity/boulder/test_boulder_schlafkern.c.o
+[213/656] Building C object CMakeFiles/test_boulder_schlaf.dir/fw/services/activity/boulder/test_boulder_schlaf/clar_main.c.o
+[214/656] Building C object CMakeFiles/test_activity.dir/fw/services/activity/test_activity.c.o
+[215/656] Building C object CMakeFiles/test_boulder_zyklen.dir/fw/services/activity/boulder/test_boulder_zyklen.c.o
+[216/656] Building C object CMakeFiles/test_boulder_zyklen.dir/fw/services/activity/boulder/test_boulder_zyklen/clar_main.c.o
+[217/656] Building C object CMakeFiles/test_boulder_messung.dir/fw/services/activity/boulder/test_boulder_messung/clar_main.c.o
+[218/656] Building C object CMakeFiles/test_boulder_messung.dir/fw/services/activity/boulder/test_boulder_messung.c.o
+[219/656] Building C object CMakeFiles/test_boulder_fahrt.dir/fw/services/activity/boulder/test_boulder_fahrt/clar_main.c.o
+[220/656] Building C object CMakeFiles/test_boulder_wecker.dir/fw/services/activity/boulder/test_boulder_wecker.c.o
+[221/656] Building C object CMakeFiles/test_boulder_diagnose.dir/fw/services/activity/boulder/test_boulder_diagnose/clar_main.c.o
+[222/656] Building C object CMakeFiles/test_boulder_fahrt.dir/fw/services/activity/boulder/test_boulder_fahrt.c.o
+[223/656] Building C object CMakeFiles/test_boulder_wecker_vergleich.dir/fw/services/activity/boulder/test_boulder_wecker.c.o
+[224/656] Building C object CMakeFiles/test_boulder_schnittstelle.dir/fw/services/activity/boulder/test_boulder_schnittstelle.c.o
+[225/656] Building C object CMakeFiles/test_boulder_diagnose.dir/fw/services/activity/boulder/test_boulder_diagnose.c.o
+[226/656] Building C object CMakeFiles/test_boulder_woche.dir/fw/services/activity/boulder/test_boulder_woche.c.o
+[227/656] Building C object CMakeFiles/test_boulder_naechte.dir/fw/services/activity/boulder/test_boulder_naechte.c.o
+[228/656] Building C object CMakeFiles/test_boulder_herz.dir/fw/services/activity/boulder/test_boulder_herz.c.o
+[229/656] Building C object CMakeFiles/test_protobuf_log.dir/fw/services/protobuf_log/test_protobuf_log.c.o
+[230/656] Linking C executable fw/test_clar/runme
+[231/656] Linking C executable fakes_tests/test_fake_mutex/runme
+[232/656] Linking C executable fw/test_utf8/runme
+[233/656] Linking C executable fw/test_codepoint/runme
+[234/656] Linking C executable fw/test_utf8_iterator/runme
+[235/656] Linking C executable fw/test_arabic_shaping/runme
+[236/656] Linking C executable fw/test_bidi/runme
+[237/656] Linking C executable fw/test_word_iterator/runme
+[238/656] Linking C executable fw/test_char_iterator/runme
+[239/656] Linking C executable fw/test_line_layout/runme
+[240/656] Linking C executable fw/test_launcher_app_message/runme
+[241/656] Linking C executable fw/test_i18n/runme
+[242/656] Linking C executable fw/test_tick/runme
+[243/656] Linking C executable fw/test_battery_monitor/runme
+[244/656] Linking C executable fw/test_alerts/runme
+[245/656] Linking C executable fw/test_alarm/runme
+[246/656] Linking C executable fw/test_heap/runme
+[247/656] Linking C executable fw/test_memory_layout/runme
+[248/656] Linking C executable fw/test_flash_logging_asterix/runme_asterix
+[249/656] Linking C executable fw/test_pebble_app_info/runme
+[250/656] Linking C executable fw/test_process_manager/runme
+[251/656] Linking C executable fw/test_alarm_smart/runme
+[252/656] Linking C executable fw/test_data_logging/runme
+[253/656] Linking C executable fw/test_app_manager/runme
+[254/656] Linking C executable fw/test_pebble_process_md_obelix/runme_obelix
+[255/656] Linking C executable fw/test_pebble_process_md_gabbro/runme_gabbro
+[256/656] Linking C executable fw/test_phone_formatting/runme
+[257/656] Linking C executable fw/test_app_run_state/runme
+[258/656] Linking C executable fw/test_getting_started_button_combo/runme
+[259/656] Linking C executable fw/applib/test_cpu_cache/runme
+[260/656] Linking C executable fw/applib/test_app_message/runme
+[261/656] Linking C executable fw/applib/test_app_inbox/runme
+[262/656] Linking C executable fw/applib/test_app_outbox/runme
+[263/656] Linking C executable fw/test_timeline_api/runme
+[264/656] Linking C executable fw/test_text_layout_8_bit_obelix/runme_obelix
+[265/656] Linking C executable fw/applib/test_pbl_std/runme
+[266/656] Linking C executable fw/applib/test_text_render/runme
+[267/656] Linking C executable fw/applib/test_persist/runme
+[268/656] Linking C executable fw/applib/test_strftime/runme
+[269/656] Linking C executable fw/applib/test_touch_service/runme
+[270/656] Linking C executable fw/applib/test_bitmap_layer/runme
+[271/656] Linking C executable fw/applib/test_unobstructed_area_service/runme
+[272/656] Linking C executable fw/applib/test_accel_service/runme
+[273/656] Linking C executable fw/applib/test_text_resources/runme
+[274/656] Linking C executable fw/applib/test_template_string/runme
+[275/656] Linking C executable fw/applib/test_app_glance/runme
+[276/656] Linking C executable fw/applib/bluetooth/test_ble_ibeacon/runme
+[277/656] Linking C executable fw/applib/test_dict/runme
+[278/656] Linking C executable fw/applib/bluetooth/test_ble_ad_parse/runme
+[279/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_app/runme
+[280/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_daten/runme
+[281/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_app_zeiten/runme
+[282/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_rechnung/runme
+[283/656] Linking C executable fw/applib/test_qr_code_obelix/runme_obelix
+[284/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_grundsatz/runme
+[285/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_einstieg/runme
+[286/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_karten_obelix/runme_obelix
+[287/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_einstiege/runme
+[288/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_startmenue/runme
+[289/656] Linking C executable fw/apps/system_apps/boulder_health/test_bh_startmenue_asterix/runme
+[290/656] Linking C executable fw/apps/system_apps/health/test_health_card_view_obelix/runme_obelix
+[291/656] Linking C executable fw/apps/system_apps/health/test_health_activity_summary_card_obelix/runme_obelix
+[292/656] Linking C executable fw/apps/system_apps/health/test_health_activity_summary_card_gabbro/runme_gabbro
+[293/656] Linking C executable fw/apps/system_apps/health/test_health_card_view_gabbro/runme_gabbro
+[294/656] Linking C executable fw/apps/system_apps/health/test_health_card_view_asterix/runme_asterix
+[295/656] Linking C executable fw/apps/system_apps/health/test_health_activity_summary_card_asterix/runme_asterix
+[296/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_summary_card_gabbro/runme_gabbro
+[297/656] Linking C executable fw/apps/system_apps/health/test_health_hr_summary_card_asterix/runme_asterix
+[298/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_summary_card_asterix/runme_asterix
+[299/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_summary_card_obelix/runme_obelix
+[300/656] Linking C executable fw/apps/system_apps/health/test_health_activity_detail_card_gabbro/runme_gabbro
+[301/656] Linking C executable fw/apps/system_apps/health/test_health_activity_detail_card_obelix/runme_obelix
+[302/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_detail_card_obelix/runme_obelix
+[303/656] Linking C executable fw/apps/system_apps/health/test_health_activity_detail_card_asterix/runme_asterix
+[304/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_detail_card_gabbro/runme_gabbro
+[305/656] Linking C executable fw/apps/system_apps/health/test_health_hr_detail_card_gabbro/runme_gabbro
+[306/656] Linking C executable fw/apps/system_apps/health/test_health_detail_card_obelix/runme_obelix
+[307/656] Linking C executable fw/apps/system_apps/health/test_health_hr_detail_card_obelix/runme_obelix
+[308/656] Linking C executable fw/apps/system_apps/health/test_health_hr_detail_card_asterix/runme_asterix
+[309/656] Linking C executable fw/apps/system_apps/health/test_health_sleep_detail_card_asterix/runme_asterix
+[310/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_meldungen/runme
+[311/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_app/runme
+[312/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_einstellungen/runme
+[313/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_telefon/runme
+[314/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_lauf/runme
+[315/656] Linking C executable fw/apps/system_apps/health/test_health_detail_card_asterix/runme_asterix
+[316/656] Linking C executable fw/apps/system_apps/health/test_health_detail_card_gabbro/runme_gabbro
+[317/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_kachel_haken_ohne_variante/runme
+[318/656] Linking C executable fw/apps/system_apps/kieselstrasse/test_kieselstrasse_weg/runme
+[319/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_kachel_haken/runme
+[320/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_kachel/runme
+[321/656] Linking C executable fw/apps/system_apps/kieselstrasse/test_kieselstrasse_app/runme
+[322/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_startmenue/runme
+[323/656] Linking C executable fw/apps/system_apps/kieselsport/test_kieselsport_startmenue_ohne_variante/runme
+[324/656] Linking C executable fw/apps/system_apps/music/test_music_asterix/runme_asterix
+[325/656] Linking C executable fw/apps/system_apps/music/test_music_obelix/runme_obelix
+[326/656] Linking C executable fw/apps/system_apps/music/test_music_gabbro/runme_gabbro
+[327/656] Linking C executable fw/apps/system_apps/notifications/test_notifications_history/runme
+[328/656] Linking C executable fw/apps/system_apps/launcher/test_launcher_menu_layer_obelix/runme_obelix
+[329/656] Linking C executable fw/apps/system_apps/launcher/test_launcher_menu_layer_asterix/runme_asterix
+[330/656] Linking C executable fw/apps/system_apps/launcher/test_launcher_menu_layer_gabbro/runme_gabbro
+[331/656] Linking C executable fw/apps/system_apps/timeline/test_timeline_list_view_asterix/runme_asterix
+[332/656] Linking C executable fw/apps/system_apps/timeline/test_timeline_list_view_obelix/runme_obelix
+[333/656] Linking C executable fw/apps/system_apps/timeline/test_timeline_no_events_obelix/runme_obelix
+[334/656] Linking C executable fw/apps/system_apps/timeline/test_timeline_no_events_gabbro/runme_gabbro
+[335/656] Linking C executable fw/apps/system_apps/weather/test_weather_app_layout_obelix/runme_obelix
+[336/656] Linking C executable fw/apps/system_apps/timeline/test_timeline_list_view_gabbro/runme_gabbro
+[337/656] Linking C executable fw/apps/system_apps/weather/test_weather_app_layout_gabbro/runme_gabbro
+[338/656] Linking C executable fw/apps/system_apps/workout/test_workout_summary_obelix/runme_obelix
+[339/656] Linking C executable fw/apps/system_apps/weather/test_weather_app_layout_asterix/runme_asterix
+[340/656] Linking C executable fw/apps/system_apps/workout/test_workout_summary_asterix/runme_asterix
+[341/656] Linking C executable fw/apps/system_apps/workout/test_workout_active_gabbro/runme_gabbro
+[342/656] Linking C executable fw/apps/system_apps/workout/test_workout_active_obelix/runme_obelix
+[343/656] Linking C executable fw/apps/system_apps/workout/test_workout_active_asterix/runme_asterix
+[344/656] Linking C executable fw/apps/system_apps/workout/test_workout_summary_gabbro/runme_gabbro
+[345/656] Linking C executable fw/apps/system_apps/workout/test_workout_dialog_asterix/runme_asterix
+[346/656] Linking C executable fw/apps/system_apps/workout/test_workout_selection_obelix/runme_obelix
+[347/656] Linking C executable fw/apps/system_apps/workout/test_workout_dialog_obelix/runme_obelix
+[348/656] Linking C executable fw/apps/system_apps/workout/test_workout_dialog_gabbro/runme_gabbro
+[349/656] Linking C executable fw/apps/system_apps/workout/test_workout_utils/runme
+[350/656] Linking C executable fw/apps/system_apps/workout/test_workout_selection_gabbro/runme_gabbro
+[351/656] Linking C executable fw/apps/watch/kickstart/test_kickstart_gabbro/runme_gabbro
+[352/656] Linking C executable fw/comm/test_ams/runme
+[353/656] Linking C executable fw/apps/watch/kickstart/test_kickstart_obelix/runme_obelix
+[354/656] Linking C executable fw/apps/system_apps/workout/test_workout_selection_asterix/runme_asterix
+[355/656] Linking C executable fw/comm/test_ams_util/runme
+[356/656] Linking C executable fw/apps/watch/kickstart/test_kickstart_asterix/runme_asterix
+[357/656] Linking C executable fw/comm/test_bt_conn_mgr/runme
+[358/656] Linking C executable fw/comm/test_gap_le_advert/runme
+[359/656] Linking C executable fw/comm/test_gatt_client_discovery/runme
+[360/656] Linking C executable fw/comm/test_gatt_client_accessors/runme
+[361/656] Linking C executable fw/comm/test_ancs_util/runme
+[362/656] Linking C executable fw/comm/test_gatt_service_changed_client/runme
+[363/656] Linking C executable fw/comm/test_gatt_service_changed_server/runme
+[364/656] Linking C executable fw/comm/test_gatt_client_subscriptions/runme
+[365/656] Linking C executable fw/comm/test_kernel_le_client/runme
+[366/656] Linking C executable fw/comm/test_qemu_serial/runme
+[367/656] Linking C executable fw/comm/test_ppogatt_v1/runme
+[368/656] Linking C executable fw/console/test_cobs_encode/runme
+[369/656] Linking C executable fw/comm/test_ancs/runme
+[370/656] Linking C executable fw/comm/test_ppogatt_v0/runme
+[371/656] Linking C executable fw/console/test_cobs_decode/runme
+[372/656] Linking C executable fw/drivers/test_flash_api/runme
+[373/656] Linking C executable fw/drivers/test_accel_qemu/runme
+[374/656] Linking C executable fw/graphics/test_framebuffer_8bit_obelix/runme_obelix
+[375/656] Linking C executable fw/graphics/test_graphics_draw_pixel_8bit_obelix/runme_obelix
+[376/656] Linking C executable fw/graphics/test_graphics_draw_stroke_8bit_obelix/runme_obelix
+[377/656] Linking C executable fw/drivers/test_flash_erase_obelix/runme_obelix
+[378/656] Linking C executable fw/graphics/test_graphics_draw_rect_8bit_obelix/runme_obelix
+[379/656] Linking C executable fw/graphics/test_graphics_fill_rect_8bit_obelix/runme_obelix
+[380/656] Linking C executable fw/graphics/test_graphics_stroke_circle_8bit_obelix/runme_obelix
+[381/656] Linking C executable fw/graphics/test_graphics_gtransform_8bit_obelix/runme_obelix
+[382/656] Linking C executable fw/graphics/test_graphics_draw_round_rect_8bit_obelix/runme_obelix
+[383/656] Linking C executable fw/graphics/test_graphics_gpath_8bit_obelix/runme_obelix
+[384/656] Linking C executable fw/graphics/test_graphics_draw_stroke_precise_8bit_obelix/runme_obelix
+[385/656] Linking C executable fw/graphics/test_blending_8bit_obelix/runme_obelix
+[386/656] Linking C executable fw/graphics/test_graphics_context_8bit_obelix/runme_obelix
+[387/656] Linking C executable fw/graphics/test_graphics_draw_bitmap_asterix/runme_asterix
+[388/656] Linking C executable fw/graphics/test_graphics_draw_bitmap_obelix/runme_obelix
+[389/656] Linking C executable fw/graphics/test_graphics_colors/runme
+[390/656] Linking C executable fw/graphics/test_graphics_draw_text_8bit_obelix/runme_obelix
+[391/656] Linking C executable fw/graphics/test_graphics_draw_text_flow_gabbro/runme_gabbro
+[392/656] Linking C executable fw/graphics/test_gtypes_obelix/runme_obelix
+[393/656] Linking C executable fw/graphics/test_gtypes_gabbro/runme_gabbro
+[394/656] Linking C executable fw/graphics/test_graphics_circle/runme
+[395/656] Linking C executable fw/graphics/test_gbitmap_formats_gabbro/runme_gabbro
+[396/656] Linking C executable fw/graphics/test_gbitmap_resource_validation/runme
+[397/656] Linking C executable fw/graphics/test_gbitmap_data_row_info/runme
+[398/656] Linking C executable fw/graphics/test_gbitmap_formats_obelix/runme_obelix
+[399/656] Linking C executable fw/graphics/test_gbitmap_processor/runme
+[400/656] Linking C executable fw/graphics/test_gdraw_command_sequence/runme
+[401/656] Linking C executable fw/graphics/test_graphics_blending_obelix/runme_obelix
+[402/656] Linking C executable fw/graphics/test_gdraw_command/runme
+[403/656] Linking C executable fw/graphics/test_gdraw_command_resources/runme
+[404/656] Linking C executable fw/graphics/test_png/runme
+[405/656] Linking C executable fw/graphics/test_pdc/runme
+[406/656] Linking C executable fw/graphics/test_gdraw_command_transforms/runme
+[407/656] Linking C executable fw/graphics/test_pbi/runme
+[408/656] Linking C executable fw/graphics/test_gbitmap_sequence_gabbro/runme_gabbro
+[409/656] Linking C executable fw/graphics/test_palettized_conversion/runme
+[410/656] Linking C executable fw/graphics/test_perimeter_obelix/runme_obelix
+[411/656] Linking C executable fw/graphics/test_perimeter_gabbro/runme_gabbro
+[412/656] Linking C executable fw/graphics/test_graphics_text_node/runme
+[413/656] Linking C executable fw/graphics/test_bitblt_palette_1bit_asterix/runme_asterix
+[414/656] Linking C executable fw/graphics/test_framebuffer_duma_obelix/runme_obelix
+[415/656] Linking C executable fw/graphics/test_graphics_draw_core_obelix/runme_obelix
+[416/656] Linking C executable fw/graphics/test_framebuffer_duma_gabbro/runme_gabbro
+[417/656] Linking C executable fw/graphics/test_framebuffer_legacy_gabbro/runme_gabbro
+[418/656] Linking C executable fw/graphics/test_graphics_draw_implementation/runme
+[419/656] Linking C executable fw/graphics/test_bitblt/runme
+[420/656] Linking C executable fw/graphics/test_raw_image/runme
+[421/656] Linking C executable fw/kernel/test_interval_timer/runme
+[422/656] Linking C executable fw/graphics/test_bitblt_palette/runme
+[423/656] Linking C executable fw/kernel/test_remote_input/runme
+[424/656] Linking C executable fw/kernel/test_rand/runme
+[425/656] Linking C executable fw/mfg/test_mfg_serials_obelix/runme_obelix
+[426/656] Linking C executable fw/services/test_pfs_obelix/runme_obelix
+[427/656] Linking C executable fw/pebble_actions/test_ancs_pebble_actions/runme
+[428/656] Linking C executable fw/services/test_put_bytes_obelix/runme_obelix
+[429/656] Linking C executable fw/pebble_actions/test_timeline_actions/runme
+[430/656] Linking C executable fw/services/test_put_bytes_gabbro/runme_gabbro
+[431/656] Linking C executable fw/services/test_put_bytes_asterix/runme_asterix
+[432/656] Linking C executable fw/services/test_tick_timer/runme
+[433/656] Linking C executable fw/services/test_contacts/runme
+[434/656] Linking C executable fw/services/test_cron/runme
+[435/656] Linking C executable fw/services/test_evented_timer/runme
+[436/656] Linking C executable fw/services/test_ping/runme
+[437/656] Linking C executable fw/services/test_music_endpoint/runme
+[438/656] Linking C executable fw/services/test_compass_cal/runme
+[439/656] Linking C executable fw/services/test_light/runme
+[440/656] Linking C executable fw/services/test_imaging/runme
+[441/656] Linking C executable fw/services/test_phone_pp/runme
+[442/656] Linking C executable fw/services/test_als_screen_compensation/runme
+[443/656] Linking C executable fw/services/test_analytics_native/runme
+[444/656] Linking C executable fw/services/test_regular_timer/runme
+[445/656] Linking C executable fw/services/test_debounced_connection_service/runme
+[446/656] Linking C executable fw/services/test_phone_call/runme
+[447/656] Linking C executable fw/services/test_timeline_item/runme
+[448/656] Linking C executable fw/services/test_clock/runme
+[449/656] Linking C executable fw/services/test_timezone_database/runme
+[450/656] Linking C executable fw/services/test_registry_endpoint/runme
+[451/656] Linking C executable fw/services/test_migrate_wakeup/runme
+[452/656] Linking C executable fw/services/test_wakeup/runme
+[453/656] Linking C executable fw/services/test_speaker_service/runme
+[454/656] Linking C executable fw/services/test_voice_endpoint/runme
+[455/656] Linking C executable fw/services/test_transcription/runme
+[456/656] Linking C executable fw/services/test_audio_endpoint/runme
+[457/656] Linking C executable fw/services/test_app_cache/runme
+[458/656] Linking C executable fw/services/test_app_install_manager/runme
+[459/656] Linking C executable fw/services/test_accel_manager/runme
+[460/656] Linking C executable fw/services/test_app_menu_data_source/runme
+[461/656] Linking C executable fw/services/test_app_fetch_endpoint/runme
+[462/656] Linking C executable fw/services/test_process_loader_storage/runme
+[463/656] Linking C executable fw/services/test_shared_prf_storage_v3_obelix/runme_obelix
+[464/656] Linking C executable fw/services/test_app_file/runme
+[465/656] Linking C executable fw/services/test_vibe_score/runme
+[466/656] Linking C executable fw/services/test_weather_service/runme
+[467/656] Linking C executable fw/services/test_do_not_disturb/runme
+[468/656] Linking C executable fw/services/test_vibe/runme
+[469/656] Linking C executable fw/services/test_vibe_intensity/runme
+[470/656] Linking C executable fw/services/test_vibe_score_info/runme
+[471/656] Linking C executable fw/services/test_touch/runme
+[472/656] Linking C executable fw/services/test_touch_session/runme
+[473/656] Linking C executable fw/services/test_clock_time/runme
+[474/656] Linking C executable fw/services/test_app_glance_service/runme
+[475/656] Linking C executable fw/services/test_hrm_manager/runme
+[476/656] Linking C executable fw/services/activity/test_health_util/runme
+[477/656] Linking C executable fw/services/activity/test_hr_util/runme
+[478/656] Linking C executable fw/services/activity/test_activity_calculators/runme
+[479/656] Linking C executable fw/services/activity/test_activity_insights/runme
+[480/656] Linking C executable fw/services/activity/test_workout_service/runme
+[481/656] Linking C executable fw/services/activity/test_activity/runme
+[482/656] Linking C executable fw/services/activity/test_activity_algorithm_kraepelin/runme
+[483/656] Linking C executable fw/services/activity/test_kraepelin_algorithm/runme
+[484/656] Linking C executable fw/services/activity/boulder/test_boulder_kraepelin_algorithm/runme
+[485/656] Linking C executable fw/services/activity/boulder/test_boulder_vertraege/runme
+[486/656] Linking C executable fw/services/activity/boulder/test_boulder_vertraege_ohne_kieselsport/runme
+[487/656] Linking C executable fw/services/activity/boulder/test_boulder_schlaf/runme
+[488/656] Linking C executable fw/services/activity/boulder/test_boulder_schlafkern/runme
+[489/656] Linking C executable fw/services/activity/boulder/test_boulder_zyklen/runme
+[490/656] Linking C executable fw/services/activity/boulder/test_boulder_glue/runme
+[491/656] Linking C executable fw/services/activity/boulder/test_boulder_glue_differenz_original/runme
+[492/656] Linking C executable fw/services/activity/boulder/test_boulder_messung/runme
+[493/656] Linking C executable fw/services/activity/boulder/test_boulder_wecker_vergleich/runme
+[494/656] Linking C executable fw/services/activity/boulder/test_boulder_activity_algorithm_kraepelin/runme
+[495/656] Linking C executable fw/services/activity/boulder/test_boulder_diagnose/runme
+[496/656] Linking C executable fw/services/activity/boulder/test_boulder_fahrt/runme
+[497/656] Linking C executable fw/services/activity/boulder/test_boulder_glue_differenz_kopie/runme
+[498/656] Linking C executable fw/services/activity/boulder/test_boulder_umzug_prefs/runme
+[499/656] Linking C executable fw/services/activity/boulder/test_boulder_wecker/runme
+[500/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_vertrag/runme
+[501/656] Linking C executable fw/services/activity/boulder/test_boulder_herz/runme
+[502/656] Linking C executable fw/services/activity/boulder/test_boulder_schnittstelle/runme
+[503/656] Linking C executable fw/services/activity/boulder/test_boulder_naechte/runme
+[504/656] Linking C executable fw/services/activity/boulder/sport/test_boulder_kalorien/runme
+[505/656] Linking C executable fw/services/activity/boulder/test_boulder_woche/runme
+[506/656] Linking C executable fw/services/activity/boulder/sport/test_workout_service_kieselsport/runme
+[507/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_kalorien/runme
+[508/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_speicher/runme
+[509/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport/runme
+[510/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_abo/runme
+[511/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_folgen/runme
+[512/656] Linking C executable fw/services/app_message/test_app_message_sender/runme
+[513/656] Linking C executable fw/services/app_message/test_app_session_capabilities/runme
+[514/656] Linking C executable fw/services/app_message/test_app_message_receiver/runme
+[515/656] Linking C executable fw/services/blob_db/test_pin_db/runme
+[516/656] Linking C executable fw/services/blob_db/test_timeline/runme
+[517/656] Linking C executable fw/services/activity/boulder/sport/test_kieselsport_wechsel/runme
+[518/656] Linking C executable fw/services/blob_db/test_blob_db_sync/runme
+[519/656] Linking C executable fw/services/blob_db/test_app_glance_db/runme
+[520/656] Linking C executable fw/services/blob_db/test_blob_db_endpoint/runme
+[521/656] Linking C executable fw/services/blob_db/test_contacts_db/runme
+[522/656] Linking C executable fw/services/blob_db/test_app_db/runme
+[523/656] Linking C executable fw/services/blob_db/test_blob_db2_endpoint/runme
+[524/656] Linking C executable fw/services/blob_db/test_watch_app_prefs_db/runme
+[525/656] Linking C executable fw/services/blob_db/test_notif_db/runme
+[526/656] Linking C executable fw/services/blob_db/test_weather_db/runme
+[527/656] Linking C executable fw/services/blob_db/test_reminder_db/runme
+[528/656] Linking C executable fw/services/blob_db/test_ios_notif_pref_db/runme
+[529/656] Linking C executable fw/services/blob_db/test_prefs_db/runme
+[530/656] Linking C executable fw/services/bluetooth/test_local_addr/runme
+[531/656] Linking C executable fw/services/blob_db/test_health_db/runme
+[532/656] Linking C executable fw/services/bluetooth/test_bluetooth_persistent_storage_prf_obelix/runme_obelix
+[533/656] Linking C executable fw/services/comm_session/test_session/runme
+[534/656] Linking C executable fw/services/bluetooth/test_ble_hrm/runme
+[535/656] Linking C executable fw/services/comm_session/test_meta_endpoint/runme
+[536/656] Linking C executable fw/services/bluetooth/test_bluetooth_persistent_storage/runme
+[537/656] Linking C executable fw/services/comm_session/test_session_send_buffer/runme
+[538/656] Linking C executable fw/services/comm_session/test_session_send_queue/runme
+[539/656] Linking C executable fw/services/comm_session/test_default_kernel_receiver/runme
+[540/656] Linking C executable fw/services/comm_session/test_session_receive_router/runme
+[541/656] Linking C executable fw/services/compositor/test_compositor/runme
+[542/656] Linking C executable fw/services/comm_session/test_session_remote_version/runme
+[543/656] Linking C executable fw/services/notifications/test_ancs_notifications_util/runme
+[544/656] Linking C executable fw/services/notifications/test_notification_storage/runme
+[545/656] Linking C executable fw/services/health/test_health/runme
+[546/656] Linking C executable fw/services/notifications/test_alerts_preferences/runme
+[547/656] Linking C executable fw/services/notifications/test_ancs_notifications/runme
+[548/656] Linking C executable fw/services/protobuf_log/test_protobuf_log/runme
+[549/656] Linking C executable fw/services/notifications/test_ancs_filtering/runme
+[550/656] Linking C executable fw/services/notifications/test_nexmo/runme
+[551/656] Linking C executable fw/services/settings/test_settings_file/runme
+[552/656] Linking C executable fw/services/timeline/test_calendar/runme
+[553/656] Linking C executable fw/services/timeline/test_reminders/runme
+[554/656] Linking C executable fw/services/timeline/test_attribute/runme
+[555/656] Linking C executable fw/services/timeline/test_timeline_peek_event/runme
+[556/656] Linking C executable fw/services/timeline/test_timeline_model/runme
+[557/656] Linking C executable fw/services/timeline/test_timeline_resources/runme
+[558/656] Linking C executable fw/services/timeline/test_alarm_layout_gabbro/runme_gabbro
+[559/656] Linking C executable fw/services/timeline/test_alarm_layout_obelix/runme_obelix
+[560/656] Linking C executable fw/shell/normal/test_normal_system_app_state_machine/runme
+[561/656] Linking C executable fw/shell/test_system_theme/runme
+[562/656] Linking C executable fw/services/timeline/test_swap_layer_touch/runme
+[563/656] Linking C executable fw/services/timeline/test_timeline_layouts_asterix/runme_asterix
+[564/656] Linking C executable fw/services/timeline/test_timeline_layouts_obelix/runme_obelix
+[565/656] Linking C executable fw/services/timeline/test_timeline_layouts_gabbro/runme_gabbro
+[566/656] Linking C executable fw/shell/normal/test_battery_ui_fsm_obelix/runme_obelix
+[567/656] Linking C executable fw/shell/normal/test_app_idle_timeout/runme
+[568/656] Linking C executable fw/shell/normal/test_battery_ui_fsm_percent_obelix/runme_obelix
+[569/656] Linking C executable fw/system/test_flash_region_obelix/runme_obelix
+[570/656] Linking C executable fw/ui/test_layer_rect/runme
+[571/656] Linking C executable fw/ui/test_layer/runme
+[572/656] Linking C executable fw/ui/test_scroll_layer_touch/runme
+[573/656] Linking C executable fw/ui/test_scroll_layer/runme
+[574/656] Linking C executable fw/ui/test_status_bar_layer/runme
+[575/656] Linking C executable fw/ui/test_animation_timing/runme
+[576/656] Linking C executable fw/ui/test_animation_interpolate/runme
+[577/656] Linking C executable fw/ui/test_animation/runme
+[578/656] Linking C executable fw/ui/test_kino_reel/runme
+[579/656] Linking C executable fw/ui/test_modal_touch_nav/runme
+[580/656] Linking C executable fw/ui/test_window_stack/runme
+[581/656] Linking C executable fw/ui/test_content_indicator/runme
+[582/656] Linking C executable fw/ui/test_kino_player/runme
+[583/656] Linking C executable fw/ui/test_action_menu_layer_obelix/runme_obelix
+[584/656] Linking C executable fw/ui/test_menu_layer/runme
+[585/656] Linking C executable fw/ui/test_action_menu_layer_gabbro/runme_gabbro
+[586/656] Linking C executable fw/ui/test_menu_layer_system_cells_asterix/runme_asterix
+[587/656] Linking C executable fw/ui/test_menu_layer_system_cells_obelix/runme_obelix
+[588/656] Linking C executable fw/ui/test_menu_layer_system_cells_gabbro/runme_gabbro
+[589/656] Linking C executable fw/ui/test_notification_window_obelix/runme_obelix
+[590/656] Linking C executable fw/ui/test_notification_window_gabbro/runme_gabbro
+[591/656] Linking C executable fw/ui/test_notification_window_asterix/runme_asterix
+[592/656] Linking C executable fw/ui/test_action_menu_window_obelix/runme_obelix
+[593/656] Linking C executable fw/ui/test_simple_dialog_obelix/runme_obelix
+[594/656] Linking C executable fw/ui/test_action_menu_window_gabbro/runme_gabbro
+[595/656] Linking C executable fw/ui/test_action_menu_window_asterix/runme_asterix
+[596/656] Linking C executable fw/ui/test_simple_dialog_gabbro/runme_gabbro
+[597/656] Linking C executable fw/ui/test_simple_dialog_asterix/runme_asterix
+[598/656] Linking C executable fw/ui/test_text_layer/runme
+[599/656] Linking C executable fw/ui/test_selection_windows_asterix/runme_asterix
+[600/656] Linking C executable fw/ui/test_selection_windows_obelix/runme_obelix
+[601/656] Linking C executable fw/ui/test_expandable_dialog_gabbro/runme_gabbro
+[602/656] Linking C executable fw/ui/test_emoji_fonts/runme
+[603/656] Linking C executable fw/ui/test_text_layer_flow/runme
+[604/656] Linking C executable fw/ui/test_selection_windows_gabbro/runme_gabbro
+[605/656] Linking C executable fw/ui/test_jumboji/runme
+[606/656] Linking C executable fw/ui/test_timeline_peek_obelix/runme_obelix
+[607/656] Linking C executable fw/ui/test_timeline_peek_gabbro/runme_gabbro
+[608/656] Linking C executable fw/ui/test_option_menu_window_gabbro/runme_gabbro
+[609/656] Linking C executable fw/ui/test_option_menu_window_obelix/runme_obelix
+[610/656] Linking C executable fw/ui/test_timeline_peek_asterix/runme_asterix
+[611/656] Linking C executable fw/ui/test_option_menu_window_asterix/runme_asterix
+[612/656] Linking C executable fw/ui/recognizer/test_recognizer/runme
+[613/656] Linking C executable fw/ui/recognizer/test_tap/runme
+[614/656] Linking C executable fw/ui/recognizer/test_recognizer_manager/runme
+[615/656] Linking C executable fw/ui/recognizer/test_swipe/runme
+[616/656] Linking C executable fw/ui/recognizer/test_pan/runme
+[617/656] Linking C executable fw/ui/recognizer/test_recognizer_lifecycle/runme
+[618/656] Linking C executable fw/ui/recognizer/test_recognizer_competition/runme
+[619/656] Linking C executable libc/test_mktime/runme
+[620/656] Linking C executable kernel/test_kernel/runme
+[621/656] Linking C executable fw/ui/recognizer/test_touch_nav/runme
+[622/656] Linking C executable libc/test_gmtime/runme
+[623/656] Linking C executable libutil/test_list/runme
+[624/656] Linking C executable libutil/test_math_fixed/runme
+[625/656] Linking C executable libutil/test_slist/runme
+[626/656] Linking C executable libutil/test_math/runme
+[627/656] Linking C executable libutil/test_circular_buffer/runme
+[628/656] Linking C executable libutil/test_string/runme
+[629/656] Linking C executable libutil/test_uuid/runme
+[630/656] Linking C executable libutil/test_circular_cache/runme
+[631/656] Linking C executable libutil/test_byteorder/runme
+[632/656] Linking C executable libutil/test_sort/runme
+[633/656] Linking C executable libutil/test_keyed_circular_cache/runme
+[634/656] Linking C executable libutil/test_bitops/runme
+[635/656] Linking C executable libutil/test_struct/runme
+[636/656] Linking C executable libutil/test_bits/runme
+[637/656] Linking C executable libutil/test_misc/runme
+[638/656] Linking C executable libutil/test_ratio/runme
+[639/656] Linking C executable libutil/test_base64/runme
+[640/656] Linking C executable libutil/test_buffer/runme
+[641/656] Linking C executable libutil/test_pstring/runme
+[642/656] Linking C executable libutil/test_string_list/runme
+[643/656] Linking C executable libutil/test_generic_attr/runme
+[644/656] Linking C executable libutil/test_stats/runme
+[645/656] Linking C executable libutil/test_shared_cbuf/runme
+[646/656] Linking C executable libutil/test_time/runme
+[647/656] Linking C executable subsys/crc/test_crc/runme
+[648/656] Linking C executable subsys/crc/test_crc_hw/runme
+[649/656] Linking C executable subsys/crc/test_crc32/runme
+[650/656] Linking C executable subsys/crc/test_crc32_legacy/runme
+[651/656] Linking C executable test_infra/test_test_infra/runme
+[652/656] Linking C executable subsys/logging/test_pulse_logging/runme
+[653/656] Linking C executable subsys/task_wdt/test_task_wdt/runme
+[654/656] Linking C executable subsys/input/test_input/runme
+[655/656] Linking C executable subsys/logging/test_log_modules/runme
+Internal ctest changing into directory: /home/user/pebbleos-v2/build-test
+Test project /home/user/pebbleos-v2/build-test
+        Start   1: pbl_test_failed_dir
+        Start 200: test_pfs_obelix
+        Start  21: test_data_logging
+        Start 267: test_boulder_wecker
+  1/440 Test   #1: pbl_test_failed_dir .............................   Passed    0.02 sec
+        Start 334: test_timeline_layouts_asterix
+  2/440 Test  #21: test_data_logging ...............................   Passed   23.14 sec
+        Start 332: test_timeline_layouts_obelix
+  3/440 Test #334: test_timeline_layouts_asterix ...................   Passed   27.95 sec
+        Start 268: test_boulder_wecker_vergleich
+  4/440 Test #332: test_timeline_layouts_obelix ....................   Passed   29.63 sec
+        Start 333: test_timeline_layouts_gabbro
+  5/440 Test #267: test_boulder_wecker .............................   Passed   58.22 sec
+        Start  14: test_alarm
+  6/440 Test  #14: test_alarm ......................................   Passed   14.57 sec
+        Start 104: test_timeline_list_view_gabbro
+  7/440 Test #333: test_timeline_layouts_gabbro ....................   Passed   24.32 sec
+        Start 103: test_timeline_list_view_obelix
+  8/440 Test #268: test_boulder_wecker_vergleich ...................   Passed   58.06 sec
+        Start  20: test_flash_logging_asterix
+  9/440 Test #104: test_timeline_list_view_gabbro ..................   Passed   15.99 sec
+        Start 105: test_timeline_list_view_asterix
+ 10/440 Test #103: test_timeline_list_view_obelix ..................   Passed   12.91 sec
+        Start 202: test_put_bytes_gabbro
+ 11/440 Test #200: test_pfs_obelix .................................   Passed   90.94 sec
+        Start 326: test_timeline_peek_event
+ 12/440 Test  #20: test_flash_logging_asterix ......................   Passed    6.07 sec
+        Start 361: test_action_menu_window_obelix
+ 13/440 Test #202: test_put_bytes_gabbro ...........................   Passed    8.31 sec
+        Start  16: test_battery_monitor
+ 14/440 Test #326: test_timeline_peek_event ........................   Passed    7.41 sec
+        Start 280: test_kieselsport
+ 15/440 Test #361: test_action_menu_window_obelix ..................   Passed    8.80 sec
+        Start 362: test_action_menu_window_gabbro
+ 16/440 Test #105: test_timeline_list_view_asterix .................   Passed   14.35 sec
+        Start 203: test_put_bytes_asterix
+ 17/440 Test  #16: test_battery_monitor ............................   Passed    9.03 sec
+        Start 201: test_put_bytes_obelix
+ 18/440 Test #362: test_action_menu_window_gabbro ..................   Passed    7.20 sec
+        Start 114: test_workout_active_obelix
+ 19/440 Test #203: test_put_bytes_asterix ..........................   Passed    6.47 sec
+        Start 115: test_workout_active_gabbro
+ 20/440 Test #201: test_put_bytes_obelix ...........................   Passed    5.11 sec
+        Start  15: test_alarm_smart
+ 21/440 Test #114: test_workout_active_obelix ......................   Passed    6.30 sec
+        Start 363: test_action_menu_window_asterix
+ 22/440 Test #115: test_workout_active_gabbro ......................   Passed    5.78 sec
+        Start  96: test_launcher_menu_layer_obelix
+ 23/440 Test  #96: test_launcher_menu_layer_obelix .................   Passed    2.82 sec
+        Start 273: test_boulder_naechte
+ 24/440 Test #363: test_action_menu_window_asterix .................   Passed    4.63 sec
+        Start 116: test_workout_active_asterix
+ 25/440 Test  #15: test_alarm_smart ................................   Passed    7.23 sec
+        Start  97: test_launcher_menu_layer_gabbro
+ 26/440 Test  #97: test_launcher_menu_layer_gabbro .................   Passed    2.57 sec
+        Start 288: test_timeline
+ 27/440 Test #116: test_workout_active_asterix .....................   Passed    4.04 sec
+        Start 229: test_app_cache
+ 28/440 Test #288: test_timeline ...................................   Passed    3.50 sec
+        Start  98: test_launcher_menu_layer_asterix
+ 29/440 Test #229: test_app_cache ..................................   Passed    2.70 sec
+        Start 137: test_ancs
+ 30/440 Test  #98: test_launcher_menu_layer_asterix ................   Passed    2.82 sec
+        Start 433: test_boulder_kraepelin_gleich
+ 31/440 Test #137: test_ancs .......................................   Passed    3.24 sec
+        Start 434: test_boulder_glue_differenz
+ 32/440 Test #433: test_boulder_kraepelin_gleich ...................   Passed    3.91 sec
+        Start  65: test_health_activity_summary_card_obelix
+ 33/440 Test #273: test_boulder_naechte ............................   Passed   14.46 sec
+        Start 100: test_music_obelix
+ 34/440 Test #434: test_boulder_glue_differenz .....................   Passed    4.07 sec
+        Start  66: test_health_activity_summary_card_gabbro
+ 35/440 Test  #65: test_health_activity_summary_card_obelix ........   Passed    2.16 sec
+        Start 101: test_music_gabbro
+ 36/440 Test #100: test_music_obelix ...............................   Passed    2.15 sec
+        Start 109: test_weather_app_layout_gabbro
+ 37/440 Test  #66: test_health_activity_summary_card_gabbro ........   Passed    2.39 sec
+        Start 379: test_timeline_peek_gabbro
+ 38/440 Test #101: test_music_gabbro ...............................   Passed    2.29 sec
+        Start 378: test_timeline_peek_obelix
+ 39/440 Test #109: test_weather_app_layout_gabbro ..................   Passed    1.91 sec
+        Start  67: test_health_activity_summary_card_asterix
+ 40/440 Test #379: test_timeline_peek_gabbro .......................   Passed    2.12 sec
+        Start 380: test_timeline_peek_asterix
+ 41/440 Test #378: test_timeline_peek_obelix .......................   Passed    1.65 sec
+        Start 220: test_clock
+ 42/440 Test  #67: test_health_activity_summary_card_asterix .......   Passed    1.77 sec
+        Start 323: test_settings_file
+ 43/440 Test #380: test_timeline_peek_asterix ......................   Passed    1.99 sec
+        Start 251: test_activity_algorithm_kraepelin
+ 44/440 Test #220: test_clock ......................................   Passed    1.27 sec
+        Start 108: test_weather_app_layout_obelix
+ 45/440 Test #251: test_activity_algorithm_kraepelin ...............   Passed    0.70 sec
+        Start 162: test_graphics_draw_text_flow_gabbro
+ 46/440 Test #323: test_settings_file ..............................   Passed    1.73 sec
+        Start 110: test_weather_app_layout_asterix
+ 47/440 Test #108: test_weather_app_layout_obelix ..................   Passed    1.48 sec
+        Start 359: test_menu_layer_system_cells_gabbro
+ 48/440 Test #162: test_graphics_draw_text_flow_gabbro .............   Passed    1.35 sec
+        Start 309: test_session_send_buffer
+ 49/440 Test #110: test_weather_app_layout_asterix .................   Passed    1.37 sec
+        Start 248: test_activity
+ 50/440 Test #359: test_menu_layer_system_cells_gabbro .............   Passed    1.30 sec
+        Start 250: test_kraepelin_algorithm
+ 51/440 Test #309: test_session_send_buffer ........................   Passed    1.44 sec
+        Start  83: test_health_detail_card_asterix
+ 52/440 Test #248: test_activity ...................................   Passed    1.16 sec
+        Start  74: test_health_activity_detail_card_asterix
+ 53/440 Test #250: test_kraepelin_algorithm ........................   Passed    1.08 sec
+        Start 230: test_app_install_manager
+ 54/440 Test  #83: test_health_detail_card_asterix .................   Passed    1.17 sec
+        Start 317: test_notification_storage
+ 55/440 Test  #74: test_health_activity_detail_card_asterix ........   Passed    1.18 sec
+        Start  41: test_text_resources
+ 56/440 Test #230: test_app_install_manager ........................   Passed    1.14 sec
+        Start  81: test_health_detail_card_obelix
+ 57/440 Test #317: test_notification_storage .......................   Passed    1.13 sec
+        Start 360: test_menu_layer_system_cells_asterix
+ 58/440 Test  #41: test_text_resources .............................   Passed    1.14 sec
+        Start  75: test_health_sleep_detail_card_obelix
+ 59/440 Test  #81: test_health_detail_card_obelix ..................   Passed    1.30 sec
+        Start 358: test_menu_layer_system_cells_obelix
+ 60/440 Test #360: test_menu_layer_system_cells_asterix ............   Passed    1.31 sec
+        Start  77: test_health_sleep_detail_card_asterix
+ 61/440 Test  #75: test_health_sleep_detail_card_obelix ............   Passed    1.27 sec
+        Start  99: test_music_asterix
+ 62/440 Test #358: test_menu_layer_system_cells_obelix .............   Passed    1.07 sec
+        Start 259: test_boulder_glue_differenz_original
+ 63/440 Test  #77: test_health_sleep_detail_card_asterix ...........   Passed    1.06 sec
+        Start  69: test_health_sleep_summary_card_gabbro
+ 64/440 Test  #99: test_music_asterix ..............................   Passed    1.01 sec
+        Start  72: test_health_activity_detail_card_obelix
+ 65/440 Test #259: test_boulder_glue_differenz_original ............   Passed    1.42 sec
+        Start  68: test_health_sleep_summary_card_obelix
+ 66/440 Test  #69: test_health_sleep_summary_card_gabbro ...........   Passed    1.18 sec
+        Start 366: test_notification_window_asterix
+ 67/440 Test  #72: test_health_activity_detail_card_obelix .........   Passed    1.27 sec
+        Start  70: test_health_sleep_summary_card_asterix
+ 68/440 Test  #68: test_health_sleep_summary_card_obelix ...........   Passed    0.99 sec
+        Start  82: test_health_detail_card_gabbro
+ 69/440 Test #366: test_notification_window_asterix ................   Passed    1.00 sec
+        Start 364: test_notification_window_obelix
+ 70/440 Test  #70: test_health_sleep_summary_card_asterix ..........   Passed    1.06 sec
+        Start 126: test_kickstart_asterix
+ 71/440 Test  #82: test_health_detail_card_gabbro ..................   Passed    0.70 sec
+        Start 231: test_app_menu_data_source
+ 72/440 Test #364: test_notification_window_obelix .................   Passed    0.98 sec
+        Start 381: test_option_menu_window_obelix
+ 73/440 Test #126: test_kickstart_asterix ..........................   Passed    0.83 sec
+        Start 365: test_notification_window_gabbro
+ 74/440 Test #231: test_app_menu_data_source .......................   Passed    0.98 sec
+        Start 282: test_kieselsport_speicher
+ 75/440 Test #381: test_option_menu_window_obelix ..................   Passed    0.81 sec
+        Start 256: test_boulder_kraepelin_algorithm
+ 76/440 Test #365: test_notification_window_gabbro .................   Passed    1.16 sec
+        Start 257: test_boulder_activity_algorithm_kraepelin
+ 77/440 Test #257: test_boulder_activity_algorithm_kraepelin .......   Passed    0.82 sec
+        Start 382: test_option_menu_window_gabbro
+ 78/440 Test #256: test_boulder_kraepelin_algorithm ................   Passed    1.26 sec
+        Start 124: test_kickstart_obelix
+ 79/440 Test #382: test_option_menu_window_gabbro ..................   Passed    1.36 sec
+        Start 125: test_kickstart_gabbro
+ 80/440 Test #124: test_kickstart_obelix ...........................   Passed    1.43 sec
+        Start 368: test_simple_dialog_gabbro
+ 81/440 Test #368: test_simple_dialog_gabbro .......................   Passed    0.82 sec
+        Start 260: test_boulder_glue_differenz_kopie
+ 82/440 Test #125: test_kickstart_gabbro ...........................   Passed    1.06 sec
+        Start  76: test_health_sleep_detail_card_gabbro
+ 83/440 Test  #76: test_health_sleep_detail_card_gabbro ............   Passed    0.54 sec
+        Start 237: test_do_not_disturb
+ 84/440 Test #237: test_do_not_disturb .............................   Passed    0.53 sec
+        Start 369: test_simple_dialog_asterix
+ 85/440 Test #282: test_kieselsport_speicher .......................   Passed    5.18 sec
+        Start 258: test_boulder_glue
+ 86/440 Test #260: test_boulder_glue_differenz_kopie ...............   Passed    1.43 sec
+        Start 367: test_simple_dialog_obelix
+ 87/440 Test #369: test_simple_dialog_asterix ......................   Passed    0.63 sec
+        Start  37: test_persist
+ 88/440 Test #258: test_boulder_glue ...............................   Passed    0.68 sec
+        Start 265: test_boulder_zyklen
+ 89/440 Test #367: test_simple_dialog_obelix .......................   Passed    0.64 sec
+        Start 383: test_option_menu_window_asterix
+ 90/440 Test  #37: test_persist ....................................   Passed    0.45 sec
+        Start 290: test_blob_db_sync
+ 91/440 Test #383: test_option_menu_window_asterix .................   Passed    0.59 sec
+        Start  73: test_health_activity_detail_card_gabbro
+ 92/440 Test #290: test_blob_db_sync ...............................   Passed    1.01 sec
+        Start 274: test_boulder_woche
+ 93/440 Test  #73: test_health_activity_detail_card_gabbro .........   Passed    0.65 sec
+        Start 160: test_graphics_draw_bitmap_obelix
+ 94/440 Test #160: test_graphics_draw_bitmap_obelix ................   Passed    0.52 sec
+        Start 140: test_ppogatt_v1
+ 95/440 Test #274: test_boulder_woche ..............................   Passed    0.80 sec
+        Start 139: test_ppogatt_v0
+ 96/440 Test #140: test_ppogatt_v1 .................................   Passed    0.56 sec
+        Start   5: test_i18n
+ 97/440 Test #139: test_ppogatt_v0 .................................   Passed    0.58 sec
+        Start  55: test_bh_karten_obelix
+ 98/440 Test   #5: test_i18n .......................................   Passed    0.57 sec
+        Start 436: test_boulder_k1_waechter
+ 99/440 Test #436: test_boulder_k1_waechter ........................   Passed    2.08 sec
+        Start 281: test_kieselsport_folgen
+100/440 Test  #55: test_bh_karten_obelix ...........................   Passed    2.85 sec
+        Start 299: test_weather_db
+101/440 Test #299: test_weather_db .................................   Passed    0.37 sec
+        Start 153: test_graphics_draw_round_rect_8bit_obelix
+102/440 Test #153: test_graphics_draw_round_rect_8bit_obelix .......   Passed    0.39 sec
+        Start 306: test_bluetooth_persistent_storage
+103/440 Test #281: test_kieselsport_folgen .........................   Passed    1.30 sec
+        Start 328: test_timeline_model
+104/440 Test #306: test_bluetooth_persistent_storage ...............   Passed    0.39 sec
+        Start 159: test_graphics_draw_text_8bit_obelix
+105/440 Test #328: test_timeline_model .............................   Passed    0.43 sec
+        Start 222: test_wakeup
+106/440 Test #159: test_graphics_draw_text_8bit_obelix .............   Passed    0.36 sec
+        Start 161: test_graphics_draw_bitmap_asterix
+107/440 Test #222: test_wakeup .....................................   Passed    0.32 sec
+        Start 324: test_reminders
+108/440 Test #161: test_graphics_draw_bitmap_asterix ...............   Passed    0.23 sec
+        Start 249: test_activity_insights
+109/440 Test #324: test_reminders ..................................   Passed    0.31 sec
+        Start 122: test_workout_selection_asterix
+110/440 Test #249: test_activity_insights ..........................   Passed    0.32 sec
+        Start 150: test_graphics_draw_rect_8bit_obelix
+111/440 Test #122: test_workout_selection_asterix ..................   Passed    0.20 sec
+        Start 370: test_emoji_fonts
+112/440 Test #370: test_emoji_fonts ................................   Passed    0.45 sec
+        Start 119: test_workout_dialog_asterix
+113/440 Test #150: test_graphics_draw_rect_8bit_obelix .............   Passed    0.58 sec
+        Start 178: test_png
+114/440 Test #119: test_workout_dialog_asterix .....................   Passed    0.21 sec
+        Start  79: test_health_hr_detail_card_gabbro
+115/440 Test #178: test_png ........................................   Passed    0.25 sec
+        Start  78: test_health_hr_detail_card_obelix
+116/440 Test  #79: test_health_hr_detail_card_gabbro ...............   Passed    0.23 sec
+        Start  80: test_health_hr_detail_card_asterix
+117/440 Test  #78: test_health_hr_detail_card_obelix ...............   Passed    0.28 sec
+        Start 151: test_graphics_fill_rect_8bit_obelix
+118/440 Test  #80: test_health_hr_detail_card_asterix ..............   Passed    0.33 sec
+        Start 117: test_workout_dialog_obelix
+119/440 Test #117: test_workout_dialog_obelix ......................   Passed    0.28 sec
+        Start 316: test_alerts_preferences
+120/440 Test #151: test_graphics_fill_rect_8bit_obelix .............   Passed    0.48 sec
+        Start  29: test_timeline_api
+121/440 Test  #29: test_timeline_api ...............................   Passed    0.15 sec
+        Start 111: test_workout_summary_obelix
+122/440 Test #316: test_alerts_preferences .........................   Passed    0.19 sec
+        Start 113: test_workout_summary_asterix
+123/440 Test #111: test_workout_summary_obelix .....................   Passed    0.20 sec
+        Start 120: test_workout_selection_obelix
+124/440 Test #113: test_workout_summary_asterix ....................   Passed    0.21 sec
+        Start  71: test_health_hr_summary_card_asterix
+125/440 Test #120: test_workout_selection_obelix ...................   Passed    0.23 sec
+        Start 112: test_workout_summary_gabbro
+126/440 Test  #71: test_health_hr_summary_card_asterix .............   Passed    0.25 sec
+        Start 293: test_app_db
+127/440 Test #112: test_workout_summary_gabbro .....................   Passed    0.20 sec
+        Start 121: test_workout_selection_gabbro
+128/440 Test #293: test_app_db .....................................   Passed    0.18 sec
+        Start 118: test_workout_dialog_gabbro
+129/440 Test #121: test_workout_selection_gabbro ...................   Passed    0.20 sec
+        Start 371: test_expandable_dialog_gabbro
+130/440 Test #118: test_workout_dialog_gabbro ......................   Passed    0.21 sec
+        Start 296: test_watch_app_prefs_db
+131/440 Test #371: test_expandable_dialog_gabbro ...................   Passed    0.20 sec
+        Start 438: test_boulder_waechter_gegenproben
+132/440 Test #296: test_watch_app_prefs_db .........................   Passed    0.18 sec
+        Start 430: test_pruefe_unbenutzt_gegenproben
+133/440 Test #430: test_pruefe_unbenutzt_gegenproben ...............   Passed    0.25 sec
+        Start 158: test_graphics_draw_stroke_precise_8bit_obelix
+134/440 Test #158: test_graphics_draw_stroke_precise_8bit_obelix ...   Passed    0.07 sec
+        Start 133: test_gatt_client_subscriptions
+135/440 Test #133: test_gatt_client_subscriptions ..................   Passed    0.27 sec
+        Start 275: test_boulder_herz
+136/440 Test #275: test_boulder_herz ...............................   Passed    0.82 sec
+        Start 191: test_bitblt
+137/440 Test #191: test_bitblt .....................................   Passed    0.07 sec
+        Start 373: test_selection_windows_obelix
+138/440 Test #438: test_boulder_waechter_gegenproben ...............   Passed    1.58 sec
+        Start 272: test_boulder_schnittstelle
+139/440 Test #373: test_selection_windows_obelix ...................   Passed    0.34 sec
+        Start 238: test_weather_service
+140/440 Test #238: test_weather_service ............................   Passed    0.18 sec
+        Start 428: test_bh_ohne_rechte_gegenproben
+141/440 Test #272: test_boulder_schnittstelle ......................   Passed    0.79 sec
+        Start 245: test_hrm_manager
+142/440 Test #245: test_hrm_manager ................................   Passed    0.20 sec
+        Start 374: test_selection_windows_gabbro
+143/440 Test #374: test_selection_windows_gabbro ...................   Passed    0.40 sec
+        Start 298: test_notif_db
+144/440 Test #298: test_notif_db ...................................   Passed    0.16 sec
+        Start 107: test_timeline_no_events_gabbro
+145/440 Test #107: test_timeline_no_events_gabbro ..................   Passed    0.16 sec
+        Start 198: test_ancs_pebble_actions
+146/440 Test #428: test_bh_ohne_rechte_gegenproben .................   Passed    1.36 sec
+        Start 179: test_gbitmap_sequence_gabbro
+147/440 Test #198: test_ancs_pebble_actions ........................   Passed    0.16 sec
+        Start 375: test_selection_windows_asterix
+148/440 Test #179: test_gbitmap_sequence_gabbro ....................   Passed    0.16 sec
+        Start 106: test_timeline_no_events_obelix
+149/440 Test #375: test_selection_windows_asterix ..................   Passed    0.17 sec
+        Start 295: test_contacts_db
+150/440 Test #106: test_timeline_no_events_obelix ..................   Passed    0.14 sec
+        Start  64: test_health_card_view_asterix
+151/440 Test #295: test_contacts_db ................................   Passed    0.14 sec
+        Start 431: test_boulder_apps_unbenutzt
+152/440 Test  #64: test_health_card_view_asterix ...................   Passed    0.10 sec
+        Start 154: test_graphics_gpath_8bit_obelix
+153/440 Test #154: test_graphics_gpath_8bit_obelix .................   Passed    0.11 sec
+        Start 440: test_boulder_umzug_aufbau_gegenprobe
+154/440 Test #431: test_boulder_apps_unbenutzt .....................   Passed    0.21 sec
+        Start 152: test_graphics_stroke_circle_8bit_obelix
+155/440 Test #152: test_graphics_stroke_circle_8bit_obelix .........   Passed    0.10 sec
+        Start  49: test_qr_code_obelix
+156/440 Test  #49: test_qr_code_obelix .............................   Passed    0.08 sec
+        Start  92: test_kieselsport_startmenue
+157/440 Test #440: test_boulder_umzug_aufbau_gegenprobe ............   Passed    0.45 sec
+        Start  93: test_kieselsport_startmenue_ohne_variante
+158/440 Test  #92: test_kieselsport_startmenue .....................   Passed    0.60 sec
+        Start  62: test_health_card_view_obelix
+159/440 Test  #62: test_health_card_view_obelix ....................   Passed    0.11 sec
+        Start  95: test_kieselstrasse_app
+160/440 Test  #93: test_kieselsport_startmenue_ohne_variante .......   Passed    0.55 sec
+        Start 352: test_window_stack
+161/440 Test #352: test_window_stack ...............................   Passed    0.09 sec
+        Start 300: test_prefs_db
+162/440 Test #300: test_prefs_db ...................................   Passed    0.07 sec
+        Start  63: test_health_card_view_gabbro
+163/440 Test  #95: test_kieselstrasse_app ..........................   Passed    0.24 sec
+        Start 351: test_kino_player
+164/440 Test  #63: test_health_card_view_gabbro ....................   Passed    0.09 sec
+        Start 432: test_boulder_kieselstrasse_unbenutzt
+165/440 Test #351: test_kino_player ................................   Passed    0.06 sec
+        Start 385: test_recognizer_manager
+166/440 Test #432: test_boulder_kieselstrasse_unbenutzt ............   Passed    0.08 sec
+        Start 263: test_boulder_schlaf
+167/440 Test #385: test_recognizer_manager .........................   Passed    0.08 sec
+        Start 264: test_boulder_schlafkern
+168/440 Test #263: test_boulder_schlaf .............................   Passed    2.10 sec
+        Start 141: test_qemu_serial
+169/440 Test #141: test_qemu_serial ................................   Passed    0.01 sec
+        Start 196: test_rand
+170/440 Test #196: test_rand .......................................   Passed    0.06 sec
+        Start 132: test_gatt_client_discovery
+171/440 Test #132: test_gatt_client_discovery ......................   Passed    0.06 sec
+        Start 206: test_contacts
+172/440 Test #206: test_contacts ...................................   Passed    0.04 sec
+        Start 439: test_boulder_umzug_aufbau
+173/440 Test #439: test_boulder_umzug_aufbau .......................   Passed    0.24 sec
+        Start 102: test_notifications_history
+174/440 Test #102: test_notifications_history ......................   Passed    0.03 sec
+        Start 392: test_kernel
+175/440 Test #392: test_kernel .....................................   Passed    0.04 sec
+        Start 347: test_animation
+176/440 Test #347: test_animation ..................................   Passed    0.02 sec
+        Start 429: test_bh_unbenutzt
+177/440 Test #429: test_bh_unbenutzt ...............................   Passed    0.30 sec
+        Start  39: test_strftime
+178/440 Test  #39: test_strftime ...................................   Passed    0.02 sec
+        Start  34: test_app_inbox
+179/440 Test  #34: test_app_inbox ..................................   Passed    0.02 sec
+        Start 234: test_accel_manager
+180/440 Test #234: test_accel_manager ..............................   Passed    0.02 sec
+        Start  28: test_phone_formatting
+181/440 Test  #28: test_phone_formatting ...........................   Passed    0.01 sec
+        Start 129: test_gap_le_advert
+182/440 Test #129: test_gap_le_advert ..............................   Passed    0.03 sec
+        Start 127: test_ams
+183/440 Test #127: test_ams ........................................   Passed    0.04 sec
+        Start 180: test_pbi
+184/440 Test #180: test_pbi ........................................   Passed    0.05 sec
+        Start 435: test_boulder_kopie_pruefen
+185/440 Test #435: test_boulder_kopie_pruefen ......................   Passed    0.10 sec
+        Start 283: test_kieselsport_abo
+186/440 Test #264: test_boulder_schlafkern .........................   Passed    3.26 sec
+        Start 216: test_phone_call
+187/440 Test #216: test_phone_call .................................   Passed    0.01 sec
+        Start  25: test_pebble_app_info
+188/440 Test  #25: test_pebble_app_info ............................   Passed    0.01 sec
+        Start 223: test_migrate_wakeup
+189/440 Test #223: test_migrate_wakeup .............................   Passed    0.05 sec
+        Start 426: test_task_wdt
+190/440 Test #426: test_task_wdt ...................................   Passed    0.05 sec
+        Start 189: test_graphics_draw_core_obelix
+191/440 Test #189: test_graphics_draw_core_obelix ..................   Passed    0.04 sec
+        Start  46: test_app_glance
+192/440 Test  #46: test_app_glance .................................   Passed    0.02 sec
+        Start 397: test_slist
+193/440 Test #283: test_kieselsport_abo ............................   Passed    0.27 sec
+        Start 337: test_normal_system_app_state_machine
+194/440 Test #397: test_slist ......................................   Passed    0.01 sec
+        Start  23: test_app_manager
+195/440 Test #337: test_normal_system_app_state_machine ............   Passed    0.01 sec
+        Start 149: test_graphics_draw_stroke_8bit_obelix
+196/440 Test  #23: test_app_manager ................................   Passed    0.02 sec
+        Start 131: test_gatt_client_accessors
+197/440 Test #149: test_graphics_draw_stroke_8bit_obelix ...........   Passed    0.04 sec
+        Start 225: test_audio_endpoint
+198/440 Test #131: test_gatt_client_accessors ......................   Passed    0.04 sec
+        Start  45: test_accel_service
+199/440 Test #225: test_audio_endpoint .............................   Passed    0.03 sec
+        Start 325: test_calendar
+200/440 Test  #45: test_accel_service ..............................   Passed    0.03 sec
+        Start 211: test_analytics_native
+201/440 Test #325: test_calendar ...................................   Passed    0.03 sec
+        Start 185: test_bitblt_palette_1bit_asterix
+202/440 Test #211: test_analytics_native ...........................   Passed    0.02 sec
+        Start 246: test_app_glance_service
+203/440 Test #185: test_bitblt_palette_1bit_asterix ................   Passed    0.03 sec
+        Start 239: test_vibe
+204/440 Test #246: test_app_glance_service .........................   Passed    0.03 sec
+        Start 388: test_swipe
+205/440 Test #388: test_swipe ......................................   Passed    0.01 sec
+        Start 148: test_graphics_draw_pixel_8bit_obelix
+206/440 Test #239: test_vibe .......................................   Passed    0.04 sec
+        Start 173: test_gdraw_command
+207/440 Test #173: test_gdraw_command ..............................   Passed    0.03 sec
+        Start 355: test_menu_layer
+208/440 Test #148: test_graphics_draw_pixel_8bit_obelix ............   Passed    0.05 sec
+        Start 409: test_misc
+209/440 Test #409: test_misc .......................................   Passed    0.01 sec
+        Start 176: test_gdraw_command_transforms
+210/440 Test #355: test_menu_layer .................................   Passed    0.04 sec
+        Start 356: test_action_menu_layer_obelix
+211/440 Test #176: test_gdraw_command_transforms ...................   Passed    0.03 sec
+        Start 417: test_shared_cbuf
+212/440 Test #356: test_action_menu_layer_obelix ...................   Passed    0.02 sec
+        Start   9: test_arabic_shaping
+213/440 Test #417: test_shared_cbuf ................................   Passed    0.02 sec
+        Start 236: test_app_file
+214/440 Test   #9: test_arabic_shaping .............................   Passed    0.02 sec
+        Start 163: test_graphics_colors
+215/440 Test #236: test_app_file ...................................   Passed    0.01 sec
+        Start 284: test_kieselsport_wechsel
+216/440 Test #163: test_graphics_colors ............................   Passed    0.01 sec
+        Start 350: test_kino_reel
+217/440 Test #350: test_kino_reel ..................................   Passed    0.02 sec
+        Start   6: test_utf8_iterator
+218/440 Test   #6: test_utf8_iterator ..............................   Passed    0.01 sec
+        Start 384: test_recognizer
+219/440 Test #384: test_recognizer .................................   Passed    0.01 sec
+        Start 437: test_boulder_vertraege_liste
+220/440 Test #437: test_boulder_vertraege_liste ....................   Passed    0.04 sec
+        Start 408: test_bits
+221/440 Test #408: test_bits .......................................   Passed    0.01 sec
+        Start 394: test_gmtime
+222/440 Test #394: test_gmtime .....................................   Passed    0.01 sec
+        Start 209: test_ping
+223/440 Test #209: test_ping .......................................   Passed    0.01 sec
+        Start  27: test_pebble_process_md_gabbro
+224/440 Test #284: test_kieselsport_wechsel ........................   Passed    0.14 sec
+        Start 297: test_reminder_db
+225/440 Test  #27: test_pebble_process_md_gabbro ...................   Passed    0.02 sec
+        Start 252: test_health_util
+226/440 Test #252: test_health_util ................................   Passed    0.01 sec
+        Start  59: test_bh_startmenue
+227/440 Test #297: test_reminder_db ................................   Passed    0.03 sec
+        Start 135: test_gatt_service_changed_server
+228/440 Test #135: test_gatt_service_changed_server ................   Passed    0.03 sec
+        Start 205: test_cron
+229/440 Test #205: test_cron .......................................   Passed    0.02 sec
+        Start 213: test_light
+230/440 Test #213: test_light ......................................   Passed    0.03 sec
+        Start 420: test_crc_hw
+231/440 Test #420: test_crc_hw .....................................   Passed    0.01 sec
+        Start  60: test_bh_startmenue_asterix
+232/440 Test #265: test_boulder_zyklen .............................   Passed   19.65 sec
+        Start 302: test_health_db
+233/440 Test  #59: test_bh_startmenue ..............................   Passed    0.47 sec
+        Start  26: test_pebble_process_md_obelix
+234/440 Test  #60: test_bh_startmenue_asterix ......................   Passed    0.36 sec
+        Start 307: test_meta_endpoint
+235/440 Test  #26: test_pebble_process_md_obelix ...................   Passed    0.01 sec
+        Start 345: test_scroll_layer_touch
+236/440 Test #307: test_meta_endpoint ..............................   Passed    0.01 sec
+        Start 165: test_gtypes_gabbro
+237/440 Test #345: test_scroll_layer_touch .........................   Passed    0.01 sec
+        Start 342: test_layer
+238/440 Test #302: test_health_db ..................................   Passed    0.03 sec
+        Start  36: test_cpu_cache
+239/440 Test #165: test_gtypes_gabbro ..............................   Passed    0.01 sec
+        Start 301: test_ios_notif_pref_db
+240/440 Test #342: test_layer ......................................   Passed    0.01 sec
+        Start 208: test_music_endpoint
+241/440 Test  #36: test_cpu_cache ..................................   Passed    0.01 sec
+        Start  43: test_unobstructed_area_service
+242/440 Test #301: test_ios_notif_pref_db ..........................   Passed    0.02 sec
+        Start 310: test_session_send_queue
+243/440 Test  #43: test_unobstructed_area_service ..................   Passed    0.01 sec
+        Start 157: test_blending_8bit_obelix
+244/440 Test #280: test_kieselsport ................................   Passed   79.04 sec
+        Start 277: test_boulder_kalorien
+245/440 Test #208: test_music_endpoint .............................   Passed    0.03 sec
+        Start 331: test_alarm_layout_gabbro
+246/440 Test #310: test_session_send_queue .........................   Passed    0.02 sec
+        Start 134: test_gatt_service_changed_client
+247/440 Test #277: test_boulder_kalorien ...........................   Passed    0.01 sec
+        Start 294: test_app_glance_db
+248/440 Test #331: test_alarm_layout_gabbro ........................   Passed    0.01 sec
+        Start 194: test_interval_timer
+249/440 Test #157: test_blending_8bit_obelix .......................   Passed    0.02 sec
+        Start 314: test_compositor
+250/440 Test #194: test_interval_timer .............................   Passed    0.01 sec
+        Start 195: test_remote_input
+251/440 Test #294: test_app_glance_db ..............................   Passed    0.01 sec
+        Start   2: test_fake_mutex
+252/440 Test #314: test_compositor .................................   Passed    0.01 sec
+        Start 304: test_local_addr
+253/440 Test #134: test_gatt_service_changed_client ................   Passed    0.02 sec
+        Start 322: test_protobuf_log
+254/440 Test   #2: test_fake_mutex .................................   Passed    0.01 sec
+        Start 313: test_default_kernel_receiver
+255/440 Test #195: test_remote_input ...............................   Passed    0.02 sec
+        Start  12: test_launcher_app_message
+256/440 Test #304: test_local_addr .................................   Passed    0.01 sec
+        Start 419: test_crc
+257/440 Test #419: test_crc ........................................   Passed    0.01 sec
+        Start 197: test_mfg_serials_obelix
+258/440 Test #313: test_default_kernel_receiver ....................   Passed    0.02 sec
+        Start 403: test_keyed_circular_cache
+259/440 Test #322: test_protobuf_log ...............................   Passed    0.02 sec
+        Start  48: test_dict
+260/440 Test #197: test_mfg_serials_obelix .........................   Passed    0.01 sec
+        Start 269: test_boulder_umzug_prefs
+261/440 Test #403: test_keyed_circular_cache .......................   Passed    0.00 sec
+        Start 327: test_attribute
+262/440 Test  #12: test_launcher_app_message .......................   Passed    0.02 sec
+        Start 318: test_ancs_notifications
+263/440 Test  #48: test_dict .......................................   Passed    0.01 sec
+        Start 164: test_gtypes_obelix
+264/440 Test #327: test_attribute ..................................   Passed    0.01 sec
+        Start 412: test_buffer
+265/440 Test #318: test_ancs_notifications .........................   Passed    0.01 sec
+        Start 346: test_status_bar_layer
+266/440 Test #164: test_gtypes_obelix ..............................   Passed    0.01 sec
+        Start 193: test_raw_image
+267/440 Test #412: test_buffer .....................................   Passed    0.01 sec
+        Start  18: test_tick
+268/440 Test #346: test_status_bar_layer ...........................   Passed    0.01 sec
+        Start 155: test_graphics_gtransform_8bit_obelix
+269/440 Test #193: test_raw_image ..................................   Passed    0.01 sec
+        Start 415: test_generic_attr
+270/440 Test  #18: test_tick .......................................   Passed    0.01 sec
+        Start 235: test_shared_prf_storage_v3_obelix
+271/440 Test #155: test_graphics_gtransform_8bit_obelix ............   Passed    0.01 sec
+        Start 147: test_framebuffer_8bit_obelix
+272/440 Test #415: test_generic_attr ...............................   Passed    0.01 sec
+        Start 291: test_blob_db_endpoint
+273/440 Test #147: test_framebuffer_8bit_obelix ....................   Passed    0.01 sec
+        Start 315: test_health
+274/440 Test #269: test_boulder_umzug_prefs ........................   Passed    0.04 sec
+        Start 204: test_tick_timer
+275/440 Test #291: test_blob_db_endpoint ...........................   Passed    0.01 sec
+        Start 171: test_gbitmap_processor
+276/440 Test #235: test_shared_prf_storage_v3_obelix ...............   Passed    0.02 sec
+        Start 289: test_pin_db
+277/440 Test #204: test_tick_timer .................................   Passed    0.01 sec
+        Start 224: test_registry_endpoint
+278/440 Test #171: test_gbitmap_processor ..........................   Passed    0.01 sec
+        Start 242: test_vibe_score_info
+279/440 Test #224: test_registry_endpoint ..........................   Passed    0.01 sec
+        Start 421: test_crc32
+280/440 Test #315: test_health .....................................   Passed    0.02 sec
+        Start 169: test_gbitmap_formats_obelix
+281/440 Test #289: test_pin_db .....................................   Passed    0.01 sec
+        Start 218: test_debounced_connection_service
+282/440 Test #242: test_vibe_score_info ............................   Passed    0.01 sec
+        Start  30: test_app_run_state
+283/440 Test #421: test_crc32 ......................................   Passed    0.01 sec
+        Start 335: test_swap_layer_touch
+284/440 Test #169: test_gbitmap_formats_obelix .....................   Passed    0.01 sec
+        Start 212: test_compass_cal
+285/440 Test #218: test_debounced_connection_service ...............   Passed    0.01 sec
+        Start 228: test_voice_endpoint
+286/440 Test  #30: test_app_run_state ..............................   Passed    0.01 sec
+        Start 232: test_process_loader_storage
+287/440 Test #335: test_swap_layer_touch ...........................   Passed    0.01 sec
+        Start   8: test_bidi
+288/440 Test #228: test_voice_endpoint .............................   Passed    0.01 sec
+        Start 215: test_phone_pp
+289/440 Test #212: test_compass_cal ................................   Passed    0.01 sec
+        Start 143: test_cobs_encode
+290/440 Test   #8: test_bidi .......................................   Passed    0.01 sec
+        Start  17: test_alerts
+291/440 Test #215: test_phone_pp ...................................   Passed    0.01 sec
+        Start 406: test_byteorder
+292/440 Test #143: test_cobs_encode ................................   Passed    0.01 sec
+        Start 401: test_uuid
+293/440 Test #232: test_process_loader_storage .....................   Passed    0.02 sec
+        Start 270: test_boulder_fahrt
+294/440 Test  #17: test_alerts .....................................   Passed    0.01 sec
+        Start 418: test_time
+295/440 Test #406: test_byteorder ..................................   Passed    0.01 sec
+        Start  50: test_ble_ad_parse
+296/440 Test #401: test_uuid .......................................   Passed    0.01 sec
+        Start 247: test_clock_time
+297/440 Test #418: test_time .......................................   Passed    0.00 sec
+        Start 181: test_palettized_conversion
+298/440 Test  #50: test_ble_ad_parse ...............................   Passed    0.01 sec
+        Start 253: test_hr_util
+299/440 Test #247: test_clock_time .................................   Passed    0.01 sec
+        Start 339: test_battery_ui_fsm_obelix
+300/440 Test #253: test_hr_util ....................................   Passed    0.01 sec
+        Start  11: test_word_iterator
+301/440 Test #181: test_palettized_conversion ......................   Passed    0.01 sec
+        Start 210: test_imaging
+302/440 Test #339: test_battery_ui_fsm_obelix ......................   Passed    0.01 sec
+        Start 285: test_app_message_receiver
+303/440 Test  #11: test_word_iterator ..............................   Passed    0.01 sec
+        Start 308: test_session
+304/440 Test #210: test_imaging ....................................   Passed    0.01 sec
+        Start 130: test_bt_conn_mgr
+305/440 Test #285: test_app_message_receiver .......................   Passed    0.01 sec
+        Start  47: test_template_string
+306/440 Test #308: test_session ....................................   Passed    0.01 sec
+        Start 254: test_workout_service
+307/440 Test  #47: test_template_string ............................   Passed    0.01 sec
+        Start 395: test_circular_buffer
+308/440 Test #130: test_bt_conn_mgr ................................   Passed    0.01 sec
+        Start 320: test_ancs_filtering
+309/440 Test #254: test_workout_service ............................   Passed    0.01 sec
+        Start  51: test_ble_ibeacon
+310/440 Test #395: test_circular_buffer ............................   Passed    0.01 sec
+        Start 186: test_framebuffer_duma_obelix
+311/440 Test  #51: test_ble_ibeacon ................................   Passed    0.01 sec
+        Start 422: test_crc32_legacy
+312/440 Test #186: test_framebuffer_duma_obelix ....................   Passed    0.01 sec
+        Start 123: test_workout_utils
+313/440 Test #320: test_ancs_filtering .............................   Passed    0.01 sec
+        Start 192: test_bitblt_palette
+314/440 Test #422: test_crc32_legacy ...............................   Passed    0.01 sec
+        Start 353: test_modal_touch_nav
+315/440 Test #123: test_workout_utils ..............................   Passed    0.01 sec
+        Start 266: test_boulder_messung
+316/440 Test #192: test_bitblt_palette .............................   Passed    0.01 sec
+        Start 184: test_perimeter_gabbro
+317/440 Test #353: test_modal_touch_nav ............................   Passed    0.01 sec
+        Start 389: test_recognizer_competition
+318/440 Test #184: test_perimeter_gabbro ...........................   Passed    0.00 sec
+        Start 287: test_app_session_capabilities
+319/440 Test #389: test_recognizer_competition .....................   Passed    0.01 sec
+        Start  22: test_memory_layout
+320/440 Test #287: test_app_session_capabilities ...................   Passed    0.01 sec
+        Start 377: test_jumboji
+321/440 Test  #22: test_memory_layout ..............................   Passed    0.00 sec
+        Start   7: test_codepoint
+322/440 Test #377: test_jumboji ....................................   Passed    0.00 sec
+        Start  31: test_text_layout_8_bit_obelix
+323/440 Test   #7: test_codepoint ..................................   Passed    0.00 sec
+        Start 286: test_app_message_sender
+324/440 Test  #31: test_text_layout_8_bit_obelix ...................   Passed    0.01 sec
+        Start 305: test_bluetooth_persistent_storage_prf_obelix
+325/440 Test #286: test_app_message_sender .........................   Passed    0.01 sec
+        Start 207: test_evented_timer
+326/440 Test #305: test_bluetooth_persistent_storage_prf_obelix ....   Passed    0.01 sec
+        Start 199: test_timeline_actions
+327/440 Test #207: test_evented_timer ..............................   Passed    0.01 sec
+        Start 175: test_gdraw_command_resources
+328/440 Test #199: test_timeline_actions ...........................   Passed    0.01 sec
+        Start  33: test_app_message
+329/440 Test #175: test_gdraw_command_resources ....................   Passed    0.01 sec
+        Start 182: test_graphics_text_node
+330/440 Test  #33: test_app_message ................................   Passed    0.01 sec
+        Start 376: test_text_layer_flow
+331/440 Test #182: test_graphics_text_node .........................   Passed    0.01 sec
+        Start 312: test_session_remote_version
+332/440 Test #376: test_text_layer_flow ............................   Passed    0.01 sec
+        Start 391: test_touch_nav
+333/440 Test #312: test_session_remote_version .....................   Passed    0.00 sec
+        Start  35: test_app_outbox
+334/440 Test #391: test_touch_nav ..................................   Passed    0.01 sec
+        Start 414: test_pstring
+335/440 Test  #35: test_app_outbox .................................   Passed    0.01 sec
+        Start 398: test_math
+336/440 Test #414: test_pstring ....................................   Passed    0.01 sec
+        Start 190: test_graphics_draw_implementation
+337/440 Test #398: test_math .......................................   Passed    0.00 sec
+        Start 156: test_graphics_context_8bit_obelix
+338/440 Test #190: test_graphics_draw_implementation ...............   Passed    0.00 sec
+        Start 303: test_ble_hrm
+339/440 Test #156: test_graphics_context_8bit_obelix ...............   Passed    0.01 sec
+        Start 423: test_input
+340/440 Test #303: test_ble_hrm ....................................   Passed    0.01 sec
+        Start 354: test_content_indicator
+341/440 Test #423: test_input ......................................   Passed    0.01 sec
+        Start 226: test_speaker_service
+342/440 Test #354: test_content_indicator ..........................   Passed    0.00 sec
+        Start 349: test_animation_timing
+343/440 Test #226: test_speaker_service ............................   Passed    0.01 sec
+        Start 341: test_flash_region_obelix
+344/440 Test #349: test_animation_timing ...........................   Passed    0.01 sec
+        Start 329: test_timeline_resources
+345/440 Test #341: test_flash_region_obelix ........................   Passed    0.01 sec
+        Start 233: test_app_fetch_endpoint
+346/440 Test #329: test_timeline_resources .........................   Passed    0.00 sec
+        Start 168: test_gbitmap_resource_validation
+347/440 Test #233: test_app_fetch_endpoint .........................   Passed    0.01 sec
+        Start 404: test_struct
+348/440 Test #168: test_gbitmap_resource_validation ................   Passed    0.01 sec
+        Start  24: test_process_manager
+349/440 Test #404: test_struct .....................................   Passed    0.01 sec
+        Start  10: test_char_iterator
+350/440 Test  #24: test_process_manager ............................   Passed    0.01 sec
+        Start 138: test_kernel_le_client
+351/440 Test  #10: test_char_iterator ..............................   Passed    0.01 sec
+        Start 311: test_session_receive_router
+352/440 Test #138: test_kernel_le_client ...........................   Passed    0.01 sec
+        Start   4: test_utf8
+353/440 Test #311: test_session_receive_router .....................   Passed    0.01 sec
+        Start 144: test_flash_api
+354/440 Test   #4: test_utf8 .......................................   Passed    0.01 sec
+        Start 167: test_gbitmap_data_row_info
+355/440 Test #144: test_flash_api ..................................   Passed    0.01 sec
+        Start 145: test_flash_erase_obelix
+356/440 Test #167: test_gbitmap_data_row_info ......................   Passed    0.01 sec
+        Start 396: test_list
+357/440 Test #145: test_flash_erase_obelix .........................   Passed    0.01 sec
+        Start 400: test_math_fixed
+358/440 Test #396: test_list .......................................   Passed    0.01 sec
+        Start 321: test_nexmo
+359/440 Test #400: test_math_fixed .................................   Passed    0.01 sec
+        Start  44: test_touch_service
+360/440 Test #321: test_nexmo ......................................   Passed    0.00 sec
+        Start 128: test_ams_util
+361/440 Test  #44: test_touch_service ..............................   Passed    0.01 sec
+        Start 142: test_cobs_decode
+362/440 Test #128: test_ams_util ...................................   Passed    0.01 sec
+        Start 243: test_touch
+363/440 Test #142: test_cobs_decode ................................   Passed    0.01 sec
+        Start  32: test_getting_started_button_combo
+364/440 Test #243: test_touch ......................................   Passed    0.01 sec
+        Start 390: test_recognizer_lifecycle
+365/440 Test  #32: test_getting_started_button_combo ...............   Passed    0.01 sec
+        Start  38: test_pbl_std
+366/440 Test #390: test_recognizer_lifecycle .......................   Passed    0.01 sec
+        Start 136: test_ancs_util
+367/440 Test  #38: test_pbl_std ....................................   Passed    0.01 sec
+        Start 214: test_als_screen_compensation
+368/440 Test #136: test_ancs_util ..................................   Passed    0.01 sec
+        Start  42: test_bitmap_layer
+369/440 Test #214: test_als_screen_compensation ....................   Passed    0.01 sec
+        Start 348: test_animation_interpolate
+370/440 Test  #42: test_bitmap_layer ...............................   Passed    0.01 sec
+        Start 413: test_string_list
+371/440 Test #348: test_animation_interpolate ......................   Passed    0.00 sec
+        Start 172: test_graphics_blending_obelix
+372/440 Test #413: test_string_list ................................   Passed    0.01 sec
+        Start 425: test_log_modules
+373/440 Test #172: test_graphics_blending_obelix ...................   Passed    0.01 sec
+        Start 170: test_gbitmap_formats_gabbro
+374/440 Test #425: test_log_modules ................................   Passed    0.01 sec
+        Start 357: test_action_menu_layer_gabbro
+375/440 Test #170: test_gbitmap_formats_gabbro .....................   Passed    0.01 sec
+        Start 219: test_timeline_item
+376/440 Test #357: test_action_menu_layer_gabbro ...................   Passed    0.01 sec
+        Start 292: test_blob_db2_endpoint
+377/440 Test #219: test_timeline_item ..............................   Passed    0.01 sec
+        Start 227: test_transcription
+378/440 Test #292: test_blob_db2_endpoint ..........................   Passed    0.01 sec
+        Start 407: test_bitops
+379/440 Test #227: test_transcription ..............................   Passed    0.01 sec
+        Start 244: test_touch_session
+380/440 Test #407: test_bitops .....................................   Passed    0.01 sec
+        Start 387: test_pan
+381/440 Test #244: test_touch_session ..............................   Passed    0.01 sec
+        Start 177: test_pdc
+382/440 Test #387: test_pan ........................................   Passed    0.01 sec
+        Start 386: test_tap
+383/440 Test #177: test_pdc ........................................   Passed    0.01 sec
+        Start 183: test_perimeter_obelix
+384/440 Test #386: test_tap ........................................   Passed    0.01 sec
+        Start 338: test_app_idle_timeout
+385/440 Test #183: test_perimeter_obelix ...........................   Passed    0.01 sec
+        Start 416: test_stats
+386/440 Test #338: test_app_idle_timeout ...........................   Passed    0.01 sec
+        Start 410: test_ratio
+387/440 Test #416: test_stats ......................................   Passed    0.01 sec
+        Start 217: test_regular_timer
+388/440 Test #410: test_ratio ......................................   Passed    0.01 sec
+        Start  40: test_text_render
+389/440 Test #217: test_regular_timer ..............................   Passed    0.01 sec
+        Start  19: test_heap
+390/440 Test  #40: test_text_render ................................   Passed    0.01 sec
+        Start 399: test_string
+391/440 Test  #19: test_heap .......................................   Passed    0.01 sec
+        Start 340: test_battery_ui_fsm_percent_obelix
+392/440 Test #399: test_string .....................................   Passed    0.01 sec
+        Start 344: test_scroll_layer
+393/440 Test #340: test_battery_ui_fsm_percent_obelix ..............   Passed    0.01 sec
+        Start 393: test_mktime
+394/440 Test #344: test_scroll_layer ...............................   Passed    0.01 sec
+        Start 174: test_gdraw_command_sequence
+395/440 Test #393: test_mktime .....................................   Passed    0.01 sec
+        Start 187: test_framebuffer_duma_gabbro
+396/440 Test #174: test_gdraw_command_sequence .....................   Passed    0.01 sec
+        Start 427: test_test_infra
+397/440 Test #187: test_framebuffer_duma_gabbro ....................   Passed    0.01 sec
+        Start   3: test_clar
+398/440 Test #427: test_test_infra .................................   Passed    0.01 sec
+        Start 405: test_sort
+399/440 Test   #3: test_clar .......................................   Passed    0.01 sec
+        Start 255: test_activity_calculators
+400/440 Test #405: test_sort .......................................   Passed    0.00 sec
+        Start 241: test_vibe_score
+401/440 Test #255: test_activity_calculators .......................   Passed    0.01 sec
+        Start 330: test_alarm_layout_obelix
+402/440 Test #241: test_vibe_score .................................   Passed    0.01 sec
+        Start 166: test_graphics_circle
+403/440 Test #330: test_alarm_layout_obelix ........................   Passed    0.01 sec
+        Start 372: test_text_layer
+404/440 Test #166: test_graphics_circle ............................   Passed    0.01 sec
+        Start 343: test_layer_rect
+405/440 Test #372: test_text_layer .................................   Passed    0.01 sec
+        Start 411: test_base64
+406/440 Test #343: test_layer_rect .................................   Passed    0.01 sec
+        Start 402: test_circular_cache
+407/440 Test #411: test_base64 .....................................   Passed    0.01 sec
+        Start 336: test_system_theme
+408/440 Test #402: test_circular_cache .............................   Passed    0.01 sec
+        Start  13: test_line_layout
+409/440 Test #336: test_system_theme ...............................   Passed    0.01 sec
+        Start 319: test_ancs_notifications_util
+410/440 Test  #13: test_line_layout ................................   Passed    0.01 sec
+        Start 221: test_timezone_database
+411/440 Test #319: test_ancs_notifications_util ....................   Passed    0.01 sec
+        Start 146: test_accel_qemu
+412/440 Test #221: test_timezone_database ..........................   Passed    0.01 sec
+        Start 240: test_vibe_intensity
+413/440 Test #146: test_accel_qemu .................................   Passed    0.01 sec
+        Start 188: test_framebuffer_legacy_gabbro
+414/440 Test #240: test_vibe_intensity .............................   Passed    0.01 sec
+        Start 424: test_pulse_logging
+415/440 Test #188: test_framebuffer_legacy_gabbro ..................   Passed    0.01 sec
+        Start 261: test_boulder_vertraege
+416/440 Test #424: test_pulse_logging ..............................   Passed    0.01 sec
+        Start  94: test_kieselstrasse_weg
+417/440 Test #261: test_boulder_vertraege ..........................   Passed    0.01 sec
+        Start  88: test_kieselsport_lauf
+418/440 Test  #94: test_kieselstrasse_weg ..........................   Passed    0.01 sec
+        Start 279: test_workout_service_kieselsport
+419/440 Test  #88: test_kieselsport_lauf ...........................   Passed    0.01 sec
+        Start 278: test_kieselsport_kalorien
+420/440 Test #279: test_workout_service_kieselsport ................   Passed    0.01 sec
+        Start 276: test_kieselsport_vertrag
+421/440 Test #278: test_kieselsport_kalorien .......................   Passed    0.02 sec
+        Start 262: test_boulder_vertraege_ohne_kieselsport
+422/440 Test #276: test_kieselsport_vertrag ........................   Passed    0.01 sec
+        Start 271: test_boulder_diagnose
+423/440 Test #262: test_boulder_vertraege_ohne_kieselsport .........   Passed    0.01 sec
+        Start  87: test_kieselsport_einstellungen
+424/440 Test  #87: test_kieselsport_einstellungen ..................   Passed    0.01 sec
+        Start  91: test_kieselsport_kachel_haken_ohne_variante
+425/440 Test  #91: test_kieselsport_kachel_haken_ohne_variante .....   Passed    0.01 sec
+        Start  89: test_kieselsport_kachel
+426/440 Test  #89: test_kieselsport_kachel .........................   Passed    0.01 sec
+        Start  90: test_kieselsport_kachel_haken
+427/440 Test  #90: test_kieselsport_kachel_haken ...................   Passed    0.01 sec
+        Start  84: test_kieselsport_app
+428/440 Test  #84: test_kieselsport_app ............................   Passed    0.01 sec
+        Start  86: test_kieselsport_telefon
+429/440 Test  #86: test_kieselsport_telefon ........................   Passed    0.01 sec
+        Start  85: test_kieselsport_meldungen
+430/440 Test  #85: test_kieselsport_meldungen ......................   Passed    0.01 sec
+        Start  52: test_bh_app
+431/440 Test  #52: test_bh_app .....................................   Passed    0.01 sec
+        Start  54: test_bh_daten
+432/440 Test  #54: test_bh_daten ...................................   Passed    0.01 sec
+        Start  57: test_bh_rechnung
+433/440 Test  #57: test_bh_rechnung ................................   Passed    0.01 sec
+        Start  56: test_bh_grundsatz
+434/440 Test  #56: test_bh_grundsatz ...............................   Passed    0.01 sec
+        Start  53: test_bh_app_zeiten
+435/440 Test #266: test_boulder_messung ............................   Passed    0.50 sec
+        Start  61: test_bh_einstiege
+436/440 Test  #53: test_bh_app_zeiten ..............................   Passed    0.01 sec
+        Start  58: test_bh_einstieg
+437/440 Test  #61: test_bh_einstiege ...............................   Passed    0.01 sec
+438/440 Test #271: test_boulder_diagnose ...........................   Passed    0.11 sec
+439/440 Test  #58: test_bh_einstieg ................................   Passed    0.01 sec
+440/440 Test #270: test_boulder_fahrt ..............................   Passed    0.61 sec
+
+100% tests passed, 0 tests failed out of 440
+
+Label Time Summary:
+asterix                                     =  83.00 sec*proc (29 tests)
+gabbro                                      =  84.92 sec*proc (37 tests)
+obelix                                      = 528.34 sec*proc (360 tests)
+tests/fakes_tests                           =   0.01 sec*proc (1 test)
+tests/fw                                    =  60.98 sec*proc (30 tests)
+tests/fw/applib                             =   1.87 sec*proc (17 tests)
+tests/fw/applib/bluetooth                   =   0.01 sec*proc (2 tests)
+tests/fw/apps/system_apps/boulder_health    =   3.74 sec*proc (10 tests)
+tests/fw/apps/system_apps/health            =  20.07 sec*proc (22 tests)
+tests/fw/apps/system_apps/kieselsport       =   1.23 sec*proc (10 tests)
+tests/fw/apps/system_apps/kieselstrasse     =   0.25 sec*proc (2 tests)
+tests/fw/apps/system_apps/launcher          =   8.21 sec*proc (3 tests)
+tests/fw/apps/system_apps/music             =   5.44 sec*proc (3 tests)
+tests/fw/apps/system_apps/notifications     =   0.03 sec*proc (1 test)
+tests/fw/apps/system_apps/timeline          =  43.56 sec*proc (5 tests)
+tests/fw/apps/system_apps/weather           =   4.77 sec*proc (3 tests)
+tests/fw/apps/system_apps/workout           =  18.06 sec*proc (13 tests)
+tests/fw/apps/watch/kickstart               =   3.32 sec*proc (3 tests)
+tests/fw/comm                               =   4.92 sec*proc (15 tests)
+tests/fw/console                            =   0.01 sec*proc (2 tests)
+tests/fw/drivers                            =   0.02 sec*proc (3 tests)
+tests/fw/graphics                           =   5.15 sec*proc (47 tests)
+tests/fw/kernel                             =   0.08 sec*proc (3 tests)
+tests/fw/mfg                                =   0.01 sec*proc (1 test)
+tests/fw/pebble_actions                     =   0.17 sec*proc (2 tests)
+tests/fw/services                           = 118.68 sec*proc (48 tests)
+tests/fw/services/activity                  =   3.29 sec*proc (8 tests)
+tests/fw/services/activity/boulder          = 165.04 sec*proc (20 tests)
+tests/fw/services/activity/boulder/sport    =  85.98 sec*proc (9 tests)
+tests/fw/services/app_message               =   0.03 sec*proc (3 tests)
+tests/fw/services/blob_db                   =   5.71 sec*proc (15 tests)
+tests/fw/services/bluetooth                 =   0.42 sec*proc (4 tests)
+tests/fw/services/comm_session              =   1.51 sec*proc (7 tests)
+tests/fw/services/compositor                =   0.01 sec*proc (1 test)
+tests/fw/services/health                    =   0.02 sec*proc (1 test)
+tests/fw/services/notifications             =   1.35 sec*proc (6 tests)
+tests/fw/services/protobuf_log              =   0.02 sec*proc (1 test)
+tests/fw/services/settings                  =   1.73 sec*proc (1 test)
+tests/fw/services/timeline                  =  90.11 sec*proc (12 tests)
+tests/fw/shell                              =   0.01 sec*proc (1 test)
+tests/fw/shell/normal                       =   0.04 sec*proc (4 tests)
+tests/fw/system                             =   0.01 sec*proc (1 test)
+tests/fw/ui                                 =  39.95 sec*proc (42 tests)
+tests/fw/ui/recognizer                      =   0.14 sec*proc (8 tests)
+tests/kernel                                =   0.04 sec*proc (1 test)
+tests/libc                                  =   0.02 sec*proc (2 tests)
+tests/libutil                               =   0.17 sec*proc (24 tests)
+tests/subsys/crc                            =   0.03 sec*proc (4 tests)
+tests/subsys/input                          =   0.01 sec*proc (1 test)
+tests/subsys/logging                        =   0.01 sec*proc (2 tests)
+tests/subsys/task_wdt                       =   0.05 sec*proc (1 test)
+tests/test_infra                            =   0.01 sec*proc (1 test)
+
+Total Test time (real) = 178.14 sec

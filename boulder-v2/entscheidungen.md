@@ -180,6 +180,27 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   beim Aufstehen (`prv_gang_ab`, H4). Das rechnet alle Nächte wie H2/20 bis auf den 12.10.
   02:25–03:12. Umgesetzt in V2 `14e34d2e`.
 
+## Schlaf: Nacht 16.→17.10. (17.10.2026, F37, Analyse `naechte/analyse-2026-10-17.md`)
+- **Nutzer:** „fitbit is the correct one with yhe slerp time. I used the phone long into the night
+  ling in bed“. Fitbits Schlafzeit (Schlaf ab 01:46, Ende 06:57) stimmt; bis dahin lag der Nutzer mit
+  dem Handy im Bett. Boulder (b31) zählte 22:14 bis 07:24.
+- **F37: A.** In V2 kommen zwei Regeln zur Stille (VMC 0):
+  - **Einschlafen:** In den 30 Minuten ab dem Einschlafen sind mindestens 20 ganz still. Geprüft nach
+    den Aufwach-Schüben; ohne stille halbe Stunde bleibt das Einschlafen.
+  - **Aufwachen:** Ein späterer Schlaflauf verlängert die Nacht nur, wenn er still beginnt.
+- **Bei der Umsetzung nachgestellt** (Regel vom 6.10.: Einschlafen und Aufwachen höchstens zehn
+  Minuten neben Fitbit; liegt eine Nacht weiter weg, werden die Regeln nachgestellt):
+  - Mit der Stille allein begann der 16.10. um 01:25, 13 min vor Fitbits Bettzeit. Schiebt die Stille
+    das Einschlafen, gilt ab dort die Wälzregel noch einmal: 01:39. Das gilt für jede Schwelle von 15
+    bis 25 stillen Minuten.
+  - Beim Aufwachen zählt nur der Anfang des Laufs: die Hälfte seiner ersten Viertelstunde. Über den
+    ganzen Lauf gezählt endete ein Test (30.9. mit eingefügtem Toilettengang) 40 min zu früh, weil am
+    Ende des Laufs schon die Regungen des Aufwachens liegen.
+  - Die Morgenregel gilt nur, wo ein Lauf der Nacht still beginnt. Fiele das VMC nie auf 0, endete
+    sonst jede Nacht am ersten Lauf.
+- **Ergebnis:** 16.10. 01:39 bis 06:57 (Fitbit 01:38/01:46 bis 06:57), 302 min Schlaf (Fitbit 271).
+  Alle älteren Nächte rechnen gleich. Umgesetzt in V2 `688b3097`, Vorabversion b32.
+
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
 - **F17: B.** Den ersten Start nach dem Boot misst `qemu_health.py` in einem zweiten Boot unter

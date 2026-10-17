@@ -16,7 +16,7 @@ BIN = os.environ.get('NACHTLABOR_BIN', HIER + 'bin') + '/'
 WECKER = '--wecker' in sys.argv
 VARIANTEN = [a for a in sys.argv[1:] if a != '--wecker'] or [
     'v_b26', 'v_w30', 'v_o2', 'v_h2', 'v_o2h2', 'v_o2w30', 'v_o2h2w30', 'v_h3', 'v_o2h3w30', 'v_g20', 'v_o2g20w30',
-    'v_o2g25w30', 'v_o2hnw30', 'v_h4', 'v_o2h4w30', 'v_o2h4w30e1b', 'v_o2h4w30e1be2']
+    'v_o2g25w30', 'v_o2hnw30', 'v_h4', 'v_o2h4w30', 'v_o2h4w30e1b', 'v_o2h4w30e1be2', 'v_o2h4w30e1ce2k']
 # Fitbit je Nacht: Schlafbeginn (Minute ab 20:00), Schlaf gesamt, wach im Bett; Quelle in Klammern
 NAECHTE = [
     ('29.9.', HIER + 'ref-09-29.csv', None, None),

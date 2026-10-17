@@ -74,3 +74,8 @@
 - **Variante E2** (ein späterer Schlaflauf verlängert die Nacht nur, wenn drei Fünftel seiner Minuten
   still sind): Ende 06:57 statt 07:24, wie Fitbit. Keine ältere Nacht ändert sich. Offen als F37
   (A: E1b und E2, B: nur E1b, C: keins), `analyse-2026-10-17.md`, Abschnitt 9.
+- **F37: A** (17.10.): E1b und E2 in V2. Bei der Umsetzung nachgestellt: nach der Stille gilt die
+  Wälzregel noch einmal (Einschlafen 01:39 statt 01:25, Regel vom 6.10.: höchstens zehn Minuten neben
+  Fitbit), und beim Aufwachen zählt nur der Anfang eines Laufs (die Hälfte seiner ersten
+  Viertelstunde). 16.10. so 01:39 bis 06:57. Umgesetzt in V2 `688b3097`, Vorabversion b32
+  (`analyse-2026-10-17.md`, Abschnitt 10).

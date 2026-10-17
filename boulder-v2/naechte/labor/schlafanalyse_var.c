@@ -904,6 +904,25 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
   // genug ist, um einer zu sein. DOESEN ZAEHLT NICHT: ein Schlaf, der nicht
   // haelt, ist das Wegnicken vor dem Einschlafen.
   const int laeufe = prv_laeufe(w->wach, n, w->liste);
+#ifdef VAR_STILL_ENDE
+  // E2 nur, wo die Uhr Stille kennt (mit VAR_STILL_KOPF): ein Lauf der Nacht beginnt still.
+  bool e2_aktiv = true;
+#ifdef VAR_STILL_KOPF
+  e2_aktiv = false;
+  for (int k = 0; k < laeufe && !e2_aktiv; k++) {
+    const SchlafAbschnitt *l = &w->liste[k];
+    if (l->phase || l->bis - l->von < MIN_SCHLAFLAUF) {
+      continue;
+    }
+    const int bis = (l->bis - l->von > VAR_STILL_KOPF) ? l->von + VAR_STILL_KOPF : l->bis;
+    int still = 0;
+    for (int j = l->von; j < bis; j++) {
+      still += (e->gueltig[j] && e->bewegung[j] == 0) ? 1 : 0;
+    }
+    e2_aktiv = 100 * still >= VAR_STILL_ENDE * (bis - l->von);
+  }
+#endif
+#endif
   int ein = -1;
   int auf = -1;
   for (int k = 0; k < laeufe; k++) {
@@ -931,12 +950,18 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
     // E2 (Nacht 16.10.): ein spaeterer Schlaflauf verlaengert die Nacht nur, wenn mindestens
     // VAR_STILL_ENDE Prozent seiner Minuten ganz ohne Bewegung sind (VMC 0). Wer nach dem Aufwachen
     // sitzt oder im Bett das Handy haelt, regt sich ein wenig, bleibt aber unter Cole-Kripkes Schwelle.
-    if (ein != l->von) {
+    // Mit VAR_STILL_KOPF zaehlen nur seine ersten VAR_STILL_KOPF Minuten, und die Regel gilt nur, wenn
+    // ein Lauf der Nacht still beginnt (wie V2 seit 688b3097, b32).
+    if (ein != l->von && e2_aktiv) {
+      int bis = l->bis;
+#ifdef VAR_STILL_KOPF
+      bis = (l->bis - l->von > VAR_STILL_KOPF) ? l->von + VAR_STILL_KOPF : l->bis;
+#endif
       int still = 0;
-      for (int j = l->von; j < l->bis; j++) {
+      for (int j = l->von; j < bis; j++) {
         still += (e->gueltig[j] && e->bewegung[j] == 0) ? 1 : 0;
       }
-      if (100 * still < VAR_STILL_ENDE * (l->bis - l->von)) {
+      if (100 * still < VAR_STILL_ENDE * (bis - l->von)) {
         continue;
       }
     }
@@ -1002,7 +1027,15 @@ bool schlafanalyse_werte(const SchlafEingabe *e, SchlafArbeit *w, SchlafErgebnis
 #if defined(VAR_STILL) && defined(VAR_STILL_SPAET)
   // E1b: die Stille erst nach den Schueben pruefen. Die Schuebe und ihr Grundpuls sehen so die
   // Minuten ab dem Einschlafen von V2.
-  ein = prv_still(e, w->wach, ein, auf);
+  {
+    const int still = prv_still(e, w->wach, ein, auf);
+#ifdef VAR_STILL_RUHE
+    // E1c: hat die Stille das Einschlafen verschoben, gilt ab dort auch die Waelzregel wieder.
+    ein = (still != ein) ? prv_zur_ruhe(e, w->wach, still, auf) : ein;
+#else
+    ein = still;
+#endif
+  }
   if (ein >= auf) {
     return false;
   }

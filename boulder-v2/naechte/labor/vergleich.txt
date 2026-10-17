@@ -281,3 +281,31 @@ Fitbits Wachphasen:
         F RRRRRRR-----------------------------------___________________--------------RRRRRRR------RRRRRRRRRRRRRRRRRRRRRRR----RR---
   05:00 B RRRRRRRRRRRRRRRRRRRRRRR------RRRRRRRRRRRRR------___________------RRRRRRRRRRRR-----RRRRRRRRRR-------RRRRRRRRRRRRRRRRRR   
         F ----------RRR-WWWWWWW---------------------------------------------WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW------------------W   
+
+## Nacht 16.10. (V2 b32: E1c und E2 mit Anfang, nachgerechnet)
+Boulder: Einschlafen 01:39, Aufwachen 06:57, Schlaf 302 min, Ruhepuls 51, HRV 65
+Fitbit:  im Bett 01:38, erster Schlaf 01:46, letzter Schlaf bis 06:56, aus dem Bett 06:57, Schlaf 271 min
+  wach   Boulder   16 min  Fitbit   48 min
+  REM    Boulder  168 min  Fitbit   42 min
+  leicht Boulder  113 min  Fitbit  188 min
+  tief   Boulder   21 min  Fitbit   41 min
+Schlaf/Wach gleich: 256/319 min (80 %), Kappa -0.05
+Phase gleich (wo beide Schlaf): 109/255 (43 %), Kappa 0.11
+  Boulder\Fitbit  leicht  tief   REM
+  leicht             68     17     10
+  tief               12      9      0
+  REM                97     10     32
+Schlafpuls (Median in Boulders Schlaf): 56.0
+Boulders Wachphasen in der Nacht:
+  02:23-02:39 ( 16 min) Fitbit: leicht 11, tief 5 | Puls 61-78 (Median 64.0), VMC max 1768, Regungen>=450 3, Schritte 0, HRV [55]
+Fitbits Wachphasen:
+  01:38-01:46 (  8 min) Boulder: aus 1, leicht 7 | Puls 54-91 (Median 58.0), VMC max 4972, Regungen>=450 1, Schritte 0, HRV [55]
+  05:14-05:21 (  7 min) Boulder: REM 7 | Puls 50-63 (Median 56.5), VMC max 945, Regungen>=450 2, Schritte 0, HRV [58]
+  06:06-06:38 ( 32 min) Boulder: leicht 11, REM 21 | Puls 52-92 (Median 57.0), VMC max 2456, Regungen>=450 5, Schritte 0, HRV [65, 57]
+  06:56-06:57 (  1 min) Boulder: REM 1 | Puls --- (Median -), VMC max 0, Regungen>=450 0, Schritte 0, HRV []
+  01:00 B                                        --------------------------------------------WWWWWWWWWWWWWWWWRRRRR---------RRRRRRR
+        F                                       WWWWWWWW--------------------______________________--------------------------------
+  03:00 B RRRRRRRRRRRRRR-----------RRRRRRRRRRRRRRRR__________RRRRRRRRRRRRRRRRRRRR--------RRRRRRRRRRRRRRRRRRRRRRRRRRRR-----------RR
+        F RRRRRRR-----------------------------------___________________--------------RRRRRRR------RRRRRRRRRRRRRRRRRRRRRRR----RR---
+  05:00 B RRRRRRRRRRRRRRRRRRRRRRR------RRRRRRRRRRRRR------___________------RRRRRRRRRRRR-----RRRRRRRRRR-------RRRRRRRRRRRRRRRRRR   
+        F ----------RRR-WWWWWWW---------------------------------------------WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW------------------W   

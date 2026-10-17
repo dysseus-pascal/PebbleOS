@@ -588,3 +588,27 @@ Belege: `belege-vorab/v2-b31/`.
   Fehlerprobe rot). QEMU nicht wiederholt: eine Bedingung je Minute ohne Zeitbedarf.
 - **Vorabversion b31:** `normal_obelix_pvt_v4.41.1-b31.pbz` (sha256 `484ee31e…010b0d`).
 - **Offen:** echte Fahrten für die positive Seite. Sie kommen mit dem Minutenexport (F33).
+
+## 16. Eingeschlafen ist, wer still liegt (17.10.2026, `688b30974`)
+
+Nacht 16.→17.10. neben einem Fitbit: Boulder (b31) zählte 22:14 bis 07:24, Fitbit 01:38/01:46 bis
+06:57. Der Nutzer bestätigt Fitbit: Bis 01:38 lag der Nutzer mit dem Handy im Bett. Entscheid F37.
+Analyse: `naechte/analyse-2026-10-17.md`; Belege: `belege-vorab/v2-b32/`.
+
+- **Befund:** Mit dem Handy regt man sich jede Minute ein wenig (VMC 100–700). Das bleibt unter
+  Cole-Kripkes Schwelle, und die Wälzregel schob das Einschlafen nur eine halbe Stunde. VMC 0 hatte
+  dort jede fünfte Minute, in Fitbits Schlaf 86 % der Minuten.
+- **Umgesetzt:**
+  - **Einschlafen:** In 30 Minuten ab dem Einschlafen sind mindestens 20 ganz still. Geprüft nach den
+    Schüben, danach gilt die Wälzregel noch einmal; ohne stille halbe Stunde bleibt das Einschlafen.
+  - **Aufwachen:** Ein späterer Schlaflauf verlängert die Nacht nur, wenn die Hälfte seiner ersten
+    Viertelstunde still ist, und nur wo ein Lauf der Nacht still beginnt.
+  - 16.10. damit 01:39 bis 06:57. Alle älteren Nächte und die Snapshot-Nacht 26.9. rechnen gleich.
+- **Tests:** `test_boulder_schlaf` mit der Nacht 16.10. (Fitbits Phasen), zwei gebauten Nächten und
+  derselben Nacht ohne VMC 0 (wie bis b31). Mit Absicht anders: `gang_in_der_letzten_stunde`, 30.9.
+  mit Gang 35 min vor dem Aufwachen (die Nacht endet am Gang). Zwölf Mutationen rot, eine im belegten
+  Bereich nicht erkannt (zehn statt fünfzehn Minuten Anfang).
+- **Prüfung:** acht Bauten ohne Warnung, Host 440/440, alle Werkzeuge grün (im Prüfbau nur die
+  Fehlerprobe rot). QEMU nicht wiederholt: zwei Schleifen über die Minuten der Nacht; auf dem Rechner
+  ist die Analyse nicht langsamer als bei b31.
+- **Vorabversion b32:** `normal_obelix_pvt_v4.41.1-b32.pbz` (sha256 `4681fd1e…58a26a`).
