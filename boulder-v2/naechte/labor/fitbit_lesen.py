@@ -21,6 +21,7 @@ NAECHTE = {
     # Die Wach-Zeile ist hier nur duenn belegt; ihre Spur (765-833) steht 390 px ueber REM wie am 12.
     '13': ('dunkel', {'wach': (765, 833), 'rem': (1155, 1223), 'leicht': (1350, 1418), 'tief': (1545, 1613)}, 92, 563),
     '16': ('dunkel', {'wach': (931, 999), 'rem': (1321, 1389), 'leicht': (1516, 1584), 'tief': (1711, 1779)}, 338, 657),
+    '17': ('dunkel', {'wach': (732, 800), 'rem': (1122, 1190), 'leicht': (1317, 1385), 'tief': (1512, 1580)}, 216, 631),
 }
 
 
@@ -119,7 +120,8 @@ SOLL = {'08': {'wach': 17, 'leicht': 228, 'tief': 75, 'rem': 110},
         '12': {'wach': 79, 'leicht': 268, 'tief': 61, 'rem': 80},
         # 13.10.: Fitbits Summen ergeben 467 min, die Spanne 471; die 4 min fuellt leicht.
         '13': {'wach': 9, 'leicht': 256, 'tief': 84, 'rem': 118},
-        '16': {'wach': 48, 'leicht': 188, 'tief': 41, 'rem': 42}}
+        '16': {'wach': 48, 'leicht': 188, 'tief': 41, 'rem': 42},
+        '17': {'wach': 75, 'leicht': 221, 'tief': 43, 'rem': 76}}
 
 if __name__ == '__main__':
     nacht = sys.argv[2]

@@ -79,3 +79,26 @@
   Fitbit), und beim Aufwachen zählt nur der Anfang eines Laufs (die Hälfte seiner ersten
   Viertelstunde). 16.10. so 01:39 bis 06:57. Umgesetzt in V2 `688b3097`, Vorabversion b32
   (`analyse-2026-10-17.md`, Abschnitt 10).
+
+## 17.→18.10.2026 (V2 b32, Messstufe 4)
+- Export und Fitbit-Bild: `nacht-2026-10-17.csv`, `fitbit-2026-10-17.png`. Analyse:
+  `analyse-2026-10-18.md`.
+- **Fitbit:** im Bett 23:36, erster Schlaf 23:43, Ende 06:31. Wach 75 min (23:36–23:43, 03:24–03:41,
+  04:18–04:28, 04:41–05:22), REM 1 h 16, leicht 3 h 41, tief 43 min, Unruhe 29 min.
+- **Boulder (V2, Uhr):** eingeschlafen 23:38, aufgewacht 06:21, 6 h 43, keine Minute wach. Ruhepuls
+  53, HRV 67. Die Uhr rechnet wie b32 (0 von 681 Minuten anders); b31 rechnet gleich.
+- **Nutzer (18.10.):** „diese nacht sieht sehr ungleich aus. wir waren denke ich schon viel näher“.
+- **Fitbits drei Wachphasen sieht die Uhr als Schlaf:** Puls beim Schlafpuls (49–62), nur um 05:10
+  einmal 85, dazwischen Drehen alle paar Minuten.
+  - 04:39–05:18 ist ein Aufwach-Schub (8 Regungen, Puls +32, HRV 89 gegen 63, kein Gang). H4 lässt ihn
+    Schlaf. Er sieht aus wie die Schübe, die Fitbit bisher als Schlaf sah (13.10. auch laut Nutzer).
+  - Ohne H4: diese Nacht 83 → 48 min Schlaf/Wach anders als Fitbit, alle Nächte 290 → 372.
+  - Ausnahme für starke Pulsstöße: hilft nur bei 31–32 Schlägen und nur in dieser Nacht. Kein
+    Vorschlag.
+- **Nah an Fitbit** ist b32 in Nächten mit wenig Wachliegen (8., 9., 13.10.: 95–97 % gleich), weiter
+  weg in Nächten mit viel (12., 16., 17.10.: 80–83 %).
+- **Morgen:** 06:21 Regung mit Puls 86 (Boulders Aufwachen), 06:31 22 Schritte (Fitbits „out of
+  bed“).
+- **Phasen:** 65 % gleich, wo beide Schlaf sehen; REM 141 gegen 76 min.
+- Offen: Angabe des Nutzers zu den drei Wachphasen und zum Morgen (`analyse-2026-10-18.md`,
+  Abschnitt 10). Bis dahin bleibt V2.

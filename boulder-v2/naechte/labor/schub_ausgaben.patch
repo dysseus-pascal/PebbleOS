@@ -1,0 +1,47 @@
+--- a/fw/services/activity/boulder/schlafanalyse.c
++++ b/fw/services/activity/boulder/schlafanalyse.c
+@@ -4,6 +4,7 @@
+ #include "pbl/services/activity/boulder/schlafanalyse.h"
+ 
+ #include <string.h>
++#include <stdio.h>
+ 
+ // Wach oder nicht kommt aus Kiesel-Helper (Schlafanalyse.kt); die Phasen sind
+ // an den Naechten 29./30.9., 30.9./1.10. und 2./3.10.2026 neben einem Fitbit
+@@ -484,6 +485,7 @@
+   for (int j = (von - 2 > 0) ? von - 2 : 0; j < bis + 2 && j < e->anzahl; j++) {
+     hoch = (e->puls[j] > hoch) ? e->puls[j] : hoch;
+   }
++  fprintf(stderr, "Puls B%d-B%d grund %.1f hoch %d\n", von, bis, grund2 / 2.0, hoch);
+   return hoch > 0 && 2 * hoch - grund2 >= 2 * AUFWACH_PULS;
+ }
+ 
+@@ -561,6 +563,7 @@
+     if (von > ein && zahl >= AUFWACH_REGUNGEN && letzte + 1 + MIN_SCHLAFLAUF <= auf &&
+         prv_puls_schiesst(e, w->wach, ein, auf, von, letzte + 1, w->sortiert2)) {
+       w->liste[anzahl++] = (SchlafAbschnitt){ .von = von, .bis = letzte + 1 };
++      fprintf(stderr, "Schub B%d-B%d (%d Regungen)\n", von, letzte + 1, zahl);
+     }
+     von = i;
+     letzte = i;
+@@ -574,8 +577,12 @@
+     if (s_hrv_regel && nacht2 != KEIN && !prv_gang_im(e, von_k, bis_k)) {
+       const int32_t schub2 = prv_schub_hrv2(e, von_k, bis_k, w->sortiert2);
+       if (schub2 != KEIN && schub2 >= nacht2) {
++        fprintf(stderr, "  B%d-B%d bleibt Schlaf (HRV %ld >= Nacht %ld)\n", von_k, bis_k, (long)schub2 / 2, (long)nacht2 / 2);
+         continue;
+       }
++      fprintf(stderr, "  B%d-B%d wach (HRV %ld, Nacht %ld)\n", von_k, bis_k, (long)schub2 / 2, (long)nacht2 / 2);
++    } else {
++      fprintf(stderr, "  B%d-B%d wach (Gang oder ohne HRV)\n", von_k, bis_k);
+     }
+     for (int j = von_k; j < bis_k; j++) {
+       w->wach[j] = true;
+@@ -957,6 +964,7 @@
+   }
+   if (m > 0) {
+     const int32_t median2 = prv_median2(w->sortiert2, m);
++    fprintf(stderr, "Pulsgrenze: wach ueber %ld\n", (long)((median2 + 2 * PULS_WACH_UEBER) / 2));
+     for (int i = 0; i < n; i++) {
+       if (e->puls[i] > 0 && 2 * (int32_t)e->puls[i] > median2 + 2 * PULS_WACH_UEBER) {
+         w->wach[i] = true;

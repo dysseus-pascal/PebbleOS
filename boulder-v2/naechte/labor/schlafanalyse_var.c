@@ -435,6 +435,9 @@ static int prv_still(const SchlafEingabe *e, const bool *wach, int ein, int auf)
 // 02:21 ein einzelner (82 Schlaege) ein Aufwachen, das Fitbit bestaetigt. Mit
 // einem zweiten hohen Wert in der Naehe als Bedingung fiel es weg, und die
 // Minuten stimmten seltener (54 statt 58 %).
+// P30 (Nacht 17.10.): wie stark der zuletzt gepruefte Schub das Herz hob, mal zwei.
+static int s_letzter_stoss2;
+
 static bool prv_puls_schiesst(const SchlafEingabe *e, const bool *wach, int ein, int auf,
                               int von, int bis, int16_t *puffer) {
   int k = 0;
@@ -456,6 +459,7 @@ static bool prv_puls_schiesst(const SchlafEingabe *e, const bool *wach, int ein,
   for (int j = (von - 2 > 0) ? von - 2 : 0; j < bis + 2 && j < e->anzahl; j++) {
     hoch = (e->puls[j] > hoch) ? e->puls[j] : hoch;
   }
+  s_letzter_stoss2 = (hoch > 0) ? (int)(2 * hoch - grund2) : 0;
   return hoch > 0 && 2 * hoch - grund2 >= 2 * AUFWACH_PULS;
 }
 
@@ -487,7 +491,9 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
     // Ein Schub ist zu Ende: eine Regung zu weit weg, oder das Aufwachen.
     if (von > ein && zahl >= AUFWACH_REGUNGEN && letzte + 1 + MIN_SCHLAFLAUF <= auf &&
         prv_puls_schiesst(e, w->wach, ein, auf, von, letzte + 1, w->sortiert2)) {
-      w->liste[anzahl++] = (SchlafAbschnitt){ .von = von, .bis = letzte + 1 };
+      // P30: der Pulsstoss des Schubs (mal zwei, hoechstens 255) im Feld phase, fuer die HRV-Regel.
+      w->liste[anzahl++] = (SchlafAbschnitt){ .von = von, .bis = letzte + 1,
+                                              .phase = (uint8_t)(s_letzter_stoss2 > 255 ? 255 : s_letzter_stoss2) };
     }
     von = i;
     letzte = i;
@@ -532,7 +538,13 @@ static void prv_aufwach_schuebe(const SchlafEingabe *e, SchlafArbeit *w, int ein
 #else
       const bool gang = s_schritte_im(w->liste[k].von, w->liste[k].bis) >= GANG_SCHRITTE;
 #endif
-      if (ns > 0 && prv_median2(schub, ns) >= nacht2 && !gang) {
+#ifdef VAR_H4_PULS
+      // P30: ein Pulsstoss ab VAR_H4_PULS Schlaegen bleibt wach, auch bei hoher HRV.
+      const bool stoss = w->liste[k].phase >= 2 * VAR_H4_PULS;
+#else
+      const bool stoss = false;
+#endif
+      if (ns > 0 && prv_median2(schub, ns) >= nacht2 && !gang && !stoss) {
         continue;
       }
     }

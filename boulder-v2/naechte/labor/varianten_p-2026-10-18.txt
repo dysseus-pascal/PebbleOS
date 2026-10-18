@@ -1,0 +1,53 @@
+### v_p30
+  29.9.   ein 21:40 auf 06:00 schlaf 472 wach  28 | anders als b26:   0 min
+  30.9.   ein 22:00 auf 06:08 schlaf 460 wach  28 | anders als b26:   0 min | ein   +2 schlaf  +46 wach  -38
+  3.10.   ein 22:27 auf 06:30 schlaf 337 wach 146 | anders als b26:   0 min | ein   -2 schlaf  -10 wach  +15
+  5.10.   ein 22:14 auf 06:00 schlaf 461 wach   5 | anders als b26:  14 min | ein   -1
+  7.10.   ein 21:18 auf 06:00 schlaf 425 wach  97 | anders als b26:  16 min | ein   +1 wach  +70
+  8.10.   ein 22:35 auf 06:00 schlaf 435 wach  10 | anders als b26:  26 min | ein   -4 schlaf  +22 wach   -7 | S/W anders  24 min
+  9.10.   ein 23:16 auf 07:00 schlaf 464 wach   0 | anders als b26: 149 min | ein  -12 schlaf  +15 wach  -16 | S/W anders  15 min
+  12.10.  ein 21:42 auf 05:59 schlaf 396 wach 101 | anders als b26:   0 min | ein   -2 schlaf  -13 wach  +22 | S/W anders  87 min
+  13.10.  ein 21:39 auf 05:46 schlaf 480 wach   7 | anders als b26:  51 min | ein   +0 schlaf  +22 wach   -2 | S/W anders  18 min
+  16.10.  ein 02:03 auf 06:57 schlaf 278 wach  16 | anders als b26: 294 min | ein  +17 schlaf   +7 wach  -32 | S/W anders  73 min
+  17.10.  ein 23:38 auf 06:21 schlaf 364 wach  39 | anders als b26: 179 min | ein   -5 schlaf  +24 wach  -36 | S/W anders  48 min
+  Mittel |Abweichung|: Einschlafen 5 min (10 Naechte), Schlaf 20 min (8), wach 26 min (9); Schlaf/Wach anders als Fitbit (8.-17.10.): 265 min
+### v_p31
+  29.9.   ein 21:40 auf 06:00 schlaf 472 wach  28 | anders als b26:   0 min
+  30.9.   ein 22:00 auf 06:08 schlaf 460 wach  28 | anders als b26:   0 min | ein   +2 schlaf  +46 wach  -38
+  3.10.   ein 22:27 auf 06:30 schlaf 337 wach 146 | anders als b26:   0 min | ein   -2 schlaf  -10 wach  +15
+  5.10.   ein 22:14 auf 06:00 schlaf 461 wach   5 | anders als b26:  14 min | ein   -1
+  7.10.   ein 21:18 auf 06:00 schlaf 425 wach  97 | anders als b26:  16 min | ein   +1 wach  +70
+  8.10.   ein 22:35 auf 06:00 schlaf 435 wach  10 | anders als b26:  26 min | ein   -4 schlaf  +22 wach   -7 | S/W anders  24 min
+  9.10.   ein 23:16 auf 07:00 schlaf 464 wach   0 | anders als b26: 149 min | ein  -12 schlaf  +15 wach  -16 | S/W anders  15 min
+  12.10.  ein 21:42 auf 05:59 schlaf 396 wach 101 | anders als b26:   0 min | ein   -2 schlaf  -13 wach  +22 | S/W anders  87 min
+  13.10.  ein 21:39 auf 05:46 schlaf 480 wach   7 | anders als b26:  51 min | ein   +0 schlaf  +22 wach   -2 | S/W anders  18 min
+  16.10.  ein 01:39 auf 06:57 schlaf 302 wach  16 | anders als b26: 271 min | ein   -7 schlaf  +31 wach  -32 | S/W anders  63 min
+  17.10.  ein 23:38 auf 06:21 schlaf 364 wach  39 | anders als b26: 179 min | ein   -5 schlaf  +24 wach  -36 | S/W anders  48 min
+  Mittel |Abweichung|: Einschlafen 4 min (10 Naechte), Schlaf 23 min (8), wach 26 min (9); Schlaf/Wach anders als Fitbit (8.-17.10.): 255 min
+### --wecker
+### v_p30
+  29.9.   ein 21:40 auf 06:00 schlaf 472 wach  28 | anders als b26:   0 min
+  30.9.   ein 22:00 auf 06:08 schlaf 460 wach  28 | anders als b26:   0 min | ein   +2 schlaf  +46 wach  -38
+  3.10.   ein 22:27 auf 06:30 schlaf 337 wach 146 | anders als b26:   0 min | ein   -2 schlaf  -10 wach  +15
+  5.10.   ein 22:14 auf 06:00 schlaf 461 wach   5 | anders als b26:  14 min | ein   -1
+  7.10.   ein 21:18 auf 06:00 schlaf 425 wach  97 | anders als b26:  16 min | ein   +1 wach  +70
+  8.10.   ein 22:35 auf 06:00 schlaf 435 wach  10 | anders als b26:  26 min | ein   -4 schlaf   +4 wach   -7 | S/W anders   6 min
+  9.10.   ein 23:16 auf 07:00 schlaf 464 wach   0 | anders als b26: 149 min | ein  -12 schlaf  +15 wach  -16 | S/W anders  15 min
+  12.10.  ein 21:42 auf 05:59 schlaf 396 wach 101 | anders als b26:   0 min | ein   -2 schlaf  -27 wach  +22 | S/W anders  75 min
+  13.10.  ein 21:39 auf 05:46 schlaf 480 wach   7 | anders als b26:  51 min | ein   +0 schlaf   -1 wach   -2 | S/W anders   9 min
+  16.10.  ein 02:03 auf 06:57 schlaf 278 wach  16 | anders als b26: 294 min | ein  +17 schlaf   +7 wach  -32 | S/W anders  73 min
+  17.10.  ein 23:38 auf 06:21 schlaf 364 wach  39 | anders als b26: 179 min | ein   -5 schlaf  +24 wach  -36 | S/W anders  48 min
+  Mittel |Abweichung|: Einschlafen 5 min (10 Naechte), Schlaf 17 min (8), wach 26 min (9); Schlaf/Wach anders als Fitbit (8.-17.10.): 226 min
+### v_p31
+  29.9.   ein 21:40 auf 06:00 schlaf 472 wach  28 | anders als b26:   0 min
+  30.9.   ein 22:00 auf 06:08 schlaf 460 wach  28 | anders als b26:   0 min | ein   +2 schlaf  +46 wach  -38
+  3.10.   ein 22:27 auf 06:30 schlaf 337 wach 146 | anders als b26:   0 min | ein   -2 schlaf  -10 wach  +15
+  5.10.   ein 22:14 auf 06:00 schlaf 461 wach   5 | anders als b26:  14 min | ein   -1
+  7.10.   ein 21:18 auf 06:00 schlaf 425 wach  97 | anders als b26:  16 min | ein   +1 wach  +70
+  8.10.   ein 22:35 auf 06:00 schlaf 435 wach  10 | anders als b26:  26 min | ein   -4 schlaf   +4 wach   -7 | S/W anders   6 min
+  9.10.   ein 23:16 auf 07:00 schlaf 464 wach   0 | anders als b26: 149 min | ein  -12 schlaf  +15 wach  -16 | S/W anders  15 min
+  12.10.  ein 21:42 auf 05:59 schlaf 396 wach 101 | anders als b26:   0 min | ein   -2 schlaf  -27 wach  +22 | S/W anders  75 min
+  13.10.  ein 21:39 auf 05:46 schlaf 480 wach   7 | anders als b26:  51 min | ein   +0 schlaf   -1 wach   -2 | S/W anders   9 min
+  16.10.  ein 01:39 auf 06:57 schlaf 302 wach  16 | anders als b26: 271 min | ein   -7 schlaf  +31 wach  -32 | S/W anders  63 min
+  17.10.  ein 23:38 auf 06:21 schlaf 364 wach  39 | anders als b26: 179 min | ein   -5 schlaf  +24 wach  -36 | S/W anders  48 min
+  Mittel |Abweichung|: Einschlafen 4 min (10 Naechte), Schlaf 20 min (8), wach 26 min (9); Schlaf/Wach anders als Fitbit (8.-17.10.): 216 min
