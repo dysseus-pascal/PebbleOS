@@ -34,7 +34,7 @@ NAECHTE = [
      HIER + ('fitbit-13k.json' if WECKER else 'fitbit-13.json')),
     # 16.10.: im Bett 01:38, erster Schlaf 01:46, Ende 06:57; laut Nutzer stimmt Fitbit (bis 01:38 mit dem Handy im Bett)
     ('16.10.', NAECHTE_DIR + 'nacht-2026-10-16.csv', {'ein': 346, 'schlaf': 271, 'wach': 48}, HIER + 'fitbit-16.json'),
-    # 17.10.: im Bett 23:36, erster Schlaf 23:43, Ende 06:31 (Angabe des Nutzers fehlt noch)
+    # 17.10.: im Bett 23:36, erster Schlaf 23:43, Ende 06:31; Fitbits Wachphasen laut Nutzer wohl richtig, nicht sicher
     ('17.10.', NAECHTE_DIR + 'nacht-2026-10-17.csv', {'ein': 223, 'schlaf': 340, 'wach': 75}, HIER + 'fitbit-17.json'),
 ]
 

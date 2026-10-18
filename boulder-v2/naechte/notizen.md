@@ -100,5 +100,7 @@
 - **Morgen:** 06:21 Regung mit Puls 86 (Boulders Aufwachen), 06:31 22 Schritte (Fitbits „out of
   bed“).
 - **Phasen:** 65 % gleich, wo beide Schlaf sehen; REM 141 gegen 76 min.
-- Offen: Angabe des Nutzers zu den drei Wachphasen und zum Morgen (`analyse-2026-10-18.md`,
-  Abschnitt 10). Bis dahin bleibt V2.
+- **Nutzer (18.10.):** „Ich Weiss es nicht mehr Aber ich denke ja.“ Die drei Wachphasen sind
+  wahrscheinlich, nicht sicher; zum Morgen keine Angabe. V2 bleibt; H4 wird erst geändert, wenn
+  weitere Nächte mit Fitbit einen Schub mit hoher HRV als wach zeigen (`analyse-2026-10-18.md`,
+  Abschnitt 11).
