@@ -104,3 +104,8 @@
   wahrscheinlich, nicht sicher; zum Morgen keine Angabe. V2 bleibt; H4 wird erst geändert, wenn
   weitere Nächte mit Fitbit einen Schub mit hoher HRV als wach zeigen (`analyse-2026-10-18.md`,
   Abschnitt 11).
+
+## Telefon neu aufgesetzt (18./19.10.2026)
+- Boulder 0.55.0 neu installiert (versionCode 2585, die APK des Gerätetests); die Uhr (b32) verbindet
+  sich wieder. Der Verlauf auf dem Telefon ist weg, sofern keine Sicherung übernommen wurde. Die
+  Exporte bis 17.10. liegen hier.
