@@ -1,0 +1,33 @@
+== nacht-2026-10-16.csv (Ruhepuls 51)
+Abend: 134 min wach, Vorstufe nachgerechnet 86 min, davon mit Puls ausserhalb der HRV-Fenster 23 min
+  20:03-20:14 12 min  Schritte   0  VMC-Median   847  Puls in 4/12 Minuten
+  20:18-20:24  7 min  Schritte 107  VMC-Median  5332  Puls in 3/7 Minuten
+  20:29-21:03 35 min  Schritte 265  VMC-Median  2822  Puls in 5/35 Minuten
+  21:07-21:10  4 min  Schritte 119  VMC-Median  7769  Puls in 0/4 Minuten
+  21:14-21:30 17 min  Schritte 144  VMC-Median  3847  Puls in 6/17 Minuten
+  21:42-21:43  2 min  Schritte  12  VMC-Median  3428  Puls in 0/2 Minuten
+  21:49-21:54  6 min  Schritte   0  VMC-Median   726  Puls in 3/6 Minuten
+  22:05-22:06  2 min  Schritte   0  VMC-Median   416  Puls in 2/2 Minuten
+  22:12-22:12  1 min  Schritte   0  VMC-Median   304  Puls in 1/1 Minuten
+Morgen: 36 min wach, Vorstufe nachgerechnet 18 min, davon mit Puls ausserhalb der HRV-Fenster 18 min
+  07:37-07:54 18 min  Schritte 134  VMC-Median  4763  Puls in 18/18 Minuten
+== nacht-2026-10-17.csv (Ruhepuls 51)
+Abend: 218 min wach, Vorstufe nachgerechnet 43 min, davon mit Puls ausserhalb der HRV-Fenster 36 min
+  20:03-20:06  4 min  Schritte  92  VMC-Median  6773  Puls in 4/4 Minuten
+  20:10-20:19 10 min  Schritte 103  VMC-Median  4484  Puls in 10/10 Minuten
+  20:23-20:25  3 min  Schritte  23  VMC-Median   396  Puls in 3/3 Minuten
+  20:29-20:30  2 min  Schritte   0  VMC-Median   290  Puls in 2/2 Minuten
+  20:36-20:42  7 min  Schritte  76  VMC-Median  3542  Puls in 6/7 Minuten
+  20:48-20:48  1 min  Schritte   0  VMC-Median     0  Puls in 1/1 Minuten
+  21:29-21:33  5 min  Schritte   0  VMC-Median  1038  Puls in 5/5 Minuten
+  21:37-21:38  2 min  Schritte   0  VMC-Median   791  Puls in 2/2 Minuten
+  21:50-21:51  2 min  Schritte   0  VMC-Median   410  Puls in 2/2 Minuten
+  22:02-22:02  1 min  Schritte   0  VMC-Median    96  Puls in 1/1 Minuten
+  22:36-22:36  1 min  Schritte   0  VMC-Median   113  Puls in 1/1 Minuten
+  22:44-22:45  2 min  Schritte   0  VMC-Median   300  Puls in 2/2 Minuten
+  23:14-23:14  1 min  Schritte   0  VMC-Median    15  Puls in 1/1 Minuten
+  23:18-23:19  2 min  Schritte  16  VMC-Median 11816  Puls in 2/2 Minuten
+Morgen: 60 min wach, Vorstufe nachgerechnet 3 min, davon mit Puls ausserhalb der HRV-Fenster 3 min
+  06:46-06:46  1 min  Schritte   0  VMC-Median  2591  Puls in 1/1 Minuten
+  06:50-06:50  1 min  Schritte   0  VMC-Median   924  Puls in 1/1 Minuten
+  07:08-07:08  1 min  Schritte   0  VMC-Median  1146  Puls in 1/1 Minuten

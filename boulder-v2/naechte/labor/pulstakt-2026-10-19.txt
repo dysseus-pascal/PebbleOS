@@ -1,0 +1,8 @@
+2026-10-05  Minuten mit Puls: Abend  34 %, Nacht  52 %, Morgen  32 %  |  Abstaende im Schlaf: 1 min 53 %, 2 min 12 %, 3 min 33 %
+2026-10-07  Minuten mit Puls: Abend  45 %, Nacht  53 %, Morgen  35 %  |  Abstaende im Schlaf: 1 min 54 %, 2 min 12 %, 3 min 29 %
+2026-10-08  Minuten mit Puls: Abend  49 %, Nacht  53 %, Morgen  29 %  |  Abstaende im Schlaf: 1 min 52 %, 2 min 15 %, 3 min 31 %
+2026-10-09  Minuten mit Puls: Abend  50 %, Nacht  52 %, Morgen  28 %  |  Abstaende im Schlaf: 1 min 52 %, 2 min 13 %, 3 min 33 %
+2026-10-12  Minuten mit Puls: Abend  26 %, Nacht  54 %, Morgen  29 %  |  Abstaende im Schlaf: 1 min 56 %, 2 min 12 %, 3 min 28 %, 4 min 4 %
+2026-10-13  Minuten mit Puls: Abend  41 %, Nacht  52 %, Morgen  25 %  |  Abstaende im Schlaf: 1 min 52 %, 2 min 10 %, 3 min 34 %
+2026-10-16  Minuten mit Puls: Abend  40 %, Nacht  68 %, Morgen  75 %  |  Abstaende im Schlaf: 1 min 59 %, 2 min 38 %
+2026-10-17  Minuten mit Puls: Abend  72 %, Nacht  68 %, Morgen  58 %  |  Abstaende im Schlaf: 1 min 59 %, 2 min 37 %, 3 min 4 %

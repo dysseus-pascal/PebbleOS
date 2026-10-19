@@ -12,6 +12,9 @@ Die übrigen Skripte nehmen ihre Pfade als Argumente.
 | `vergleich.py` | Boulder gegen Fitbit je Minute: Tabelle, Wachphasen, Streifen. Ausgabe `vergleich.txt` |
 | `mit_rechnung.py` | Schreibt eine CSV mit Kopf und Phasen einer Nachrechnung, damit `vergleich.py` auch V2 oder eine Variante gegen Fitbit stellt |
 | `wachphasen.py` | Merkmale aller Wachphasen in der Nacht. Ausgabe `wachphasen.txt` |
+| `pulstakt.py` | Anteil der Minuten mit Puls (Abend, Nacht, Morgen) und Abstände zwischen zwei Pulswerten im Schlaf, je Export. Ausgabe `pulstakt-2026-10-19.txt` (`akku-2026-10-19.md`) |
+| `vorstufe.py` | Die Velo-Vorstufe (`kontext.c`) auf den wachen Minuten einer Nacht nachgerechnet, ohne den Fahrtzustand (Obergrenze). Ausgabe `vorstufe-2026-10-19.txt` |
+| `takt3.py` | Dünnt den Nachtpuls einer V2-Nacht auf den Takt von b26 aus (ausserhalb der HRV-Fenster je drei Minuten ein Wert). Ausgabe `takt3-2026-10-19.txt` (mit `mit_rechnung.py`, `v_o2h4w30e1ce2k` und `vergleich.py`) |
 | `b32_alle-2026-10-18.txt` | Kopf von `vergleich.py` für alle Nächte mit Fitbit, mit V2 b32 nachgerechnet (`mit_rechnung.py` mit `v_o2h4w30e1ce2k`) |
 | `schuebe.py` | Die Aufwach-Schübe einer Nacht: HRV gegen den Median der Nacht, Pulsstoss, stille Minuten, Lagewechsel und Regungen je Stunde, Fitbits Wachminuten. Liest die Ausgaben eines Prüfbaus: `schlafanalyse.c` mit `schub_ausgaben.patch`, gebaut wie `nacht_rechnen.c`; Aufruf im Kopf des Skripts. Ausgabe `schuebe-2026-10-18.txt` (Nächte 7. bis 17.10., Prüfbau auf `688b3097`) |
 | `gegen_v2.py` | Welche Nächte eine Variante anders rechnet als V2 (`v_o2h4w30`) oder als `$GEGEN`, mit Einschlafen und Schlaf. Ausgaben `gegen_v2-2026-10-17.txt` (E1, E1b, E1c), `gegen_e1b-2026-10-17.txt` (E2 über den ganzen Lauf gegen V2 + E1b) und `gegen_e1c-2026-10-17.txt` (E2 mit Anfang gegen V2 + E1c) |

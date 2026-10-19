@@ -1,0 +1,59 @@
+V2 b32 (v_o2h4w30e1ce2k) gegen Fitbit, mit dem Nachtpuls der Uhr (alle 2 min) und auf den Takt von b26 ausgeduennt (takt3.py)
+../nacht-2026-10-16.csv: 103 Pulswerte entfernt, 163 ausserhalb der HRV-Fenster behalten
+## Nacht 16.10., Puls uhr
+Boulder: Einschlafen 01:39, Aufwachen 06:57, Schlaf 302 min, Ruhepuls 51, HRV 65
+Fitbit:  im Bett 01:38, erster Schlaf 01:46, letzter Schlaf bis 06:56, aus dem Bett 06:57, Schlaf 271 min
+  wach   Boulder   16 min  Fitbit   48 min
+  REM    Boulder  168 min  Fitbit   42 min
+  leicht Boulder  113 min  Fitbit  188 min
+  tief   Boulder   21 min  Fitbit   41 min
+Schlaf/Wach gleich: 256/319 min (80 %), Kappa -0.05
+Phase gleich (wo beide Schlaf): 109/255 (43 %), Kappa 0.11
+  Boulder\Fitbit  leicht  tief   REM
+  leicht             68     17     10
+  tief               12      9      0
+  REM                97     10     32
+
+## Nacht 16.10., Puls takt3
+Boulder: Einschlafen 01:39, Aufwachen 06:57, Schlaf 302 min, Ruhepuls 51, HRV 65
+Fitbit:  im Bett 01:38, erster Schlaf 01:46, letzter Schlaf bis 06:56, aus dem Bett 06:57, Schlaf 271 min
+  wach   Boulder   16 min  Fitbit   48 min
+  REM    Boulder   93 min  Fitbit   42 min
+  leicht Boulder  179 min  Fitbit  188 min
+  tief   Boulder   30 min  Fitbit   41 min
+Schlaf/Wach gleich: 256/319 min (80 %), Kappa -0.05
+Phase gleich (wo beide Schlaf): 149/255 (58 %), Kappa 0.20
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            114     22     18
+  tief               12     11      0
+  REM                51      3     24
+
+../nacht-2026-10-17.csv: 110 Pulswerte entfernt, 173 ausserhalb der HRV-Fenster behalten
+## Nacht 17.10., Puls uhr
+Boulder: Einschlafen 23:38, Aufwachen 06:21, Schlaf 403 min, Ruhepuls 53, HRV 67
+Fitbit:  im Bett 23:36, erster Schlaf 23:43, letzter Schlaf bis 06:31, aus dem Bett 06:31, Schlaf 340 min
+  wach   Boulder    0 min  Fitbit   75 min
+  REM    Boulder  141 min  Fitbit   76 min
+  leicht Boulder  236 min  Fitbit  221 min
+  tief   Boulder   26 min  Fitbit   43 min
+Schlaf/Wach gleich: 332/415 min (80 %), Kappa -0.00
+Phase gleich (wo beide Schlaf): 213/330 (65 %), Kappa 0.34
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            148     24     23
+  tief               14     12      0
+  REM                49      7     53
+
+## Nacht 17.10., Puls takt3
+Boulder: Einschlafen 23:38, Aufwachen 06:21, Schlaf 403 min, Ruhepuls 53, HRV 67
+Fitbit:  im Bett 23:36, erster Schlaf 23:43, letzter Schlaf bis 06:31, aus dem Bett 06:31, Schlaf 340 min
+  wach   Boulder    0 min  Fitbit   75 min
+  REM    Boulder   81 min  Fitbit   76 min
+  leicht Boulder  284 min  Fitbit  221 min
+  tief   Boulder   38 min  Fitbit   43 min
+Schlaf/Wach gleich: 332/415 min (80 %), Kappa -0.00
+Phase gleich (wo beide Schlaf): 209/330 (63 %), Kappa 0.27
+  Boulder\Fitbit  leicht  tief   REM
+  leicht            161     20     46
+  tief               20     18      0
+  REM                30      5     30
+
