@@ -647,3 +647,42 @@ Analyse: `akku-2026-10-19.md`; Belege: `belege-vorab/v2-b33/`.
 - **Vorabversion b33:** `normal_obelix_pvt_v4.41.1-b33.pbz` (sha256 `dfd497ed…709da8`).
 - **Offen:** der Akku selbst. Boulders Seite „Battery“ zeigt den Verbrauch je Tag und je Nacht; den
   Vergleich mit b32 bringen die nächsten Tage.
+
+## 18. Upstream v4.41.2 und main (20.10.2026, `97ae1df54`, `d5cc0038c`)
+
+F39 („Alles aus dem upstream übernehmen“, `entscheidungen.md`): Damit endet das Einfrieren bis nach
+dem Gerätetest (F18). Belege: `belege-vorab/v2-b34/`.
+
+- **v4.41.2** (`97ae1df54`), ohne Konflikt:
+  - Auf obelix sind Pebbles Menüzeilen in der Standardgröße wieder 50 statt 61 px hoch.
+  - Drei Benachrichtigungs-Änderungen aus v4.41.0 sind zurückgenommen. Eine weggewischte
+    Benachrichtigung, die das Telefon noch einmal schickt, wird wieder gespeichert. Bearbeitete
+    stehen wieder im Verlauf und in der Vorschau des Launchers.
+- **`main`** (`d5cc0038c`, 395 Commits nach v4.41.0, bis `723a1708c`):
+  - Konflikte gab es nur in Pebble-Dateien ohne Boulder-Stelle; dort gilt `main`.
+  - Submodule: moddable und pebbleos-nonfree sind nachgezogen, fff ist neu.
+  - Boulder ist an Upstreams Umbauten angepasst:
+    - Syscalls mit `PBL_SYSCALL` und Argumentarten.
+    - `struct pbl_tm` statt der überschatteten `time.h`.
+    - `pbl/kernel/assert.h` statt `passert.h`.
+    - Lichtsensor über `light_level_to_enum`.
+    - Syscall-Stapel in `pebble_tasks.c`.
+    - Test-Stubs als Bibliothek, Testmodule.
+  - Kopie: Upstreams Änderungen an den Originalen kamen per `git merge-file`, darunter das neue
+    `activity_algorithm_get_minute_heart_rate`. Es liest über dieselben Funktionen wie der
+    Minutenverlauf, also mit D7 und D12. `HERKUNFT` nennt `723a1708c`.
+  - **Fund beim Anpassen:** `wecklauf.c` hätte nach dem Umbau den Wochentag still mit `localtime_r`
+    der C-Bibliothek (UTC) gerechnet, ohne Fehler beim Bauen. Jetzt `pbl_localtime_r`.
+  - **K2:** Den Rumpf von S2 legt der Compiler jetzt in eine eigene Funktion
+    (`sys_boulder_lage__impl.isra.0`). `mehrwort.sh` prüft solche Rümpfe mit; sonst bliebe G-K2
+    grün.
+  - S3 prüft wie bisher nur, was kopiert wird, und ohne Wunsch nichts, jetzt mit
+    `pbl_syscall_verify_user` im Rumpf. Upstream spiegelt Stapel-Argumente auf den Syscall-Stapel,
+    die Zusicherung für vier Register-Argumente entfällt.
+  - Kernel-Heap von obelix (Release) 70 432 B (−2 304), der Prüfbau mit gleich viel.
+- **Prüfung:** acht Bauten ohne Warnung, Host 466/466 (26 neue Tests von Upstream), alle Werkzeuge
+  grün (im Prüfbau nur die Fehlerprobe rot). Mutationen 54/54 rot. QEMU zweimal grün:
+  L1 höchstens 13,7 ms, erster Start 23,4 ms (b33: 20,5), L2 14,6 ms, L4 6,8 ms, L6 0,01 ms;
+  Kernel-Heap ohne Wachstum, Syscall-Stapel mit 1 368 B Reserve, kein Neustart. Die Health-App
+  liest über die umgestellten S1–S7 wie bisher.
+- **Vorabversion b34:** `normal_obelix_pvt_v4.41.2-b34.pbz` (sha256 `956b987b…21fb83`).

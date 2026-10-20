@@ -210,9 +210,10 @@ G = [
     ('G-K6', 'Gegenpruefung', 'Fertige Nacht im Minutentakt nicht neu gelesen (K6)', APP + 'daten.c',
      '      d->lage.nacht_stufe == NachtFertig || ', '      ', ctest('^test_bh_daten$')),
     # Gegenpruefung Kern und Werkzeug (K1-K5, A9)
+    # Seit Upstream main (F39, 20.10.) prueft pbl_syscall_verify_user, vorher syscall_assert_userspace_buffer.
     ('G-K1', 'Gegenpruefung', 'S3 prueft den Puffer mit max statt dem Begrenzten (K1)', VAR + 'schnittstelle.c',
-     'syscall_assert_userspace_buffer(aus, n * sizeof(*aus));',
-     'syscall_assert_userspace_buffer(aus, max * sizeof(*aus));', ctest('^test_boulder_schnittstelle$')),
+     'pbl_syscall_verify_user(aus, n * sizeof(*aus));',
+     'pbl_syscall_verify_user(aus, max * sizeof(*aus));', ctest('^test_boulder_schnittstelle$')),
     ('G-K2', 'Gegenpruefung', 'S2 kopiert per Strukturzuweisung (K2)', VAR + 'schnittstelle.c',
      '  memcpy(aus, &s_lage, sizeof(*aus));', '  *aus = s_lage;',
      befehl('build-obelixrel', MEHRWORT, str(R / 'build-obelixrel/pebbleos.elf'))),

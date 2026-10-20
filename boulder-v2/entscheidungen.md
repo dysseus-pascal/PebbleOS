@@ -213,6 +213,16 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - Umgesetzt in V2 `4c49e827` (Entfernen), `0be700c9` (Nachtpuls) und `9caccff2` (Test),
   Vorabversion b33.
 
+## Upstream ganz übernehmen (20.10.2026, F39)
+- **Nutzer:** „Upstream?“ Die Übersicht dazu: Firmware v4.41.2 (16.10.), `main` 395 Commits nach
+  v4.41.0, Cores App ohne neue Fassung. Danach: „Gibt's was das wir commiten könnten“. Die Liste
+  „Rückgabe an Core Devices“ ist geprüft (`ideen.md`), noch nichts eingereicht.
+- **F39: „Alles aus dem upstream übernehmen“.** V2 bekommt v4.41.2 und `main` (bis `723a1708c`).
+  Das Einfrieren bis nach dem Gerätetest (F18) ist damit aufgehoben. Gemeint ist die Firmware;
+  Cores App hat seit 1.15.0.1 keine neue Fassung.
+- Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
+  b34 (`schritt3-abnahme.md`, Abschnitt 18).
+
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
 - **F17: B.** Den ersten Start nach dem Boot misst `qemu_health.py` in einem zweiten Boot unter
