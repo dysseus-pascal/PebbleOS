@@ -1,0 +1,11 @@
+rot        F38a  V2 F38        "Ohne Schritte" wirkt auch ohne Training (fw/services/activity/boulder/dauerteil.c)
+           | 1/1 Test #270: test_boulder_training ............***Failed    0.12 sec
+rot        F38b  V2 F38        Start und Stopp loeschen "ohne Schritte" nicht (fw/services/activity/boulder/dauerteil.c)
+           | 1/1 Test #270: test_boulder_training ............***Failed    0.11 sec
+rot        F38c  V2 F38        Ein ruhiges Training zaehlt fuer die Nacht (fw/services/activity/boulder/dauerteil.c)
+           | 1/1 Test #270: test_boulder_training ............***Failed    0.12 sec
+rot        F38d  V2 F38        Detailed misst nachts wieder alle 2 Minuten (fw/services/activity/boulder/messstufe.c)
+           | 1/1 Test #266: test_boulder_messung .............***Failed    0.33 sec
+rot        F38e  V2 F38        deinit schreibt die offenen Gruppen nicht (D13) (fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c)
+           | 1/1 Test #258: test_boulder_glue ................***Failed    0.05 sec
+5/5 rot

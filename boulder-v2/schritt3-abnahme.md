@@ -612,3 +612,38 @@ Analyse: `naechte/analyse-2026-10-17.md`; Belege: `belege-vorab/v2-b32/`.
   Fehlerprobe rot). QEMU nicht wiederholt: zwei Schleifen über die Minuten der Nacht; auf dem Rechner
   ist die Analyse nicht langsamer als bei b31.
 - **Vorabversion b32:** `normal_obelix_pvt_v4.41.1-b32.pbz` (sha256 `4681fd1e…58a26a`).
+
+## 17. Ohne Velo und Auto, nachts alle drei Minuten (20.10.2026, `4c49e8270`, `0be700c93`, `9caccff25`)
+
+Meldung des Nutzers (mit b32): „Gefühlt brauchen wir seit dem neu schreiben der Anwendung mehr Akku.
+Die Fahrräder Kennung ist auch immer noch zu aggressiv.“ Entscheid F38 A, dazu die Auto-Erkennung.
+Analyse: `akku-2026-10-19.md`; Belege: `belege-vorab/v2-b33/`.
+
+- **Befund:**
+  - Die Velo-Vorstufe hielt den Pulssensor ab der dritten velo-artigen Minute im Sekundentakt an. An
+    den beiden V2-Abenden lief sie nach den Minuten bis zu 41 und 39 min, ohne Fahrt.
+  - Nachts kam unter V2 auf „Detailed“ alle 2 Minuten ein Pulswert, unter b26 alle 3: Pebbles
+    Messung zählt den Takt erst ab dem Ausschalten. Die REM-Regel ist an Nächten mit dem Takt von b26
+    eingestellt.
+- **Umgesetzt:**
+  - Entfernt: `kontext.c`, `nachfrage.c`, `szene.c` (Kandidatin, Frage, Fahrtsitzung, Pulskalorien
+    F7, Ablage „fahrt“, Szene HighIntensity), das Abo „Aktiv“ in `puls.c`, Kieselsports Meldung des
+    Maximums für die Fahrt und die Prüfnacht 5. Den Merker „Training“ (Nacht, D17) führt jetzt der
+    Dauerteil.
+  - Kopie: D3, D4, D5 und D10 fallen weg. Gehfilter, Health-Sync, Szene und das Abo bei Aktivität
+    rechnen wieder wie das Original. D12 behält den Puffer 15+19+5, D13 schreibt die Gruppen, die der
+    Callback noch nicht schrieb, D15 setzt nur den Merker.
+  - Stufe 4 misst nachts alle 3 statt 2 Minuten (`messstufe.c`).
+- **Tests:** Die Trainingstests aus `test_boulder_fahrt` (T4.1, Pause, P4) stehen in
+  `test_boulder_training`. Neu ist `ruhiges_training_ist_kein_schlaf` (Kieselsport und Pebbles
+  Workout-App). `test_boulder_messung` erwartet auf Stufe 4 20 Fenster je Stunde (gemessen 21).
+  Mutationen rot: F38a („ohne Schritte“ wirkt ohne Training), F38b (Start und Stopp löschen es
+  nicht), F38c (ein ruhiges Training zählt für die Nacht), F38d (Detailed nachts wieder alle 2
+  Minuten), F38e (D13 schreibt nicht).
+- **Prüfung:** acht Bauten ohne Warnung, Host 440/440, alle Werkzeuge grün (im Prüfbau nur die
+  Fehlerprobe rot). Kernel-Heap von obelix (Release) 72 736 B (+224), der Prüfbau mit gleich
+  viel. QEMU zweimal grün: L1 höchstens 14,6 ms, erster Start 20,5 ms, L2 13,7 ms, L4 8,8 ms, L6
+  0,02 ms; Kernel-Heap ohne Wachstum, kein Neustart.
+- **Vorabversion b33:** `normal_obelix_pvt_v4.41.1-b33.pbz` (sha256 `dfd497ed…709da8`).
+- **Offen:** der Akku selbst. Boulders Seite „Battery“ zeigt den Verbrauch je Tag und je Nacht; den
+  Vergleich mit b32 bringen die nächsten Tage.

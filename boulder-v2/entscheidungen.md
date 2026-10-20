@@ -201,6 +201,18 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **Ergebnis:** 16.10. 01:39 bis 06:57 (Fitbit 01:38/01:46 bis 06:57), 302 min Schlaf (Fitbit 271).
   Alle älteren Nächte rechnen gleich. Umgesetzt in V2 `688b3097`, Vorabversion b32.
 
+## Akku und Velo-Erkennung (20.10.2026, F38, Analyse `akku-2026-10-19.md`)
+- **Nutzer (19.10.):** „Gefühlt brauchen wir seit dem neu schreiben der Anwendung mehr Akku. Die
+  Fahrräder Kennung ist auch immer noch zu aggressiv. Würde das eliminieren der Funktion den Akku
+  schönen?“
+- **F38: A, „und Auto auch raus“** (20.10.):
+  - Die Velo-Erkennung entfällt mit Vorstufe und Frage, die Auto-Erkennung ebenso.
+  - Nachts misst die Uhr auf „Detailed“ wieder alle drei Minuten, wie b26 es tatsächlich tat.
+- Für Velofahrten bleibt Kieselsport „Bike“ (Strasse/Gravel, MTB); es zählt keine Schritte. Ohne
+  Training zählen bei einer Fahrt wieder Schritte, wie vor V2.
+- Umgesetzt in V2 `4c49e827` (Entfernen), `0be700c9` (Nachtpuls) und `9caccff2` (Test),
+  Vorabversion b33.
+
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
 - **F17: B.** Den ersten Start nach dem Boot misst `qemu_health.py` in einem zweiten Boot unter

@@ -127,15 +127,30 @@ M = [
      'if (persist_read_data(PERSIST_WEG, &s_weg, sizeof(s_weg)) < 0) {', ctest('^test_kieselstrasse_weg$')),
     ('S1-4', 'Schritt 1 K4', 'Smart Alarm ohne Bewegung (auch im Tiefschlaf)', VAR + 'wecker.c',
      '  if (s_bewegt & WECKER_S1) {', '  if (true) {', ctest('^test_boulder_wecker')),
-    ('S1-5', 'Schritt 1 K5', 'Velo nie erkannt', VAR + 'kontext.c',
-     'if (m->schritte < KONTEXT_VELO_SCHRITTE_UNTER &&', 'if (m->schritte > KONTEXT_VELO_SCHRITTE_UNTER &&',
-     ctest('^test_boulder_fahrt')),
+    # S1-5 (Velo nie erkannt) entfiel mit F38 (20.10.): Die Velo- und Autoerkennung ist entfernt.
     # Schritt 2
     ('S2-1', 'Schritt 2 V1', 'Velo-Training zaehlt Schritte', VAR + 'sport/plattform.c',
      'ks_schritte_streichen(!art_info(art)->schritte);', 'ks_schritte_streichen(false);',
      ctest('kieselsport')),
     ('S2-5', 'Schritt 2 K5', 'Pulskalorien: Ruheanteil 3,0 statt 3,5 ml/kg/min', VAR + 'kalorien.c',
      '#define VO2_RUHE_C 350', '#define VO2_RUHE_C 300', ctest('kalorien')),
+    # V2, F38 (20.10.): ohne Velo und Auto bleibt vom Kontext nur der Merker "Training" (D15, D17).
+    ('F38a', 'V2 F38', '"Ohne Schritte" wirkt auch ohne Training', VAR + 'dauerteil.c',
+     '  return s_training && s_ohne_schritte;', '  return s_ohne_schritte;',
+     ctest('^test_boulder_training$')),
+    ('F38b', 'V2 F38', 'Start und Stopp loeschen "ohne Schritte" nicht', VAR + 'dauerteil.c',
+     '  s_ohne_schritte = false;\n  s_training = laeuft;', '  s_training = laeuft;',
+     ctest('^test_boulder_training$')),
+    ('F38c', 'V2 F38', 'Ein ruhiges Training zaehlt fuer die Nacht', VAR + 'dauerteil.c',
+     'const bool gueltig = !minute->nicht_getragen && !s_training;',
+     'const bool gueltig = !minute->nicht_getragen;', ctest('^test_boulder_training$')),
+    ('F38d', 'V2 F38', 'Detailed misst nachts wieder alle 2 Minuten', VAR + 'messstufe.c',
+     '{ .puls_nacht_s = 3 * 60,', '{ .puls_nacht_s = 2 * 60,', ctest('^test_boulder_messung$')),
+    ('F38e', 'V2 F38', 'deinit schreibt die offenen Gruppen nicht (D13)',
+     VAR + 'kraepelin/activity_algorithm_kraepelin.c',
+     '  if (prv_lock()) {\n    prv_minuten_schreiben();\n    prv_unlock();\n  }\n'
+     '  boulder_dauerteil_tracking_aus();',
+     '  boulder_dauerteil_tracking_aus();', ctest('^test_boulder_glue$')),
 ]
 
 # Gegenpruefung Schritt 3: je behobenem Befund die alte Stelle zurueck; der neue Test wird rot.
