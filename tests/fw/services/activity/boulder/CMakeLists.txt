@@ -27,7 +27,6 @@ pbl_clar_test(test_boulder_kraepelin_algorithm
     tests/fw/services/activity/kraepelin_reference/helper_worker.c
     tests/fw/services/activity/kraepelin_reference/ProjectK_worker.c
     tests/fw/services/activity/kraepelin_reference/raw_stats.c
-    fw/services/activity/boulder/szene.c
   DEFINES DUMA_DISABLED CONFIG_HRM ${BOULDER_KALG_NAMEN}
   OVERRIDES dummy_board
 )
@@ -71,7 +70,6 @@ pbl_clar_test(test_boulder_glue
     fw/services/regular_timer/service.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
-    fw/services/activity/boulder/szene.c
     fw/services/activity/boulder/takt.c
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
@@ -175,7 +173,6 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/activity_sessions.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
-    fw/services/activity/boulder/szene.c
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
@@ -192,10 +189,8 @@ pbl_clar_test(test_boulder_zyklen
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/umzug_prefs.c
-    fw/services/activity/boulder/kontext.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
-    tests/fw/services/activity/boulder/fake_nachfrage.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
 )
@@ -254,7 +249,6 @@ set(boulder_wecker_quellen
     fw/services/activity/activity_sessions.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
-    fw/services/activity/boulder/szene.c
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
@@ -272,9 +266,7 @@ set(boulder_wecker_quellen
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/umzug_prefs.c
-    fw/services/activity/boulder/kontext.c
-    tests/fw/services/activity/boulder/fake_messung.c
-    tests/fw/services/activity/boulder/fake_nachfrage.c)
+    tests/fw/services/activity/boulder/fake_messung.c)
 pbl_clar_test(test_boulder_wecker
   SOURCES ${boulder_wecker_quellen}
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
@@ -324,12 +316,11 @@ add_test(NAME test_boulder_umzug_aufbau
 add_test(NAME test_boulder_umzug_aufbau_gegenprobe
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/umzug_pruefen.py ${PBL_BASE} --gegenprobe)
 
-# AP6: Velo und Auto (T5.1-T5.3, T2.3, V5-V8) mit der echten Glue-Kopie, dem echten
-# Dauerteil, der echten Nachfrage (nur Pebbles Dialog-Bibliothek als Attrappe im Test) und
-# der echten activity_sessions.c. Schritt 2, AP4 (T4.1-T4.4, T5.2 Fahrt): dazu Pebbles echter
-# Workout-Dienst, wie er auf obelix und qemu_emery gebaut wird (P1 und kalorien.c), damit Start
-# und Stopp die Variante ueber D15 erreichen und Pebble die Sitzungen schliesst und speichert.
-pbl_clar_test(test_boulder_fahrt
+# Schritt 2, AP4 (T4.1, P4): Training ohne Schritte mit der echten Glue-Kopie, dem echten
+# Dauerteil und Pebbles echtem Workout-Dienst, wie er auf obelix und qemu_emery gebaut wird (P1 und
+# kalorien.c), damit Start und Stopp die Variante ueber D15 erreichen und Pebble die Sitzungen
+# schliesst und speichert.
+pbl_clar_test(test_boulder_training
   SOURCES
     ${boulder_glue_umfeld}
     fw/services/activity/activity_sessions.c
@@ -339,7 +330,6 @@ pbl_clar_test(test_boulder_fahrt
     fw/services/activity/boulder/kalorien.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
-    fw/services/activity/boulder/szene.c
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
@@ -356,8 +346,6 @@ pbl_clar_test(test_boulder_fahrt
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/umzug_prefs.c
-    fw/services/activity/boulder/kontext.c
-    fw/services/activity/boulder/nachfrage.c
     subsys/cron/cron.c
     tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_BOULDER_KIESELSPORT
@@ -391,7 +379,6 @@ set(boulder_schnittstelle_quellen
     fw/services/activity/boulder/kalorien.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
-    fw/services/activity/boulder/szene.c
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
@@ -408,7 +395,6 @@ set(boulder_schnittstelle_quellen
     tests/fw/services/activity/boulder/fake_heap.c
     fw/services/activity/boulder/umzug.c
     fw/services/activity/boulder/umzug_prefs.c
-    fw/services/activity/boulder/kontext.c
     fw/services/activity/boulder/messstufe.c
     fw/services/activity/boulder/schnittstelle.c
     fw/services/activity/boulder/ziele.c
@@ -417,8 +403,7 @@ set(boulder_schnittstelle_quellen
     fw/services/activity/boulder/woche.c
     fw/services/blob_db/api.c
     fw/services/blob_db/health_db.c
-    subsys/cron/cron.c
-    tests/fw/services/activity/boulder/fake_nachfrage.c)
+    subsys/cron/cron.c)
 set(boulder_schnittstelle_libs
     -Wl,--wrap=settings_file_open,--wrap=settings_file_open_growable,--wrap=pfs_open
     -Wl,--wrap=kernel_malloc,--wrap=kernel_zalloc,--wrap=kernel_malloc_check

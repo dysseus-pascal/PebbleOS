@@ -14,9 +14,6 @@ pbl_library_sources(
   boulder/zyklen.c
   boulder/nacht.c
   boulder/dauerteil.c
-  boulder/szene.c
-  boulder/kontext.c
-  boulder/nachfrage.c
   boulder/takt.c
   boulder/messstufe.c
   boulder/puls.c

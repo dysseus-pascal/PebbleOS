@@ -75,8 +75,7 @@ bool ks_workout_starten(Sportart art, uint16_t maxpuls);
 // Schritte laeuft, nicht in der Pause und nicht nach dem Ende. Jeder Start und Stopp von Pebbles
 // Training loescht den Merker ohnehin (D15).
 void ks_schritte_streichen(bool an);
-// Boulders geprueftes Maximum (V2) fuer die Pulskalorien der naechsten bestaetigten Velofahrt
-// (F7) und des naechsten Trainings.
+// Boulders geprueftes Maximum (V2) fuer die Pulskalorien des naechsten Trainings.
 void ks_kalorien_maxpuls(uint16_t maxpuls);
 // false: Pebble hat kein Training (mehr).
 bool ks_workout_pause(bool an);

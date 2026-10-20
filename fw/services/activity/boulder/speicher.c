@@ -8,7 +8,6 @@
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/diagnose.h"
 #include "pbl/services/activity/boulder/eingang.h"
-#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/nacht.h"
@@ -64,8 +63,6 @@ typedef struct PBL_PACKED {
 
 // Was in der Datei steht (fuer "nur bei Aenderung"); gilt fuer s_fenster.
 static time_t s_fenster;
-// AP6: eine bestaetigte, laufende Fahrt (7.3, 7.4), unabhaengig vom Nachtfenster.
-static BoulderFahrtAblage s_fahrt_datei;
 // V3 (Schritt 2): die Ruhepulse der letzten sieben Naechte, auch unabhaengig vom Nachtfenster.
 static BoulderRuheRing s_ruhe_datei;
 static BoulderKopf s_kopf_datei;
@@ -266,12 +263,6 @@ static void prv_ablage_cb(void *data) {
   prv_protokoll_ablegen(&datei);
   prv_rest_ablegen(&datei);
   boulder_diagnose_ablegen(&datei);
-  BoulderFahrtAblage f;
-  boulder_kontext_ablage(&f);
-  if (memcmp(&f, &s_fahrt_datei, sizeof(f)) != 0 &&
-      settings_file_set(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {
-    s_fahrt_datei = f;
-  }
   BoulderRuheRing r;
   boulder_nacht_ruhe_ablage(&r);
   if (memcmp(&r, &s_ruhe_datei, sizeof(r)) != 0 &&
@@ -408,12 +399,6 @@ void boulder_speicher_laden(void) {
     return;
   }
   boulder_diagnose_laden(&datei, rtc_get_time());
-  BoulderFahrtAblage f;
-  if (settings_file_get_len(&datei, "fahrt", 5) == (int)sizeof(f) &&
-      settings_file_get(&datei, "fahrt", 5, &f, sizeof(f)) == S_SUCCESS) {
-    s_fahrt_datei = f;
-    boulder_kontext_laden(&f);
-  }
   // DIE RUHEPULSE GELTEN UEBER DAS FENSTER HINAUS (V3): Laden vor der Nacht, die sie fuellt.
   BoulderRuheRing r;
   if (settings_file_get_len(&datei, "ruhe", 4) == (int)sizeof(r) &&
@@ -460,7 +445,6 @@ void boulder_speicher_laden(void) {
 void boulder_speicher_test_neustart(void) {
   prv_neues_fenster(0);
   memset(&s_kopf_datei, 0, sizeof(s_kopf_datei));
-  memset(&s_fahrt_datei, 0, sizeof(s_fahrt_datei));
   memset(&s_ruhe_datei, 0, sizeof(s_ruhe_datei));
   s_alles = false;
   s_aufgabe_ablage.steht_an = false;

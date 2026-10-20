@@ -4,7 +4,7 @@
 // Boulder V2, AP1: die Abweichungen D1-D14 der Glue-Kopie, mit dem echten (kopierten) Kern,
 // echter settings_file.c auf Fake-Flash und dem steuerbaren Dauerteil (fake_dauerteil.c).
 // Spezifikation 9: T2.4, T6.6, T7.1, T7.1b, T7.2, T7.5, T7.6, T7.7 und die Grundfaelle von
-// D1 (Schlaf verworfen, Gehfilter) und D3-D5 (Zurueckhalten, Streichen).
+// D1 (Schlaf verworfen, Gehfilter).
 //
 // Minutenwerte kommen auf zwei Wegen: echt aus Beschleunigung (T6.6) oder als Vorgabe je
 // Minute; dann ersetzt --wrap nur die beiden Messfunktionen des Kerns (Schritte, VMC),
@@ -422,8 +422,7 @@ void test_boulder_glue__initialize(void) {
   s_dls_angelegt = s_dls_im_minutenteil = s_dls_anzahl = 0;
   s_spo2_wartend = 0;
   s_puls = 60;
-  boulder_szene_kraepelin(HRMActivityScene_Default);
-  boulder_szene_aktiv(false);
+  s_szene = HRMActivityScene_Default;
   s_szene_aufrufe = 0;
   cl_assert(activity_algorithm_init(&s_rate));
 }
@@ -436,8 +435,8 @@ void test_boulder_glue__cleanup(void) {
 
 // ---------------------------------------------------------------------------------------------
 // D1: Kraepelins Schlaf kommt nicht in Pebbles Liste; sein innerer Detektor nullt weiter die
-// Schritte im Schlaf. Der Gehfilter unterdrueckt Gehen unter 40 Schritten/min im Mittel und
-// unter einer Fahrtkandidatin, entschieden beim ersten Melden.
+// Schritte im Schlaf. Der Gehfilter unterdrueckt Gehen unter 40 Schritten/min im Mittel,
+// entschieden beim ersten Melden.
 void test_boulder_glue__schlaf_verworfen_gehfilter(void) {
   static FixMinute nacht[1000];
   const int n = fixture_minuten_lesen(CLAR_FIXTURE_PATH "activity/sleep_samples/pbl-28371.c",
@@ -473,13 +472,6 @@ void test_boulder_glue__schlaf_verworfen_gehfilter(void) {
     prv_minute(0, 3000, 0x52);
   }
   prv_minuten(20, 120);
-  prv_minuten(10, 0);
-  cl_assert(prv_sitzung(ActivitySessionType_Walk, start) == NULL);
-
-  // Unter einer Fahrtkandidatin: kein Spaziergang.
-  fake_dauerteil.ueberdeckt = true;
-  start = rtc_get_time();
-  prv_minuten(20, 100);
   prv_minuten(10, 0);
   cl_assert(prv_sitzung(ActivitySessionType_Walk, start) == NULL);
 }
@@ -526,8 +518,6 @@ void test_boulder_glue__minutenteil_ohne_heap_ohne_datei(void) {
   const BoulderMinute *m = &fake_dauerteil.minuten[0];
   cl_assert_equal_i(m->utc, s_t0);
   cl_assert_equal_i(m->vmc, 1234);
-  cl_assert_equal_i(m->lage, 0x33);
-  cl_assert_equal_i(m->schritte, 17);
   cl_assert_equal_i(m->puls, 72);
   cl_assert_equal_i(m->spo2, 96);
   cl_assert_equal_i(fake_dauerteil.minuten[1].spo2, 0);
@@ -569,15 +559,16 @@ void test_boulder_glue__verdichtung_nur_im_callback(void) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// T7.6: deinit zwischen Einplanen und Ausfuehren; D13 schreibt die nur wegen einer offenen
-// Fahrt zurueckgehaltenen Gruppen, ungenullt (offen = "Nein").
-void test_boulder_glue__deinit_vor_callback_und_fahrtminuten(void) {
+// T7.6: deinit zwischen Einplanen und Ausfuehren; D13 schreibt die Gruppe, die der Callback
+// "Minutendatei" noch nicht schrieb, und meldet dem Dauerteil das Ende.
+void test_boulder_glue__deinit_vor_callback(void) {
   for (int i = 0; i < 15; i++) {
     prv_minute_ohne_schlange(20, 3000, 0x52, true);
   }
   cl_assert(fake_system_task_count_callbacks() > 0);
   activity_algorithm_deinit();
   cl_assert_equal_i(s_gruppen_in_datei, 1);  // D13: die anstehende Gruppe
+  cl_assert_equal_i(fake_dauerteil.tracking_aus, 1);
   fake_system_task_callbacks_invoke_pending();  // laufen ohne Tracking-Teil ins Leere
   cl_assert_equal_i(s_gruppen_in_datei, 1);
   cl_assert_equal_i(s_dls_anzahl, 0);
@@ -586,19 +577,6 @@ void test_boulder_glue__deinit_vor_callback_und_fahrtminuten(void) {
   prv_minuten(15, 20);
   cl_assert_equal_i(s_dls_anzahl, 1);
   cl_assert_equal_i(s_gruppen_in_datei, 2);
-
-  const time_t offen = rtc_get_time();
-  fake_dauerteil.fahrt_offen_seit = offen;
-  prv_minuten(40, 70);
-  cl_assert_equal_i(s_dls_anzahl, 1);
-  cl_assert_equal_i(s_gruppen_in_datei, 2);
-
-  activity_algorithm_deinit();
-  cl_assert_equal_i(fake_dauerteil.tracking_aus, 2);
-  cl_assert_equal_i(s_dls_anzahl, 3);
-  cl_assert_equal_i(s_gruppen_in_datei, 4);
-  cl_assert_equal_i(prv_dls_minute(offen)->base.steps, 70);
-  cl_assert(activity_algorithm_init(&s_rate));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -630,9 +608,7 @@ void test_boulder_glue__ring_wie_ganzlesen(void) {
     const int i = (m->utc - von) / PBL_SEC_PER_MIN;
     cl_assert(i >= 0 && i < 150 && !gesehen[i]);
     gesehen[i] = true;
-    cl_assert_equal_i(m->schritte, ganz[i].steps);
     cl_assert_equal_i(m->vmc, ganz[i].vmc);
-    cl_assert_equal_i(m->lage, ganz[i].orientation);
     cl_assert_equal_i(m->puls, ganz[i].heart_rate_bpm);
   }
   // Nach init fuellt keiner mehr: ein spaeteres Zaehlen (Shell) gibt nichts weiter.
@@ -687,70 +663,15 @@ void test_boulder_glue__historie_teilminute(void) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// D3-D5: offene Fahrt haelt zurueck, "Ja" zieht die Fahrtschritte ab, waehrend der Fahrt
-// zaehlt nichts, die Fahrtminuten gehen genullt hinaus.
-void test_boulder_glue__fahrt_streichen(void) {
-  prv_minuten(20, 100);
-  cl_assert_equal_i(prv_schritte(), 2000);
-  cl_assert_equal_i(s_dls_anzahl, 1);
-
-  const time_t von = rtc_get_time();
-  fake_dauerteil.fahrt_offen_seit = von;
-  prv_minuten(12, 80);
-  cl_assert_equal_i(prv_schritte(), 2960);
-  cl_assert_equal_i(s_dls_anzahl, 1);  // zurueckgehalten
-
-  // "Ja": erst streichen, dann ist die Fahrt bestaetigt und nicht mehr offen.
-  boulder_kraepelin_fahrt_streichen(von, INT32_MAX);
-  fake_dauerteil.fahrt_von = von;
-  fake_dauerteil.fahrt_bis = INT32_MAX;
-  fake_dauerteil.fahrt_laeuft = true;
-  fake_dauerteil.fahrt_offen_seit = 0;
-  cl_assert_equal_i(prv_schritte(), 2000);
-  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 960);
-
-  prv_minuten(5, 80);
-  cl_assert_equal_i(prv_schritte(), 2000);
-  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 1360);
-  uint16_t rate;
-  uint32_t ms;
-  time_t ende;
-  cl_assert(activity_algorithm_get_step_rate(&rate, &ms, &ende));
-  cl_assert_equal_i(rate, 0);
-
-  const time_t bis = rtc_get_time();
-  fake_dauerteil.fahrt_laeuft = false;
-  fake_dauerteil.fahrt_bis = bis;
-  prv_minuten(15, 10);
-  cl_assert_equal_i(prv_schritte(), 2150);
-  cl_assert_equal_i(s_dls_anzahl, 3);
-  cl_assert_equal_i(prv_dls_minute(von - PBL_SEC_PER_MIN)->base.steps, 100);
-  for (time_t t = von; t < bis; t += PBL_SEC_PER_MIN) {
-    const AlgMinuteDLSSample *m = prv_dls_minute(t);
-    cl_assert(m);
-    cl_assert_equal_i(m->base.steps, 0);
-    cl_assert_equal_i(m->base.active, 0);
-    cl_assert_equal_i(m->distance_cm, 0);
-    cl_assert_equal_i(m->active_calories, 0);
-  }
-  cl_assert_equal_i(prv_dls_minute(bis)->base.steps, 10);
-}
-
 // D17 (Schritt 2, V1): Im Training ohne Schritte gehen sie nirgends hin - nicht in die Summe, nicht
-// in die Minute (DLS 81, auch nicht aktiv), Rate 0, und auch nicht an "gestrichen" (keine Fahrt).
-// Danach zaehlt es wie vorher. Mit laufender Fahrt dazu (die Fahrt endet erst in der naechsten
-// Minute am Trainingsstart) geht D17 vor: die Minute hat die Schritte nicht.
+// in die Minute (DLS 81, auch nicht aktiv), Rate 0. Danach zaehlt es wie vorher.
 void test_boulder_glue__training_ohne_schritte(void) {
   prv_minuten(20, 100);
   cl_assert_equal_i(prv_schritte(), 2000);
   const time_t von = rtc_get_time();
   fake_dauerteil.training_ohne_schritte = true;
-  prv_minuten(10, 120);
-  fake_dauerteil.fahrt_laeuft = true;
-  prv_minuten(2, 120);
-  fake_dauerteil.fahrt_laeuft = false;
+  prv_minuten(12, 120);
   cl_assert_equal_i(prv_schritte(), 2000);
-  cl_assert_equal_i(boulder_kraepelin_gestrichen(), 0);
   uint16_t rate;
   uint32_t ms;
   time_t ende;
@@ -772,17 +693,12 @@ void test_boulder_glue__training_ohne_schritte(void) {
   cl_assert_equal_i(prv_dls_minute(bis)->base.steps, 90);
 }
 
-// Ohne DLS-Sitzung (Pool voll) wird trotzdem abgezogen; die Anlage wartet 30 min.
-void test_boulder_glue__fahrt_streichen_ohne_dls(void) {
+// D9: Ohne DLS-Sitzung (Pool voll) wartet die Anlage 30 min.
+void test_boulder_glue__anlage_wartet_ohne_dls(void) {
   s_dls_scheitert = true;
   prv_minuten(20, 100);
   cl_assert_equal_i(s_dls_angelegt, 1);
-  const time_t von = rtc_get_time();
-  fake_dauerteil.fahrt_offen_seit = von;
-  prv_minuten(5, 80);
-  boulder_kraepelin_fahrt_streichen(von, INT32_MAX);
-  cl_assert_equal_i(prv_schritte(), 2000);
-  prv_minuten(19, 0);
+  prv_minuten(24, 0);
   cl_assert_equal_i(s_dls_angelegt, 1);
   prv_minuten(10, 0);
   cl_assert_equal_i(s_dls_angelegt, 2);
@@ -799,37 +715,9 @@ void test_boulder_glue__sitzungsschritte_32bit(void) {
   cl_assert_equal_i(s->step_data.steps, 65535);
   prv_minuten(10, 0);
   cl_assert_equal_i(prv_sitzung(ActivitySessionType_Walk, start)->step_data.steps, 65535);
-  // Kraepelins Abo setzt die Szene ueber die Variante (D10).
+  // Kraepelins Abo setzt die Szene, wie im Original.
   cl_assert(s_szene_aufrufe >= 2);
   cl_assert_equal_i(s_szene, HRMActivityScene_Default);
-}
-
-// ---------------------------------------------------------------------------------------------
-// D10: das Abo "Aktiv" zaehlt fuer activity.c mit; die Szene setzt eine Stelle, Kraepelin
-// geht vor, zurueckgesetzt wird nur die eigene.
-void test_boulder_glue__aktiv_abo_und_szene(void) {
-  cl_assert(!activity_algorithm_activity_hrm_is_active());
-  fake_dauerteil.aktiv_abo = true;
-  cl_assert(activity_algorithm_activity_hrm_is_active());
-  activity_algorithm_activity_hrm_set_paused(true);
-  cl_assert_equal_i(fake_dauerteil.pausiert_aufrufe, 1);
-  cl_assert(fake_dauerteil.pausiert);
-
-  boulder_szene_aktiv(true);
-  cl_assert_equal_i(s_szene, HRMActivityScene_HighIntensity);
-  boulder_szene_kraepelin(HRMActivityScene_Walk);
-  cl_assert_equal_i(s_szene, HRMActivityScene_Walk);
-  boulder_szene_kraepelin(HRMActivityScene_Default);
-  cl_assert_equal_i(s_szene, HRMActivityScene_HighIntensity);
-  boulder_szene_aktiv(false);
-  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
-  const int aufrufe = s_szene_aufrufe;
-  // Ein Training setzt seine Szene; die Variante laesst sie stehen.
-  hrm_manager_set_activity_scene(HRMActivityScene_Run);
-  boulder_szene_kraepelin(HRMActivityScene_Default);
-  boulder_szene_aktiv(false);
-  cl_assert_equal_i(s_szene_aufrufe, aufrufe + 1);
-  cl_assert_equal_i(s_szene, HRMActivityScene_Run);
 }
 
 // ---------------------------------------------------------------------------------------------

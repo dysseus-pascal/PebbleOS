@@ -5,9 +5,8 @@
 //
 // STAND AP3: Schlaf - jede Minute in Nachtfelder, Live-Automat und Zyklen (nacht.c), der
 // Takt "Nachlauf" im eigenen Callback, der gestaffelte Abschluss je Minute, der
-// Live-Zustand fuer Pebble (D6). Noch neutral: keine Fahrt (AP6: kontext.c,
-// nachfrage.c), kein Ring nach dem Boot (AP4: speicher.c), kein Abo "Aktiv" (AP6), kein
-// Training in "gueltig" (AP6). Den Takt als eigenen Cron (Luecken, Ruhezeiten) bringt AP4.
+// Live-Zustand fuer Pebble (D6). Noch neutral: kein Ring nach dem Boot (AP4: speicher.c),
+// kein Training in "gueltig" (AP6). Den Takt als eigenen Cron (Luecken, Ruhezeiten) bringt AP4.
 //
 // STAND AP5: Messstufe, das Puls-Abo (Nachtpuls, HRV-Fenster) und der SpO2-Ring haengen
 // am Minutenteil; ihre Arbeit (Lesen, Setter) laeuft in eigenen Callbacks. AP4 kann den
@@ -22,14 +21,13 @@
 // auch am Kabel, wenn kein Minutenteil laeuft, wird die Nacht so fertig -, fuehrt das
 // Protokoll, stoesst die Ablage an und gibt den Schub ans Telefon.
 //
-// STAND AP6: Velo und Auto (kontext.c) - jede Minute geht an die Kandidatin, die Nachfrage
-// laeuft auf KernelMain (nachfrage.c), ihre Antwort holt der Takt ab, falls ihr Callback
-// wegfiel. Die Naht D3-D5, D10 und D15 fragt kontext.c. Waehrend eines Trainings sind die
-// Minuten fuer die Nacht ungueltig (2.6).
+// STAND AP6: Waehrend eines Trainings sind die Minuten fuer die Nacht ungueltig (2.6).
 //
-// STAND SCHRITT 2, AP4: Training ohne Schritte (D17, V1), die Fahrt endet am Trainingsstart,
-// nach dem Training beginnt der Ring der Kandidatin neu, Pulskalorien der Velofahrt (F7) - alles
-// in kontext.c.
+// STAND SCHRITT 2, AP4: Training ohne Schritte (D17, V1).
+//
+// F38 (b33): Die Erkennung von Velo- und Autofahrten (AP6, kontext.c und nachfrage.c) ist
+// entfernt. Ihre Vorstufe hielt den Pulssensor tagsueber bei jeder Armarbeit im Sekundentakt an,
+// und sie fragte zu oft. Vom Kontext bleibt der Merker "Training" hier im Dauerteil.
 //
 // STAND SCHRITT 3, AP2 (nur mit der eigenen Health-App): Der Minutenteil veroeffentlicht die Lage
 // fuer die App (schnittstelle.h) und stoesst das erste Lesen der Ziele an (ziele.h). Auch der
@@ -47,7 +45,6 @@
 #include "pbl/services/activity/boulder/ausgabe.h"
 #include "pbl/services/activity/boulder/diagnose.h"
 #include "pbl/services/activity/boulder/eingang.h"
-#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/live.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/speicher.h"
@@ -78,6 +75,10 @@
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 static time_t s_letzte_minute_utc;
+// TRAINING (D15, D17): nur Merker. Gesetzt unter Pebbles Workout-Sperre, von der App-Task
+// (Pebbles Workout-App) oder von KernelBG (Kieselsport), gelesen auf KernelBG; jedes ist ein Wort.
+static volatile bool s_training;
+static volatile bool s_ohne_schritte;
 
 #if defined(CONFIG_BOULDER_PRUEFLAUF)
 // Pruefbau (prueflauf.h): waehrend eines Laufs zaehlen nur seine Minuten und sein Takt.
@@ -181,7 +182,6 @@ static void prv_laden_cb(void *data) {
 }
 
 void boulder_dauerteil_takt(time_t jetzt) {
-  boulder_kontext_takt(jetzt);
   boulder_puls_takt();
   if (s_laden_offen) {
     boulder_aufgabe_einreihen(&s_aufgabe_laden);
@@ -245,12 +245,11 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
   const time_t beginn = prv_fenster(minute->utc);
   const int index = (int)((minute->utc - beginn) / PBL_SEC_PER_MIN);
   // Ein Training ist kein Schlaf, auch wenn es ruhig ist (Yoga, Kraft).
-  const bool gueltig = !minute->nicht_getragen && !boulder_kontext_training_laeuft();
+  const bool gueltig = !minute->nicht_getragen && !s_training;
   if (boulder_nacht_minute(beginn, index, minute->vmc, minute->puls, gueltig)) {
     boulder_aufgabe_einreihen(&s_aufgabe_nachlauf);
   }
   boulder_zyklen_abschluss_schritt(!boulder_live_schlaeft());
-  boulder_kontext_minute(minute, boulder_nacht_ruhepuls());
   // Messung (AP5): die laufende Minute beginnt jetzt. "Nachtruhe" (5.2): im Nachtfenster
   // und die eben fertige Minute ruhig - wer um sieben herumlaeuft, misst mit dem Tagestakt.
   const int naechste = index + 1;
@@ -307,28 +306,14 @@ void boulder_dauerteil_ring_minute(const BoulderMinute *minute) {
                             minute->vmc, minute->puls, !minute->nicht_getragen);
 }
 
-time_t boulder_dauerteil_fahrt_offen_seit(void) {
-  return boulder_kontext_offen_seit();
-}
-
-bool boulder_dauerteil_fahrt_minute(time_t minute_utc) {
-  return boulder_kontext_fahrt_minute(minute_utc);
-}
-
-bool boulder_dauerteil_fahrt_laeuft(void) {
-  return boulder_kontext_fahrt_laeuft();
-}
-
 bool boulder_dauerteil_training_ohne_schritte(void) {
-  return boulder_kontext_training_ohne_schritte_laeuft();
+  // Ohne Training gilt der Merker nie: Kam Kieselsports Aufruf erst, als das Training schon
+  // wieder zu war, wirkt er nicht, und der naechste Start loescht ihn.
+  return s_training && s_ohne_schritte;
 }
 
 void boulder_variante_training_ohne_schritte(bool ohne) {
-  boulder_kontext_training_ohne_schritte(ohne);
-}
-
-bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s) {
-  return boulder_kontext_ueberdeckt(start_utc, laenge_s);
+  s_ohne_schritte = ohne;
 }
 
 time_t boulder_dauerteil_letzter_schlaf_utc(void) {
@@ -342,26 +327,16 @@ time_t boulder_dauerteil_letzter_schlaf_utc(void) {
   return s_letzte_minute_utc ? s_letzte_minute_utc + 60 : 0;
 }
 
-bool boulder_dauerteil_aktiv_abo_laeuft(void) {
-  return boulder_kontext_aktiv();
-}
-
-void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert) {
-  boulder_puls_aktiv_pausieren(pausiert);
-}
-
 void boulder_dauerteil_tracking_aus(void) {
-  boulder_kontext_tracking_aus();
   boulder_wecker_vergessen();
   boulder_puls_tracking_aus();
 }
 
 void boulder_dauerteil_training(bool laeuft) {
-  boulder_kontext_training(laeuft);
-}
-
-void boulder_dauerteil_sitzungen_beenden(void) {
-  boulder_kontext_sitzung_beenden();
+  // Jeder Start und Stopp loescht "ohne Schritte": Kieselsport setzt es nach seinem Start neu,
+  // ein anderes Training (Pebbles Workout-App) zaehlt Schritte wie Pebble.
+  s_ohne_schritte = false;
+  s_training = laeuft;
 }
 
 void boulder_dauerteil_test_neustart(void) {
@@ -372,7 +347,8 @@ void boulder_dauerteil_test_neustart(void) {
   s_aufgabe_laden.steht_an = false;
   s_aufgabe_takt.steht_an = false;
   boulder_nacht_zuruecksetzen();
-  boulder_kontext_test_zuruecksetzen();
+  s_training = false;
+  s_ohne_schritte = false;
   boulder_wecker_vergessen();
   boulder_ausgabe_test_neustart();
   boulder_speicher_test_neustart();

@@ -10,7 +10,6 @@
 // Anlage), mit der echten activity_sessions.c und dem echten Datalogging des QEMU-Abbilds:
 //   0-3  die Referenznaechte 26.9., 29.9., 30.9., 3.10. (prueflauf_daten.c)
 //   4    die schlimmste Nacht: Puls jede Minute, zehn Zyklen, 84 HRV-Fenster (zwei Teile)
-//   5    eine Velofahrt (braucht den Ruhepuls einer Nacht davor): Nachfrage-Dialog
 //
 // WIE AUF DER UHR: Je Glied genau eine Minute; das naechste erst, wenn die KernelBG-Schlange
 // wieder leer ist - alles, was die Minute einreiht, laeuft vorher ganz durch wie zwischen zwei
@@ -20,7 +19,7 @@
 // die Nacht so viele Fenster frueher: So bekommen Pruefnaechte verschiedene Wachtage, und die
 // Liste der Naechte der Health-App (naechte.h) waechst wie an aufeinanderfolgenden Tagen. Waehrend
 // des Laufs nimmt der Dauerteil keine echten Minuten und keinen Cron-Takt an (sonst mischten sich
-// zwei Zeiten). Vor einer Nacht (0-4) beginnt der Dauerteil neu (boulder_dauerteil_test_neustart).
+// zwei Zeiten). Vor jeder Nacht beginnt der Dauerteil neu (boulder_dauerteil_test_neustart).
 //
 // BALLAST: Beim ersten Lauf holt der Pruefbau einen Block, der den Kernel-Heap auf die Groesse
 // von obelix bringt (CONFIG_BOULDER_PRUEFLAUF_HEAP, Spezifikation 7.2), und fuellt die

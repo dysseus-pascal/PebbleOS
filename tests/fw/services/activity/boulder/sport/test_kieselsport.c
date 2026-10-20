@@ -453,7 +453,7 @@ static void prv_beim_merker(bool ohne) {
 // T4.1, Kieselsports Seite (V1, vom Nutzer geaendert): Schritte zaehlen nur Laufen und Wandern.
 // Fuer Velo, MTB, Kraft, Yoga und Schwimmen setzt Kieselsport nach Pebbles Start den Merker der
 // Variante (D17) - auf KernelBG, ohne seine Sperre (Regel 2.5.2). Die Wirkung (Tagessumme, Minute,
-// Rate) prueft test_boulder_fahrt an der echten Variante.
+// Rate) prueft test_boulder_training an der echten Variante.
 void test_kieselsport__t4_1_arten_ohne_schritte(void) {
   // Die Entscheidung des Nutzers (entscheidungen.md, V1), nicht art.c abgeschrieben.
   static const bool ohne[ArtAnzahl] = {
@@ -477,30 +477,6 @@ void test_kieselsport__t4_1_arten_ohne_schritte(void) {
     prv_verwerfen();
     cl_assert(!kieselsport_laeuft());
   }
-}
-
-// F7: Die bestaetigte Velofahrt rechnet mit Kieselsports geprueftem Maximum (V2) wie ein Training.
-// Sie hat keinen Start, darum meldet der Dienst es nach dem Laden und nach jeder Aenderung.
-void test_kieselsport__maximum_fuer_die_fahrt(void) {
-  s_alter = 40;  // Tanaka 180
-  fake_ruhepuls_setzen(55);
-  BoulderKalorienProfil p;
-  kieselsport_maxpuls_setze(175);
-  cl_assert(boulder_kalorien_profil_jetzt(&p));
-  cl_assert_equal_i(p.max_z, 1750);
-  // Ueber Tanaka + 25 gilt Tanaka (V2), auch fuer die Fahrt.
-  kieselsport_maxpuls_setze(214);
-  cl_assert(boulder_kalorien_profil_jetzt(&p));
-  cl_assert_equal_i(p.max_z, 1800);
-  kieselsport_maxpuls_nicht_setzen();
-  kieselsport_maxpuls_setze(178);
-  // Nach einem Neustart weiss kalorien.c nichts mehr; das Laden der Einstellungen meldet es.
-  boulder_kalorien_maxpuls(0);
-  prv_neustart();
-  cl_assert(boulder_kalorien_profil_jetzt(&p));
-  cl_assert_equal_i(p.max_z, 1780);
-  // Der Ruhepuls des Profils ist der der Variante (V3: Median der sieben Naechte).
-  cl_assert_equal_i(p.ruhe_z, 550);
 }
 
 // --- Maximalpuls: gesetzt oder nach Alter ---
@@ -1531,9 +1507,9 @@ void test_kieselsport__messung_je_callback(void) {
 // Nach Schritt 2 (Entscheide vom 08.10.2026)
 
 // Entscheid 2 vom 08.10.2026: Die Variante streicht Schritte nur, solange ein Training ohne
-// Schritte LAEUFT. Was sie damit zaehlt, ist Pebbles laufendes Training UND der Merker (kontext.c,
-// boulder_kontext_training_ohne_schritte_laeuft); den Merker sieht dieser Test, Pebbles Training
-// ist das echte. Die Wirkung auf Tagessumme, Minute und Rate prueft test_boulder_fahrt.
+// Schritte LAEUFT. Was sie damit zaehlt, ist Pebbles laufendes Training UND der Merker (dauerteil.c,
+// boulder_dauerteil_training_ohne_schritte); den Merker sieht dieser Test, Pebbles Training ist das
+// echte. Die Wirkung auf Tagessumme, Minute und Rate prueft test_boulder_training.
 static bool prv_gestrichen(void) {
   return workout_service_is_workout_ongoing() && g_fake_ohne_schritte;
 }

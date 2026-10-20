@@ -39,8 +39,7 @@
 //
 // Rot, wenn im Training mehr als ein Abo mit 1 s besteht, wenn Pebbles Workout-Dienst ein Abo
 // anlegt, wenn die Pause nicht auf 10 s geht oder nach Stopp und Verwerfen ein Abo bleibt (T7.4).
-// Pebbles eigene Messfenster (Activity, Messstufe) und das Velo-Abo der Variante sind hier nicht
-// gebaut: Ruhen des Velo-Abos im Training prueft Schritt 1 (kontext.c, D15).
+// Pebbles eigene Messfenster (Activity, Messstufe) sind hier nicht gebaut.
 
 extern void prv_workout_timer_cb(void *data);
 extern void workout_service_reset(void);

@@ -5,7 +5,7 @@
 // - der Ruhepuls fuer Kalorien und Maximalpuls (V3: Median der letzten sieben Naechte, nacht.c),
 //   den die Tests einstellen;
 // - der Merker "Training ohne Schritte" (V1, D17): aufgezeichnet, mit dem, was beim Aufruf galt.
-//   Seine Wirkung prueft test_boulder_fahrt an der echten Variante.
+//   Seine Wirkung prueft test_boulder_training an der echten Variante.
 
 #include <stdbool.h>
 #include <stdint.h>

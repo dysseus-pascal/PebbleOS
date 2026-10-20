@@ -535,10 +535,6 @@ void boulder_puls_tracking_aus(void) {
 }
 void boulder_puls_takt(void) {
 }
-void boulder_puls_aktiv(bool an) {
-}
-void boulder_puls_aktiv_pausieren(bool pausiert) {
-}
 void kieselsport_init(void) {
 }
 static uint16_t s_kieselsport_maxpuls;

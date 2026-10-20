@@ -139,11 +139,6 @@ bool activity_prefs_blood_oxygen_is_enabled(void) {
 bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) {
   return false;
 }
-// AP6: Pebbles Pref "Puls bei Aktivitaet" (prefs.c:2110), Bedingung des Velo-Abos.
-static bool s_puls_bei_aktivitaet;
-bool activity_prefs_hrm_activity_tracking_is_enabled(void) {
-  return s_puls_bei_aktivitaet;
-}
 HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
   return s_puls_takt;
 }
@@ -238,22 +233,6 @@ void boulder_dauerteil_hrv_fenster(time_t beginn_utc, uint16_t rmssd, uint8_t pu
 }
 
 extern HRMSubscriberState *prv_get_subscriber_state_from_ref(HRMSessionRef session);
-
-// F7 (Schritt 2): die Sekundenwerte an die Pulskalorien der Velofahrt (kontext.c).
-static struct {
-  int anzahl;
-  uint8_t bpm;
-  time_t erste;
-  time_t letzte;
-} s_fahrt_puls;
-void boulder_kontext_puls(uint8_t bpm, time_t utc) {
-  if (!s_fahrt_puls.anzahl) {
-    s_fahrt_puls.erste = utc;
-  }
-  s_fahrt_puls.anzahl++;
-  s_fahrt_puls.bpm = bpm;
-  s_fahrt_puls.letzte = utc;
-}
 
 // =============================================================================================
 // Ablauf
@@ -361,9 +340,7 @@ void test_boulder_messung__initialize(void) {
   memset(&s_wecker, 0, sizeof(s_wecker));
   memset(&s_activity, 0, sizeof(s_activity));
   memset(&s_fenster, 0, sizeof(s_fenster));
-  memset(&s_fahrt_puls, 0, sizeof(s_fahrt_puls));
   s_puls_an = true;
-  s_puls_bei_aktivitaet = true;
   s_spo2_an = false;
   s_puls_takt = HRMonitoringInterval_10Min;
   s_spo2_takt = HRMonitoringInterval_10Min;
@@ -578,100 +555,25 @@ void test_boulder_messung__tracking_aus_laesst_das_abo_ruhen(void) {
 }
 
 // Gegenpruefung B2: Ist die Schlange beim "Tracking aus" knapp, scheitert das Abschalten des
-// Velo-Abos (1 Hz). Ohne Tracking kommt kein Minutenteil; der Takt holt es nach, sobald Platz
-// ist - und reiht danach nichts mehr ein.
+// Abos (hier der Nachtpuls jede Minute). Ohne Tracking kommt kein Minutenteil; der Takt holt es
+// nach, sobald Platz ist - und reiht danach nichts mehr ein.
 void test_boulder_messung__tracking_aus_bei_knapper_schlange_holt_der_takt_nach(void) {
-  prv_start(1);
-  s_nachtruhe = false;
+  prv_start(5);
   prv_minuten(2);
-  boulder_puls_aktiv(true);
-  prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);
+  cl_assert(prv_abo_merkmale(NULL) & HRMFeature_BPM);
   system_task_set_available_space(BOULDER_SCHLANGE_FREI - 1);
   boulder_puls_tracking_aus();
   prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);  // der Sensor misst weiter
+  cl_assert(prv_abo_merkmale(NULL) & HRMFeature_BPM);  // der Sensor misst weiter
   boulder_puls_takt();
   prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);  // noch knapp: wartet
+  cl_assert(prv_abo_merkmale(NULL) & HRMFeature_BPM);  // noch knapp: wartet
   system_task_set_available_space(100);
   boulder_puls_takt();
   prv_kernel_bg();
   cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
   boulder_puls_takt();
   cl_assert_equal_i(fake_system_task_count_callbacks(), 0);
-}
-
-// T5.4: das Velo-Abo "Aktiv" (3.7) ueber dasselbe eine Abo. Ab der Vorstufe BPM jede Sekunde -
-// auch auf Stufe 1 und tags, wie Kraepelins Walk/Run-Abo; SpO2 bei Aktivitaet pausiert es;
-// danach ruht es. Ohne Pebbles Pref "Puls bei Aktivitaet" bleibt es aus.
-void test_boulder_messung__aktiv_abo_velo(void) {
-  prv_start(1);
-  s_nachtruhe = false;
-  prv_minuten(2);
-  const uint32_t abo = boulder_puls_abo();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
-  const int vorher = s_sensor.einschalten;
-  boulder_puls_aktiv(true);
-  prv_kernel_bg();
-  uint32_t takt = 0;
-  cl_assert_equal_i(prv_abo_merkmale(&takt), HRMFeature_BPM);
-  cl_assert_equal_i(takt, 1);
-  prv_minuten(10);
-  // Einmal an und durchgehend an: Werte jede Sekunde fuer den Minutenmedian.
-  cl_assert(s_sensor.an);
-  cl_assert_equal_i(s_sensor.einschalten, vorher + 1);
-  boulder_puls_aktiv_pausieren(true);
-  prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
-  boulder_puls_aktiv_pausieren(false);
-  prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), HRMFeature_BPM);
-  boulder_puls_aktiv(false);
-  prv_kernel_bg();
-  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
-  s_puls_bei_aktivitaet = false;
-  boulder_puls_aktiv(true);
-  prv_kernel_bg();
-  prv_minuten(2);
-  cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
-  cl_assert_equal_i(boulder_puls_abo(), abo);
-}
-
-// F7 (Schritt 2, T5.2): Jeder gute Sekundenwert des Abos "Aktiv" geht an die Pulskalorien der
-// Velofahrt, ueber den echten Manager. Werte unter "Acceptable" (der Sensor schwingt 15 s ein)
-// und ausserhalb 40..200 nicht, und ohne "Aktiv" (Nachtpuls, HRV-Fenster) keiner.
-void test_boulder_messung__aktiv_abo_gibt_die_sekunden_an_die_fahrt(void) {
-  prv_start(5);
-  prv_minuten(20);  // Stufe 5: Nachtpuls jede Minute, zwei HRV-Fenster - BPM ohne "Aktiv"
-  cl_assert(s_sensor.einschalten > 0);
-  cl_assert_equal_i(s_fahrt_puls.anzahl, 0);
-  s_nachtruhe = false;
-  prv_minuten(1);
-  cl_assert(!s_sensor.an);
-  boulder_puls_aktiv(true);
-  prv_kernel_bg();
-  const time_t an = rtc_get_time();
-  s_sensor.bpm = 131;
-  prv_minuten(5);
-  // 300 Sekunden; die ersten 14 nach dem Einschalten im Anlauf (Poor), ab der 15. gut: 286
-  // Werte, jeder mit seiner Zeit.
-  cl_assert_equal_i(s_fahrt_puls.anzahl, 5 * 60 - 14);
-  cl_assert_equal_i(s_fahrt_puls.bpm, 131);
-  cl_assert_equal_i(s_fahrt_puls.erste, an + 15);
-  cl_assert_equal_i(s_fahrt_puls.letzte, rtc_get_time());
-  // Ausserhalb von Pebbles Grenzen (activity.c): keiner.
-  const int bisher = s_fahrt_puls.anzahl;
-  s_sensor.bpm = 201;
-  prv_minuten(1);
-  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher);
-  s_sensor.bpm = 200;
-  prv_minuten(1);
-  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher + 60);
-  boulder_puls_aktiv(false);
-  prv_kernel_bg();
-  prv_minuten(2);
-  cl_assert_equal_i(s_fahrt_puls.anzahl, bisher + 60);
 }
 
 // =============================================================================================

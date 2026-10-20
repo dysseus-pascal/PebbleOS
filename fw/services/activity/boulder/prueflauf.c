@@ -13,7 +13,6 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/boulder/ausgabe.h"
-#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/puls.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
@@ -26,7 +25,6 @@
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 #define NR_SCHLIMMSTE 4
-#define NR_VELO 5
 // Nach der Nacht wach und unterwegs bis 15 Uhr (Fensterminute 1140): Die Nacht wird
 // "endgueltig", geht ans Datalogging und schliesst ihre Zyklen - wie test_boulder_zyklen.
 #define BIS_NACHT (19 * 60)
@@ -78,21 +76,6 @@ static void prv_schlimmste(int m, uint16_t *vmc, uint8_t *puls) {
   *puls = 48 + (p / 4) + zufall % 6;
 }
 
-// Die Velofahrt (wie test_boulder_fahrt.c): 3 min gehen, 25 min Velo, 6 min gehen.
-static void prv_velo(int m, BoulderMinute *aus) {
-  if (m < 3 || m >= 28) {
-    aus->schritte = (uint8_t)(95 + m % 7);
-    aus->vmc = (uint16_t)(2600 + (m % 5) * 90);
-    aus->lage = (uint8_t)(0x41 + m % 4);
-    aus->puls = 92;
-    return;
-  }
-  aus->schritte = (uint8_t)(3 + (m * 7) % 16);
-  aus->vmc = (uint16_t)(700 + (m * 37) % 600);
-  aus->lage = (m % 5 == 4) ? 0x38 : 0x37;
-  aus->puls = 104;
-}
-
 // ---------------------------------------------------------------------------------------
 
 static void prv_glied(void *data);
@@ -106,28 +89,7 @@ static uint32_t s_frei_leer;  //< freie Plaetze der KernelBG-Schlange, wenn sie 
 // KernelBG frei bleibt.
 // Leer heisst: kein Callback laeuft (der Zeitgeber kann mitten in einen hineinfallen, der
 // gleich den naechsten Teil einreiht) und so viel frei wie je gesehen.
-// DIE FRAGE ABWARTEN: Im Zeitraffer liefe die Antwortfrist (Minuten der Fahrt) in
-// Millisekunden ab. Steht eine Frage, haelt der Lauf an, bis sie beantwortet ist, hoechstens
-// zwei Minuten echte Zeit - Zeit fuer Bildschirmfoto und Knopfdruck im Emulator.
-#define FRAGE_WARTEN_MS (2 * 60 * 1000)
-static RtcTicks s_frage_seit;
-
-static bool prv_frage_wartet(void) {
-  if (s_lauf.nr != NR_VELO || !boulder_kontext_frage_offen()) {
-    s_frage_seit = 0;
-    return false;
-  }
-  if (!s_frage_seit) {
-    s_frage_seit = rtc_get_ticks();
-  }
-  return (rtc_get_ticks() - s_frage_seit) * 1000 / RTC_TICKS_HZ < FRAGE_WARTEN_MS;
-}
-
 static void prv_wieder_cb(void *data) {
-  if (prv_frage_wartet()) {
-    new_timer_start(s_wieder, 100, prv_wieder_cb, NULL, 0);
-    return;
-  }
   const uint32_t frei = system_task_get_available_space();
   if (frei > s_frei_leer) {
     s_frei_leer = frei;
@@ -164,9 +126,7 @@ static void prv_glied(void *data) {
   const int m = s_lauf.m++;
   const time_t utc = s_lauf.beginn + (time_t)m * PBL_SEC_PER_MIN;
   BoulderMinute minute = {.utc = utc};
-  if (s_lauf.nr == NR_VELO) {
-    prv_velo(m, &minute);
-  } else if (m >= SCHLAF_MINUTEN_MAX) {
+  if (m >= SCHLAF_MINUTEN_MAX) {
     minute.vmc = UNTERWEGS_VMC;
     minute.puls = UNTERWEGS_PULS;
   } else if (s_lauf.nr == NR_SCHLIMMSTE) {
@@ -189,13 +149,6 @@ static void prv_glied(void *data) {
     minute.vmc = gueltig ? n->vmc[m] : 0;
     minute.puls = gueltig ? n->puls[m] : 0;
     minute.nicht_getragen = !gueltig;
-  }
-  // DIE FIXTURES HABEN KEINE SCHRITTE UND KEINE LAGE (nur VMC und Puls). Wache, bewegte
-  // Minuten ohne Schritte saehe der Kontext als Velofahrt - eine Scheinfahrt mit Dialog. Der
-  // Pruefbau setzt dort Gehen ein (Kadenz aus der VMC, wechselnde Lage).
-  if (s_lauf.nr != NR_VELO && minute.vmc >= SCHLAF_SCHWELLE_VMC) {
-    minute.schritte = (uint8_t)((minute.vmc / 25 > 120) ? 120 : minute.vmc / 25);
-    minute.lage = (uint8_t)(0x41 + m % 4);
   }
   boulder_dauerteil_prueflauf_minute(&minute);
   {
@@ -258,32 +211,26 @@ static void prv_start_cb(void *data) {
   const time_t jetzt = rtc_get_time();
   time_t fenster = boulder_dauerteil_fenster(jetzt);
   s_lauf.start = rtc_get_ticks();
-  if (s_lauf.nr == NR_VELO) {
-    // Die Fahrt endet zwei Minuten vor jetzt, nach der Nacht des Fensters.
-    s_lauf.bis = 34;
-    s_lauf.beginn = jetzt - (jetzt % PBL_SEC_PER_MIN) - (s_lauf.bis + 2) * PBL_SEC_PER_MIN;
-  } else {
-    // Das juengste Fenster, dessen Lauf ganz vor jetzt liegt.
-    s_lauf.bis = BIS_NACHT;
-    if (fenster + (time_t)BIS_NACHT * PBL_SEC_PER_MIN > jetzt) {
-      fenster = boulder_dauerteil_fenster(fenster - PBL_SEC_PER_MIN);
-    }
-    // Fruehere Fenster ueber eine Zeit mitten in ihnen: so stimmt auch ein Tag mit Zeitumstellung.
-    if (s_lauf.tage > 0) {
-      fenster = boulder_dauerteil_fenster(fenster - (time_t)s_lauf.tage * PBL_SEC_PER_DAY +
-                                          3 * PBL_SEC_PER_HOUR);
-    }
-    s_lauf.beginn = fenster;
-    // Jede Pruefnacht liegt im selben Fenster: Pebbles Liste (32 Plaetze) haelt sonst die
-    // Sitzungen der vorigen Laeufe und laeuft ueber - auf der Uhr raeumt der Tageswechsel
-    // sie weg. Hier raeumt der Pruefbau wie zwei Tage spaeter.
-    ActivityState *zustand = activity_private_state();
-    pbl_mutex_lock(&zustand->mutex, PBL_FOREVER);
-    activity_sessions_prv_remove_out_of_range_activity_sessions(jetzt + 2 * PBL_SEC_PER_DAY,
-                                                                true /*remove_ongoing*/);
-    pbl_mutex_unlock(&zustand->mutex);
-    boulder_dauerteil_test_neustart();
+  // Das juengste Fenster, dessen Lauf ganz vor jetzt liegt.
+  s_lauf.bis = BIS_NACHT;
+  if (fenster + (time_t)BIS_NACHT * PBL_SEC_PER_MIN > jetzt) {
+    fenster = boulder_dauerteil_fenster(fenster - PBL_SEC_PER_MIN);
   }
+  // Fruehere Fenster ueber eine Zeit mitten in ihnen: so stimmt auch ein Tag mit Zeitumstellung.
+  if (s_lauf.tage > 0) {
+    fenster = boulder_dauerteil_fenster(fenster - (time_t)s_lauf.tage * PBL_SEC_PER_DAY +
+                                        3 * PBL_SEC_PER_HOUR);
+  }
+  s_lauf.beginn = fenster;
+  // Jede Pruefnacht liegt im selben Fenster: Pebbles Liste (32 Plaetze) haelt sonst die
+  // Sitzungen der vorigen Laeufe und laeuft ueber - auf der Uhr raeumt der Tageswechsel
+  // sie weg. Hier raeumt der Pruefbau wie zwei Tage spaeter.
+  ActivityState *zustand = activity_private_state();
+  pbl_mutex_lock(&zustand->mutex, PBL_FOREVER);
+  activity_sessions_prv_remove_out_of_range_activity_sessions(jetzt + 2 * PBL_SEC_PER_DAY,
+                                                              true /*remove_ongoing*/);
+  pbl_mutex_unlock(&zustand->mutex);
+  boulder_dauerteil_test_neustart();
   boulder_dauerteil_prueflauf(true);
   // Dieser Callback ist schon aus der Schlange: so viel ist frei, wenn sie leer ist.
   s_frei_leer = system_task_get_available_space();
@@ -293,7 +240,7 @@ static void prv_start_cb(void *data) {
 }
 
 bool boulder_prueflauf_starten(int nr, int tage) {
-  if (s_laeuft || nr < 0 || nr > NR_VELO || tage < 0 || tage > 30) {
+  if (s_laeuft || nr < 0 || nr > NR_SCHLIMMSTE || tage < 0 || tage > 30) {
     return false;
   }
   s_laeuft = true;

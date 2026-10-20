@@ -4,7 +4,7 @@
 // Boulder V2, T2.2b: Glue-Differenztest (Spezifikation 3.1, Nachweis fuer Kriterium 2).
 //
 // Dieselbe Datei wird zweimal gebaut: mit Pebbles Glue und Kern (Original) und mit der
-// Kopie (BOULDER_KOPIE, steuerbarer Dauerteil ohne Fahrt). Beide bekommen denselben
+// Kopie (BOULDER_KOPIE, steuerbarer Dauerteil). Beide bekommen denselben
 // kuenstlichen Tag: die Beschleunigung aller step_samples (echte Schrittzaehlung), dann
 // die Minuten der activity_samples und zweier Naechte aus sleep_samples (Minutenwerte
 // statt Messung, Schlaf- und Gehdetektor rechnen echt), dazu Health-Sync zu festen Zeiten.

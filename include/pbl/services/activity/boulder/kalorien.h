@@ -30,9 +30,6 @@
 // und Schritte, die Task des Aufrufers fuer Start und Stopp). Sie nehmen nur die eigene Sperre
 // des Zaehlers, unter der nichts weiter geschieht, und rufen nur Getter, die statischen Speicher
 // lesen (activity_prefs_*, boulder_nacht_ruhepuls_median).
-//
-// DIE BESTAETIGTE VELOFAHRT (F7, AP4) rechnet mit demselben Zaehler und demselben Profil
-// (boulder_kalorien_profil_jetzt), gefuehrt von kontext.c.
 
 #include "pbl/services/activity/activity.h"
 
@@ -49,7 +46,7 @@ typedef struct BoulderKalorienProfil {
   uint16_t max_z;         //< Maximalpuls, 0,1 bpm
 } BoulderKalorienProfil;
 
-// Der Zaehler eines Trainings oder einer Fahrt (F7, AP4). Zeiten in Sekunden ab einem
+// Der Zaehler eines Trainings (AP4). Zeiten in Sekunden ab einem
 // beliebigen Bezug, aufsteigend; im Training sind es aktive Sekunden seit dem Start.
 typedef struct BoulderKalorienZaehler {
   BoulderKalorienProfil profil;
@@ -84,11 +81,11 @@ int32_t boulder_kalorien_zaehler_summe(const BoulderKalorienZaehler *z, int32_t 
 // ---------------------------------------------------------------------------------------
 // Das Training (P1 in workout_service.c). Zeit = aktive Sekunden seit dem Start.
 
-// Kieselsports Maximalpuls (V2, AP2), gilt ab dem naechsten Start und der naechsten Fahrt.
+// Kieselsports Maximalpuls (V2, AP2), gilt ab dem naechsten Start.
 // 0 = Tanaka.
 void boulder_kalorien_maxpuls(uint8_t bpm);
 
-// Das Profil, mit dem ein Training oder eine Fahrt jetzt beginnt: Gewicht, Alter und Geschlecht
+// Das Profil, mit dem ein Training jetzt beginnt: Gewicht, Alter und Geschlecht
 // der Uhr, der Ruhepuls als Median der letzten sieben Naechte (V3), Kieselsports Maximalpuls.
 // false (und ein leeres Profil) ohne brauchbare Eingaben.
 bool boulder_kalorien_profil_jetzt(BoulderKalorienProfil *profil);

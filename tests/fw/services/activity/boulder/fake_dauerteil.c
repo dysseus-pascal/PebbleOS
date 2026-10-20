@@ -29,37 +29,12 @@ void boulder_dauerteil_ring_minute(const BoulderMinute *minute) {
   }
 }
 
-time_t boulder_dauerteil_fahrt_offen_seit(void) {
-  return fake_dauerteil.fahrt_offen_seit;
-}
-
-bool boulder_dauerteil_fahrt_minute(time_t minute_utc) {
-  return minute_utc >= fake_dauerteil.fahrt_von && minute_utc < fake_dauerteil.fahrt_bis;
-}
-
-bool boulder_dauerteil_fahrt_laeuft(void) {
-  return fake_dauerteil.fahrt_laeuft;
-}
-
 bool boulder_dauerteil_training_ohne_schritte(void) {
   return fake_dauerteil.training_ohne_schritte;
 }
 
-bool boulder_dauerteil_fahrt_ueberdeckt(time_t start_utc, uint32_t laenge_s) {
-  return fake_dauerteil.ueberdeckt;
-}
-
 time_t boulder_dauerteil_letzter_schlaf_utc(void) {
   return 4242;
-}
-
-bool boulder_dauerteil_aktiv_abo_laeuft(void) {
-  return fake_dauerteil.aktiv_abo;
-}
-
-void boulder_dauerteil_aktiv_abo_pausieren(bool pausiert) {
-  fake_dauerteil.pausiert_aufrufe++;
-  fake_dauerteil.pausiert = pausiert;
 }
 
 void boulder_dauerteil_tracking_aus(void) {
@@ -70,6 +45,3 @@ void boulder_dauerteil_training(bool laeuft) {
   fake_dauerteil.training = laeuft;
 }
 
-void boulder_dauerteil_sitzungen_beenden(void) {
-  fake_dauerteil.sitzungen_beendet++;
-}

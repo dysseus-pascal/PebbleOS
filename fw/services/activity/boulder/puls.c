@@ -6,7 +6,6 @@
 #include "pbl/services/activity/boulder/puls.h"
 
 #include "pbl/services/activity/boulder/hrv.h"
-#include "pbl/services/activity/boulder/kontext.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/util/units.h"
@@ -38,10 +37,6 @@ static uint32_t s_ist_takt_s;
 static time_t s_jetzt;
 static bool s_nachtruhe;
 static bool s_tracking;
-// Velo (3.7): ab der Vorstufe dicht, bis Fahrtende oder "Nein"; SpO2 bei Aktivitaet pausiert
-// es wie Kraepelins Walk/Run-Abo (activity.c:471, :630).
-static bool s_aktiv;
-static bool s_aktiv_pausiert;
 
 static struct {
   bool laeuft;
@@ -65,13 +60,6 @@ static void prv_soll(HRMFeature *merkmale, uint32_t *takt_s) {
   }
   if (s_hrv.laeuft) {
     *merkmale = HRMFeature_BPM | HRMFeature_HRV;
-    *takt_s = 1;
-    return;
-  }
-  // Velo unabhaengig von der Messstufe, wie Kraepelins Walk/Run-Abo: gleiche Bedingung
-  // (kraepelin_algorithm.c:2037-2056), auch auf Stufe 1.
-  if (s_aktiv && !s_aktiv_pausiert && activity_prefs_hrm_activity_tracking_is_enabled()) {
-    *merkmale = HRMFeature_BPM;
     *takt_s = 1;
     return;
   }
@@ -121,16 +109,6 @@ static bool prv_spo2_misst(void) {
 // ein Abstand nicht, und auch der danach nicht gegen den davor. O(1): das laeuft im
 // HRM-Rueckruf, unter der Sperre des Managers - hier wird nichts an- oder abgemeldet.
 static void prv_rueckruf(PebbleHRMEvent *e, void *context) {
-  if (e->event_type == HRMEvent_BPM) {
-    // F7 (Schritt 2): Jeder Sekundenwert des Abos "Aktiv" geht in die Pulskalorien der
-    // Velofahrt - gueltig wie in activity.c und mindestens "Acceptable" wie im Training
-    // (workout_service.c, prv_handle_heart_rate_update).
-    if (s_aktiv && e->bpm.quality >= HRMQuality_Acceptable &&
-        e->bpm.bpm >= ACTIVITY_DEFAULT_MIN_HR && e->bpm.bpm <= ACTIVITY_DEFAULT_MAX_HR) {
-      boulder_kontext_puls(e->bpm.bpm, rtc_get_time());
-    }
-    return;
-  }
   if (!s_hrv.laeuft || e->event_type != HRMEvent_HRV) {
     return;
   }
@@ -248,26 +226,10 @@ void boulder_puls_tracking_aus(void) {
   }
 }
 
-// Gegenpruefung B2: Lief beim "Tracking aus" ein HRV-Fenster oder das Velo-Abo und war die
-// Schlange knapp, mass der Sensor sonst jede Sekunde weiter, bis das Tracking wieder angeht.
+// Gegenpruefung B2: Lief beim "Tracking aus" ein HRV-Fenster und war die Schlange knapp, mass der Sensor sonst jede Sekunde weiter, bis das Tracking wieder angeht.
 // Mit Tracking holt der Minutenteil nach (boulder_puls_minute).
 void boulder_puls_takt(void) {
   if (!s_tracking && s_abo != HRM_INVALID_SESSION_REF && !prv_soll_erreicht()) {
-    boulder_aufgabe_einreihen(&s_aufgabe);
-  }
-}
-
-void boulder_puls_aktiv(bool an) {
-  s_aktiv = an;
-  boulder_aufgabe_einreihen(&s_aufgabe);
-}
-
-void boulder_puls_aktiv_pausieren(bool pausiert) {
-  if (s_aktiv_pausiert == pausiert) {
-    return;
-  }
-  s_aktiv_pausiert = pausiert;
-  if (s_aktiv) {
     boulder_aufgabe_einreihen(&s_aufgabe);
   }
 }
@@ -288,8 +250,6 @@ void boulder_puls_test_zuruecksetzen(void) {
   s_jetzt = 0;
   s_nachtruhe = false;
   s_tracking = false;
-  s_aktiv = false;
-  s_aktiv_pausiert = false;
   memset(&s_hrv, 0, sizeof(s_hrv));
   s_aufgabe.steht_an = false;
 }
@@ -309,14 +269,6 @@ void boulder_puls_tracking_aus(void) {
 }
 
 void boulder_puls_takt(void) {
-}
-
-void boulder_puls_aktiv(bool an) {
-  (void)an;
-}
-
-void boulder_puls_aktiv_pausieren(bool pausiert) {
-  (void)pausiert;
 }
 
 bool boulder_puls_hrv_laeuft(void) {

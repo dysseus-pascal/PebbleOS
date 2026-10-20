@@ -85,7 +85,7 @@ static int prv_prueflauf(const struct pbl_shell *sh, size_t argc, char **argv) {
   if (!boulder_prueflauf_starten(n, tage)) {
     pbl_shell_print(sh,
                     "Pruefnacht %d (%d Tage zurueck) unbekannt oder ein Lauf laeuft (0-3 "
-                    "Fixtures, 4 schlimmste Nacht, 5 Velo; 0-30 Tage)",
+                    "Fixtures, 4 schlimmste Nacht; 0-30 Tage)",
                     n, tage);
     return -1;
   }

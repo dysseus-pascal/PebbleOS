@@ -41,9 +41,6 @@ Pebble App project.
 /* Boulder: D0 Includes auf die Kopie */
 #include <pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h>
 /* Boulder: Ende D0 */
-/* Boulder: D10 Szene ueber die Variante (variante.h) */
-#include <pbl/services/activity/boulder/variante.h>
-/* Boulder: Ende D10 */
 #include <pbl/services/hrm/hrm_manager_private.h>
 #include <pbl/util/math.h>
 #include <pbl/util/math_fixed.h>
@@ -2024,10 +2021,7 @@ static void prv_update_activity_hrm_scene(KAlgState *alg_state) {
   } else if (walk_active) {
     scene = HRMActivityScene_Walk;
   }
-  /* Boulder: D10 Die Szene ist global; die Variante setzt sie an einer Stelle (szene.c)
-   * und setzt nur ihre eigene zurueck, nie die eines Trainings. */
-  boulder_szene_kraepelin(scene);
-  /* Boulder: Ende D10 */
+  hrm_manager_set_activity_scene(scene);
 }
 #endif
 

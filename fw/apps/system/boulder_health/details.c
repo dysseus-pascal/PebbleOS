@@ -245,7 +245,7 @@ static bool prv_sitzung_art(const ActivitySession *s, BhText *art) {
     case ActivitySessionType_Run:
       *art = s->manual ? BhTWorkout : BhTRun;
       return true;
-    // Ein offenes Training ohne "manual" ist die bestaetigte Velofahrt der Variante (kontext.c).
+    // Ein offenes Training ohne "manual" war eine bestaetigte Velofahrt der Variante (bis b32).
     case ActivitySessionType_Open:
       *art = s->manual ? BhTWorkout : BhTRide;
       return true;

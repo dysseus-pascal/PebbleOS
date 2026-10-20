@@ -642,16 +642,6 @@ static void prv_init_cb(void *daten) {
   kieselsport_init();
 }
 
-// DIE BESTAETIGTE VELOFAHRT RECHNET MIT DEMSELBEN MAXIMUM (F7): Sie hat keinen Start, an dem
-// Kieselsport es setzen koennte. Darum nach dem Laden der Einstellungen und nach jeder
-// Aenderung; ohne Sperre, denn kalorien.c gehoert zur Variante (Regel 2.5.2).
-static void prv_maxpuls_melden(void) {
-  ks_sperren();
-  const uint16_t maxpuls = puls_maximum_wirksam();
-  ks_entsperren();
-  ks_kalorien_maxpuls(maxpuls);
-}
-
 // --- Oeffentlich ---
 
 void kieselsport_init(void) {
@@ -668,7 +658,6 @@ void kieselsport_init(void) {
   // Nach einem Neustart: was vorher nicht ankam, wird wieder nachgereicht.
   const bool wartet = wartend_da() || stopp_da();
   ks_entsperren();
-  prv_maxpuls_melden();
   if (wartet) {
     prv_nachsenden_an();
   }
@@ -761,7 +750,6 @@ void kieselsport_maxpuls_setze(uint16_t schlaege) {
   puls_setze_maximum(schlaege);
   prv_schnappschuss();
   ks_entsperren();
-  prv_maxpuls_melden();
 }
 
 void kieselsport_maxpuls_nicht_setzen(void) {
@@ -770,7 +758,6 @@ void kieselsport_maxpuls_nicht_setzen(void) {
   puls_maximum_nicht_setzen();
   prv_schnappschuss();
   ks_entsperren();
-  prv_maxpuls_melden();
 }
 
 void kieselsport_maxpuls_alt(uint16_t schlaege) {
@@ -779,7 +766,6 @@ void kieselsport_maxpuls_alt(uint16_t schlaege) {
   puls_maximum_alt(schlaege);
   prv_schnappschuss();
   ks_entsperren();
-  prv_maxpuls_melden();
 }
 
 uint8_t kieselsport_empfindlichkeit(void) {

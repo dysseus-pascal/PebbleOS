@@ -159,7 +159,7 @@ static void prv_folge_invarianten(void) {
   // Entscheid 2 vom 08.10.2026: Die Variante streicht Schritte genau dann, wenn Kieselsport ein
   // Training ohne Schritte LAUFEN hat - nicht in der Pause (auch Pebbles Lade-Pause), nicht im
   // 30-s-Fenster nach dem Speichern, nie ohne Kieselsport. Gestrichen wird nur in Pebbles Training
-  // mit dem Merker (kontext.c). Die Arten nach V1 (entscheidungen.md), nicht aus art.c gelesen.
+  // mit dem Merker (dauerteil.c). Die Arten nach V1 (entscheidungen.md), nicht aus art.c gelesen.
   static const bool s_ohne[ArtAnzahl] = {
     [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
     [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true,
