@@ -11,10 +11,8 @@
 #include "kernel/events.h"
 #include "process_management/app_install_types.h"
 
-#include "stubs_evented_timer.h"
 #include "stubs_logging.h"
 #include "stubs_pbl_malloc.h"
-#include "stubs_regular_timer.h"
 
 #include "fake_events.h"
 #include "fake_mutex.h"

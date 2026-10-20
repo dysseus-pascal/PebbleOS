@@ -18,21 +18,11 @@
 #include "fake_spi_flash.h"
 #include "fixtures/load_test_resources.h"
 
-#include "stubs_analytics.h"
 #include "stubs_app_state.h"
-#include "stubs_bootbits.h"
 #include "stubs_compiled_with_legacy2_sdk.h"
 #include "stubs_logging.h"
 #include "stubs_memory_layout.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
 #include "stubs_pbl_malloc.h"
-#include "stubs_pebble_tasks.h"
-#include "stubs_process_manager.h"
-#include "stubs_serial.h"
-#include "stubs_sleep.h"
-#include "stubs_syscalls.h"
-#include "stubs_task_wdt.h"
 
 #include "fw/graphics/util.h"
 

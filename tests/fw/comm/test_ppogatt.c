@@ -12,18 +12,6 @@
 // Stubs
 ///////////////////////////////////////////////////////////
 
-#include <stubs_analytics.h>
-#include <stubs_bt_conn_mgr.h>
-#include <stubs_bt_lock.h>
-#include <stubs_logging.h>
-#include <stubs_mfg_info.h>
-#include <stubs_mutex.h>
-#include <stubs_passert.h>
-#include <stubs_print.h>
-#include <stubs_rand_ptr.h>
-#include <stubs_rtc.h>
-#include <stubs_serial.h>
-
 // Fakes
 ///////////////////////////////////////////////////////////
 
@@ -248,8 +236,7 @@ static void prv_receive_ack(pbl_bt_characteristic_t characteristic, uint8_t sn) 
 
 static void prv_assert_sent_reset_request(pbl_bt_characteristic_t characteristic) {
   fake_gatt_client_op_assert_write(characteristic, (const uint8_t *)s_client_reset_request,
-                                   s_client_reset_request_size, GAPLEClientKernel,
-                                   false /* is_response_required */);
+                                   s_client_reset_request_size, false /* is_response_required */);
 }
 
 static void prv_assert_sent_reset_complete(pbl_bt_characteristic_t characteristic) {
@@ -267,8 +254,7 @@ static void prv_assert_sent_reset_complete(pbl_bt_characteristic_t characteristi
   }
 
   fake_gatt_client_op_assert_write(characteristic, (const uint8_t *)&expected_response,
-                                   s_client_reset_complete_size, GAPLEClientKernel,
-                                   false /* is_response_required */);
+                                   s_client_reset_complete_size, false /* is_response_required */);
 
   if (s_ppogatt_version > 0) {
     s_tx_window_size = MIN(s_tx_window_size, expected_response.payload.ppogatt_max_tx_window);
@@ -284,7 +270,7 @@ static void prv_assert_sent_ack(pbl_bt_characteristic_t characteristic, uint8_t 
     .type = PPoGATTPacketTypeAck,
   };
   fake_gatt_client_op_assert_write(characteristic, (const uint8_t *)&ack, sizeof(ack),
-                                   GAPLEClientKernel, false /* is_response_required */);
+                                   false /* is_response_required */);
 }
 
 static void prv_assert_sent_data(pbl_bt_characteristic_t characteristic, uint8_t sn,
@@ -295,7 +281,7 @@ static void prv_assert_sent_data(pbl_bt_characteristic_t characteristic, uint8_t
   packet->type = PPoGATTPacketTypeData;
   memcpy(packet->payload, data, length);
   fake_gatt_client_op_assert_write(characteristic, (const uint8_t *)packet,
-                                   sizeof(PPoGATTPacket) + length, GAPLEClientKernel,
+                                   sizeof(PPoGATTPacket) + length,
                                    false /* is_response_required */);
   free(packet);
 }
@@ -345,10 +331,8 @@ void test_ppogatt__find_pebble_app_and_3rd_party_app(void) {
   prv_notify_services_discovered(NUM_SERVICE_INSTANCES);
 
   // Assert GATT reads requests to Meta characteristics happened:
-  fake_gatt_client_op_assert_read(s_characteristics[0][PPoGATTCharacteristicMeta],
-                                  GAPLEClientKernel);
-  fake_gatt_client_op_assert_read(s_characteristics[1][PPoGATTCharacteristicMeta],
-                                  GAPLEClientKernel);
+  fake_gatt_client_op_assert_read(s_characteristics[0][PPoGATTCharacteristicMeta]);
+  fake_gatt_client_op_assert_read(s_characteristics[1][PPoGATTCharacteristicMeta]);
 
   // Simulate read responses:
   ppogatt_handle_read_or_notification(s_characteristics[0][PPoGATTCharacteristicMeta],
@@ -480,8 +464,7 @@ void test_ppogatt__handle_subscribe_to_unknown_characteristic(void) {
                            PBL_BT_GATT_ERROR_SUCCESS);
 
   // Expect to unsubscribe from the unknown characteristic:
-  fake_gatt_client_subscriptions_assert_subscribe(s_unknown_characteristics, BLESubscriptionNone,
-                                                  GAPLEClientKernel);
+  fake_gatt_client_subscriptions_assert_subscribe(s_unknown_characteristics, BLESubscriptionNone);
 }
 
 void test_ppogatt__cleanup_client_when_meta_read_fails(void) {
@@ -550,7 +533,7 @@ void test_ppogatt__cleanup_client_when_data_subscription_error_response(void) {
                                       PBL_BT_GATT_ERROR_SUCCESS);
   // Expect subscribe request was made:
   fake_gatt_client_subscriptions_assert_subscribe(s_characteristics[0][PPoGATTCharacteristicData],
-                                                  BLESubscriptionNotifications, GAPLEClientKernel);
+                                                  BLESubscriptionNotifications);
   // Simulate getting the subscription failure:
   ppogatt_handle_subscribe(s_characteristics[0][PPoGATTCharacteristicData],
                            BLESubscriptionNotifications, PBL_BT_GATT_ERROR_READ_NOT_PERMITTED);
@@ -566,7 +549,7 @@ static void prv_discover_and_read_meta_and_reset(void) {
                                       PBL_BT_GATT_ERROR_SUCCESS);
   // Expect subscribe request was made:
   fake_gatt_client_subscriptions_assert_subscribe(s_characteristics[0][PPoGATTCharacteristicData],
-                                                  BLESubscriptionNotifications, GAPLEClientKernel);
+                                                  BLESubscriptionNotifications);
   // Simulate getting the subscription confirmation:
   ppogatt_handle_subscribe(s_characteristics[0][PPoGATTCharacteristicData],
                            BLESubscriptionNotifications, PBL_BT_GATT_ERROR_SUCCESS);
@@ -703,7 +686,6 @@ void test_ppogatt__server_reset_request_while_pending_ack(void) {
   fake_gatt_client_op_assert_no_write();
 
   // In the past we had a bug here where the pending ACK would get sent out.
-  // See https://pebbletechnology.atlassian.net/browse/PBL-24651
 }
 
 void test_ppogatt__ignore_invalid_packet_type(void) {
@@ -1095,7 +1077,7 @@ void test_ppogatt__mtu_zero_due_to_disconnection(void) {
   // No crash
 }
 
-//! When client ID info got added to the Reset Packet (PBL-14099), a potential buffer overrun
+//! When client ID info got added to the Reset Packet, a potential buffer overrun
 //! situation got introduced accidentally. This test is a white-box test to catch this issue.
 //! For the Reset Packet, a buffer needs to be allocated. The size of this buffer is based upon
 //! the MTU of the connection. It's possible the lookup fails and returns 0. In this case, the
@@ -1109,12 +1091,11 @@ void test_ppogatt__mtu_zero_due_to_service_rediscovery_while_resetting(void) {
                                       PBL_BT_GATT_ERROR_SUCCESS);
   // Expect subscribe request was made:
   fake_gatt_client_subscriptions_assert_subscribe(s_characteristics[0][PPoGATTCharacteristicData],
-                                                  BLESubscriptionNotifications, GAPLEClientKernel);
+                                                  BLESubscriptionNotifications);
 
   // During service re-discovery the cached characteristic handles will be stale for a brief period.
   // This will cause the gatt_client_characteristic_get_device to return
   // PBL_BT_DEVICE_INTERNAL_INVALID and eventually gap_le_connection_get_gatt_mtu call to return 0.
-  // See PBL-22038.
   s_mtu_size = 0;
 
   // Simulate getting the subscription confirmation, this will normally trigger PPoGATT to try to

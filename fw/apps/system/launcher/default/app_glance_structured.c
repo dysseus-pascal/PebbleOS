@@ -6,6 +6,7 @@
 #include "app_glance_private.h"
 #include "menu_layer.h"
 
+#include <pbl/kernel/assert.h>
 #include <pbl/kernel/compiler.h>
 #include <pbl/services/timeline/attribute.h>
 #include <pbl/util/string.h>
@@ -17,7 +18,6 @@
 #include <process_management/app_install_manager.h>
 #include <resource/resource_ids.auto.h>
 #include <shell/prefs.h>
-#include <system/passert.h>
 
 // Use display height to determine icon margins: larger displays use more margin
 #if PBL_DISPLAY_HEIGHT >= 200
@@ -186,10 +186,15 @@ static GTextNode *prv_structured_glance_create_text_node(
   return &underlying_text_node_text->node;
 }
 
+static void prv_adjust_text_node_for_scrolling_animation(
+    LauncherAppGlanceStructured *structured_glance, GContext *ctx, GTextNodeText *node_text,
+    const char *text, const GRect *draw_box, TextLayoutExtended *layout,
+    uint32_t *node_scroll_duration_ms);
+
 static void prv_structured_glance_title_dynamic_text_node_update(
-    [[maybe_unused]] GContext *ctx, [[maybe_unused]] GTextNode *node,
-    [[maybe_unused]] const GRect *box, [[maybe_unused]] const GTextNodeDrawConfig *config,
-    [[maybe_unused]] bool render, char *buffer, size_t buffer_size, void *user_data) {
+    GContext *ctx, GTextNode *node, const GRect *box,
+    [[maybe_unused]] const GTextNodeDrawConfig *config, bool render, char *buffer,
+    size_t buffer_size, void *user_data) {
   LauncherAppGlanceStructured *structured_glance = user_data;
   const char *title = nullptr;
   if (structured_glance && structured_glance->impl && structured_glance->impl->get_title) {
@@ -199,13 +204,23 @@ static void prv_structured_glance_title_dynamic_text_node_update(
     strncpy(buffer, title, buffer_size);
     buffer[buffer_size - 1] = '\0';
   }
+  // Only the highlighted glance scrolls, so others never disturb the selection animation
+  if (!render && structured_glance->glance.is_highlighted) {
+    prv_adjust_text_node_for_scrolling_animation(structured_glance, ctx, (GTextNodeText *)node,
+                                                 buffer, box,
+                                                 &structured_glance->title_scroll_calc_text_layout,
+                                                 &structured_glance->title_scroll_duration_ms);
+  }
 }
 
 static GTextNode *prv_structured_glance_create_title_text_node(
     LauncherAppGlanceStructured *structured_glance) {
-  return prv_structured_glance_create_text_node(
+  GTextNode *node = prv_structured_glance_create_text_node(
       structured_glance, structured_glance->title_font, APP_NAME_SIZE_BYTES,
       prv_structured_glance_title_dynamic_text_node_update);
+  // Clip title text nodes to their draw box since we scroll them if they're too long
+  node->clip = true;
+  return node;
 }
 
 typedef struct ScrollAnimationVars {
@@ -259,7 +274,7 @@ static bool prv_get_text_scroll_vars(GContext *ctx, uint32_t cumulative_elapsed_
       pause_at_start_ms + normal_scroll_duration_ms + pause_at_end_ms + rewind_scroll_duration_ms;
   vars_out->duration_ms = scroll_duration_ms;
 
-  // Technically mod isn't necessary right now, but it's needed for looping eventually (PBL-40544)
+  // Technically mod isn't necessary right now, but it's needed for looping eventually
   int64_t elapsed_ms = cumulative_elapsed_ms % scroll_duration_ms;
   const uint32_t end_of_normal_scroll_duration_ms = pause_at_start_ms + normal_scroll_duration_ms;
   bool rewind = false;
@@ -280,44 +295,49 @@ static bool prv_get_text_scroll_vars(GContext *ctx, uint32_t cumulative_elapsed_
   return true;
 }
 
-//! Currently the subtitle scrolling drives the duration of the overall glance selection animation
-//! because we only scroll once, and since we don't know what we're scrolling until this function
-//! is called, we need to record the duration of the scrolling animation in this function so the
-//! glance's KinoReel reports the correct duration for the overall selection animation.
-static void prv_adjust_subtitle_node_for_scrolling_animation(
+//! Makes the selection animation last as long as the longer of the title and subtitle scrolls
+static void prv_update_selection_animation_duration(
+    LauncherAppGlanceStructured *structured_glance) {
+  const uint32_t duration_ms = MAX(structured_glance->title_scroll_duration_ms,
+                                   structured_glance->subtitle_scroll_duration_ms);
+  const uint32_t previous_duration_ms = structured_glance->selection_animation_duration_ms;
+  if (duration_ms == previous_duration_ms) {
+    return;
+  }
+  structured_glance->selection_animation_duration_ms = duration_ms;
+  // If we're starting a new scroll or a scroll is currently in-progress, pause and then
+  // play the animation so it is updated with the new duration (e.g. so we don't stop in a weird
+  // place because the previous duration is shorter than the new one)
+  if ((duration_ms != 0) &&
+      ((previous_duration_ms == 0) || (structured_glance->selection_animation_elapsed_ms != 0))) {
+    LauncherAppGlanceService *service = structured_glance->glance.service;
+    launcher_app_glance_service_pause_current_glance(service);
+    launcher_app_glance_service_play_current_glance(service);
+  }
+}
+
+static void prv_adjust_text_node_for_scrolling_animation(
     LauncherAppGlanceStructured *structured_glance, GContext *ctx, GTextNodeText *node_text,
-    const char *text, const GRect *draw_box) {
+    const char *text, const GRect *draw_box, TextLayoutExtended *layout,
+    uint32_t *node_scroll_duration_ms) {
   const uint32_t cumulative_elapsed_ms = structured_glance->selection_animation_elapsed_ms;
 
   ScrollAnimationVars vars;
   if (!prv_get_text_scroll_vars(ctx, cumulative_elapsed_ms, text, draw_box, node_text->font,
-                                node_text->alignment, node_text->overflow,
-                                &structured_glance->subtitle_scroll_calc_text_layout, &vars)) {
-    // No need to scroll because text fits completely on-screen, set the selection animation
-    // duration to 0 and bail out
-    structured_glance->selection_animation_duration_ms = 0;
+                                node_text->alignment, node_text->overflow, layout, &vars)) {
+    // No need to scroll because text fits completely on-screen
+    *node_scroll_duration_ms = 0;
+    prv_update_selection_animation_duration(structured_glance);
     return;
   }
 
-  // Assumes that the default offset.x for the subtitle node is 0, which is true for generic glances
+  // Assumes that the default offset.x for the node is 0, which is true for generic glances
   node_text->node.offset.x = -vars.current_offset;
-  // Assumes that the default margin.w for the subtitle node is 0, which is true for generic glances
+  // Assumes that the default margin.w for the node is 0, which is true for generic glances
   node_text->node.margin.w = (vars.current_offset != 0) ? -vars.total_px_to_scroll : (int16_t)0;
 
-  // Record any change in the selection animation's duration
-  LauncherAppGlanceService *service = structured_glance->glance.service;
-  if (vars.duration_ms != structured_glance->selection_animation_duration_ms) {
-    const uint32_t previous_selection_animation_duration_ms =
-        structured_glance->selection_animation_duration_ms;
-    structured_glance->selection_animation_duration_ms = vars.duration_ms;
-    // If we're starting a new scroll or a scroll is currently in-progress, pause and then
-    // play the animation so it is updated with the new duration (e.g. so we don't stop in a weird
-    // place because the previous duration is shorter than the new one)
-    if ((previous_selection_animation_duration_ms == 0) || (cumulative_elapsed_ms != 0)) {
-      launcher_app_glance_service_pause_current_glance(service);
-      launcher_app_glance_service_play_current_glance(service);
-    }
-  }
+  *node_scroll_duration_ms = vars.duration_ms;
+  prv_update_selection_animation_duration(structured_glance);
 }
 
 static void prv_structured_glance_subtitle_dynamic_text_node_update(
@@ -330,8 +350,10 @@ static void prv_structured_glance_subtitle_dynamic_text_node_update(
   }
   GTextNodeText *node_text = (GTextNodeText *)node;
   if (!render) {
-    prv_adjust_subtitle_node_for_scrolling_animation(structured_glance, ctx, node_text, buffer,
-                                                     box);
+    prv_adjust_text_node_for_scrolling_animation(
+        structured_glance, ctx, node_text, buffer, box,
+        &structured_glance->subtitle_scroll_calc_text_layout,
+        &structured_glance->subtitle_scroll_duration_ms);
   }
 }
 
@@ -433,6 +455,7 @@ static void prv_draw_processed(KinoReel *reel, GContext *ctx, GPoint offset,
   }
 
   GRect glance_frame = (GRect){.origin = offset, .size = structured_glance->glance.size};
+  const LauncherMenuLayerStyle *style = launcher_menu_layer_get_style();
 #if PBL_ROUND && PBL_DISPLAY_HEIGHT >= 200
   // For a circle: x = R - sqrt(R^2 - (y - R)^2), where R = display_size / 2
   const int16_t radius = PBL_DISPLAY_HEIGHT / 2;
@@ -447,14 +470,10 @@ static void prv_draw_processed(KinoReel *reel, GContext *ctx, GPoint offset,
   // Clamp to avoid negative sqrt when row is outside the circle (during scroll animations)
   const int32_t sqrt_arg = MAX(0, radius_sq - y_offset_sq);
   const int16_t circle_inset = radius - integer_sqrt(sqrt_arg);
-  // Add base inset for padding from the actual circle edge
-  // Extra 2px shift for non-center rows to push content slightly more inward
-  const int16_t base_inset = 10;
-  const int16_t horizontal_inset = base_inset + circle_inset;
-#elif PBL_DISPLAY_HEIGHT >= 200 && PBL_RECT
-  const int16_t horizontal_inset = 10;
+  // The style's inset pads the glance from the actual circle edge
+  const int16_t horizontal_inset = style->glance_inset + circle_inset;
 #else
-  const int16_t horizontal_inset = PBL_IF_RECT_ELSE(6, 23);
+  const int16_t horizontal_inset = style->glance_inset;
 #endif
   glance_frame = grect_inset_internal(glance_frame, horizontal_inset, 0);
   // A row dragged to the display edge can be entirely outside the circle; grect_inset then
@@ -493,7 +512,7 @@ static bool prv_set_elapsed(KinoReel *reel, uint32_t elapsed_ms) {
 }
 
 static uint32_t prv_get_duration(KinoReel *reel) {
-  // TODO PBL-40544: Loop the selection animation
+  // TODO: loop the selection animation
   LauncherAppGlanceStructured *structured_glance = kino_reel_custom_get_data(reel);
   return NULL_SAFE_FIELD_ACCESS(structured_glance, selection_animation_duration_ms, 0);
 }

@@ -4,7 +4,6 @@
 #include "clar.h"
 
 #include "stubs_logging.h"
-#include "stubs_passert.h"
 
 #include "apps/system/launcher/default/app_glance_kieselsport.h"
 #include "apps/system/launcher/default/app_glance_structured.h"

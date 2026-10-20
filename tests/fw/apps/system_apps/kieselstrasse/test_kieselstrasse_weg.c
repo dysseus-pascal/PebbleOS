@@ -6,7 +6,6 @@
 #include "applib/graphics/utf8.h"
 
 #include "stubs_logging.h"
-#include "stubs_passert.h"
 #include "stubs_pbl_malloc.h"
 
 // Zuletzt: weg.h zieht pebble_compat.h nach, und dessen Makros (malloc,

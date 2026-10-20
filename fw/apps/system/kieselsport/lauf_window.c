@@ -298,7 +298,7 @@ static void prv_fuelle(Feld *f, Feldart art) {
       f->name = S(STR_L_UHR);
       // Ohne AM/PM: LECO hat keine Buchstaben, und die Stunde reicht.
       const time_t jetzt = time(NULL);
-      const struct tm *t = localtime(&jetzt);
+      const struct pbl_tm *t = localtime(&jetzt);
       int h = t->tm_hour;
       if (!clock_is_24h_style()) { h %= 12; if (h == 0) h = 12; }
       snprintf(f->zahl, platz, "%d:%02d", h, t->tm_min);

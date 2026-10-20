@@ -23,27 +23,27 @@ void test_boulder_schnittstelle__puffer_ausserhalb_der_app_beenden_sie(void) {
   static uint8_t kern[1024];  // Kernel-RAM aus Sicht der App
   // Ganz ausserhalb.
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_nacht((NachtBild *)kern));
+  cl_assert_panic(sys_boulder_nacht((NachtBild *)kern));
   prv_app_abbruch();
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_lage((BoulderLage *)kern));
+  cl_assert_panic(sys_boulder_lage((BoulderLage *)kern));
   prv_app_abbruch();
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_spo2(0, INT32_MAX, (Spo2Wert *)kern, 1));
+  cl_assert_panic(sys_boulder_spo2(0, INT32_MAX, (Spo2Wert *)kern, 1));
   prv_app_abbruch();
   // Ueber das Ende des App-RAMs hinaus: ein Byte zu wenig.
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_nacht(
+  cl_assert_panic(sys_boulder_nacht(
       (NachtBild *)&s_app_ram[sizeof(s_app_ram) - sizeof(NachtBild) + 1]));
   prv_app_abbruch();
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_lage(
+  cl_assert_panic(sys_boulder_lage(
       (BoulderLage *)&s_app_ram[sizeof(s_app_ram) - sizeof(BoulderLage) + 1]));
   prv_app_abbruch();
   // SpO2: genug Platz fuer 10 Werte, verlangt 11.
   Spo2Wert *zehn = (Spo2Wert *)&s_app_ram[sizeof(s_app_ram) - 10 * sizeof(Spo2Wert)];
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_spo2(0, INT32_MAX, zehn, 11));
+  cl_assert_panic(sys_boulder_spo2(0, INT32_MAX, zehn, 11));
   prv_app_abbruch();
   // Gerade passend geht.
   cl_assert_equal_i(prv_s3(0, INT32_MAX, 10), 0);
@@ -82,10 +82,10 @@ void test_boulder_schnittstelle__laden_bei_knapper_schlange_holt_die_minute_nach
   cl_assert(prv_s7());
 }
 
-// Grosse Zahlen (Gegenpruefung, Befund K1): Die Uhr rechnet das letzte Byte der Pruefung in 32 Bit
-// (buf + Bytes - 1). Mit max = UINT32_MAX / 8 waeren es 0xFFFFFFF8 Bytes, das letzte Byte laege
-// bei buf - 9 im App-RAM, und kopiert wuerden bis zu 96 Werte hinter sein Ende. Geprueft wird darum
-// genau, was kopiert wird: hoechstens SPO2_WERTE_MAX Werte.
+// Grosse Zahlen (Gegenpruefung, Befund K1): Geprueft wird genau, was kopiert wird, hoechstens
+// SPO2_WERTE_MAX Werte. Ein Puffer fuer einen Wert am Ende des App-RAMs endet mit jeder grossen
+// Zahl (kopiert wuerden bis zu 96), einer mit Platz fuer alle 96 geht mit jeder. Die Zahlen sind
+// so gewaehlt, dass max * sizeof in 32 Bit umlaeuft.
 void test_boulder_schnittstelle__spo2_grosse_zahl_prueft_was_kopiert_wird(void) {
   // Drei Werte in einem eigenen Fenster vor fuenf Tagen.
   const time_t von = s_jetzt - 5 * PBL_SEC_PER_DAY;
@@ -94,13 +94,13 @@ void test_boulder_schnittstelle__spo2_grosse_zahl_prueft_was_kopiert_wird(void) 
   }
   Spo2Wert *einer = (Spo2Wert *)&s_app_ram[sizeof(s_app_ram) - sizeof(Spo2Wert)];
   const uint32_t grenzen[] = {
-    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)),     // letztes Byte bei buf - 9
-    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)) + 1, // 0 Bytes
+    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)),
+    (uint32_t)(UINT32_MAX / sizeof(Spo2Wert)) + 1,
     UINT32_MAX,
   };
   for (size_t i = 0; i < ARRAY_LENGTH(grenzen); i++) {
     prv_app_beginn();
-    cl_assert_passert(sys_boulder_spo2(von, von + 1800, einer, grenzen[i]));
+    cl_assert_panic(sys_boulder_spo2(von, von + 1800, einer, grenzen[i]));
     prv_app_abbruch();
   }
   // Mit Platz fuer alle 96 geht jede Zahl, und es kommen nur die Werte im Fenster.

@@ -26,19 +26,13 @@
 #include "pbl/services/system_task.h"
 #include "pbl/util/math.h"
 #include "pbl/util/testing.h"
-#include "syscall/syscall_internal.h"
 #include <pbl/drivers/rtc.h>
+#include <pbl/kernel/syscall.h>
 #include <pbl/logging/logging.h>
 
 #include <string.h>
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
-
-#ifndef UNITTEST
-// S3 hat vier Argumente. Nur so liegen alle in Registern: Der Rumpf eines Syscalls laeuft auf dem
-// Syscall-Stapel (syscall_internal.c), ein Argument auf dem Stapel der App saehe er nicht.
-_Static_assert(sizeof(time_t) == sizeof(uint32_t), "S3: time_t muss in ein Register passen");
-#endif
 
 // ---------------------------------------------------------------------------------------------
 // Die Lage
@@ -164,13 +158,11 @@ static void prv_stufe_cb(void *data) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Die Syscalls. PRIVILEGE_WAS_ELEVATED nur hier im Rumpf: Es prueft die Ruecksprungadresse des
-// Rumpfs selbst (syscall_internal.h; Upstream c3610b6e8 prueft das beim Bauen).
+// Die Syscalls. Ein Puffer der App muss ganz in ihrem Speicher liegen, sonst endet sie; das prueft
+// PBL_SYSCALL nach der Art des Arguments, bevor der Rumpf laeuft. Mit Systemrechten (Kern) prueft
+// es nichts.
 
-DEFINE_SYSCALL(BoulderLesen, sys_boulder_nacht, NachtBild *aus) {
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, sizeof(*aus));
-  }
+PBL_SYSCALL(BoulderLesen, sys_boulder_nacht, (OUT_BUF, NachtBild *, aus, sizeof(NachtBild))) {
   const BoulderLesen ergebnis = boulder_nacht_bild_kopieren(aus);
   if (ergebnis == BoulderLesenSpaeter) {
     // NACH DEM FREIGEBEN DER SPERRE (3.2): Das Einreihen kann warten, wenn die Schlange der App
@@ -180,10 +172,7 @@ DEFINE_SYSCALL(BoulderLesen, sys_boulder_nacht, NachtBild *aus) {
   return ergebnis;
 }
 
-DEFINE_SYSCALL(bool, sys_boulder_lage, BoulderLage *aus) {
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, sizeof(*aus));
-  }
+PBL_SYSCALL(bool, sys_boulder_lage, (OUT_BUF, BoulderLage *, aus, sizeof(BoulderLage))) {
   pbl_mutex_lock(&s_lage_sperre, PBL_FOREVER);
   // MEMCPY STATT ZUWEISUNG: Fuer *aus = s_lage nimmt der Compiler LDM/STM, die eine Wortgrenze
   // verlangen; die Pruefung des Puffers prueft keine. Ein schiefer Puffer der App endete sonst als
@@ -197,46 +186,37 @@ DEFINE_SYSCALL(bool, sys_boulder_lage, BoulderLage *aus) {
   return veroeffentlicht;
 }
 
-DEFINE_SYSCALL(uint32_t, sys_boulder_spo2, time_t von, time_t bis, Spo2Wert *aus, uint32_t max) {
-  // ERST BEGRENZEN, DANN PRUEFEN: geprueft wird genau, was kopiert werden kann. Mit `max` selbst
-  // liefe das letzte Byte der Pruefung (buf + Bytes - 1, 32 Bit) fuer grosse Zahlen um, und ein
-  // Puffer am Ende des App-RAMs ginge fuer bis zu 96 Werte durch.
+// ERST BEGRENZEN, DANN PRUEFEN, darum im Rumpf: geprueft wird genau, was kopiert werden kann,
+// hoechstens SPO2_WERTE_MAX Werte, und ohne Wunsch nichts.
+PBL_SYSCALL(uint32_t, sys_boulder_spo2, (VAL, time_t, von), (VAL, time_t, bis),
+            (VAL, Spo2Wert *, aus), (VAL, uint32_t, max)) {
   const uint32_t n = MIN(max, (uint32_t)SPO2_WERTE_MAX);
   if (n == 0) {
     return 0;
   }
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, n * sizeof(*aus));
+  if (from_user) {
+    pbl_syscall_verify_user(aus, n * sizeof(*aus));
   }
   // Der Ring kopiert unter seiner Sperre direkt in den Puffer (spo2.c).
   return (uint32_t)boulder_spo2_werte(von, bis, aus, (int)n);
 }
 
-DEFINE_SYSCALL(bool, sys_boulder_naechte, BoulderNaechte *aus) {
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, sizeof(*aus));
-  }
+PBL_SYSCALL(bool, sys_boulder_naechte, (OUT_BUF, BoulderNaechte *, aus, sizeof(BoulderNaechte))) {
   // Unter s_naechte_sperre nur die Kopie in den Puffer der App (naechte.c).
   return boulder_naechte_kopieren(aus);
 }
 
-DEFINE_SYSCALL(bool, sys_boulder_herz, BoulderHerz *aus) {
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, sizeof(*aus));
-  }
+PBL_SYSCALL(bool, sys_boulder_herz, (OUT_BUF, BoulderHerz *, aus, sizeof(BoulderHerz))) {
   // Unter s_herz_sperre nur die Kopie in den Puffer der App (herz.c).
   return boulder_herz_kopieren(aus);
 }
 
-DEFINE_SYSCALL(bool, sys_boulder_woche, BoulderWoche *aus) {
-  if (PRIVILEGE_WAS_ELEVATED) {
-    syscall_assert_userspace_buffer(aus, sizeof(*aus));
-  }
+PBL_SYSCALL(bool, sys_boulder_woche, (OUT_BUF, BoulderWoche *, aus, sizeof(BoulderWoche))) {
   // Unter s_woche_sperre nur die Kopie in den Puffer der App (woche.c).
   return boulder_woche_kopieren(aus);
 }
 
-DEFINE_SYSCALL(bool, sys_boulder_messstufe_setzen, uint8_t stufe) {
+PBL_SYSCALL(bool, sys_boulder_messstufe_setzen, (VAL, uint8_t, stufe)) {
   if (stufe < MESSSTUFE_MIN || stufe > MESSSTUFE_MAX) {
     return false;
   }

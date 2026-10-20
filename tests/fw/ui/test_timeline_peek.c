@@ -39,44 +39,6 @@ void clock_get_until_time(char *buffer, int buf_size, time_t timestamp, int max_
 // Stubs
 /////////////////////
 
-#include <stubs_activity.h>
-#include <stubs_alerts_preferences.h>
-#include <stubs_analytics.h>
-#include <stubs_animation_timing.h>
-#include <stubs_app_install_manager.h>
-#include <stubs_app_state.h>
-#include <stubs_app_timer.h>
-#include <stubs_bootbits.h>
-#include <stubs_click.h>
-#include <stubs_cron.h>
-#include <stubs_event_loop.h>
-#include <stubs_i18n.h>
-#include <stubs_layer.h>
-#include <stubs_logging.h>
-#include <stubs_memory_layout.h>
-#include <stubs_menu_cell_layer.h>
-#include <stubs_modal_manager.h>
-#include <stubs_mutex.h>
-#include <stubs_passert.h>
-#include <stubs_pbl_malloc.h>
-#include <stubs_pebble_process_info.h>
-#include <stubs_pebble_tasks.h>
-#include <stubs_pin_db.h>
-#include <stubs_process_manager.h>
-#include <stubs_property_animation.h>
-#include <stubs_scroll_layer.h>
-#include <stubs_serial.h>
-#include <stubs_shell_prefs.h>
-#include <stubs_sleep.h>
-#include <stubs_status_bar_layer.h>
-#include <stubs_syscalls.h>
-#include <stubs_task_wdt.h>
-#include <stubs_timeline_event.h>
-#include <stubs_timeline_layer.h>
-#include <stubs_unobstructed_area.h>
-#include <stubs_window_manager.h>
-#include <stubs_window_stack.h>
-
 // Helper Functions
 /////////////////////
 
@@ -112,14 +74,14 @@ void test_timeline_peek__initialize(void) {
   rtc_set_time(PBL_SEC_PER_DAY);
 
   // We start time out at 5pm on Jan 1, 2015 for all of these tests
-  struct tm time_tm = {
+  struct pbl_tm time_tm = {
     // Thursday, Jan 1, 2015, 5pm
     .tm_hour = 17,
     .tm_mday = 1,
     .tm_year = 115
   };
 
-  const time_t utc_sec = mktime(&time_tm);
+  const time_t utc_sec = pbl_mktime(&time_tm);
   fake_rtc_init(0 /* initial_ticks */, utc_sec);
 
   // Setup graphics context

@@ -6,6 +6,7 @@
 
 #include <pbl/services/imaging.h>
 #include <pbl/services/music.h>
+#include <pbl/services/vibes/vibe_score.h>
 #include <pbl/util/size.h>
 
 #include <applib/fonts/fonts.h>
@@ -23,32 +24,6 @@
 
 // Stubs
 /////////////////////
-
-#include <stubs_analytics.h>
-#include <stubs_animation_timing.h>
-#include <stubs_app_install_manager.h>
-#include <stubs_app_state.h>
-#include <stubs_app_timer.h>
-#include <stubs_app_window_stack.h>
-#include <stubs_bootbits.h>
-#include <stubs_click.h>
-#include <stubs_event_service_client.h>
-#include <stubs_i18n.h>
-#include <stubs_layer.h>
-#include <stubs_logging.h>
-#include <stubs_memory_layout.h>
-#include <stubs_mutex.h>
-#include <stubs_passert.h>
-#include <stubs_pbl_malloc.h>
-#include <stubs_pebble_tasks.h>
-#include <stubs_process_manager.h>
-#include <stubs_serial.h>
-#include <stubs_sleep.h>
-#include <stubs_syscalls.h>
-#include <stubs_task_wdt.h>
-#include <stubs_vibe_score.h>
-#include <stubs_window_manager.h>
-#include <stubs_window_stack.h>
 
 // Music service fake
 /////////////////////
@@ -364,6 +339,17 @@ void test_music__playing_long_text(void) {
   s_music_play_state = MusicPlayStatePlaying;
   s_music_track_pos_ms = 754 * 1000;
   s_music_track_length_ms = 3945 * 1000;
+  s_music_progress_supported = true;
+
+  prv_launch_app_and_render();
+  cl_check(gbitmap_pbi_eq(&s_ctx.dest_bitmap, TEST_PBI_FILE));
+}
+
+void test_music__playing_emoji(void) {
+  prv_set_now_playing("Heaven \xF0\x9F\x98\x80\xF0\x9F\x8E\xB8", "The Cure \xF0\x9F\x98\x8E");
+  s_music_play_state = MusicPlayStatePlaying;
+  s_music_track_pos_ms = 75 * 1000;
+  s_music_track_length_ms = 245 * 1000;
   s_music_progress_supported = true;
 
   prv_launch_app_and_render();

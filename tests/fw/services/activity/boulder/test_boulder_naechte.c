@@ -188,11 +188,11 @@ void test_boulder_naechte__puffer_ausserhalb_der_app_beenden_sie(void) {
   prv_kernel_bg();
   static uint8_t kern[512];
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_naechte((BoulderNaechte *)kern));
+  cl_assert_panic(sys_boulder_naechte((BoulderNaechte *)kern));
   prv_app_abbruch();
   // Ein Byte zu wenig am Ende des App-RAMs.
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_naechte(
+  cl_assert_panic(sys_boulder_naechte(
       (BoulderNaechte *)&s_app_ram[sizeof(s_app_ram) - sizeof(BoulderNaechte) + 1]));
   prv_app_abbruch();
   // Gerade passend geht.

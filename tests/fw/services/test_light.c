@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include <pbl/drivers/backlight.h>
+#include <pbl/kernel/assert.h>
 #include <pbl/services/light.h>
 #include <pbl/util/math.h>
 #include <pbl/util/size.h>
@@ -9,22 +10,9 @@
 #include <board/board.h>
 #include <clar.h>
 #include <fake_new_timer.h>
-#include <system/passert.h>
 
 // Stubs
 ///////////////////////////////////////////////////////////
-#include <stubs_ambient_light.h>
-#include <stubs_analytics.h>
-#include <stubs_battery_monitor.h>
-#include <stubs_events.h>
-#include <stubs_fonts.h>
-#include <stubs_logging.h>
-#include <stubs_low_power.h>
-#include <stubs_mutex.h>
-#include <stubs_passert.h>
-#include <stubs_print.h>
-#include <stubs_rtc.h>
-#include <stubs_serial.h>
 
 // the time that the backlight remains on but there is zero user interaction
 extern const uint32_t INACTIVE_LIGHT_TIMEOUT_MS;
@@ -60,15 +48,19 @@ void backlight_set_enabled(bool enabled) {
 void backlight_set_ambient_sensor_enabled(bool enabled) {
 }
 
-void backlight_set_brightness(uint8_t brightness) {
+const struct pbl_backlight *const BACKLIGHT = nullptr;
+
+int pbl_backlight_set_brightness(const struct pbl_backlight *bl, uint8_t brightness) {
   s_backlight_brightness = brightness;
+  return 0;
 }
 
-uint8_t backlight_get_level(uint8_t brightness) {
+uint8_t pbl_backlight_get_level(const struct pbl_backlight *bl, uint8_t brightness) {
   return brightness;
 }
 
-void backlight_refresh(void) {
+int pbl_backlight_refresh(const struct pbl_backlight *bl) {
+  return 0;
 }
 
 bool backlight_is_motion_enabled(void) {
@@ -311,7 +303,8 @@ void test_light__touch_hold_released_on_app_teardown(void) {
   light_touch_down();
   check_on();
 
-  light_reset_user_controlled();
+  light_touch_up();
+  light_reset_user_controlled_by_task(PebbleTask_App);
 
   check_on_timed_and_consume();
 }

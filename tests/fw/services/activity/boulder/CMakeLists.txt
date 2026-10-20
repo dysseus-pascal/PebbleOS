@@ -42,8 +42,6 @@ pbl_clar_test(test_boulder_activity_algorithm_kraepelin
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
     fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     fw/services/regular_timer/service.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/filesystem/flash_translation.c
@@ -65,8 +63,6 @@ pbl_clar_test(test_boulder_glue
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
     fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     fw/services/regular_timer/service.c
     fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c
     fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c
@@ -94,8 +90,6 @@ set(boulder_glue_umfeld
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
     fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     fw/services/regular_timer/service.c
     fw/services/filesystem/flash_translation.c
     fw/services/filesystem/pfs.c
@@ -431,8 +425,6 @@ pbl_clar_test(test_boulder_woche
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
     fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     fw/services/regular_timer/service.c
     fw/services/activity/activity.c
     fw/services/activity/activity_metrics.c
@@ -446,7 +438,6 @@ pbl_clar_test(test_boulder_woche
     fw/services/settings/settings_file.c
     fw/services/settings/settings_raw_iter.c
     fw/shell/normal/prefs.c
-    tests/stubs/stubs_i18n.c
     tests/fakes/fake_accel_service.c
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c

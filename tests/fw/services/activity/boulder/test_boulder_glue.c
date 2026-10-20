@@ -12,7 +12,7 @@
 
 #include "applib/accel_service.h"
 #include "applib/data_logging.h"
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
@@ -38,14 +38,7 @@
 
 #include "clar.h"
 
-#include "stubs_analytics.h"
-#include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
-#include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_passert.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_accel_service.h"
 #include "fake_new_timer.h"
@@ -203,7 +196,7 @@ void __wrap_boulder_kalg_minute_stats(KAlgState *state, uint16_t *vmc, uint8_t *
 uint32_t light_get_ambient_lux(void) {
   return 64;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 static bool s_geladen;
@@ -405,8 +398,8 @@ static const AlgMinuteDLSSample *prv_dls_minute(time_t utc) {
 
 // =============================================================================================
 void test_boulder_glue__initialize(void) {
-  struct tm start = {.tm_hour = 9, .tm_mday = 1, .tm_mon = 0, .tm_year = 115};
-  s_t0 = mktime(&start);
+  struct pbl_tm start = {.tm_hour = 9, .tm_mday = 1, .tm_mon = 0, .tm_year = 115};
+  s_t0 = pbl_mktime(&start);
   fake_rtc_init(100, s_t0);
   fake_spi_flash_init(0, 0x1000000);
   pfs_init(false);

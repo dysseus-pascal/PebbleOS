@@ -58,7 +58,7 @@
 #include "shell/prefs_private.h"
 #include "syscall/syscall_internal.h"
 #include <pbl/cron/cron.h>
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 
 #include <setjmp.h>
@@ -68,31 +68,11 @@
 
 #include "clar.h"
 
-#include "stubs_activity_insights.h"
 #define alarm_get_next_enabled_alarm stubs_alarm_get_next_enabled_alarm
-#include "stubs_alarm.h"
 #undef alarm_get_next_enabled_alarm
-#include "stubs_analytics.h"
-#include "stubs_app_db.h"
-#include "stubs_app_glance_db.h"
-#include "stubs_contacts_db.h"
-#include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
-#include "stubs_ios_notif_pref_db.h"
-#include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_notif_db.h"
-#include "stubs_passert.h"
-#include "stubs_pin_db.h"
-#include "stubs_prefs_db.h"
-#include "stubs_reminder_db.h"
 #define settings_blob_db_read stubs_settings_blob_db_read
-#include "stubs_settings_blob_db.h"
 #undef settings_blob_db_read
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
-#include "stubs_watch_app_prefs_db.h"
-#include "stubs_weather_db.h"
 
 #include "fake_accel_service.h"
 #include "fake_events.h"
@@ -259,34 +239,32 @@ void *__wrap_kernel_zalloc_check(size_t bytes) {
 }
 
 // =============================================================================================
-// Rechte und Puffer (T2.3): Ein Aufruf "aus der App" hat erhoehte Rechte; ihre Puffer muessen
-// ganz im App-RAM liegen, sonst endet die App (syscall_failed).
+// Rechte und Puffer (T2.3): Ein Aufruf "aus der App" kommt ohne Systemrechte; ihre Puffer muessen
+// ganz im App-RAM liegen, sonst endet die App (pbl_syscall_fail).
 
 static uint8_t s_app_ram[4096] __attribute__((aligned(8)));
 static bool s_erhoeht;
 static int s_puffer_geprueft;
 
-bool syscall_internal_check_return_address(void *ret_addr) {
+bool arch_syscall_returns_to_user(void *ret_addr) {
   return s_erhoeht;
 }
 
-[[noreturn]] void syscall_failed(void) {
+[[noreturn]] void pbl_syscall_fail(void) {
   PBL_ASSERTN(false);
   while (1) {
   }
 }
 
-// Wie die Uhr (syscall_internal.c): Das erste und das letzte Byte muessen im App-RAM liegen, das
-// letzte in 32 Bit gerechnet (buf + num_bytes - 1 laeuft dort um). Relativ zum App-RAM gerechnet,
-// damit der Ueberlauf auf dem 64-Bit-Host derselbe ist wie auf der Uhr.
-void syscall_assert_userspace_buffer(const void *buf, size_t num_bytes) {
+// Wie die Uhr (kernel/syscall.c): Der Puffer beginnt im App-RAM und hat darin bis zu seinem Ende
+// Platz, ohne Rechnen ueber das Ende hinaus.
+void pbl_syscall_verify_user(const void *buf, size_t num_bytes) {
   s_puffer_geprueft++;
   const uintptr_t a = (uintptr_t)buf;
   const uintptr_t start = (uintptr_t)s_app_ram;
-  const uint32_t groesse = sizeof(s_app_ram);
-  if (a < start || a - start >= groesse ||
-      (uint32_t)((uint32_t)(a - start) + (uint32_t)num_bytes - 1u) >= groesse) {
-    syscall_failed();
+  const uintptr_t ende = start + sizeof(s_app_ram);
+  if (a < start || a > ende || num_bytes > ende - a) {
+    pbl_syscall_fail();
   }
 }
 
@@ -558,7 +536,7 @@ void activity_private_settings_close(SettingsFile *file) {
 uint32_t light_get_ambient_lux(void) {
   return 64;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 BatteryChargeState battery_get_charge_state(void) {
@@ -827,7 +805,7 @@ static bool prv_s4(uint8_t stufe) {
   return r;
 }
 
-// Nach einem Abbruch (syscall_failed) wieder als KernelBG.
+// Nach einem Abbruch (pbl_syscall_fail) wieder als KernelBG.
 static void prv_app_abbruch(void) {
   s_im_syscall = false;
   s_erhoeht = false;

@@ -560,7 +560,7 @@ void app_event_loop(void) {
     if (*t == 'm' || *t == 'M') {
       // 'M': der Aufruf, den Pebble beim Anmelden und bei 12/24 h macht, ohne MINUTE_UNIT.
       cl_assert(s_minute != NULL);
-      struct tm zeit = {0};
+      struct pbl_tm zeit = {0};
       s_minute(&zeit, (*t == 'm') ? MINUTE_UNIT : 0);
     } else if (*t == 'n') {
       prv_timer_ab(BH_NACHLADEN_MS);

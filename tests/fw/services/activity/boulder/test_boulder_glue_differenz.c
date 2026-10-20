@@ -15,7 +15,7 @@
 
 #include "applib/accel_service.h"
 #include "applib/data_logging.h"
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
@@ -54,15 +54,7 @@ extern char *strdup(const char *s);
 
 #include "clar.h"
 
-#include "stubs_analytics.h"
-#include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
-#include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_accel_service.h"
 #include "fake_new_timer.h"
@@ -119,7 +111,7 @@ static bool s_geladen;
 uint32_t light_get_ambient_lux(void) {
   return s_licht * ALG_RAW_LIGHT_SENSOR_DIVIDE_BY;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 BatteryChargeState battery_get_charge_state(void) {
@@ -350,8 +342,8 @@ static void prv_lauf(bool historie_lesen) {
 
 // =============================================================================================
 void test_boulder_glue_differenz__initialize(void) {
-  struct tm start = {.tm_hour = 6, .tm_mday = 2, .tm_mon = 2, .tm_year = 116};
-  fake_rtc_init(100, mktime(&start));
+  struct pbl_tm start = {.tm_hour = 6, .tm_mday = 2, .tm_mon = 2, .tm_year = 116};
+  fake_rtc_init(100, pbl_mktime(&start));
   fake_spi_flash_init(0, 0x1000000);
   pfs_init(false);
   pfs_format(false);

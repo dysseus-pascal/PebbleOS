@@ -20,12 +20,6 @@
 #include <fake_rtc.h>
 #include <fake_system_task.h>
 #include <services/hrm/hrm_manager.h>
-#include <stubs_analytics.h>
-#include <stubs_event_service_client.h>
-#include <stubs_logging.h>
-#include <stubs_mutex.h>
-#include <stubs_passert.h>
-#include <stubs_worker_manager.h>
 
 // -----------------------------------------------------------------------------
 // PBL_T_STATIC functions
@@ -151,7 +145,7 @@ struct pbl_msgq *pebble_task_get_to_queue(PebbleTask task) {
     case PebbleTask_KernelBackground:
       return nullptr;
     default:
-      WTF;
+      pbl_panic();
   }
 }
 
@@ -858,8 +852,7 @@ void test_hrm_manager__set_update_internal(void) {
 
   // Change update interval and expiration
   const uint16_t expire_b_s = 2 * PBL_SEC_PER_MIN;
-  // TODO: PBL-37298 Support subscribing to different data rates
-  uint32_t update_interval_b_s = 1;
+  uint32_t update_interval_b_s = 5;
   sys_hrm_manager_set_update_interval(session_ref, update_interval_b_s, expire_b_s);
   cl_assert(prv_get_subscriber_state_from_ref(session_ref) == state);
   cl_assert(state->update_interval_s == update_interval_b_s);

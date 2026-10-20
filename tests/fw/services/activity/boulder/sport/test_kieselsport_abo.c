@@ -26,12 +26,7 @@
 #include "fake_system_task.h"
 
 #include "stubs_accel_manager.h"
-#include "stubs_analytics.h"
-#include "stubs_evented_timer.h"
-#include "stubs_hexdump.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
 
 // T2.2 (Spezifikation Schritt 2, 6.1; F2 = A): die HRM-Abos im Training gegen den ECHTEN
 // hrm_manager.c. Kieselsports Dienst mit seiner echten Plattform und Pebbles echter Workout-Dienst

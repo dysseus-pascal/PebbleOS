@@ -529,10 +529,10 @@ void test_boulder_herz__puffer_ausserhalb_der_app_beenden_sie(void) {
   prv_kernel_bg();
   static uint8_t kern[512];
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_herz((BoulderHerz *)kern));
+  cl_assert_panic(sys_boulder_herz((BoulderHerz *)kern));
   prv_app_abbruch();
   prv_app_beginn();
-  cl_assert_passert(
+  cl_assert_panic(
       sys_boulder_herz((BoulderHerz *)&s_app_ram[sizeof(s_app_ram) - sizeof(BoulderHerz) + 1]));
   prv_app_abbruch();
   prv_app_beginn();
@@ -546,10 +546,10 @@ void test_boulder_herz__puffer_ausserhalb_der_app_beenden_sie(void) {
   cl_assert_equal_i(s_puffer_geprueft, vorher + 1);
   // S7 ebenso.
   prv_app_beginn();
-  cl_assert_passert(sys_boulder_woche((BoulderWoche *)kern));
+  cl_assert_panic(sys_boulder_woche((BoulderWoche *)kern));
   prv_app_abbruch();
   prv_app_beginn();
-  cl_assert_passert(
+  cl_assert_panic(
       sys_boulder_woche((BoulderWoche *)&s_app_ram[sizeof(s_app_ram) - sizeof(BoulderWoche) + 1]));
   prv_app_abbruch();
   // Gezaehlt sind S6, die zwei abgebrochenen S7 und dieses.

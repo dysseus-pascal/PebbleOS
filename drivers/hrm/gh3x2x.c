@@ -19,15 +19,14 @@
 #include <gh_demo_inner.h>
 #include <goodix_hba.h>
 #include <kernel/events.h>
-#include <kernel/util/delay.h>
 #endif // CONFIG_GH3X2X_ALGO
 
 PBL_LOG_MODULE_DEFINE(driver_hrm_gh3x2x, CONFIG_DRIVER_HRM_LOG_LEVEL);
 
 void gh3026_reset_pin_ctrl(uint8_t pin_level) {
-#if GH3X2X_RESET_PIN_CTRLBY_NPM1300
-  NPM1300_OPS.gpio_set(Npm1300_Gpio3, pin_level);
-#endif
+  if (pbl_gpio_is_connected(&HRM->reset)) {
+    pbl_gpio_set_raw(&HRM->reset, pin_level != 0U);
+  }
 }
 
 #ifdef CONFIG_GH3X2X_ALGO
@@ -67,17 +66,17 @@ void gh3026_i2c_init(void) {
 }
 
 void gh3026_i2c_write(uint8_t device_id, const uint8_t write_buffer[], uint16_t length) {
-  i2c_use(HRM->i2c);
-  i2c_write_block(HRM->i2c, length, write_buffer);
-  i2c_release(HRM->i2c);
+  pbl_i2c_use(HRM->i2c);
+  pbl_i2c_write_block(HRM->i2c, length, write_buffer);
+  pbl_i2c_release(HRM->i2c);
 }
 
 void gh3026_i2c_read(uint8_t device_id, const uint8_t write_buffer[], uint16_t write_length,
                      uint8_t read_buffer[], uint16_t read_length) {
-  i2c_use(HRM->i2c);
-  i2c_write_block(HRM->i2c, write_length, write_buffer);
-  i2c_read_block(HRM->i2c, read_length, read_buffer);
-  i2c_release(HRM->i2c);
+  pbl_i2c_use(HRM->i2c);
+  pbl_i2c_write_block(HRM->i2c, write_length, write_buffer);
+  pbl_i2c_read_block(HRM->i2c, read_length, read_buffer);
+  pbl_i2c_release(HRM->i2c);
 }
 
 static void prv_conv_fs4g_mg_to_lsb512(AccelRawData *data) {
@@ -104,7 +103,7 @@ static void gh3026_int_callback_function(void *context) {
   Gh3x2xDemoInterruptProcess();
 }
 
-static void gh3026_int_irq_callback(void) {
+static void gh3026_int_irq_callback(void *arg) {
   hal_gh3x2x_int_handler_call_back();
 
   if (s_hrm_int_flag == false) {
@@ -115,8 +114,33 @@ static void gh3026_int_irq_callback(void) {
 }
 
 void gh3026_int_pin_init(void) {
-  exti_configure_pin(HRM->int_exti, ExtiTrigger_Falling, gh3026_int_irq_callback);
-  exti_enable(HRM->int_exti);
+  int ret;
+
+  ret = pbl_device_init(&HRM->int_irq.intc->dev);
+  if (ret != 0) {
+    PBL_LOG_ERR("Interrupt controller unavailable");
+    return;
+  }
+
+  // Called again on each sensor initialization
+  (void)pbl_intc_free(&HRM->int_irq);
+
+  ret = pbl_gpio_configure(&HRM->int_input, PBL_GPIO_INPUT);
+  if (ret != 0) {
+    PBL_LOG_ERR("Could not configure the interrupt input (%d)", ret);
+    return;
+  }
+
+  ret = pbl_intc_request(&HRM->int_irq, gh3026_int_irq_callback, nullptr);
+  if (ret != 0) {
+    PBL_LOG_ERR("Could not request the interrupt (%d)", ret);
+    return;
+  }
+
+  ret = pbl_intc_enable(&HRM->int_irq);
+  if (ret != 0) {
+    PBL_LOG_ERR("Could not enable the interrupt (%d)", ret);
+  }
 }
 
 void gh3x2x_print_fmt(const char *fmt, ...) {
@@ -503,6 +527,10 @@ void gh3x2x_set_work_mode(int32_t mode) {
 // HRM interface
 
 void hrm_init(HRMDevice *dev) {
+  if (pbl_gpio_is_connected(&dev->reset)) {
+    pbl_gpio_configure(&dev->reset, PBL_GPIO_OUTPUT);
+  }
+
 #ifdef CONFIG_GH3X2X_ALGO
   int ret;
 
@@ -514,7 +542,7 @@ void hrm_init(HRMDevice *dev) {
   }
 #else
   gh3026_reset_pin_ctrl(0);
-  gpio_input_init_pull_up_down(&dev->int_input, GPIO_PuPd_DOWN);
+  pbl_gpio_configure(&dev->int_input, PBL_GPIO_INPUT | PBL_GPIO_PULL_DOWN);
 #endif
 
   dev->state->is_wear = false;

@@ -1,14 +1,16 @@
 /* SPDX-FileCopyrightText: 2025 Core Devices LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
+#include <pbl/drivers/gpio/nrf5.h>
 #include <pbl/drivers/pwm.h>
+#include <pbl/kernel/assert.h>
+#include <pbl/kernel/fatal.h>
 
 #include <nrfx.h>
-#include <system/passert.h>
 
 void pwm_init(const PwmConfig *pwm, uint32_t resolution, uint32_t frequency) {
   nrfx_pwm_config_t config =
-      NRFX_PWM_DEFAULT_CONFIG(pwm->output.gpio_pin, NRF_PWM_PIN_NOT_CONNECTED,
+      NRFX_PWM_DEFAULT_CONFIG(pbl_gpio_nrf5_pin(&pwm->output), NRF_PWM_PIN_NOT_CONNECTED,
                               NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED);
   // this is hokey and imprecise, but oh well
   if (frequency >= 16000000)
@@ -28,7 +30,7 @@ void pwm_init(const PwmConfig *pwm, uint32_t resolution, uint32_t frequency) {
   else if (frequency >= 125000)
     config.base_clock = NRF_PWM_CLK_125kHz;
   else
-    WTF;
+    pbl_panic();
   config.count_mode = NRF_PWM_MODE_UP;
   config.top_value = resolution;
   config.load_mode = NRF_PWM_LOAD_COMMON;

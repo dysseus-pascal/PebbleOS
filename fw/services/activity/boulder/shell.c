@@ -118,16 +118,34 @@ static int prv_wecker(const struct pbl_shell *sh, size_t argc, char **argv) {
   return (id == ALARM_INVALID_ID) ? -1 : 0;
 }
 
-#include "syscall/syscall_internal.h"
+#include "kernel/pebble_tasks.h"
+#include <pbl/kernel/thread.h>
 
 // Wie viele Byte der Syscall-Stapel von App und Worker seit dem Boot nie benutzt wurden (2 KiB
-// je Stapel, syscall_internal.c). Nur Syscalls aus Code ohne Systemrechte laufen dort; der
-// Tiefstand ist also der tiefste Syscall einer solchen App seit dem Boot. Darum misst T2.5 nach
-// frischem Boot.
+// je Stapel, pebble_tasks.c). Nur Syscalls aus Code ohne Systemrechte laufen dort; der Tiefstand
+// ist also der tiefste Syscall einer solchen App seit dem Boot. Darum misst T2.5 nach frischem
+// Boot. Gezaehlt wird wie Pebbles Messung fuer die Analytics: vom Boden bis zum ersten
+// beschriebenen Wort. Die Lage des Stapels nennt pebble_task_attr_set_syscall_stack, auch wenn
+// gerade keine App laeuft.
+static unsigned prv_stapel_frei(PebbleTask task) {
+#ifdef CONFIG_USERSPACE
+  struct pbl_thread_attr attr = {};
+  pebble_task_attr_set_syscall_stack(task, &attr);
+  const uint32_t *wort = attr.syscall_stack;
+  const size_t worte = attr.syscall_stack_size / sizeof(uint32_t);
+  size_t i = 0;
+  while (i < worte && wort[i] == 0) {
+    i++;
+  }
+  return (unsigned)(i * sizeof(uint32_t));
+#else
+  return 0;
+#endif
+}
+
 static int prv_stapel(const struct pbl_shell *sh, size_t argc, char **argv) {
   pbl_shell_print(sh, "Syscall-Stapel nie benutzt: App %u B, Worker %u B",
-                  (unsigned)syscall_app_stack_free_bytes(),
-                  (unsigned)syscall_worker_stack_free_bytes());
+                  prv_stapel_frei(PebbleTask_App), prv_stapel_frei(PebbleTask_Worker));
   return 0;
 }
 

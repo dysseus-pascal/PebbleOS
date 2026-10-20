@@ -15,6 +15,7 @@
 #include "kernel/event_loop.h"
 #include "kernel/pebble_tasks.h"
 #include "pbl/drivers/rtc.h"
+#include "pbl/kernel/assert.h"
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/boulder/kalorien.h"
 #include "pbl/services/activity/boulder/nacht.h"
@@ -32,7 +33,6 @@
 #include "pbl/util/units.h"
 #include "process_management/app_install_manager.h"
 #include "process_management/app_manager.h"
-#include "system/passert.h"
 
 #ifdef CONFIG_MAG
 #include "applib/compass_service.h"

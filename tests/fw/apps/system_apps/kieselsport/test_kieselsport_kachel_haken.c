@@ -7,11 +7,7 @@
 #include "apps/system/launcher/default/app_glance.h"
 #include "pbl/services/activity/boulder/sport/kieselsport.h"
 
-#include "stubs_app_timer.h"
-#include "stubs_event_service_client.h"
-#include "stubs_kino_player.h"
 #include "stubs_logging.h"
-#include "stubs_passert.h"
 
 #include <stdlib.h>
 

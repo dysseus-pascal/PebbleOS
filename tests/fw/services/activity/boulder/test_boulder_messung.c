@@ -43,15 +43,7 @@
 #include "fake_system_task.h"
 
 #include "stubs_accel_manager.h"
-#include "stubs_hexdump.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
-#include "stubs_analytics.h"
-#include "stubs_bluetooth_persistent_storage.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_worker_manager.h"
 
 #include <string.h>
 

@@ -16,24 +16,11 @@
 #include <fake_rtc.h>
 #include <pebble_asserts.h>
 #include <shell/system_theme.h>
+#include <stubs_app_state.h>
+#include <stubs_fonts.h>
 
 // Stubs
 /////////////////////
-#include <stubs_app_state.h>
-#include <stubs_app_timer.h>
-#include <stubs_click.h>
-#include <stubs_fonts.h>
-#include <stubs_graphics.h>
-#include <stubs_heap.h>
-#include <stubs_logging.h>
-#include <stubs_passert.h>
-#include <stubs_pbl_malloc.h>
-#include <stubs_pebble_tasks.h>
-#include <stubs_process_manager.h>
-#include <stubs_system_theme.h>
-#include <stubs_ui_window.h>
-#include <stubs_unobstructed_area.h>
-#include <stubs_vibes.h>
 
 // ---------------------------------------------------------------------------------------------
 // Touch-navigation harness (CONFIG_TOUCH), mirroring test_menu_layer.c: menu_layer.c resolves the
@@ -46,6 +33,10 @@ bool sys_touch_nav_enabled(void) {
 }
 bool sys_touch_app_nav_active(void) {
   return false;
+}
+
+bool menu_text_scroll_is_allowed(void) {
+  return true;
 }
 
 static TouchNavState s_touch_nav_state;
@@ -139,7 +130,13 @@ void menu_cell_basic_draw_custom(GContext *ctx, const Layer *cell_layer, GFont c
 int16_t menu_cell_basic_horizontal_inset(void) {
   return 8;
 }
+int16_t menu_cell_basic_horizontal_inset_for_size(PreferredContentSize size) {
+  return 8;
+}
 int16_t menu_cell_small_cell_height(void) {
+  return 24;
+}
+int16_t menu_cell_small_cell_height_for_size(PreferredContentSize size) {
   return 24;
 }
 int16_t menu_cell_basic_cell_height(void) {

@@ -190,7 +190,7 @@ static void prv_nachladen(void *kontext) {
   }
 }
 
-static void prv_minute(struct tm *zeit, TimeUnits einheiten) {
+static void prv_minute(struct pbl_tm *zeit, TimeUnits einheiten) {
   // Pebble ruft den Handler gleich beim Anmelden und bei einem Wechsel 12/24 h mit 0 (applib/
   // tick_timer_service.c). Beim Start hat Phase 1 eben gelesen; die Uhrzeit-Einstellung liest der
   // naechste Minutentakt mit.

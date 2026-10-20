@@ -127,7 +127,7 @@ time_t sys_get_time(void) {
   s_gelesen[Uhr]++;
   return s_jetzt;
 }
-struct tm *sys_localtime_r(const time_t *timep, struct tm *result) {
+struct pbl_tm *sys_localtime_r(const time_t *timep, struct pbl_tm *result) {
   // 12.10.2026, 14:05 Ortszeit, Sommerzeit Mitteleuropa
   memset(result, 0, sizeof(*result));
   result->tm_year = 126;

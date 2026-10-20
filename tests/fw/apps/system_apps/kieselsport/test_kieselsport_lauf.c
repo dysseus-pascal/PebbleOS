@@ -199,7 +199,7 @@ void symbol_sport(GContext *ctx, Sportart art, GPoint mitte, int16_t groesse, GC
 }
 void clock_copy_time_string(char *buffer, uint8_t size) { cl_fail("gezeichnet"); }
 bool clock_is_24h_style(void) { return true; }
-struct tm *pbl_override_localtime(const time_t *timep) {
+struct pbl_tm *pbl_override_localtime(const time_t *timep) {
   cl_fail("gezeichnet");
   return NULL;
 }

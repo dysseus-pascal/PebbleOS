@@ -23,7 +23,7 @@ static int32_t prv_metrik(ActivityMetric metrik) {
 
 static void prv_uhr(BhDaten *d) {
   d->jetzt = sys_get_time();
-  struct tm ort = {0};
+  struct pbl_tm ort = {0};
   sys_localtime_r(&d->jetzt, &ort);
   d->heute = bh_tag(ort.tm_year, ort.tm_yday);
   d->minute = (uint16_t)(ort.tm_hour * 60 + ort.tm_min);
@@ -88,7 +88,7 @@ static void prv_pebble(BhDaten *d) {
 }
 
 int32_t bh_ortsversatz(time_t utc) {
-  struct tm ort = {0};
+  struct pbl_tm ort = {0};
   sys_localtime_r(&utc, &ort);
   return ort.tm_gmtoff;
 }

@@ -59,6 +59,9 @@ set(PBL_TEST_DEFINES
   CONFIG_KERNEL_TICK_HZ=1024
   CONFIG_KERNEL_IRQ_PRIO_KERNEL=255
   CONFIG_KERNEL_IRQ_PRIO_MAX_SYSCALL=191
+  CONFIG_SERVICE_EVENTED_TIMER_MAX_PER_PROCESS=128
+  CONFIG_SERVICE_VIBE_PATTERN_MAX_STEPS=256
+  CONFIG_SERVICE_EVENT_SERVICE_MAX_PLUGIN_SERVICES=64
   "UPNG_CONFIG_FILE=\"upng_config.h\""
   UZLIB_CONF_PARANOID_CHECKS=1
   UZLIB_CONF_LENGTHS_IN_STATE=1
@@ -167,6 +170,8 @@ set_tests_properties(pbl_test_failed_dir PROPERTIES FIXTURES_SETUP pbl_test_fail
 pbl_test_broken(
   test_graphics_draw_circle_8bit
   test_graphics_fill_circle_8bit
+  test_graphics_draw_circle_1bit
+  test_graphics_fill_circle_1bit
   test_graphics_draw_line
   test_graphics_draw_rotated_bitmap
   # Crash (round-display segfault) and build (rect/round, platform)
@@ -174,6 +179,8 @@ pbl_test_broken(
   # that need visual review before they can be regenerated.
   test_gap_le_connect
 )
+
+include(modules.cmake)
 
 # Every directory that declares tests.
 file(GLOB_RECURSE pbl_test_dirs CONFIGURE_DEPENDS

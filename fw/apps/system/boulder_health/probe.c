@@ -269,7 +269,7 @@ static void prv_daten(BhProbe *probe) {
   prv_benutzt(probe, Bh24h, clock_is_24h_style());
   const time_t jetzt = sys_get_time();
   prv_benutzt(probe, BhUhrzeit, (int32_t)jetzt);
-  struct tm ortszeit = {0};
+  struct pbl_tm ortszeit = {0};
   sys_localtime_r(&jetzt, &ortszeit);
   prv_benutzt(probe, BhOrtszeit, ortszeit.tm_hour * 100 + ortszeit.tm_min);
   prv_benutzt(probe, BhTicks, (int32_t)sys_get_ticks());
@@ -439,7 +439,7 @@ static void prv_app_timer(void *daten) {
   prv_benutzt(prv_probe(), BhAppTimer, 0);
 }
 
-static void prv_tick(struct tm *zeit, TimeUnits einheiten) {
+static void prv_tick(struct pbl_tm *zeit, TimeUnits einheiten) {
   prv_benutzt(prv_probe(), BhTickTimer, zeit->tm_sec);
 }
 

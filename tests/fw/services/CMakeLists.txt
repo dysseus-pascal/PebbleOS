@@ -15,14 +15,14 @@ add_custom_command(
 )
 add_custom_target(pbl_timezone_fixture DEPENDS ${timezone_fixture})
 
+pbl_clar_test(test_language_pack_protocol
+  SOURCES fw/kernel/language_pack_protocol.c
+)
+
 pbl_clar_test(test_pfs
+  MODULES pfs
   SOURCES
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
     fw/system/hexdump.c
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
-    tests/fakes/fake_spi_flash.c
     tests/fakes/fake_rtc.c
   PLATFORMS obelix
   DEFINES DUMA_DISABLED
@@ -43,41 +43,48 @@ pbl_clar_test(test_put_bytes
   OVERRIDES dummy_board
 )
 
+pbl_clar_test(test_language_pack_storage
+  SOURCES
+    fw/services/put_bytes/put_bytes_storage_file.c
+    fw/services/i18n/i18n.c
+    fw/resource/resource.c
+    fw/resource/resource_storage.c
+    fw/resource/resource_storage_builtin.c
+    fw/resource/resource_storage_file.c
+    fw/resource/resource_storage_flash.c
+    fw/services/filesystem/flash_translation.c
+    fw/services/filesystem/pfs.c
+    fw/services/filesystem/app_file.c
+    fw/flash_region/flash_region.c
+    fw/flash_region/filesystem_regions.c
+    drivers/flash/flash_crc.c
+    tests/fakes/fake_bootbits.c
+    tests/fakes/fake_spi_flash.c
+    tests/fakes/fake_rtc.c
+    tests/fixtures/resources/builtin_resources.auto.c
+    tests/fixtures/resources/pfs_resource_table.c
+  OVERRIDES dummy_board
+)
+
 pbl_clar_test(test_tick_timer
   SOURCES
     fw/services/tick_timer/service.c
 )
 
 pbl_clar_test(test_cron
+  MODULES time
   SOURCES
     tests/fakes/fake_rtc.c
     subsys/cron/cron.c
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
 )
 
 pbl_clar_test(test_contacts
+  MODULES settings timeline_item time rand
   SOURCES
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
     fw/services/contacts/attributes_address.c
     fw/services/contacts/contacts.c
     fw/services/blob_db/contacts_db.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
-    fw/services/timeline/item.c
-    fw/services/timeline/attributes_actions.c
-    fw/services/timeline/attribute_group.c
-    fw/services/timeline/attribute.c
-    fw/kernel/rand.c
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
   OVERRIDES dummy_board
 )
 
@@ -148,6 +155,7 @@ pbl_clar_test(test_regular_timer
   SOURCES
     fw/services/regular_timer/service.c
     tests/fakes/fake_rtc.c
+    fw/services/clock/time.c
 )
 
 pbl_clar_test(test_debounced_connection_service
@@ -156,46 +164,26 @@ pbl_clar_test(test_debounced_connection_service
     tests/fakes/fake_rtc.c
     tests/fakes/fake_session.c
     fw/services/debounced_connection_service/service.c
+    fw/services/clock/time.c
 )
 
 pbl_clar_test(test_timeline_item
+  MODULES timeline_item time rand
   SOURCES
     tests/fakes/fake_rtc.c
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
-    fw/services/timeline/item.c
-    fw/services/timeline/attributes_actions.c
-    fw/services/timeline/attribute_group.c
-    fw/services/timeline/attribute.c
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
 )
 
 pbl_clar_test(test_clock
+  MODULES resources time
   SOURCES
     fw/services/i18n/i18n.c
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
-    fw/resource/resource.c
-    fw/resource/resource_storage.c
-    fw/resource/resource_storage_builtin.c
-    fw/resource/resource_storage_file.c
-    fw/resource/resource_storage_flash.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
-    fw/services/filesystem/app_file.c
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     tests/fakes/fake_bootbits.c
-    drivers/flash/flash_crc.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_events.c
-    tests/fakes/fake_spi_flash.c
-    tests/fixtures/resources/builtin_resources.auto.c
-    tests/fixtures/resources/pfs_resource_table.c
     fw/services/timezone_database/service.c
     fw/services/clock/service.c
+    fw/applib/pbl_std/strftime.c
+    fw/applib/pbl_std/timelocal.c
   OVERRIDES dummy_board
 )
 
@@ -207,56 +195,22 @@ pbl_clar_test(test_timezone_database
 )
 
 pbl_clar_test(test_wakeup
+  MODULES resources settings rand
   SOURCES
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
     fw/process_management/pebble_process_info.c
-    fw/resource/resource.c
-    fw/resource/resource_storage.c
-    fw/resource/resource_storage_builtin.c
-    fw/resource/resource_storage_file.c
-    fw/resource/resource_storage_flash.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
-    fw/services/filesystem/app_file.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
     fw/services/wakeup/service.c
     tests/fakes/fake_bootbits.c
-    drivers/flash/flash_crc.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
-    tests/fixtures/resources/builtin_resources.auto.c
-    tests/fixtures/resources/pfs_resource_table.c
   OVERRIDES dummy_board
 )
 
 pbl_clar_test(test_migrate_wakeup
+  MODULES resources settings rand
   SOURCES
-    drivers/flash/flash_crc.c
-    fw/flash_region/filesystem_regions.c
-    fw/flash_region/flash_region.c
     fw/process_management/pebble_process_info.c
-    fw/resource/resource.c
-    fw/resource/resource_storage.c
-    fw/resource/resource_storage_builtin.c
-    fw/resource/resource_storage_file.c
-    fw/resource/resource_storage_flash.c
-    fw/services/filesystem/app_file.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
     fw/services/wakeup/service.c
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
     tests/fakes/fake_bootbits.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
-    tests/fixtures/resources/builtin_resources.auto.c
-    tests/fixtures/resources/pfs_resource_table.c
   OVERRIDES dummy_board
 )
 
@@ -288,9 +242,8 @@ pbl_clar_test(test_transcription
 )
 
 pbl_clar_test(test_voice_endpoint
+  MODULES rand
   SOURCES
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
     fw/services/voice/transcription.c
     fw/services/voice_endpoint/service.c
     tests/fakes/fake_session.c
@@ -299,60 +252,41 @@ pbl_clar_test(test_voice_endpoint
 )
 
 pbl_clar_test(test_app_cache
+  MODULES settings
   SOURCES
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
     fw/services/filesystem/app_file.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
     fw/services/app_cache/service.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
     tests/fakes/fake_events.c
   OVERRIDES dummy_board
 )
 
 pbl_clar_test(test_app_install_manager
+  MODULES settings rand gtypes
   SOURCES
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
     fw/resource/resource.c
     fw/resource/resource_storage.c
     fw/resource/resource_storage_builtin.c
     fw/resource/resource_storage_file.c
     fw/resource/resource_storage_flash.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
     fw/services/filesystem/app_file.c
     fw/services/app_cache/service.c
     fw/services/process_management/app_storage.c
     fw/process_management/app_install_manager.c
     fw/process_management/pebble_process_md.c
     fw/services/blob_db/app_db.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
-    fw/applib/graphics/gcolor_definitions.c
-    fw/applib/graphics/gtypes.c
     fw/process_management/pebble_process_info.c
     drivers/flash/flash_crc.c
     tests/fakes/fake_rtc.c
     tests/fixtures/resources/builtin_resources.auto.c
     tests/fakes/fake_system_app_registry_apps.c
-    tests/fakes/fake_spi_flash.c
   OVERRIDES dummy_board fake_app_registry
 )
 
 pbl_clar_test(test_app_menu_data_source
+  MODULES settings rand gtypes
   SOURCES
-    fw/applib/graphics/gcolor_definitions.c
-    fw/applib/graphics/gtypes.c
     drivers/flash/flash_crc.c
-    fw/flash_region/filesystem_regions.c
-    fw/flash_region/flash_region.c
     fw/process_management/app_install_manager.c
     fw/process_management/app_menu_data_source.c
     fw/process_management/pebble_process_info.c
@@ -365,16 +299,9 @@ pbl_clar_test(test_app_menu_data_source
     fw/services/app_cache/service.c
     fw/services/blob_db/app_db.c
     fw/services/filesystem/app_file.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
     fw/services/process_management/app_order_storage.c
     fw/services/process_management/app_storage.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
     tests/fakes/fake_system_app_registry_apps.c
     tests/fixtures/resources/builtin_resources.auto.c
   OVERRIDES dummy_board fake_app_registry
@@ -392,9 +319,8 @@ pbl_clar_test(test_process_loader_storage
 )
 
 pbl_clar_test(test_app_fetch_endpoint
+  MODULES rand
   SOURCES
-    fw/kernel/rand.c
-    third_party/tinymt/TinyMT/tinymt/tinymt32.c
     fw/services/app_fetch_endpoint/service.c
     tests/fakes/fake_events.c
     tests/fakes/fake_session.c
@@ -403,9 +329,14 @@ pbl_clar_test(test_app_fetch_endpoint
 
 pbl_clar_test(test_accel_manager
   SOURCES
+    drivers/base/device.c
+    drivers/imu/accel.c
     fw/services/accel_manager/service.c
     tests/fakes/fake_events.c
-  DEFINES CONFIG_SERVICE_ACCEL_MANAGER_BATCH_SAMPLES=25
+  DEFINES
+    CONFIG_SERVICE_ACCEL_MANAGER_BATCH_SAMPLES=25
+    CONFIG_DEVICE_LOG_LEVEL=0
+    PBL_NO_LINKER_SCRIPT
   OVERRIDES dummy_board
 )
 
@@ -424,36 +355,19 @@ pbl_clar_test(test_app_file
 )
 
 pbl_clar_test(test_do_not_disturb
+  MODULES settings time
   SOURCES
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
     fw/services/notifications/alerts_preferences.c
     fw/services/notifications/do_not_disturb.c
     subsys/cron/cron.c
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
   OVERRIDES dummy_board
 )
 
 pbl_clar_test(test_weather_service
+  MODULES settings time
   SOURCES
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
     tests/fakes/fake_rtc.c
-    tests/fakes/fake_spi_flash.c
-    fw/flash_region/flash_region.c
-    fw/flash_region/filesystem_regions.c
-    fw/services/settings/settings_file.c
-    fw/services/settings/settings_raw_iter.c
-    fw/services/filesystem/flash_translation.c
-    fw/services/filesystem/pfs.c
     fw/services/blob_db/weather_db.c
     fw/services/weather/weather_service.c
     tests/fw/services/blob_db/weather_data_shared.c
@@ -516,9 +430,7 @@ pbl_clar_test(test_app_glance_service
 )
 
 pbl_clar_test(test_clock_time
+  MODULES time
   SOURCES
-    fw/services/clock/time.c
-    lib/c/time/gmtime.c
-    lib/c/time/mktime.c
     tests/fakes/fake_rtc.c
 )

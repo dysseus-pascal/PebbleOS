@@ -10,6 +10,7 @@
 #include "stubs_logging.h"
 
 #include <setjmp.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // T5.1 (Spezifikation Schritt 2, 6.1): kalorien.c gegen Boulders Rechnung. Die Sollwerte stammen

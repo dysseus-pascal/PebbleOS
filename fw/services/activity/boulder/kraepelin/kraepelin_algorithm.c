@@ -26,8 +26,8 @@ Pebble App project.
 */
 /* Boulder: D0 Herkunft der Kopie
  *   Original: fw/services/activity/kraepelin/kraepelin_algorithm.c
- *   Commit:   daa377d8a3d5a1eda69a8d0d2f54c5b4c5b2cbcd
- *   SHA-256:  2bd08ba51370c17846d9e1f9781c749bbd626914cd4fef26e1f3c013caf2fa6d
+ *   Commit:   723a1708c26d84e2b33287d8a99793c7c19b5a60
+ *   SHA-256:  dcc838bb692c9e881218ad415b39af54364525211eb2e6edf53d20129b59794f
  *   Abweichungen nur in markierten Bloecken, Liste in fw/services/activity/boulder/HERKUNFT;
  *   tools/boulder/kopie_pruefen.py prueft beides.
  * Boulder: Ende D0 */
@@ -36,6 +36,7 @@ Pebble App project.
 #include <stdlib.h>
 #include <string.h>
 
+#include <pbl/kernel/assert.h>
 #include <pbl/logging/logging.h>
 #include <pbl/services/activity/activity.h>
 /* Boulder: D0 Includes auf die Kopie */
@@ -49,7 +50,6 @@ Pebble App project.
 #include <pbl/util/units.h>
 
 #include <applib/accel_service.h>
-#include <system/passert.h>
 
 PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 

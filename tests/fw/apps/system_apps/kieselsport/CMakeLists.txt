@@ -84,6 +84,7 @@ add_test(NAME test_boulder_apps_unbenutzt
 set(kieselsport_startmenue_quellen
   fw/apps/system/kieselsport/kieselsport.c
   fw/apps/system/workout/workout.c
+  fw/applib/ui/preferred_durations.c
   fw/applib/graphics/gcolor_definitions.c
   fw/applib/graphics/gtypes.c
   drivers/flash/flash_crc.c

@@ -23,16 +23,8 @@
 #include "pbl/services/regular_timer.h"
 #include "pbl/services/settings/settings_file.h"
 
-#include "stubs_analytics.h"
-#include "stubs_evented_timer.h"
-#include "stubs_hexdump.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
 #include "stubs_pbl_malloc.h"
-#include "stubs_rand_ptr.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_events.h"
 #include "fake_pebble_tasks.h"

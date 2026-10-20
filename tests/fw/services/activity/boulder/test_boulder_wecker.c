@@ -20,7 +20,7 @@
 
 #include "applib/data_logging.h"
 #include <pbl/cron/cron.h>
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
@@ -37,6 +37,7 @@
 #include "pbl/services/hrm/hrm_manager_private.h"
 #include "pbl/services/time.h"
 #include "pbl/util/size.h"
+#include "pbl/util/string.h"
 #include "pbl/util/units.h"
 #include "process_management/pebble_process_md.h"
 
@@ -46,29 +47,17 @@
 
 #include "clar.h"
 
-#include "stubs_activity_insights.h"
-#include "stubs_alarm_pin.h"
-#include "stubs_analytics.h"
 #include "stubs_app_install_manager.h"
-#include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
-#include "stubs_i18n.h"
-#include "stubs_irq.h"
 // Nur Warnungen und Fehler: 258 Naechte mit Info-Logs je Minute waeren ~80 MB Ausgabe.
-#define CUSTOM_LOG_INTERNAL
 #include "stubs_logging.h"
-static void log_internal(uint8_t log_level, const char *src_filename, int src_line_number,
-                         const char *fmt, va_list args) {
+void stub_log_internal(uint8_t log_level, const char *src_filename, int src_line_number,
+                       const char *fmt, va_list args) {
   if (log_level <= LOG_LEVEL_WARNING) {
     printf("%s:%d> ", GET_FILE_NAME(src_filename), src_line_number);
     vprintf(fmt, args);
     printf("\n");
   }
 }
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_accel_service.h"
 #include "fake_events.h"
@@ -100,7 +89,7 @@ void activity_private_settings_close(SettingsFile *file) {
 uint32_t light_get_ambient_lux(void) {
   return 64;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 BatteryChargeState battery_get_charge_state(void) {
@@ -1281,9 +1270,9 @@ void test_boulder_wecker__anderer_wecker_davor(void) {
     const int andere = fall ? W_STILL - 10 : W_STILL + 10;
     alarm_create(&(AlarmInfo){ .hour = (andere / 60 + 20) % 24, .minute = andere % 60,
                                .kind = ALARM_KIND_EVERYDAY, .is_smart = false });
-    struct tm ort;
+    struct pbl_tm ort;
     const time_t t_utc = s_ref.beginn_utc + (time_t)T_STILL * PBL_SEC_PER_MIN;
-    localtime_r(&t_utc, &ort);
+    pbl_localtime_r(&t_utc, &ort);
     bool tage[PBL_DAY_PER_WEEK];
     for (int t = 0; t < PBL_DAY_PER_WEEK; t++) {
       tage[t] = (t != ort.tm_wday);

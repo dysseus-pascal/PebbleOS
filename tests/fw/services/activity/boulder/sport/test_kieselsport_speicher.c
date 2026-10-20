@@ -5,6 +5,12 @@
 
 #include "fake_logging.h"
 #include "stubs_logging.h"
+// Pebbles Log-Stubs rufen stub_log_internal (tests/stubs/default/logging.c); die Erwartungen prueft
+// log_internal aus fake_logging.h.
+void stub_log_internal(uint8_t log_level, const char *src_filename, int src_line_number,
+                       const char *fmt, va_list args) {
+  log_internal(log_level, src_filename, src_line_number, fmt, args);
+}
 
 #include "services/activity/boulder/sport/plattform.h"
 #include "services/activity/boulder/sport/schluessel.h"

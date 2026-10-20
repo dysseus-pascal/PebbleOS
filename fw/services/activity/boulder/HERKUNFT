@@ -2,9 +2,9 @@
 # commit <Upstream-Commit des Originals>
 # kopie <Kopie> <Original> <SHA-256 des Originals zum Commit>
 # abweichung <Dn> <Beschreibung>
-commit 3e8d77c21d7188cfe873e8aa6312bf703f2566e3
-kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c b5442140345256c27bb33cb3259ae0587863c4b25b440f3dc27160ec90a5fdb0
-kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c 2bd08ba51370c17846d9e1f9781c749bbd626914cd4fef26e1f3c013caf2fa6d
+commit 723a1708c26d84e2b33287d8a99793c7c19b5a60
+kopie fw/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.c fw/services/activity/kraepelin/activity_algorithm_kraepelin.c ea60b42677b497e19505f1a3939068a13ea3b4b41c5e9e8afedd89f4197899b3
+kopie fw/services/activity/boulder/kraepelin/kraepelin_algorithm.c fw/services/activity/kraepelin/kraepelin_algorithm.c dcc838bb692c9e881218ad415b39af54364525211eb2e6edf53d20129b59794f
 kopie include/pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h include/pbl/services/activity/kraepelin/activity_algorithm_kraepelin.h 83b51cec41429c50e26b45bf10c45fe8a6ab721203e4d6c9cd78076ac28b31b7
 kopie include/pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h include/pbl/services/activity/kraepelin/kraepelin_algorithm.h f99811eb901f11a0175a66b67c065e1e205fce52b3ff38644f63c8d071c931b2
 abweichung D0 Herkunftsblock, Includes auf die Kopie, eigene Namen fuer kalg_* (namen.h)

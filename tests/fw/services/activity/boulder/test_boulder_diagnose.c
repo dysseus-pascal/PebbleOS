@@ -15,13 +15,7 @@
 
 #include "clar.h"
 
-#include "stubs_analytics.h"
-#include "stubs_hexdump.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_new_timer.h"
 #include "fake_rtc.h"

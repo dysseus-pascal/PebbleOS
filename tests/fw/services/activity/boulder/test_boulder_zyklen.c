@@ -13,7 +13,7 @@
 // (AP-G); die Phasen der Referenz (b26 = V2-Endfassung, AP2) sind der Bezug.
 
 #include "applib/data_logging.h"
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
@@ -45,34 +45,14 @@
 
 #include "clar.h"
 
-#include "stubs_activity_insights.h"
 // Die Weckzeit gibt der Test selbst (Ruhezeit der Anlage, AP4).
 #define alarm_get_next_enabled_alarm stubs_alarm_get_next_enabled_alarm
-#include "stubs_alarm.h"
 #undef alarm_get_next_enabled_alarm
 // Der Wecklauf (wecklauf.c) prueft test_boulder_wecker mit dem echten alarm.c; hier laeuft
 // kein Smart Alarm, die Minute hat nichts zu tun.
 void boulder_wecklauf_minute(void) {
 }
-#include "stubs_analytics.h"
-#include "stubs_hexdump.h"
-#include "stubs_hr_util.h"
-#include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-// AP8 (T8.2): Pebbles WTF beim Laden einer Liste mit Typ 8 soll der Test sehen, nicht scheitern.
-#define wtf stubs_wtf
-#include "stubs_passert.h"
-#undef wtf
-[[noreturn]] void wtf(void) {
-  if (clar_expecting_passert) {
-    clar_passert_occurred = true;
-    longjmp(clar_passert_jmp_buf, 1);
-  }
-  stubs_wtf();
-}
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_accel_service.h"
 #include "fake_new_timer.h"
@@ -96,7 +76,7 @@ void activity_private_settings_close(SettingsFile *file) {
 uint32_t light_get_ambient_lux(void) {
   return 64;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 // AP4: das Akku-Modell der Referenz (80 % um 20:00, -1 je Stunde), sonst 0.
@@ -1207,7 +1187,7 @@ static void prv_b25_liste(bool typ8) {
 }
 
 // F1: Pebble laedt b25s Liste mit Typ 8 - ungueltig fuer U:, die Liste wird in der Datei
-// genullt und die Uhr startet neu (WTF). Der zweite Start ist sauber und leer. Echter Code:
+// genullt und die Uhr startet neu (pbl_panic). Der zweite Start ist sauber und leer. Echter Code:
 // activity_sessions_prv_init.
 static void prv_pebble_typ8_boot(void) {
   SettingsFile f;
@@ -1217,7 +1197,7 @@ static void prv_pebble_typ8_boot(void) {
                                  sizeof(s_state.activity_sessions)));
   memset(s_state.activity_sessions, 0, sizeof(s_state.activity_sessions));
   s_state.activity_sessions_count = 0;
-  cl_assert_passert(activity_sessions_prv_init(&f, rtc_get_time()));
+  cl_assert_panic(activity_sessions_prv_init(&f, rtc_get_time()));
   memset(s_state.activity_sessions, 0, sizeof(s_state.activity_sessions));
   s_state.activity_sessions_count = 0;
   activity_sessions_prv_init(&f, rtc_get_time());
@@ -1363,7 +1343,7 @@ static void prv_umzug_nach_der_nacht(const char *name, bool typ8) {
   cl_assert_equal_i(s_log_anzahl, 0);
 }
 
-// T8.2: Liste mit Typ 8 - ein WTF, zweiter Start sauber, die Zyklen und der Tiefschlaf der
+// T8.2: Liste mit Typ 8 - ein pbl_panic, zweiter Start sauber, die Zyklen und der Tiefschlaf der
 // letzten b25-Nacht wieder da, nichts doppelt in DLS 84 (F1).
 void test_boulder_zyklen__umzug_typ8(void) {
   for (size_t k = 0; k < ARRAY_LENGTH(s_naechte); k++) {

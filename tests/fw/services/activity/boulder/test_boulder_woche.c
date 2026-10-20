@@ -34,7 +34,7 @@
 #include "pbl/services/protobuf_log/protobuf_log.h"
 #include "shell/prefs.h"
 #include <pbl/logging/logging.h>
-#include "system/passert.h"
+#include <pbl/kernel/assert.h>
 #include "pbl/util/math.h"
 #include "pbl/util/size.h"
 
@@ -50,27 +50,9 @@
 #endif
 
 // Stubs
-#include "stubs_activity_insights.h"
-#include "stubs_alarm.h"
 #include "stubs_app_manager.h"
-#include "stubs_analytics.h"
 #include "stubs_app_install_manager.h"
-#include "stubs_battery.h"
-#include "stubs_event_loop.h"
-#include "stubs_irq.h"
-#include "stubs_hexdump.h"
-#include "stubs_i18n.h"
 #include "stubs_logging.h"
-#include "stubs_mutex.h"
-#include "stubs_passert.h"
-#include "stubs_pebble_process_info.h"
-#include "stubs_sleep.h"
-#include "stubs_system_theme.h"
-#include "stubs_task_wdt.h"
-#include "stubs_timeline_peek.h"
-#include "stubs_worker_manager.h"
-#include "stubs_workout_service.h"
-#include "stubs_ambient_light.h"
 #include "pbl/util/testing.h"
 
 void prefs_sync_init(void) {
@@ -670,6 +652,16 @@ bool activity_algorithm_get_minute_history(HealthMinuteData *minute_data, uint32
 
   *num_records = num_records_returned;
   return true;
+}
+
+// Pebbles Minutenpulse in einem Lauf (activity.c, seit d2f05d242) liest die Woche nicht.
+bool activity_algorithm_get_minute_heart_rate(uint8_t *heart_rate_bpm, uint32_t num_minutes,
+                                              time_t utc_start) {
+  return false;
+}
+
+// prefs.c meldet einen Sprachwechsel an die Ressourcen; die Woche wechselt keine Sprache.
+void system_resource_language_changed(void) {
 }
 
 time_t activity_algorithm_get_last_sleep_utc(void) {

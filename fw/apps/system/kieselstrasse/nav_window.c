@@ -155,10 +155,10 @@ static void prv_rest_text(const Weg *w, char *rest, size_t len) {
   if (w->ankunft != 0) {
     // Die Uhr rechnet in ihrem time_t; der Zeitpunkt kommt vorzeichenlos (weg.h).
     const time_t ankunft = (time_t)w->ankunft;
-    struct tm *an = localtime(&ankunft);
+    struct pbl_tm *an = localtime(&ankunft);
     char hhmm[10];
     // 12 h ohne fuehrende Null, wie die Kopfzeile; %l fuellt mit Leerzeichen.
-    strftime(hhmm, sizeof(hhmm), clock_is_24h_style() ? "%H:%M" : "%l:%M", an);
+    pbl_strftime(hhmm, sizeof(hhmm), clock_is_24h_style() ? "%H:%M" : "%l:%M", an);
     const char *zeit = (hhmm[0] == ' ') ? hhmm + 1 : hhmm;
     const size_t n = strlen(rest);
     if (n > 0) snprintf(rest + n, len - n, "%s", " · ");
@@ -398,7 +398,7 @@ static void prv_zeichne(Layer *layer, GContext *ctx) {
 }
 
 /** Jede Minute neu zeichnen - sonst stuende die Uhrzeit still. */
-static void prv_tick(struct tm *jetzt, TimeUnits einheiten) {
+static void prv_tick(struct pbl_tm *jetzt, TimeUnits einheiten) {
   nav_window_refresh();
 }
 

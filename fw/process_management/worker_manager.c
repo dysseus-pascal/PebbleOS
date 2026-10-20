@@ -7,11 +7,16 @@
 #include "process_manager.h"
 
 // Pebble stuff
+#include <pbl/kernel/assert.h>
+#include <pbl/kernel/syscall.h>
 #include <pbl/logging/logging.h>
-#include <pbl/mcu/privilege.h>
+#include <pbl/services/light.h>
+#include <pbl/services/speaker/speaker_service.h>
+#include <pbl/services/vibe_pattern.h>
 
 #include <kernel/memory_layout.h>
 #include <kernel/pbl_malloc.h>
+#include <kernel/pebble_tasks.h>
 #include <kernel/util/segment.h>
 #include <kernel/util/task_init.h>
 #include <popups/crashed_ui.h>
@@ -21,8 +26,6 @@
 #include <process_state/worker_state/worker_state.h>
 #include <shell/prefs.h>
 #include <syscall/syscall.h>
-#include <syscall/syscall_internal.h>
-#include <system/passert.h>
 
 // FreeRTOS stuff
 
@@ -73,11 +76,12 @@ static void prv_worker_task_main(void *entry_point) {
   // about to start the worker in earnest. No longer safe to kill.
   s_worker_task_context.safe_to_kill = false;
 
+#ifdef CONFIG_USERSPACE
   // Enter unprivileged mode!
-  const bool is_unprivileged = s_worker_task_context.app_md->is_unprivileged;
-  if (is_unprivileged) {
-    mcu_state_set_thread_privilege(false);
+  if (s_worker_task_context.app_md->is_unprivileged) {
+    pbl_user_mode_enter();
   }
+#endif
 
   const PebbleMain main_func = entry_point;
   main_func();
@@ -224,6 +228,10 @@ bool worker_manager_launch_new_worker_with_args(const PebbleProcessMd *app_md, c
 
   PBL_LOG_DBG("Starting %s", task_name);
 
+#ifdef CONFIG_USERSPACE
+  pebble_task_attr_set_syscall_stack(PebbleTask_Worker, &attr);
+#endif
+
   s_worker_task_context.task_handle = pebble_task_create(PebbleTask_Worker, &attr);
 
   // If no default yet, set as the default so that it can be relaunched upon system reset
@@ -288,6 +296,12 @@ void worker_manager_close_current_worker(bool gracefully) {
 
   // Perform generic process cleanup
   process_manager_process_cleanup(PebbleTask_Worker);
+
+  light_reset_user_controlled_by_task(PebbleTask_Worker);
+  vibe_pattern_clear_for_owner(VibePatternOwner_Worker);
+#ifndef CONFIG_RECOVERY_FW
+  speaker_service_stop_for_task(PebbleTask_Worker);
+#endif
 
   // Notify the app install manager that we finally exited
   app_install_notify_worker_closed();
@@ -385,7 +399,7 @@ void worker_manager_disable(void) {
 }
 
 // ------------------------------------------------------------------------------------------------
-DEFINE_SYSCALL(AppInstallId, sys_worker_manager_get_current_worker_id, void) {
+PBL_SYSCALL(AppInstallId, sys_worker_manager_get_current_worker_id) {
   return worker_manager_get_current_worker_id();
 }
 

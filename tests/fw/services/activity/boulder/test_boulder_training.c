@@ -15,7 +15,7 @@
 // (ein Wert alle zehn Minuten).
 
 #include "applib/data_logging.h"
-#include <pbl/drivers/ambient_light.h>
+#include <pbl/services/light_level.h>
 #include <pbl/drivers/rtc.h>
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_algorithm.h"
@@ -44,21 +44,12 @@
 
 #include "clar.h"
 
-#include "stubs_activity_insights.h"
-#include "stubs_alarm.h"
 // Der Wecklauf (wecklauf.c) prueft test_boulder_wecker mit dem echten alarm.c; hier laeuft
 // kein Smart Alarm, die Minute hat nichts zu tun.
 void boulder_wecklauf_minute(void) {
 }
-#include "stubs_analytics.h"
-#include "stubs_evented_timer.h"
-#include "stubs_hexdump.h"
 // hr_util.c laeuft echt (Pebbles Workout-Dienst, Zonen).
-#include "stubs_irq.h"
 #include "stubs_logging.h"
-#include "stubs_passert.h"
-#include "stubs_sleep.h"
-#include "stubs_task_wdt.h"
 
 #include "fake_accel_service.h"
 #include "fake_new_timer.h"
@@ -152,7 +143,7 @@ void activity_private_settings_close(SettingsFile *file) {
 uint32_t light_get_ambient_lux(void) {
   return 64;
 }
-AmbientLightLevel ambient_light_level_to_enum(uint32_t light_level) {
+AmbientLightLevel light_level_to_enum(uint32_t light_level) {
   return AmbientLightLevelLight;
 }
 BatteryChargeState battery_get_charge_state(void) {

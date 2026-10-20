@@ -168,8 +168,8 @@ static void prv_verpasst(AlarmId id, const AlarmInfo *info, void *context) {
   // Pebbles Cron wertet den Wochentag der Weckzeit. Einem Einmalwecker hat alarm_init den Tag
   // schon neu gesetzt (prv_refresh_just_once_alarm_days): Er ist an, also war er faellig.
   if (info->kind != ALARM_KIND_JUST_ONCE) {
-    struct tm ort;
-    localtime_r(&weckzeit, &ort);
+    struct pbl_tm ort;
+    pbl_localtime_r(&weckzeit, &ort);
     if (!info->scheduled_days || !(*info->scheduled_days)[ort.tm_wday]) {
       return;
     }
