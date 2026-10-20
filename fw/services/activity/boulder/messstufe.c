@@ -35,11 +35,16 @@ PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 // Stufe 1 zuerst. Unterschied zu b25 (M: messstufe.c:19): Stufe 1 tags 10 statt 30 min -
 // sie ist jetzt Pebbles Original (Kriterium 6).
+// STUFE 4 NACHTS ALLE DREI MINUTEN (F38): So oft kam der Wert unter b26 tatsaechlich. b26 gab den
+// Takt an Pebbles eigene Messung, die ihn erst ab dem Ausschalten zaehlt; das eigene Abo haelt ihn
+// genau. Die REM-Regel (schlafanalyse.c, REM_NAH) ist an Naechten mit diesem Takt eingestellt: Mit
+// einem Wert alle zwei Minuten sah sie am 16. und 17.10. 168 und 141 min REM, Fitbit 42 und 76;
+// auf drei Minuten ausgeduennt 93 und 81.
 static const BoulderStufe s_stufen[MESSSTUFE_MAX] = {
   { .puls_nacht_s = 10 * 60, .puls_tag_min = 10, .hrv_takt_min = 0, .spo2_min = 0 },
   { .puls_nacht_s = 10 * 60, .puls_tag_min = 10, .hrv_takt_min = 60, .spo2_min = 60 },
   { .puls_nacht_s = 5 * 60, .puls_tag_min = 10, .hrv_takt_min = 30, .spo2_min = 30 },
-  { .puls_nacht_s = 2 * 60, .puls_tag_min = 10, .hrv_takt_min = 15, .spo2_min = 10 },
+  { .puls_nacht_s = 3 * 60, .puls_tag_min = 10, .hrv_takt_min = 15, .spo2_min = 10 },
   { .puls_nacht_s = 1 * 60, .puls_tag_min = 5, .hrv_takt_min = 10, .spo2_min = 10 },
 };
 

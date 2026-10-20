@@ -447,7 +447,7 @@ void test_boulder_messung__menue_speichert_und_geht_ans_telefon(void) {
 void test_boulder_messung__puls_je_stufe(void) {
   // Fenster (Sensor aus -> an) in einer Stunde Nachtruhe; Stufe 1 und 2 fragen nichts an
   // (Pebbles eigener 10-min-Takt reicht, activity.c ist hier nicht dabei).
-  static const int erwartet[MESSSTUFE_MAX] = { 0, 0, 12, 30, 60 };
+  static const int erwartet[MESSSTUFE_MAX] = { 0, 0, 12, 20, 60 };
   for (uint8_t stufe = MESSSTUFE_MIN; stufe <= MESSSTUFE_MAX; stufe++) {
     test_boulder_messung__initialize();
     // Keine HRV-Fenster hier: SpO2 "misst" (dann beginnt keins), das Puls-Abo laeuft weiter.

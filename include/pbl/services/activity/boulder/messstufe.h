@@ -14,7 +14,7 @@
 //  1 Pebble          10 min      10 min    aus                 aus
 //  2                 10 min      10 min    60 min              60 min
 //  3 (Vorgabe)       5 min       10 min    30 min              30 min
-//  4                 2 min       10 min    15 min              10 min
+//  4                 3 min       10 min    15 min              10 min
 //  5                 1 min       5 min     10 min              10 min
 //
 // WER WAS MISST: "Puls Tag" und SpO2 misst Pebble selbst (activity.c) - die Uhr setzt
