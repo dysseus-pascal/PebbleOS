@@ -21,9 +21,11 @@
 #include "pbl/services/activity/activity_algorithm.h"
 #include "pbl/services/activity/activity_private.h"
 #include <pbl/cron/cron.h>
+#include "pbl/services/activity/boulder/eingang.h"
 #include "pbl/services/activity/boulder/kalorien.h"
 #include "pbl/services/activity/boulder/kraepelin/activity_algorithm_kraepelin.h"
 #include "pbl/services/activity/boulder/kraepelin/kraepelin_algorithm.h"
+#include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/variante.h"
 #include "pbl/services/activity/workout_service.h"
@@ -674,6 +676,42 @@ void test_boulder_training__pause_zaehlt_schritte(void) {
   prv_gehen(40);
   cl_assert_equal_i(prv_zaehler(), prv_soll_summe());
   cl_assert(prv_pruefe_minuten() >= 5 + 4 + 3 + 4 + 1 + 3 + 3);
+}
+
+// D15, Spezifikation 2.6: Ein Training ist kein Schlaf, auch wenn es so ruhig ist wie Yoga. Seine
+// Minuten gehen ungueltig in die Nacht, die ebenso ruhigen davor und danach gueltig - auch nach
+// einem Training aus Pebbles eigener Workout-App, das den Merker "ohne Schritte" nie setzt.
+static void prv_ruhig(int minuten) {
+  for (int i = 0; i < minuten; i++) {
+    prv_minute(0, 40, 0x37, prv_puls(58));
+  }
+}
+
+void test_boulder_training__ruhiges_training_ist_kein_schlaf(void) {
+  prv_ruhig(10);
+  s_start_typ = ActivitySessionType_Open;
+  s_start_ohne_schritte = true;
+  prv_training_start();
+  const int kieselsport_ab = s_n;
+  prv_ruhig(20);
+  const int kieselsport_bis = s_n;
+  prv_training_stopp();
+  prv_ruhig(10);
+  cl_assert(workout_service_start_workout(ActivitySessionType_Open));  // Pebbles Workout-App
+  const int pebble_ab = s_n;
+  prv_ruhig(15);
+  const int pebble_bis = s_n;
+  prv_training_stopp();
+  prv_ruhig(10);
+  const BoulderEingang *eingang = boulder_eingang();
+  const time_t fenster = boulder_nacht_fenster();
+  for (int i = 0; i < s_n; i++) {
+    const bool training =
+        (i >= kieselsport_ab && i < kieselsport_bis) || (i >= pebble_ab && i < pebble_bis);
+    const int minute = (int)((s_utc[i] - fenster) / PBL_SEC_PER_MIN);
+    cl_assert(minute >= 0 && minute < NACHT_MINUTEN);
+    cl_assert_equal_b(eingang->gueltig[minute], !training);
+  }
 }
 
 // P4 (F4 = A): Pebbles Satz einer Sitzung (DLS 84) in Fassung 7, 27 Byte; `manual` traegt nur das
