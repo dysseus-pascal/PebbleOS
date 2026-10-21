@@ -9,7 +9,8 @@ einem PC, der danach zurueckgesetzt wurde. Am 12.10.2026 wurden sie aus dem
 Transkript der damaligen Claude-Sitzung wiederhergestellt. Was ganz, was nur in
 Auszuegen und was gar nicht zurueckkam, steht in `INVENTAR.md`.
 
-- `boulder-v2/`: Entscheide, Ideen, Naechte, Bau-Skript von Schritt 3
+- `boulder-v2/`: Entscheide, Ideen, Naechte, Bau-Skript von Schritt 3. Grundsatz seit 21.10.2026: so nahe an Pebble wie
+  moeglich (`boulder-v2/entscheidungen.md`, Grundlage)
 - `boulder-v1/`: Eingaben und Spezifikationen der App-Fassungen 0.51 bis 0.53,
   Correlation-Entwurf
 - `workflows/`: die Workflow-Skripte der Sitzung, je in der letzten Fassung

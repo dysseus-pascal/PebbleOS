@@ -3,6 +3,11 @@
 Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/Schrittvorschlägen in diesem Ordner.
 
 ## Grundlage
+- **Grundsatz (Nutzer, 21.10.2026): „Wir bleiben mit allem was wir machen so nahe an Pebble wie es
+  geht. Merk dir das.“** Er gilt für Firmware, Uhr-Apps und App. Wo Pebble (Core Devices) etwas
+  schon kann oder vormacht, übernimmt Boulder dessen Verhalten, Aussehen und Code-Wege. Eigene Wege
+  braucht es nur, wo Pebble nichts bietet. Bei Vorschlägen und Fragen an den Nutzer kommt die Lösung
+  nächst an Pebble zuerst.
 - Neubau auf dem aktuellen Stand von Core Devices, für App und Firmware, in den gleichen Repos. App-ID und Signatur bleiben.
 - Brücke bis dahin: Boulder 0.50.0, Firmware b25, SupCycle 0.16.0, Drinktervall 1.21.0 (veröffentlicht 05.10.). Während des Umbaus läuft die Boulder-Firmware auf der Uhr.
 - Datenumzug aus 0.50: einmaliger, aufgesetzter Zusatz, nach dem Release entbehrlich.
@@ -222,6 +227,15 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Cores App hat seit 1.15.0.1 keine neue Fassung.
 - Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
   b34 (`schritt3-abnahme.md`, Abschnitt 18).
+
+## Health: Karten gleiten wie bei Pebble (21.10.2026, F40)
+- **Nutzer:** „Können wir in health vertikal scrollen?“ Heute springen Oben/Unten (und Wischen, das
+  Pebbles Touch-Brücke als Taste meldet) ohne Übergang zur nächsten Karte; die Details scrollen schon
+  mit Tasten und Finger.
+- **F40: A**, „Wir bleiben mit allem was wir machen so nahe an pebble wie es geht“ (Grundsatz, siehe
+  Grundlage): Die Karten gleiten beim Wechsel vertikal wie in Pebbles eigener Health-App
+  (`fw/apps/system/health/card_view.c`). Nicht gewählt: B, alle Karten auf einer Seite, die dem
+  Finger folgt.
 
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.
