@@ -26,7 +26,7 @@
 
 // L6 (AP8): Die App ruft jeden Syscall ihrer Daten 100-mal hintereinander und meldet die Ticks
 // ("bh syscall <name> <ticks fuer 100>"). Ein einzelner Aufruf liegt unter der Aufloesung der Ticks
-// (1/1024 s); hundert machen ihn messbar.
+// (in QEMU 1 ms); hundert machen ihn messbar.
 #define BH_PROBE_SYSCALLS   0x42480003u
 #define BH_PROBE_SYSCALLS_N 100
 

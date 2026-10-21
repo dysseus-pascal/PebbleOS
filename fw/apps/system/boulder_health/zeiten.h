@@ -8,7 +8,7 @@
 // WARUM IM PROTOKOLL UND NICHT IN DER APP GERECHNET: Gemessen wird in QEMU, und ein Skript liest
 // die Zeilen von aussen. So bleibt die App frei von Mess-Zustand, und ohne den Schalter steht im
 // Bau kein einziger Aufruf davon (BOULDER_HEALTH_ZEITEN gibt es nur im QEMU-Pruefbau).
-// sys_get_ticks zaehlt 1024 je Sekunde.
+// sys_get_ticks zaehlt RTC_TICKS_HZ je Sekunde, in QEMU und auf obelix 1000.
 //
 // BH_PROTOKOLL schreibt dazu, was das Skript pruefen muss, etwa wie die App gestartet ist und
 // wohin eine Taste blaettert (AP7): "bh t=<ticks> <text>".

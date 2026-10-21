@@ -19,8 +19,8 @@ dazu den Hoechststand des App-Heaps, den Kernel-Heap vor und nach 100 Starts, da
 Sekundentakt auf Heart und nach dem Ende, den Tiefstand des Syscall-Stapels, Neustarts und die
 Fehlerprobe am Endstand. Ergebnis: Tabelle auf stdout, messung.json und Bilder im Ordner --aus.
 
-Die Zeiten kommen aus den Zeitstempeln der App ("bh t=<ticks> <stelle>", zeiten.h; 1024 Ticks je
-Sekunde), gelesen ueber die Konsole (PULSE wie pbl console). Rueckgabe 1, wenn ein Ziel verfehlt
+Die Zeiten kommen aus den Zeitstempeln der App ("bh t=<ticks> <stelle>", zeiten.h; in QEMU 1000
+Ticks je Sekunde), gelesen ueber die Konsole (PULSE wie pbl console). Rueckgabe 1, wenn ein Ziel verfehlt
 ist oder eine Pruefung scheitert.
 
 QEMU ist nicht obelix: Die Zahlen belegen die Bauart (kein Lesen an der Taste, kleine Kopien statt
@@ -48,7 +48,9 @@ from log_hashing.logdehash import LogDehash  # noqa: E402
 from pebble.commander.commander import PebbleCommander  # noqa: E402
 from pebble.commander.exceptions import CommandTimedOut  # noqa: E402
 
-TICKS_HZ = 1024
+# RTC_TICKS_HZ mit CONFIG_QEMU (include/pbl/drivers/rtc.h). Die 1024 der aelteren Boards machten jede
+# Zeit hier 2,4 % zu klein.
+TICKS_HZ = 1000
 ZIELE_MS = {'L1': 50.0, 'L2': 30.0, 'L4': 30.0, 'L6': 1.0}
 # DER ERSTE START NACH DEM BOOT ZAEHLT UNTER -icount (F17): In Echtzeit enthaelt er, dass QEMU jeden
 # Codepfad beim ersten Lauf uebersetzt, und schwankt mit dem Host (30-54 ms in AP9). Unter -icount
