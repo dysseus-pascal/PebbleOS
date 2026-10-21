@@ -1,0 +1,55 @@
+[12:18:18.711] I - 12:18:18.517 probe.c:227> bh probe app_log 1
+[12:18:18.711] I - 12:18:18.517 probe.c:227> bh probe app_zalloc_check 456
+[12:18:18.712] I - 12:18:18.517 probe.c:227> bh probe app_state_set_user_data 0
+[12:18:18.713] I - 12:18:18.518 probe.c:227> bh probe sys_activity_is_initialized 1
+[12:18:18.714] I - 12:18:18.518 probe.c:227> bh probe sys_activity_get_metric 7
+[12:18:18.714] I - 12:18:18.518 probe.c:227> bh probe app_malloc_check 512
+[12:18:18.715] I - 12:18:18.519 probe.c:227> bh probe sys_activity_get_sessions 0
+[12:18:18.715] I - 12:18:18.519 probe.c:227> bh probe health_service_peek_current_value 0
+[12:18:18.717] I - 12:18:18.520 probe.c:227> bh probe health_service_events_subscribe 1
+[12:18:18.717] I - 12:18:18.521 probe.c:227> bh probe health_service_set_heart_rate_sample_period 1
+[12:18:18.718] I - 12:18:18.521 probe.c:227> bh probe sys_shell_prefs_get_units_distance 1
+[12:18:18.718] I - 12:18:18.521 probe.c:227> bh probe clock_is_24h_style 0
+[12:18:18.719] I - 12:18:18.522 probe.c:227> bh probe sys_get_time 1792585098
+[12:18:18.719] I - 12:18:18.522 probe.c:227> bh probe sys_localtime_r 1218
+[12:18:18.720] I - 12:18:18.522 probe.c:227> bh probe sys_get_ticks 20522
+[12:18:18.720] I - 12:18:18.522 probe.c:227> bh probe app_launch_reason 6
+[12:18:18.721] I - 12:18:18.522 probe.c:227> bh probe app_launch_button 0
+[12:18:18.722] I - 12:18:18.523 probe.c:227> bh probe app_launch_get_args 1112014849
+[12:18:18.722] I - 12:18:18.523 probe.c:227> bh probe app_launch_get_quick_launch_action 0
+[12:18:18.723] I - 12:18:18.523 probe.c:227> bh probe sys_boulder_nacht 2
+[12:18:18.724] I - 12:18:18.523 probe.c:293> bh probe nacht 2 schlaf=-1 fertig=-1
+[12:18:18.724] I - 12:18:18.524 probe.c:227> bh probe sys_boulder_lage 0
+[12:18:18.725] I - 12:18:18.524 probe.c:300> bh probe lage fassung=2 tracking=0 stufe=0 ziele=10000/480
+[12:18:18.726] I - 12:18:18.524 probe.c:302> bh probe lage2 maxpuls=0 ruhepuls=0 spo2=0 stand=0
+[12:18:18.726] I - 12:18:18.525 probe.c:227> bh probe sys_boulder_spo2 0
+[12:18:18.727] I - 12:18:18.525 probe.c:308> bh probe spo2 0 letzter=-1
+[12:18:18.727] I - 12:18:18.525 probe.c:227> bh probe sys_boulder_naechte -1
+[12:18:18.728] I - 12:18:18.525 probe.c:316> bh probe naechte 0 anzahl=0 neu=0 min=0/0
+[12:18:18.729] I - 12:18:18.526 probe.c:227> bh probe sys_boulder_herz -1
+[12:18:18.730] I - 12:18:18.526 probe.c:339> bh probe herz 0 neueste=0 halb=0 grenzen=0/0/0
+[12:18:18.730] I - 12:18:18.526 probe.c:341> bh probe herz2 zonen tag 0: 0 0 0 0
+[12:18:18.731] I - 12:18:18.526 probe.c:227> bh probe sys_boulder_woche -1
+[12:18:18.732] I - 12:18:18.526 probe.c:367> bh probe woche 0 tag=0 -1 -1 -1 -1 -1 -1
+[12:18:18.732] I - 12:18:18.527 probe.c:227> bh probe sys_boulder_messstufe_setzen 0
+[12:18:18.734] I - 12:18:18.527 probe.c:227> bh probe window_init 0
+[12:18:18.734] I - 12:18:18.539 probe.c:227> bh probe text_layer_init_with_parameters 0
+[12:18:18.735] I - 12:18:18.544 probe.c:227> bh probe layer_init 0
+[12:18:18.735] I - 12:18:18.546 probe.c:227> bh probe scroll_layer 0
+[12:18:18.736] I - 12:18:18.546 probe.c:227> bh probe text_layer 0
+[12:18:18.736] I - 12:18:18.550 probe.c:227> bh probe window 0
+[12:18:18.737] I - 12:18:18.551 probe.c:227> bh probe interpolate_moook_soft_duration 264
+[12:18:18.738] I - 12:18:18.551 probe.c:227> bh probe animation_set_custom_interpolation 1
+[12:18:18.738] I - 12:18:18.562 probe.c:227> bh probe app_state_get_user_data 0
+[12:18:18.739] I - 12:18:18.563 probe.c:227> bh probe graphics 0
+[12:18:18.739] I - 12:18:18.566 probe.c:227> bh probe fonts_get_system_font 10
+[12:18:18.740] I - 12:18:18.567 probe.c:227> bh probe gbitmap_create_with_resource 1
+[12:18:18.749] I - 12:18:18.583 probe.c:227> bh probe gdraw_command_image_create_with_resource 1
+[12:18:18.749] I - 12:18:18.584 probe.c:227> bh probe layer 0
+[12:18:18.775] I - 12:18:18.610 probe.c:246> bh probe ereignis 0
+[12:18:18.777] I - 12:18:18.611 probe.c:227> bh probe interpolate_moook_soft 0
+[12:18:18.778] I - 12:18:18.613 probe.c:227> bh probe tick_timer_service 18
+[12:18:18.830] I - 12:18:18.654 probe.c:227> bh probe app_timer 0
+[12:18:19.053] I - 12:18:19.844 probe.c:227> bh probe animation 1
+[12:18:19.054] I - 12:18:19.845 probe.c:230> bh probe fertig 44
+[12:18:20.206] I - 12:18:20.040 probe.c:529> bh probe ende vollstaendig

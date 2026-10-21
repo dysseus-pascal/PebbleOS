@@ -33,7 +33,7 @@ Belege: `belege-schritt3/ap9/`.
 | 3 | Grundsatz: jede Zahl von der Uhr; nichts vom Telefon ausser den Zielen; kein Koffein, keine Getränke, keine Präparate | **erfüllt** | `test_bh_grundsatz` (8 Fälle); Mutationen K3a, K3b rot |
 | 4 | Gleiche Urteile wie Boulder am selben Morgen (Schlaf, Ruhepuls, HRV, Ziele), Orakel 0 Abweichungen | **erfüllt** (Host) | `test_bh_rechnung` gegen Boulders Kotlin (Orakel aus AP5); seit C2/C4 dieselbe Nacht des Tages wie Boulder (`test_bh_daten`); Mutationen K4a, K4b rot |
 | 5 | Einstiege landen auf der richtigen Karte; andere Boards behalten Pebbles App | **erfüllt** | `test_bh_einstieg`, `test_bh_einstiege` (Pebbles echter Code), `test_bh_startmenue`, `test_bh_startmenue_asterix`; asterix, getafix, flint, gabbro linken Pebbles `health/` (13 Objekte), die Boulder-Bauten keins; Mutationen K5a, K5b rot |
-| 6 | Ladezeit L1–L6 in QEMU; auf der Uhr im Gerätetest | **teilweise**: QEMU erfüllt, Uhr offen | Drei QEMU-Schlussläufe grün (Abschnitt 3). Der erste Start nach dem Boot liegt nahe an der Grenze und schwankt in Echtzeit-QEMU mit dem Host; unter `-icount` 17,6 ms wie mit dem Code von AP8. QEMU-Mutation (60 ms vor dem ersten Bild) an L1 rot (89,8 ms); Mutation K6b (Taste liest, L3) rot |
+| 6 | Ladezeit L1–L6 in QEMU; auf der Uhr im Gerätetest | **teilweise**: QEMU erfüllt, Uhr offen. *Nachtrag 21.10.: Seit F40 begrenzt L2 den Anteil der App; wann das Neue zu sehen ist, bestimmen Pebbles Animationen (Abschnitt 19)* | Drei QEMU-Schlussläufe grün (Abschnitt 3). Der erste Start nach dem Boot liegt nahe an der Grenze und schwankt in Echtzeit-QEMU mit dem Host; unter `-icount` 17,6 ms wie mit dem Code von AP8. QEMU-Mutation (60 ms vor dem ersten Bild) an L1 rot (89,8 ms); Mutation K6b (Taste liest, L3) rot |
 | 7 | Kein Kernel-Heap-Verlust nach 100 Starts, kein Puls-Abo nach dem Ende, kein Neustart | **erfüllt** (QEMU) | QEMU-Schlussläufe a–c; QEMU-Mutation (16 B Kernel-Heap je S2) am Kernel-Heap rot (49 372 → 48 304 → 47 304 B); Mutation K7a rot; seit A2 läuft Puls live auch nach einem abnormalen Ende höchstens 2 min |
 | 8 | `boulder_ziele` vom Telefon gilt auf Uhr und in Boulder; ohne Telefon der letzte Wert oder die Vorgabe | **teilweise**: Uhr erfüllt, Boulder offen. *Nachtrag 13.10.: Boulder 0.53 erfüllt es in den Tests (Abschnitt 11), Release und Gerätetest offen* | `test_boulder_schnittstelle` (Einfügen, Ändern, Löschen, Leeren, ungültige Sätze, Neustart); Mutationen K8a, K8b rot; die Seite „Goals“ in Boulder 0.53 fehlt (Schlüssel ohne Nullbyte, K4) |
 
@@ -686,3 +686,40 @@ dem Gerätetest (F18). Belege: `belege-vorab/v2-b34/`.
   Kernel-Heap ohne Wachstum, Syscall-Stapel mit 1 368 B Reserve, kein Neustart. Die Health-App
   liest über die umgestellten S1–S7 wie bisher.
 - **Vorabversion b34:** `normal_obelix_pvt_v4.41.2-b34.pbz` (sha256 `956b987b…21fb83`).
+
+## 19. Karten gleiten wie bei Pebble (21.10.2026, `967da424b`, `685b50fe9`, `e044bda27`, `a9133d56e`)
+
+F40 („Können wir in Health vertikal scrollen?“ – „A. Wir bleiben mit allem was wir machen so nahe an
+Pebble wie es geht“, `entscheidungen.md`). Belege: `belege-vorab/v2-b35/`.
+
+- **Gleiten** (`685b50fe9`) wie in Pebbles `card_view.c`:
+  - Je Karte eine Ebene; die gezeigte gleitet hinaus, die neue herein.
+  - Kurve und Dauer sind Pebbles: moook mit einem Bild in der Mitte, 264 ms.
+  - Die Richtung folgt der Taste: Oben von oben, Unten von unten, auch beim Wischen.
+  - Eine Taste mitten im Gleiten bricht es ab wie bei Pebble.
+  - Beim Federn am Ende (bis 4 px) zeigt das Fenster die Farbe, die an die neue Karte grenzt.
+- **Details** öffnen wieder mit Pebbles Übergang. AP8 hatte ihn für L2 weggelassen.
+- **Ohne Systemrechte:** Pebbles Kurve steht nicht im SDK. `pruefe_ohne_rechte.py` führt drei Helfer
+  mehr; Pebbles Applib nutzt sie selbst in der App-Task. Die Probe der Bausteine benutzt sie in QEMU:
+  44 Bausteine, „vollständig“, kein Fehler.
+- **L2** (`a9133d56e`) begrenzt den Anteil der App mit 30 ms: Taste bis zum ersten Bild des Gleitens
+  und Zeichnen des Details. Wann das Neue zu sehen ist, bestimmt Pebble: die neue Karte ein Bild nach
+  dem Beginn, das Detail mit dem ersten Bild von Pebbles Übergang (in QEMU nach 40–60 ms). Ein Gleiten
+  und ein Detail zum Aufwärmen zählen nicht (QEMU übersetzt Pebbles Animationscode beim ersten Mal,
+  wie F17).
+- **Nebenbefunde:**
+  - `967da424b`: QEMU zählt 1000 Ticks je Sekunde, `qemu_health.py` rechnete mit 1024. Alle
+    bisherigen QEMU-Zeiten waren 2,4 % zu klein; kein Urteil kippt.
+  - `e044bda27`: Die Probe der Bausteine endete seit b34 beim Schliessen an der MPU. Seit Upstream
+    `main` schreibt `menu_layer_destroy` für eine App mit System-ID Kernel-RAM. Die Health-App benutzt
+    keine MenuLayer, Kieselsport läuft mit Systemrechten; die Probe kommt jetzt ohne aus, und
+    `pruefe_ohne_rechte.py` meldet `menu_layer_destroy`.
+- **Prüfung** auf `e044bda27` (`a9133d56e` ändert nur `qemu_health.py`): acht Bauten ohne Warnung,
+  Host 466/466, alle Werkzeuge grün (im Prüfbau nur die Fehlerprobe rot). QEMU zweimal grün auf
+  `a9133d56e`:
+  - L1 höchstens 16 ms, erster Start (icount) 26,0 ms.
+  - L2 (Anteil der App) höchstens 18 ms. Die Karte ruht nach 265–278 ms, die neue ist nach 35–70 ms
+    zu sehen, das Detail nach 52,5 bzw. 55,5 ms im Median.
+  - L4 höchstens 7 ms, L6 0,02 ms.
+  - Kernel-Heap ohne Wachstum (51 408 → 51 332 → 51 332 B), App-Heap höchstens 5 748 B,
+    Syscall-Stapel mit 1 368 B Reserve, kein Neustart.
