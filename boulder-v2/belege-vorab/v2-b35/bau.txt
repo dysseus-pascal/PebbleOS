@@ -1,0 +1,7 @@
+Slot 0: 0 Warnungen
+Slot 1: 0 Warnungen
+Successfully merged /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35_slot0.pbz and /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35_slot1.pbz into /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35.pbz
+8911a19df5a67c6fdf2267940bd852211a9d24fa8076d8ae283beb3b09f68317  /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35.pbz
+-rw-r--r-- 1 root root 3467804 Oct 21 13:27 /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35.pbz
+-rw-r--r-- 1 root root 2950867 Oct 21 13:26 /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35_slot0.pbz
+-rw-r--r-- 1 root root 2950867 Oct 21 13:27 /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.41.2-b35_slot1.pbz

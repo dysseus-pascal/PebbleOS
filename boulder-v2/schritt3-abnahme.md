@@ -723,3 +723,7 @@ Pebble wie es geht“, `entscheidungen.md`). Belege: `belege-vorab/v2-b35/`.
   - L4 höchstens 7 ms, L6 0,02 ms.
   - Kernel-Heap ohne Wachstum (51 408 → 51 332 → 51 332 B), App-Heap höchstens 5 748 B,
     Syscall-Stapel mit 1 368 B Reserve, kein Neustart.
+- **Mutationen:** 62/62 rot, neu F40a–g (Gleiten, Kurve, Verstecken, deckende Karten, Farbe beim
+  Federn, Übergang der Details, Helfer ohne Systemrechte) und K2c (`menu_layer_destroy`).
+- **Vorabversion b35:** `normal_obelix_pvt_v4.41.2-b35.pbz` (sha256 `8911a19d…f68317`), Tag
+  `v4.41.2-b35` auf `a9133d56e` (nur lokal).
