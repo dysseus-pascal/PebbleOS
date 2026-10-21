@@ -18,7 +18,7 @@ pebbleos.elf gelinkt werden, und prueft jedes. Rot (Rueckgabe 1), wenn
     ausserhalb ist eine Kernfunktion, die ohne Rechte faellt (etwa
     sys_msg_protocol_msg_callback);
   - die App etwas von der roten Liste (L5) ruft, auch wenn es sonst erlaubt waere;
-  - die App eine SDK-Funktion ruft, die fuer eine App mit System-ID Kernel-RAM liest (SYSTEM_ID);
+  - die App eine SDK-Funktion ruft, die fuer eine App mit System-ID Kernel-RAM braucht (SYSTEM_ID);
   - keine Objektdatei der App gelinkt ist oder keine ein Symbol definiert.
 """
 import json
@@ -79,8 +79,10 @@ ROT = re.compile(r'^(sys_activity_get_minute_history|health_service_get_minute_h
 # Textgroesse des Systems und liest sie direkt aus Kernel-RAM (menu_layer_system_cells.c:69-78,
 # s_system_text_size in shell/normal/prefs.c:1909-1911). Gefunden von der Probe in AP1, wo die App
 # daran endete. Dasselbe gilt fuer die Zeilenhoehe einer MenuLayer ohne get_cell_height
-# (menu_layer.c:490-502); das sieht keine Objektdatei, nur die Probe.
-SYSTEM_ID = {'menu_cell_basic_draw'}
+# (menu_layer.c:490-502); das sieht keine Objektdatei, nur die Probe. Seit Upstream main schreibt
+# menu_layer_destroy fuer eine App mit System-ID den Zustand des seitlichen Textlaufs in
+# Kernel-RAM (menu_text_scroll.c:80-91, s_scrolls); gefunden von der Probe in b35.
+SYSTEM_ID = {'menu_cell_basic_draw', 'menu_layer_destroy'}
 
 SHF_WRITE, SHF_ALLOC = 0x1, 0x2
 SHT_SYMTAB = 2
@@ -157,7 +159,7 @@ def erlaubt(name, sdk, syscalls):
     if ROT.match(name):
         return False, 'rote Liste (L5)'
     if name in SYSTEM_ID:
-        return False, 'liest mit System-ID Kernel-RAM'
+        return False, 'braucht mit System-ID Kernel-RAM'
     if name.startswith('sys_') and name not in syscalls:
         return False, 'kein Syscall'
     if name in sdk or name in syscalls or name in HELFER or name in LIBC or (

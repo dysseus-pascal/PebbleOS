@@ -22,7 +22,6 @@
 #include "applib/ui/animation.h"
 #include "applib/ui/app_window_stack.h"
 #include "applib/ui/layer.h"
-#include "applib/ui/menu_layer.h"
 #include "applib/ui/property_animation.h"
 #include "applib/ui/scroll_layer.h"
 #include "applib/ui/text_layer.h"
@@ -85,7 +84,6 @@ typedef enum {
   // 3.6 Oberflaeche
   BhFenster,
   BhEbene,
-  BhMenue,
   BhRolle,
   BhText,
   BhGrafik,
@@ -138,7 +136,6 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhWoche] = "sys_boulder_woche",
   [BhFenster] = "window",
   [BhEbene] = "layer",
-  [BhMenue] = "menu_layer",
   [BhRolle] = "scroll_layer",
   [BhText] = "text_layer",
   [BhGrafik] = "graphics",
@@ -201,7 +198,6 @@ typedef struct {
   Window fenster;
   Layer flaeche;
   TextLayer titel;
-  MenuLayer *menue;
   ScrollLayer *rolle;
   TextLayer *rollen_text;
   GBitmap *bild;
@@ -423,27 +419,11 @@ static void prv_flaeche_zeichnen(Layer *flaeche, GContext *ctx) {
   prv_benutzt(probe, BhEbene, 0);
 }
 
-static uint16_t prv_menue_zeilen(MenuLayer *menue, uint16_t abschnitt, void *kontext) {
-  return 2;
-}
-
-// Eigene Zeilenhoehe und eigenes Zeichnen statt Pebbles Vorgabe und menu_cell_basic_draw: Fuer
-// eine App mit System-ID (-82) lesen beide die Textgroesse des Systems direkt aus Kernel-RAM
-// (menu_layer_system_cells.c:69-78 -> s_system_text_size in shell/normal/prefs.c:1909-1911). Ohne
-// Systemrechte endete die App daran; der erste Lauf dieser Probe hat es gezeigt (AP1).
-static int16_t prv_menue_hoehe(MenuLayer *menue, MenuIndex *index, void *kontext) {
-  return 25;
-}
-
-static void prv_menue_zeile(GContext *ctx, const Layer *zelle, MenuIndex *index, void *kontext) {
-  BhProbe *probe = kontext;
-  // Die Namen der Stufen aus dem Flash (messstufe.h, AP2), die geltende zuerst.
-  const uint8_t stufe = probe->lage.messstufe ? probe->lage.messstufe : MESSSTUFE_VORGABE;
-  const char *name = BOULDER_MESSSTUFE_NAMEN[(stufe - MESSSTUFE_MIN + index->row) % MESSSTUFE_MAX];
-  graphics_draw_text(ctx, name, probe->schriften[2], layer_get_bounds_by_value(zelle),
-                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-  prv_benutzt(probe, BhMenue, index->row);
-}
+// KEINE MENULAYER (mehr): Fuer eine App mit System-ID (-82) lesen Pebbles Zeilenhoehe und
+// menu_cell_basic_draw die Textgroesse des Systems aus Kernel-RAM (AP1), und seit Upstream main
+// schreibt menu_layer_destroy den Zustand des seitlichen Textlaufs dorthin
+// (menu_text_scroll.c:80-91). Ohne Systemrechte endet die App daran (b35); pruefe_ohne_rechte.py
+// meldet menu_cell_basic_draw und menu_layer_destroy (SYSTEM_ID).
 
 static void prv_app_timer(void *daten) {
   prv_benutzt(prv_probe(), BhAppTimer, 0);
@@ -507,20 +487,10 @@ static void prv_oberflaeche(BhProbe *probe) {
   layer_set_update_proc(&probe->flaeche, prv_flaeche_zeichnen);
   layer_add_child(wurzel, &probe->flaeche);
 
-  // Eine Zeile Menue: darunter braucht der Text drei Zeilen (AP4).
-  probe->menue = menu_layer_create(GRect(0, 140, rahmen.size.w, 25));
-  menu_layer_set_callbacks_by_value(probe->menue, probe,
-                                    (MenuLayerCallbacks){
-                                      .get_num_rows = prv_menue_zeilen,
-                                      .get_cell_height = prv_menue_hoehe,
-                                      .draw_row = prv_menue_zeile,
-                                    });
-  layer_add_child(wurzel, menu_layer_get_layer(probe->menue));
-
-  probe->rolle = scroll_layer_create(GRect(0, 165, rahmen.size.w, rahmen.size.h - 165));
-  // So hoch wie die Rolle: drei Zeilen ohne den Schatten, der sonst die letzte verdeckt.
-  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, rahmen.size.h - 165));
-  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, rahmen.size.h - 165));
+  probe->rolle = scroll_layer_create(GRect(0, 140, rahmen.size.w, rahmen.size.h - 140));
+  // So hoch wie die Rolle: die Zeilen ohne den Schatten, der sonst die letzte verdeckt.
+  scroll_layer_set_content_size(probe->rolle, GSize(rahmen.size.w, rahmen.size.h - 140));
+  probe->rollen_text = text_layer_create(GRect(4, 0, rahmen.size.w - 8, rahmen.size.h - 140));
   text_layer_set_text(probe->rollen_text, probe->lage_text);
   text_layer_set_font(probe->rollen_text, probe->schriften[0]);
   scroll_layer_add_child(probe->rolle, text_layer_get_layer(probe->rollen_text));
@@ -552,7 +522,6 @@ static void prv_bausteine(void) {
   tick_timer_service_unsubscribe();
   health_service_set_heart_rate_sample_period(0);
   health_service_events_unsubscribe();
-  menu_layer_destroy(probe->menue);
   text_layer_destroy(probe->rollen_text);
   scroll_layer_destroy(probe->rolle);
   gbitmap_destroy(probe->bild);

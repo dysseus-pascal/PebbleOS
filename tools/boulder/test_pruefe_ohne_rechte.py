@@ -110,7 +110,9 @@ def proben():
     yield 'Laufzeit-Helfer mit Zustand (__aeabi_read_tp)', rot(
         aufruf('__aeabi_read_tp', 'void *'), 'nicht erlaubt: __aeabi_read_tp')
     yield 'menu_cell_basic_draw (im SDK, mit System-ID Kernel-RAM)', rot(
-        aufruf('menu_cell_basic_draw', 'void', 'void *'), 'liest mit System-ID Kernel-RAM')
+        aufruf('menu_cell_basic_draw', 'void', 'void *'), 'braucht mit System-ID Kernel-RAM')
+    yield 'menu_layer_destroy (im SDK, mit System-ID Kernel-RAM seit Upstream main)', rot(
+        aufruf('menu_layer_destroy', 'void', 'void *'), 'braucht mit System-ID Kernel-RAM')
     yield 'localtime (statischer Puffer)', rot(aufruf('localtime', 'void *', 'const void *'),
                                                'nicht erlaubt: localtime')
     # Gegenpruefung A9: sys_* ohne DEFINE_SYSCALL ist eine Kernfunktion (im obelix-Abbild 2 von 191).
