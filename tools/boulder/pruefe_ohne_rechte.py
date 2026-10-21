@@ -45,6 +45,14 @@ HELFER = {
     # (kernel/pbl_malloc.h:37-40).
     'app_malloc_check',
     'app_zalloc_check',
+    # Pebbles Gleitkurve fuer die Karten wie in Pebbles Health-App (card_view.c:230-239). Die
+    # Applib setzt und rechnet sie selbst in der App-Task bei jedem animierten Fensterwechsel
+    # (window_stack_animation_rect.c:86-87). Das Setzen geht denselben Weg wie das SDK-eigene
+    # animation_set_custom_curve (animation.c:1505-1539); die Kurve rechnet nur mit ihren
+    # Argumenten und Tabellen im Flash.
+    'animation_set_custom_interpolation',
+    'interpolate_moook_soft',
+    'interpolate_moook_soft_duration',
 }
 
 # libc ohne Zustand: rechnen nur auf ihren Argumenten (kein errno, kein statischer Puffer, keine

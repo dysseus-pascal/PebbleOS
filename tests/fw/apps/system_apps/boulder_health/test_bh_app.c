@@ -16,8 +16,10 @@
 #include "applib/fonts/fonts.h"
 #include "applib/graphics/graphics.h"
 #include "applib/graphics/text.h"
+#include "applib/ui/animation.h"
 #include "applib/ui/click.h"
 #include "applib/ui/layer.h"
+#include "applib/ui/property_animation.h"
 #include "applib/ui/scroll_layer.h"
 #include "applib/ui/window.h"
 #include "font_resource_keys.auto.h"
@@ -33,19 +35,19 @@
 
 // Boulders Health-App beim Start und an den Tasten (Schritt 3, AP0 und AP7): wie die Einstiege
 // sie finden, dass sie ohne Systemrechte laeuft, dass ihr Zustand im Heap der App liegt und alles
-// wieder freigibt, auf welcher Karte sie oeffnet, wohin Oben und Unten fuehren, und die
-// Zeitstempel des Pruefbaus (nur mit CONFIG_BOULDER_HEALTH_ZEITEN, test_bh_app_zeiten).
-// Nachgebaut sind Pebbles Fenster, Ebenen, Grafik, Timer, Minutentakt, Health-Abo, Start-Syscalls,
-// Heap und Protokoll, dazu das Laden (daten.c) und das Zeichnen von Inhalt und Details: Die
-// zeichnet test_bh_karten mit echter Grafik. Echt sind die App, ihr Einstieg (einstieg.c), ihr
-// Kartenrahmen mit der Zuordnung der Details (karten.c) und die Texte (texte.c).
+// wieder freigibt, auf welcher Karte sie oeffnet, wohin Oben und Unten fuehren und wie die Karten
+// dabei gleiten (F40), und die Zeitstempel des Pruefbaus (nur mit CONFIG_BOULDER_HEALTH_ZEITEN,
+// test_bh_app_zeiten). Nachgebaut sind Pebbles Fenster, Ebenen, Animationen, Grafik, Timer,
+// Minutentakt, Health-Abo, Start-Syscalls, Heap und Protokoll, dazu das Laden (daten.c) und das
+// Zeichnen von Inhalt und Details: Die zeichnet test_bh_karten mit echter Grafik. Echt sind die
+// App, ihr Einstieg (einstieg.c), ihr Kartenrahmen mit der Zuordnung der Details (karten.c) und
+// die Texte (texte.c).
 
 const PebbleProcessMd *health_app_get_info(void);
 
 // --- Was die App ruft, mitgezaehlt ---
 
 static char s_reihe[512]; //< die Aufrufe in ihrer Reihenfolge, je ein Buchstabe
-static Layer *s_kind;     //< was layer_add_child an die Wurzel des ersten Fensters haengt
 static GColor s_hintergrund;
 static bool s_animiert;
 static int s_details_animiert; //< Detailfenster, die mit Uebergang geschoben wurden
@@ -54,7 +56,8 @@ static void *s_heap;           //< app_zalloc_check
 static int s_offen;            //< Bloecke im Heap der App
 static bool s_neu_zeichnen;    //< layer_mark_dirty seit dem letzten Zeichnen
 static bool s_alle_weg;        //< app_window_stack_pop_all
-static char s_protokoll[64][96];
+#define ZEILEN_MAX 128
+static char s_protokoll[ZEILEN_MAX][96];
 static int s_zeilen;
 static unsigned long s_ticks;
 
@@ -71,14 +74,49 @@ static int s_stapel[FENSTER_MAX];
 static int s_stapel_n;
 static int s_letztes_fenster; //< zuletzt geschaffenes Fenster: dorthin gehoeren neue Ebenen
 
-// Ebenen: die Flaeche der Karten zuerst, dann Kopf und Inhalt eines Details.
-#define EBENEN_MAX 4
+// Ebenen: die fuenf Karten zuerst, dann Kopf und Inhalt eines Details. Pebble zeichnet nur, was
+// nicht versteckt ist und im Bild liegt (layer.c, layer_render_tree: leerer Ausschnitt).
+#define EBENEN_MAX (BhKartenAnzahl + 2)
 static Layer s_ebenen[EBENEN_MAX];
 static bool s_ebene_belegt[EBENEN_MAX];
 static int s_ebene_fenster[EBENEN_MAX];
 static LayerUpdateProc s_ebene_zeichnen[EBENEN_MAX];
+static GRect s_ebene_rahmen[EBENEN_MAX];
+static bool s_ebene_versteckt[EBENEN_MAX];
 static int s_flaechen_offen;
-#define s_flaeche (s_ebenen[0])
+static Layer *s_kinder[EBENEN_MAX]; //< was layer_add_child an die Wurzel des ersten Fensters haengt
+static int s_kinder_n;
+static unsigned s_karten_im_bild;   //< je Karte ein Bit: im letzten Bild gezeichnet
+static int s_weiss_gefuellt;        //< Inhalt einer Karte weiss gefuellt
+
+// Animationen: je Gleiten zwei Teile (eine Karte hinaus, eine herein) in einem Spawn.
+typedef struct {
+  Layer *ebene;
+  GRect von;
+  GRect bis;
+  uint32_t dauer;
+  InterpolateInt64Function kurve;
+} Teil;
+typedef struct {
+  Teil *raus;
+  Teil *rein;
+  AnimationHandlers handler;
+  void *kontext;
+  bool geplant; //< geplant und nicht zu Ende
+  bool begonnen;
+  unsigned karten_mitte; //< die Karten im Bild in der Mitte des Gleitens
+} Spawn;
+#define TEILE_MAX 64
+#define SPAWNS_MAX 32
+static Teil s_teile[TEILE_MAX];
+static int s_teile_n;
+static Spawn s_spawns[SPAWNS_MAX];
+static int s_spawns_n;
+static bool s_gleiten_stehen_lassen; //< ein Gleiten endet erst mit der naechsten Taste
+static int32_t s_kurve_mittel;       //< zuletzt an interpolate_moook_soft gegeben
+static int32_t s_dauer_mittel;       //< zuletzt an interpolate_moook_soft_duration gegeben
+// Pebbles Dauer der Kurve: drei Bilder Anlauf, vier Federn und die Mitte, je 33 ms.
+#define MOOOK_DAUER(mitte) ((3 + 4 + (mitte)) * 33)
 static ScrollLayer s_rolle;
 static int s_rollen_offen;
 // Wie Pebble: Die Inhaltsebene haengt an der ScrollLayer (scroll_layer.c, content_sublayer), und
@@ -239,6 +277,8 @@ Layer *layer_create(GRect frame) {
       s_ebene_belegt[i] = true;
       s_ebene_fenster[i] = s_letztes_fenster;
       s_ebene_zeichnen[i] = NULL;
+      s_ebene_rahmen[i] = frame;
+      s_ebene_versteckt[i] = false;
       s_flaechen_offen++;
       return &s_ebenen[i];
     }
@@ -264,14 +304,18 @@ void layer_destroy(Layer *layer) {
   s_flaechen_offen--;
 }
 void layer_set_frame_by_value(Layer *layer, GRect frame) {
-  prv_ebene_nr(layer);
+  s_ebene_rahmen[prv_ebene_nr(layer)] = frame;
+}
+void layer_set_hidden(Layer *layer, bool hidden) {
+  s_ebene_versteckt[prv_ebene_nr(layer)] = hidden;
 }
 void layer_set_update_proc(Layer *layer, LayerUpdateProc update_proc) {
   s_ebene_zeichnen[prv_ebene_nr(layer)] = update_proc;
 }
 void layer_add_child(Layer *parent, Layer *child) {
   if (parent == &s_fenster[0].layer) {
-    s_kind = child;
+    cl_assert(s_kinder_n < EBENEN_MAX);
+    s_kinder[s_kinder_n++] = child;
   }
 }
 void layer_mark_dirty(Layer *layer) {
@@ -438,6 +482,69 @@ bool sys_boulder_messstufe_setzen(uint8_t stufe) {
   return stufe >= 1 && stufe <= 5;
 }
 
+// Animationen. Die Kurve rechnet hier geradlinig; welche Pebble-Kurve die App setzt, zeigt das
+// Argument fuer die Mitte.
+PropertyAnimation *property_animation_create_layer_frame(struct Layer *layer, GRect *from_frame,
+                                                         GRect *to_frame) {
+  prv_ebene_nr(layer);
+  cl_assert(s_teile_n < TEILE_MAX);
+  Teil *t = &s_teile[s_teile_n++];
+  *t = (Teil){.ebene = layer, .von = *from_frame, .bis = *to_frame};
+  return (PropertyAnimation *)t;
+}
+bool animation_set_duration(Animation *animation, uint32_t duration_ms) {
+  ((Teil *)animation)->dauer = duration_ms;
+  return true;
+}
+bool animation_set_custom_interpolation(Animation *animation,
+                                        InterpolateInt64Function interpolate_function) {
+  ((Teil *)animation)->kurve = interpolate_function;
+  return true;
+}
+uint32_t interpolate_moook_soft_duration(int32_t num_frames_mid) {
+  s_dauer_mittel = num_frames_mid;
+  return MOOOK_DAUER(num_frames_mid);
+}
+int64_t interpolate_moook_soft(int32_t normalized, int64_t from, int64_t to,
+                               int32_t num_frames_mid) {
+  s_kurve_mittel = num_frames_mid;
+  return from + (to - from) * normalized / ANIMATION_NORMALIZED_MAX;
+}
+Animation *animation_spawn_create(Animation *animation_a, Animation *animation_b,
+                                  Animation *animation_c, ...) {
+  cl_assert(animation_c == NULL);
+  cl_assert(s_spawns_n < SPAWNS_MAX);
+  Spawn *s = &s_spawns[s_spawns_n++];
+  *s = (Spawn){.raus = (Teil *)animation_a, .rein = (Teil *)animation_b};
+  return (Animation *)s;
+}
+bool animation_set_handlers(Animation *animation, AnimationHandlers callbacks, void *context) {
+  Spawn *s = (Spawn *)animation;
+  cl_assert(!s->geplant);
+  s->handler = callbacks;
+  s->kontext = context;
+  return true;
+}
+bool animation_schedule(Animation *animation) {
+  prv_merke('G');
+  ((Spawn *)animation)->geplant = true;
+  return true;
+}
+// Wie Pebble: Ein beendetes Gleiten gibt es nicht mehr (auto_destroy); ein laufendes endet mit
+// stopped(finished = false), ein noch nicht begonnenes ohne.
+bool animation_unschedule(Animation *animation) {
+  prv_merke('J');
+  Spawn *s = (Spawn *)animation;
+  if (!s || !s->geplant) {
+    return false;
+  }
+  s->geplant = false;
+  if (s->begonnen && s->handler.stopped) {
+    s->handler.stopped(animation, false, s->kontext);
+  }
+  return true;
+}
+
 // Laden (daten.c): Phase 1 laesst offen, was der Test will; Phase 2 holt es nach einigen
 // Nachfragen, mit derselben Grenze wie daten.c.
 void bh_daten_laden(BhDaten *d) {
@@ -484,6 +591,15 @@ void bh_kopf_detail(GContext *ctx, int16_t breite, const char *titel, GColor far
 GFont bh_schrift(BhSchriftart art) {
   return (GFont)((art == BhSchriftG18Fett) ? FONT_KEY_GOTHIC_18_BOLD : "andere");
 }
+// Die Karte deckt ihre Ebene: unter dem Kopfbalken weiss.
+void bh_rechteck(GContext *ctx, GRect r, GColor farbe) {
+  cl_assert(gcolor_equal(farbe, GColorWhite));
+  cl_assert_equal_i(r.origin.x, 0);
+  cl_assert_equal_i(r.origin.y, 28);
+  cl_assert_equal_i(r.size.w, 200);
+  cl_assert_equal_i(r.size.h, 228 - 28);
+  s_weiss_gefuellt++;
+}
 
 // Grafik: Es zaehlt, was der Kopfbalken zeigt.
 GFont fonts_get_system_font(const char *font_key) {
@@ -525,25 +641,78 @@ uint64_t sys_get_ticks(void) {
 void app_log(uint8_t log_level, const char *src_filename, int src_line_number, const char *fmt,
              ...) {
   prv_merke('g');
-  cl_assert(s_zeilen < 64);
+  cl_assert(s_zeilen < ZEILEN_MAX);
   va_list args;
   va_start(args, fmt);
   vsnprintf(s_protokoll[s_zeilen++], sizeof(s_protokoll[0]), fmt, args);
   va_end(args);
 }
 
-// Pebble zeichnet die Ebenen des obersten Fensters.
+static bool prv_zu_sehen(int i) {
+  const GRect r = s_ebene_rahmen[i];
+  return !s_ebene_versteckt[i] && r.size.w > 0 && r.size.h > 0 && r.origin.x < 200 &&
+         r.origin.x + r.size.w > 0 && r.origin.y < 228 && r.origin.y + r.size.h > 0;
+}
+
+// Pebble zeichnet die Ebenen des obersten Fensters, die zu sehen sind, in ihrer Reihenfolge.
 static void prv_bild(void) {
   s_neu_zeichnen = false;
   s_titel[0] = '\0';
   s_offene_punkte = 0;
+  s_karten_im_bild = 0;
   const int oben = s_stapel[s_stapel_n - 1];
   for (int i = 0; i < EBENEN_MAX; i++) {
-    if (s_ebene_belegt[i] && s_ebene_fenster[i] == oben && s_ebene_zeichnen[i]) {
+    if (s_ebene_belegt[i] && s_ebene_fenster[i] == oben && s_ebene_zeichnen[i] &&
+        prv_zu_sehen(i)) {
+      if (i < BhKartenAnzahl) {
+        s_karten_im_bild |= 1u << i;
+      }
       s_ebene_zeichnen[i](&s_ebenen[i], NULL);
     }
   }
   s_bilder++;
+}
+
+// Pebbles Animationsdienst, verkuerzt auf drei Bilder je Gleiten: am Anfang, in der Mitte und am
+// Ende, die Rahmen mit der Kurve, die die App gesetzt hat.
+static void prv_teil_setzen(const Teil *t, int32_t fortschritt) {
+  GRect r = t->von;
+  r.origin.x = (int16_t)t->kurve(fortschritt, t->von.origin.x, t->bis.origin.x);
+  r.origin.y = (int16_t)t->kurve(fortschritt, t->von.origin.y, t->bis.origin.y);
+  layer_set_frame_by_value(t->ebene, r);
+}
+static void prv_gleiten_bild(Spawn *s, int32_t fortschritt) {
+  if (!s->begonnen) {
+    s->begonnen = true;
+    if (s->handler.started) {
+      s->handler.started((Animation *)s, s->kontext);
+    }
+  }
+  prv_teil_setzen(s->raus, fortschritt);
+  prv_teil_setzen(s->rein, fortschritt);
+  prv_bild();
+}
+static void prv_gleiten_laufen(bool bis_zum_ende) {
+  for (int i = 0; i < s_spawns_n; i++) {
+    Spawn *s = &s_spawns[i];
+    if (!s->geplant) {
+      continue;
+    }
+    if (!s->begonnen) {
+      prv_gleiten_bild(s, 0);
+      prv_gleiten_bild(s, ANIMATION_NORMALIZED_MAX / 2);
+      s->karten_mitte = s_karten_im_bild;
+    }
+    if (bis_zum_ende) {
+      prv_teil_setzen(s->raus, ANIMATION_NORMALIZED_MAX);
+      prv_teil_setzen(s->rein, ANIMATION_NORMALIZED_MAX);
+      s->geplant = false;
+      if (s->handler.stopped) {
+        s->handler.stopped((Animation *)s, true, s->kontext);
+      }
+      prv_bild();
+    }
+  }
 }
 
 // Die Ereignisschleife: Pebble zeichnet das Fenster, dann macht der Nutzer die Eingaben aus
@@ -580,10 +749,12 @@ void app_event_loop(void) {
     if (s_alle_weg) {
       return;
     }
+    prv_gleiten_laufen(!s_gleiten_stehen_lassen);
     if (s_neu_zeichnen) {
       prv_bild();
     }
   }
+  prv_gleiten_laufen(!s_gleiten_stehen_lassen);
   prv_bild();
   // Schliesst die App mit einem offenen Detail, nimmt Pebble alle Fenster vom Stapel, ohne dass
   // eins erscheint (app.c, prv_handle_deinit_event; window_stack_pop_all).
@@ -625,7 +796,20 @@ void test_bh_app__initialize(void) {
   s_letztes_fenster = 0;
   memset(s_ebenen, 0, sizeof(s_ebenen));
   memset(s_ebene_belegt, 0, sizeof(s_ebene_belegt));
+  memset(s_ebene_rahmen, 0, sizeof(s_ebene_rahmen));
+  memset(s_ebene_versteckt, 0, sizeof(s_ebene_versteckt));
   s_flaechen_offen = 0;
+  memset(s_kinder, 0, sizeof(s_kinder));
+  s_kinder_n = 0;
+  s_karten_im_bild = 0;
+  s_weiss_gefuellt = 0;
+  memset(s_teile, 0, sizeof(s_teile));
+  s_teile_n = 0;
+  memset(s_spawns, 0, sizeof(s_spawns));
+  s_spawns_n = 0;
+  s_gleiten_stehen_lassen = false;
+  s_kurve_mittel = -1;
+  s_dauer_mittel = -1;
   s_rollen_offen = 0;
   s_rollen_kind = -1;
   s_kind_ohne_mutter = -1;
@@ -645,7 +829,6 @@ void test_bh_app__initialize(void) {
   s_detail_gezeichnet = BhDetailKeins;
   s_auswahl_gezeichnet = 0xFF;
   s_detail_titel[0] = '\0';
-  s_kind = NULL;
   s_hintergrund = GColorClear;
   s_animiert = false;
   s_details_animiert = 0;
@@ -703,13 +886,24 @@ void test_bh_app__sichtbar_wie_pebbles_app(void) {
   cl_assert_equal_i(system->icon_resource_id, RESOURCE_ID_MENU_ICON_HEALTH);
 }
 
+static bool prv_rahmen(GRect r, int16_t x, int16_t y, int16_t w, int16_t h) {
+  return r.origin.x == x && r.origin.y == y && r.size.w == w && r.size.h == h;
+}
+
 // Ein weisses Fenster mit Pebbles Uebergang; der Zustand liegt im Heap der App (ein beschreibbares
-// static laege im Kernel-RAM). Beim Schliessen ist alles wieder frei.
+// static laege im Kernel-RAM). Wie bei Pebble je Karte eine Ebene, die erste im ganzen Fenster,
+// die anderen ohne Flaeche (card_view.c:350-367). Beim Schliessen ist alles wieder frei.
 void test_bh_app__start_und_ende(void) {
   prv_starten();
   cl_assert(s_zustand != NULL);
   cl_assert(s_zustand == s_heap);
-  cl_assert(s_kind == &s_flaeche);
+  cl_assert_equal_i(s_kinder_n, BhKartenAnzahl);
+  for (int k = 0; k < BhKartenAnzahl; k++) {
+    cl_assert(s_kinder[k] == &s_ebenen[k]);
+    cl_assert(k == BhKarteToday ? prv_rahmen(s_ebene_rahmen[k], 0, 0, 200, 228)
+                                : prv_rahmen(s_ebene_rahmen[k], 0, 0, 0, 0));
+  }
+  cl_assert_equal_i(s_karten_im_bild, 1u << BhKarteToday);
   cl_assert_equal_i(s_hintergrund.argb, GColorWhiteARGB8);
   cl_assert(s_animiert);
   cl_assert_equal_i(s_offen, 0);
@@ -758,15 +952,17 @@ void test_bh_app__erste_karte(void) {
   }
 }
 
-// Oben und Unten zeichnen die neue Karte; nach Quick Launch fuehrt Oben auf Today zum
-// Zifferblatt, ohne noch etwas zu zeichnen (F23: Unten blaettert vorwaerts).
+// Oben und Unten zeigen die neue Karte; nach Quick Launch fuehrt Oben auf Today zum
+// Zifferblatt, ohne noch etwas zu zeichnen (F23: Unten blaettert vorwaerts). Je Gleiten drei
+// Bilder (prv_gleiten_laufen), dazu das erste und das letzte der App.
 void test_bh_app__tasten(void) {
   prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_UP, APP_QUICK_LAUNCH_ACTION_TAP, 0);
   s_druecke = "uu";
   prv_starten();
   cl_assert_equal_s(s_titel, "Heart");
   cl_assert_equal_i(s_punkt_x, prv_punkt_x(2));
-  cl_assert_equal_i(s_bilder, 4);
+  cl_assert_equal_i(s_bilder, 1 + 3 + 3 + 1);
+  cl_assert_equal_i(s_karten_im_bild, 1u << BhKarteHeart);
   cl_assert(!s_alle_weg);
 
   test_bh_app__initialize();
@@ -774,8 +970,9 @@ void test_bh_app__tasten(void) {
   s_druecke = "uoo";
   prv_starten();
   cl_assert(s_alle_weg);
-  cl_assert_equal_i(s_bilder, 3);
+  cl_assert_equal_i(s_bilder, 1 + 3 + 3);
   cl_assert_equal_s(s_titel, "Today");
+  cl_assert_equal_i(s_spawns_n, 2); // zum Zifferblatt gleitet nichts
   cl_assert_equal_i(s_offen, 0);
 
   // Nach Quick Launch Unten genauso.
@@ -784,7 +981,15 @@ void test_bh_app__tasten(void) {
   s_druecke = "uoo";
   prv_starten();
   cl_assert(s_alle_weg);
-  cl_assert_equal_i(s_bilder, 3);
+  cl_assert_equal_i(s_bilder, 1 + 3 + 3);
+
+  // Unten auf der letzten Karte ohne Kreis: nichts, auch kein Gleiten.
+  test_bh_app__initialize();
+  prv_start_setzen(APP_LAUNCH_QUICK_LAUNCH, BUTTON_ID_UP, APP_QUICK_LAUNCH_ACTION_TAP, 0);
+  s_druecke = "uuuuu";
+  prv_starten();
+  cl_assert_equal_s(s_titel, "Settings");
+  cl_assert_equal_i(s_spawns_n, 4);
 
   // Im Kreis aus dem Startmenue: Oben auf Today fuehrt zu Settings.
   test_bh_app__initialize();
@@ -806,7 +1011,8 @@ void test_bh_app__tasten_ohne_syscall(void) {
   cl_assert(strchr(s_reihe, 'D') < strchr(s_reihe, 'w'));
 #ifndef CONFIG_BOULDER_HEALTH_ZEITEN
   cl_assert(strpbrk(nach_dem_start, "tg") == NULL);
-  cl_assert_equal_s(s_reihe, "aRBQADwclpTEeudododudXULWf");
+  // Je Taste nur das Gleiten: das laufende abbrechen ('J'), das neue planen ('G').
+  cl_assert_equal_s(s_reihe, "aRBQADwclllllpTEeuJGoJGoJGuJGXULLLLLWf");
 #endif
 }
 
@@ -824,7 +1030,7 @@ void test_bh_app__auffrischen_im_minutentakt(void) {
       ohne_zeit[strlen(ohne_zeit)] = *c;
     }
   }
-  cl_assert_equal_s(ohne_zeit, "eudmFdodmFdXULWf");
+  cl_assert_equal_s(ohne_zeit, "euJGmFdoJGmFdXULLLLLWf");
 }
 
 // Pebbles erster Takt nach dem Anmelden (ohne MINUTE_UNIT) liest nichts: Phase 1 hat eben gelesen.
@@ -893,8 +1099,8 @@ void test_bh_app__details(void) {
     prv_starten();
     cl_assert_equal_i(s_detail_gezeichnet, faelle[i].detail);
     cl_assert_equal_s(s_detail_titel, faelle[i].titel);
-    // L2: ohne Uebergang, sonst kommt das erste Bild erst nach Pebbles Animation.
-    cl_assert_equal_i(s_details_animiert, 0);
+    // Mit Pebbles Uebergang wie Pebbles Details (activity_summary_card.c:196).
+    cl_assert_equal_i(s_details_animiert, 1);
     // Nach Zurueck zeichnet wieder die Karte.
     cl_assert_equal_i(s_inhalt_karte, (BhKarte)(strlen(faelle[i].weg) - 1));
     cl_assert_equal_i(s_fenster_offen, 0);
@@ -1003,6 +1209,8 @@ void test_bh_app__zeitstempel(void) {
       "oooooo";
   prv_starten();
 #ifdef CONFIG_BOULDER_HEALTH_ZEITEN
+  // Beim Gleiten: "bild" im ersten Bild danach, "neu", sobald die neue Karte zu sehen ist, "ruhe"
+  // am Ende.
   static const char *const soll[] = {
     "bh t=4711 main",
     "bh t=4711 start grund=5 knopf=1 aktion=2 argument=0 Today kreis=0",
@@ -1011,6 +1219,8 @@ void test_bh_app__zeitstempel(void) {
     "bh t=4711 taste",
     "bh t=4711 karte Night",
     "bh t=4711 bild",
+    "bh t=4711 neu",
+    "bh t=4711 ruhe",
   };
   cl_assert_equal_i(APP_LAUNCH_QUICK_LAUNCH, 5);
   cl_assert_equal_i(BUTTON_ID_UP, 1);
@@ -1027,7 +1237,7 @@ void test_bh_app__zeitstempel(void) {
   }
   cl_assert(nichts);
   // main zuerst, die Daten vor dem Fenster, bild nach dem Schieben des Fensters.
-  cl_assert_equal_i(strncmp(s_reihe, "tgaRBQAtgDtgwclpTEetg", 21), 0);
+  cl_assert_equal_i(strncmp(s_reihe, "tgaRBQAtgDtgwclllllpTEetg", 25), 0);
 #else
   cl_assert_equal_i(s_zeilen, 0);
 #endif
@@ -1107,4 +1317,111 @@ void test_bh_app__detail_waechst_mit_den_daten(void) {
   s_druecke = "usn";
   prv_starten();
   cl_assert_equal_i(s_rollen_inhalt.h, 332);
+}
+
+// F40: Die Karten gleiten wie in Pebbles Health-App (card_view.c:234-274). Mit Unten gleitet die
+// gezeigte Karte nach oben hinaus und die neue von unten herein, mit Oben umgekehrt; beide mit
+// Pebbles Kurve (moook, ein Bild in der Mitte) und deren Dauer. Unterwegs sind beide zu sehen,
+// danach nur die neue. Das Fenster traegt die Farbe, die beim Federn frei wird: unten den weissen
+// Inhalt, oben den Kopf der neuen Karte.
+void test_bh_app__gleiten_wie_pebble(void) {
+  s_druecke = "u";
+  prv_starten();
+  cl_assert_equal_i(s_spawns_n, 1);
+  const Spawn *g = &s_spawns[0];
+  cl_assert(g->raus->ebene == &s_ebenen[BhKarteToday]);
+  cl_assert(prv_rahmen(g->raus->von, 0, 0, 200, 228));
+  cl_assert(prv_rahmen(g->raus->bis, 0, -228, 200, 228));
+  cl_assert(g->rein->ebene == &s_ebenen[BhKarteNight]);
+  cl_assert(prv_rahmen(g->rein->von, 0, 228, 200, 228));
+  cl_assert(prv_rahmen(g->rein->bis, 0, 0, 200, 228));
+  const Teil *teile[] = {g->raus, g->rein};
+  for (int i = 0; i < 2; i++) {
+    cl_assert_equal_i(teile[i]->dauer, MOOOK_DAUER(1));
+    s_kurve_mittel = -1;
+    teile[i]->kurve(ANIMATION_NORMALIZED_MAX / 3, 0, 228);
+    cl_assert_equal_i(s_kurve_mittel, 1);
+  }
+  cl_assert_equal_i(s_dauer_mittel, 1);
+  cl_assert(g->handler.started != NULL && g->handler.stopped != NULL);
+  cl_assert_equal_i(g->karten_mitte, (1u << BhKarteToday) | (1u << BhKarteNight));
+  cl_assert_equal_i(s_karten_im_bild, 1u << BhKarteNight);
+  for (int k = 0; k < BhKartenAnzahl; k++) {
+    cl_assert(s_ebene_versteckt[k] == (k != BhKarteNight));
+  }
+  cl_assert_equal_i(s_hintergrund.argb, GColorWhiteARGB8);
+
+  // Oben, im Kreis aus dem Startmenue von Today auf Settings: von oben herein.
+  test_bh_app__initialize();
+  s_druecke = "o";
+  prv_starten();
+  cl_assert_equal_i(s_spawns_n, 1);
+  g = &s_spawns[0];
+  cl_assert(g->raus->ebene == &s_ebenen[BhKarteToday]);
+  cl_assert(prv_rahmen(g->raus->bis, 0, 228, 200, 228));
+  cl_assert(g->rein->ebene == &s_ebenen[BhKarteSettings]);
+  cl_assert(prv_rahmen(g->rein->von, 0, -228, 200, 228));
+  cl_assert(prv_rahmen(g->rein->bis, 0, 0, 200, 228));
+  cl_assert(gcolor_equal(s_hintergrund, bh_karte_farbe(BhKarteSettings)));
+  cl_assert_equal_s(s_titel, "Settings");
+
+  // Die Richtung folgt der Taste, nicht der Reihenfolge der Karten: Unten von Settings auf Today
+  // kommt Today von unten.
+  test_bh_app__initialize();
+  s_druecke = "ou";
+  prv_starten();
+  cl_assert_equal_i(s_spawns_n, 2);
+  g = &s_spawns[1];
+  cl_assert(g->rein->ebene == &s_ebenen[BhKarteToday]);
+  cl_assert(prv_rahmen(g->rein->von, 0, 228, 200, 228));
+  cl_assert_equal_i(s_hintergrund.argb, GColorWhiteARGB8);
+}
+
+// Jede Karte deckt ihre Ebene ganz: unter dem Kopfbalken weiss, sonst zeigte sie dort die Farbe
+// des Fensters, das nach Oben die Farbe des Kopfes traegt.
+void test_bh_app__karten_deckend(void) {
+  s_druecke = "o";
+  prv_starten();
+  cl_assert(!gcolor_equal(s_hintergrund, GColorWhite));
+  cl_assert(s_weiss_gefuellt > 0);
+  cl_assert_equal_s(s_titel, "Settings");
+}
+
+// Eine Taste mitten im Gleiten bricht es ab wie bei Pebble: Die Karte, die gerade hinausglitt,
+// wird versteckt, und die gezeigte gleitet aus der Ruhe weiter hinaus.
+void test_bh_app__gleiten_abbrechen(void) {
+  s_gleiten_stehen_lassen = true;
+  s_druecke = "uu";
+  prv_starten();
+  cl_assert_equal_i(s_spawns_n, 2);
+  const Spawn *zweites = &s_spawns[1];
+  cl_assert(zweites->raus->ebene == &s_ebenen[BhKarteNight]);
+  cl_assert(prv_rahmen(zweites->raus->von, 0, 0, 200, 228));
+  cl_assert(zweites->rein->ebene == &s_ebenen[BhKarteHeart]);
+  // Today blieb mitten im Fenster stehen, ist aber versteckt.
+  cl_assert(s_ebene_versteckt[BhKarteToday]);
+  cl_assert_equal_i(zweites->karten_mitte, (1u << BhKarteNight) | (1u << BhKarteHeart));
+}
+
+// Endet die App mitten im Gleiten, ist danach trotzdem alles frei. Das Gleiten laeuft nicht mehr:
+// Pebble loescht am Ende des Prozesses nur seinen Timer (process_manager.c:548), wie bei Pebbles
+// eigener Health-App.
+void test_bh_app__schliessen_beim_gleiten(void) {
+  s_gleiten_stehen_lassen = true;
+  s_druecke = "u";
+  prv_starten();
+  cl_assert(s_spawns[0].geplant);
+  cl_assert_equal_i(s_flaechen_offen, 0);
+  cl_assert_equal_i(s_fenster_offen, 0);
+  cl_assert_equal_i(s_offen, 0);
+}
+
+// L3 auch beim Gleiten: Die Karte, die hereingleitet, zeichnet aus dem Heap; die Taste liest
+// nichts (auch nicht, wenn das Gleiten abbricht).
+void test_bh_app__gleiten_ohne_lesen(void) {
+  s_gleiten_stehen_lassen = true;
+  s_druecke = "uuoouu";
+  prv_starten();
+  const char *nach_dem_start = strchr(s_reihe, 'e');
+  cl_assert(strpbrk(nach_dem_start, "RBQADNFP") == NULL);
 }

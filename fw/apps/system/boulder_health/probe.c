@@ -19,9 +19,11 @@
 #include "applib/graphics/text.h"
 #include "applib/health_service.h"
 #include "applib/tick_timer_service.h"
+#include "applib/ui/animation.h"
 #include "applib/ui/app_window_stack.h"
 #include "applib/ui/layer.h"
 #include "applib/ui/menu_layer.h"
+#include "applib/ui/property_animation.h"
 #include "applib/ui/scroll_layer.h"
 #include "applib/ui/text_layer.h"
 #include "applib/ui/window.h"
@@ -90,6 +92,7 @@ typedef enum {
   BhSchriften,
   BhAppTimer,
   BhTickTimer,
+  BhGleiten,
   // 3.6 Ressourcen und Protokoll
   BhBild,
   BhZeichnung,
@@ -102,6 +105,9 @@ typedef enum {
   BhTextLayerInit,
   BhMallocCheck,
   BhZallocCheck,
+  BhKurveSetzen,
+  BhKurve,
+  BhKurvenDauer,
   BhBausteinAnzahl,
 } BhBaustein;
 
@@ -139,6 +145,7 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhSchriften] = "fonts_get_system_font",
   [BhAppTimer] = "app_timer",
   [BhTickTimer] = "tick_timer_service",
+  [BhGleiten] = "animation",
   [BhBild] = "gbitmap_create_with_resource",
   [BhZeichnung] = "gdraw_command_image_create_with_resource",
   [BhProtokoll] = "app_log",
@@ -149,6 +156,9 @@ static const char *const s_namen[BhBausteinAnzahl] = {
   [BhTextLayerInit] = "text_layer_init_with_parameters",
   [BhMallocCheck] = "app_malloc_check",
   [BhZallocCheck] = "app_zalloc_check",
+  [BhKurveSetzen] = "animation_set_custom_interpolation",
+  [BhKurve] = "interpolate_moook_soft",
+  [BhKurvenDauer] = "interpolate_moook_soft_duration",
 };
 
 // Die Metriken der Karten (2.6.2 Phase 0), jede mit Verlauf 1: Ein laengerer Verlauf oeffnet die
@@ -443,6 +453,36 @@ static void prv_tick(struct pbl_tm *zeit, TimeUnits einheiten) {
   prv_benutzt(prv_probe(), BhTickTimer, zeit->tm_sec);
 }
 
+static int64_t prv_kurve(int32_t fortschritt, int64_t von, int64_t bis) {
+  const int64_t wert = interpolate_moook_soft(fortschritt, von, bis, 1);
+  prv_benutzt(prv_probe(), BhKurve, (int32_t)wert);
+  return wert;
+}
+
+static void prv_geglitten(Animation *gleiten, bool fertig, void *kontext) {
+  prv_benutzt(prv_probe(), BhGleiten, fertig);
+}
+
+// Wie die Karten der App (boulder_health.c, prv_gleiten): zwei Ebenen gleiten gemeinsam mit
+// Pebbles Kurve, hier von unten an ihren Platz.
+static void prv_gleiten(BhProbe *probe, Layer *eins, Layer *zwei, int16_t weg) {
+  Layer *ebenen[2] = {eins, zwei};
+  Animation *teile[2];
+  const uint32_t dauer = interpolate_moook_soft_duration(1);
+  prv_benutzt(probe, BhKurvenDauer, (int32_t)dauer);
+  for (int i = 0; i < 2; i++) {
+    GRect bis = layer_get_frame_by_value(ebenen[i]);
+    GRect von = bis;
+    von.origin.y += weg;
+    teile[i] = (Animation *)property_animation_create_layer_frame(ebenen[i], &von, &bis);
+    animation_set_duration(teile[i], dauer);
+    prv_benutzt(probe, BhKurveSetzen, animation_set_custom_interpolation(teile[i], prv_kurve));
+  }
+  Animation *beide = animation_spawn_create(teile[0], teile[1], NULL);
+  animation_set_handlers(beide, (AnimationHandlers){.stopped = prv_geglitten}, NULL);
+  animation_schedule(beide);
+}
+
 static void prv_oberflaeche(BhProbe *probe) {
   window_init(&probe->fenster, "bh probe");
   prv_benutzt(probe, BhWindowInit, 0);
@@ -490,6 +530,7 @@ static void prv_oberflaeche(BhProbe *probe) {
 
   app_window_stack_push(&probe->fenster, true /* animiert */);
   prv_benutzt(probe, BhFenster, 0);
+  prv_gleiten(probe, &probe->flaeche, text_layer_get_layer(&probe->titel), rahmen.size.h);
 
   app_timer_register(100, prv_app_timer, NULL);
   tick_timer_service_subscribe(SECOND_UNIT, prv_tick);

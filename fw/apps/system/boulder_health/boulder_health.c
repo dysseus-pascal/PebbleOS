@@ -22,9 +22,11 @@
 #include "applib/app_timer.h"
 #include "applib/health_service.h"
 #include "applib/tick_timer_service.h"
+#include "applib/ui/animation.h"
 #include "applib/ui/app_window_stack.h"
 #include "applib/ui/click.h"
 #include "applib/ui/layer.h"
+#include "applib/ui/property_animation.h"
 #include "applib/ui/scroll_layer.h"
 #include "applib/ui/window.h"
 #include "kernel/pbl_malloc.h"
@@ -55,14 +57,21 @@
 // V3: Puls im Sekundentakt nur auf Heart und hoechstens so lange.
 #define PULS_LIVE_MS (2 * 60 * 1000)
 
+// Pebbles Gleitkurve mit einem Bild in der Mitte, wie in Pebbles Health-App (card_view.c:187).
+#define MITTEL_BILDER 1
+
 typedef struct {
   Window *fenster;
-  // Zeichnet die gezeigte Karte. Ihr Zeichnen nach dem Start und nach jeder Taste ist das Ende
-  // des Bildes, an dem L1 und L2 messen.
-  Layer *flaeche;
+  // Je Karte eine Ebene wie bei Pebble (card_view.c:350-367): Beim Wechsel gleitet die gezeigte
+  // hinaus und die neue herein, die anderen sind versteckt.
+  Layer *karten[BhKartenAnzahl];
+  Animation *gleiten;
   BhEinstieg einstieg;
-  BhKarte karte;
-  bool bild_offen; //< das naechste Zeichnen beendet einen Start, eine Taste oder ein Auffrischen
+  BhKarte karte; //< die gezeigte Karte; beim Gleiten schon die neue
+  // Die Zeitstempel (2.6.3): Das naechste Zeichnen beendet das erste Bild nach einem Start, einer
+  // Taste oder einem Auffrischen, an dem L1, L2 und L4 messen ...
+  bool bild_offen;
+  bool neu_offen; //< ... und das erste der neuen Karte oder des Details zeigt sie
   BhDaten daten;
   AppTimer *nachladen;
   AppTimer *puls_ende;
@@ -85,15 +94,36 @@ static BhApp *prv_app(void) {
 
 // --- Zeichnen ---
 
-static void prv_flaeche_zeichnen(Layer *flaeche, GContext *ctx) {
-  BhApp *app = prv_app();
-  const GRect r = layer_get_bounds_by_value(flaeche);
-  bh_kopf_zeichnen(ctx, r, app->karte);
-  bh_inhalt_zeichnen(ctx, r, app->karte, &app->daten);
+static BhKarte prv_karte_der_ebene(const BhApp *app, const Layer *ebene) {
+  int k = 0;
+  while (k + 1 < BhKartenAnzahl && app->karten[k] != ebene) {
+    k++;
+  }
+  return (BhKarte)k;
+}
+
+// Am Ende jedes Zeichnens. Gleitet die neue Karte herein oder das Detail, ist sie nach Pebbles
+// Kurve erst im zweiten Bild zu sehen: "bild" steht dann vor "neu".
+static void prv_gezeichnet(BhApp *app, bool neu) {
   if (app->bild_offen) {
     app->bild_offen = false;
     BH_ZEIT("bild");
   }
+  if (neu && app->neu_offen) {
+    app->neu_offen = false;
+    BH_ZEIT("neu");
+  }
+}
+
+static void prv_karte_zeichnen(Layer *ebene, GContext *ctx) {
+  BhApp *app = prv_app();
+  const BhKarte karte = prv_karte_der_ebene(app, ebene);
+  const GRect r = layer_get_bounds_by_value(ebene);
+  // DECKEND: Das Fenster dahinter traegt die Farbe, die beim Federn frei wird (prv_gleiten).
+  bh_rechteck(ctx, GRect(0, BH_KOPF_H, r.size.w, r.size.h - BH_KOPF_H), GColorWhite);
+  bh_kopf_zeichnen(ctx, r, karte);
+  bh_inhalt_zeichnen(ctx, r, karte, &app->daten);
+  prv_gezeichnet(app, karte == app->karte);
 }
 
 static void prv_detail_kopf_zeichnen(Layer *kopf, GContext *ctx) {
@@ -104,20 +134,17 @@ static void prv_detail_kopf_zeichnen(Layer *kopf, GContext *ctx) {
 
 static void prv_detail_inhalt_zeichnen(Layer *inhalt, GContext *ctx) {
   BhApp *app = prv_app();
-  if (app->bild_offen) {
+  if (app->neu_offen) {
     BH_ZEIT("zeichnen");
   }
   bh_detail_zeichnen(ctx, layer_get_bounds_by_value(inhalt).size.w, app->detail, &app->daten,
                      app->auswahl);
-  if (app->bild_offen) {
-    app->bild_offen = false;
-    BH_ZEIT("bild");
-  }
+  prv_gezeichnet(app, true);
 }
 
 static void prv_neu_zeichnen(BhApp *app) {
   app->bild_offen = true;
-  layer_mark_dirty(app->flaeche);
+  layer_mark_dirty(app->karten[app->karte]);
   if (app->rolle) {
     // DIE HOEHE HAENGT AN DEN DATEN (Night ohne Nacht, neue Sitzungen): nach neuen Daten neu
     // setzen, sonst schnitte die Ebene ab, was dazukam, und das Detail rollte nicht dorthin.
@@ -173,7 +200,7 @@ static void prv_ereignis(HealthEventType ereignis, void *kontext) {
   BhApp *app = prv_app();
   if (ereignis == HealthEventHeartRateUpdate && app->karte == BhKarteHeart) {
     bh_daten_puls(&app->daten);
-    layer_mark_dirty(app->flaeche);
+    layer_mark_dirty(app->karten[BhKarteHeart]);
   }
 }
 
@@ -285,10 +312,68 @@ static void prv_detail_oeffnen(BhApp *app, BhDetail detail) {
   }
   layer_add_child(wurzel, app->detail_kopf);
   app->bild_offen = true;
-  // OHNE UEBERGANG (L2, AP8): Mit Pebbles Schiebe-Animation zeichnet das Detail erst nach rund
-  // 40 ms das erste Bild (QEMU, qemu_health.py), ohne sie nach hoechstens 18 ms. Das Zeichnen
-  // selbst braucht beide Male unter 15 ms.
-  app_window_stack_push(app->detail_fenster, false /* animiert */);
+  app->neu_offen = true;
+  // Mit Pebbles Uebergang wie die Details von Pebbles Health-App (activity_summary_card.c:196).
+  app_window_stack_push(app->detail_fenster, true /* animiert */);
+}
+
+// --- Gleiten (wie card_view.c:187-274) ---
+
+static int64_t prv_moook_weich(int32_t fortschritt, int64_t von, int64_t bis) {
+  return interpolate_moook_soft(fortschritt, von, bis, MITTEL_BILDER);
+}
+
+static Animation *prv_gleiten_eine(Layer *karte, GRect *von, GRect *bis) {
+  Animation *a = (Animation *)property_animation_create_layer_frame(karte, von, bis);
+  animation_set_duration(a, interpolate_moook_soft_duration(MITTEL_BILDER));
+  animation_set_custom_interpolation(a, prv_moook_weich);
+  return a;
+}
+
+static void prv_gleiten_beginnt(Animation *gleiten, void *kontext) {
+  BhApp *app = kontext;
+  layer_set_hidden(app->karten[app->karte], false);
+}
+
+// Auch wenn eine Taste das Gleiten abbricht: Dann gleitet die gezeigte Karte gleich weiter
+// hinaus, und die abgebrochene bleibt versteckt.
+static void prv_gleiten_endet(Animation *gleiten, bool fertig, void *kontext) {
+  BhApp *app = kontext;
+  for (int k = 0; k < BhKartenAnzahl; k++) {
+    if (k != (int)app->karte) {
+      layer_set_hidden(app->karten[k], true);
+    }
+  }
+  if (fertig) {
+    BH_ZEIT("ruhe");
+  }
+}
+
+// Die gezeigte Karte gleitet hinaus und `neu` herein, mit Oben von oben, mit Unten von unten
+// (card_view.c:283), wohin auch immer F23 blaettert.
+static void prv_gleiten(BhApp *app, BhKarte neu, bool von_oben) {
+  // VOR DEM WECHSEL VON app->karte: Das Ende des laufenden Gleitens versteckt alle anderen.
+  animation_unschedule(app->gleiten);
+  app->gleiten = NULL;
+  GRect ruhe = layer_get_bounds_by_value(window_get_root_layer(app->fenster));
+  GRect alt_bis = ruhe;
+  alt_bis.origin.y = von_oben ? ruhe.size.h : -ruhe.size.h;
+  GRect neu_von = ruhe;
+  neu_von.origin.y = von_oben ? -ruhe.size.h : ruhe.size.h;
+  Animation *raus = prv_gleiten_eine(app->karten[app->karte], &ruhe, &alt_bis);
+  Animation *rein = prv_gleiten_eine(app->karten[neu], &neu_von, &ruhe);
+  // Das Fenster ist nur am Ende zu sehen: Pebbles Kurve schiesst bis 4 px ueber, im Streifen, den
+  // die neue Karte dabei frei gibt. Oben grenzt dort ihr Kopf an, unten ihr Inhalt.
+  window_set_background_color(app->fenster, von_oben ? bh_karte_farbe(neu) : GColorWhite);
+  app->gleiten = animation_spawn_create(raus, rein, NULL);
+  animation_set_handlers(app->gleiten,
+                         (AnimationHandlers){
+                           .started = prv_gleiten_beginnt,
+                           .stopped = prv_gleiten_endet,
+                         },
+                         app);
+  animation_schedule(app->gleiten);
+  app->karte = neu;
 }
 
 // --- Karten ---
@@ -299,11 +384,13 @@ static void prv_blaettern(ClickRecognizerRef anlass, void *kontext) {
   BhApp *app = prv_app();
   const ButtonId knopf = click_recognizer_get_button_id(anlass);
   BH_ZEIT("taste");
-  switch (bh_blaettern(&app->einstieg, &app->karte, knopf)) {
+  BhKarte neu = app->karte;
+  switch (bh_blaettern(&app->einstieg, &neu, knopf)) {
     case BhSchrittKarte:
-      BH_PROTOKOLL("karte %s", bh_karte_titel(app->karte));
+      BH_PROTOKOLL("karte %s", bh_karte_titel(neu));
       app->bild_offen = true;
-      layer_mark_dirty(app->flaeche);
+      app->neu_offen = true;
+      prv_gleiten(app, neu, knopf == BUTTON_ID_UP);
       prv_puls(app, prv_puls_gewollt(app));
       break;
     case BhSchrittZifferblatt:
@@ -372,9 +459,13 @@ static void prv_start(void) {
   window_set_window_handlers_by_value(app->fenster,
                                       (WindowHandlers){.appear = prv_karten_erscheinen});
   Layer *wurzel = window_get_root_layer(app->fenster);
-  app->flaeche = layer_create(layer_get_bounds_by_value(wurzel));
-  layer_set_update_proc(app->flaeche, prv_flaeche_zeichnen);
-  layer_add_child(wurzel, app->flaeche);
+  // Wie Pebble (card_view.c:350-367): jede Karte ohne Flaeche, die erste im ganzen Fenster.
+  for (int k = 0; k < BhKartenAnzahl; k++) {
+    app->karten[k] = layer_create(GRectZero);
+    layer_set_update_proc(app->karten[k], prv_karte_zeichnen);
+    layer_add_child(wurzel, app->karten[k]);
+  }
+  layer_set_frame_by_value(app->karten[app->karte], layer_get_bounds_by_value(wurzel));
   app_window_stack_push(app->fenster, true /* animiert */);
   tick_timer_service_subscribe(MINUTE_UNIT, prv_minute);
   health_service_events_subscribe(prv_ereignis, NULL);
@@ -389,7 +480,9 @@ static void prv_ende(void) {
   if (app->nachladen) {
     app_timer_cancel(app->nachladen);
   }
-  layer_destroy(app->flaeche);
+  for (int k = 0; k < BhKartenAnzahl; k++) {
+    layer_destroy(app->karten[k]);
+  }
   window_destroy(app->fenster);
   task_free(app);
 }

@@ -12,7 +12,9 @@ Startet QEMU ohne Fenster auf einer Kopie des Flash-Abbilds, spielt Pruefdaten e
 Pruefnacht, SpO2, Schritte) und misst:
   L1  Start bis zum ersten Bild mit Werten, je Einstieg 20-mal         <= 50 ms
       (der erste Start nach dem Boot in einem zweiten Boot unter -icount, siehe ICOUNT_SHIFT)
-  L2  Taste bis zum Bild der naechsten Karte oder des Details          <= 30 ms
+  L2  Taste bis zum ersten Bild danach                                  <= 30 ms
+      (das Gleiten der Karten oder Pebbles Uebergang zum Detail beginnt, F40), dazu wann die
+      neue Karte oder das Detail zu sehen ist und wann die Karte ruht (siehe GLEITEN_MS)
   L4  Auffrischen im Minutentakt bis zum Bild                          <= 30 ms
   L6  jeder Syscall der Daten (Mittel aus 100 Aufrufen)                <= 1 ms
 dazu den Hoechststand des App-Heaps, den Kernel-Heap vor und nach 100 Starts, das Puls-Abo im
@@ -52,6 +54,10 @@ from pebble.commander.exceptions import CommandTimedOut  # noqa: E402
 # Zeit hier 2,4 % zu klein.
 TICKS_HZ = 1000
 ZIELE_MS = {'L1': 50.0, 'L2': 30.0, 'L4': 30.0, 'L6': 1.0}
+# Die Karten gleiten mit Pebbles Kurve (moook mit einem Bild in der Mitte, F40): 8 Bilder zu 33 ms
+# (animation_interpolate.c). Ihr Ende kommt mit dem Bild danach; mehr als zwei Bilder spaeter hiesse,
+# dass die App das Gleiten aufhaelt.
+GLEITEN_MS = (264.0, 264.0 + 2 * 33)
 # DER ERSTE START NACH DEM BOOT ZAEHLT UNTER -icount (F17): In Echtzeit enthaelt er, dass QEMU jeden
 # Codepfad beim ersten Lauf uebersetzt, und schwankt mit dem Host (30-54 ms in AP9). Unter -icount
 # laeuft die Gastzeit nach ausgefuehrten Befehlen (2^3 ns je Befehl); es zaehlt nur, was die App tut.
@@ -282,26 +288,41 @@ class Messung:
             for _karte in range(5):
                 stand = self.k.stand()
                 self.emu.taste('u')  # Unten blaettert vorwaerts (F23)
-                self.k.warte(r'bh t=\d+ bild', stand, 3)
-                w = spanne(stempel(self.k.ab(stand)), 'taste', 'bild')
-                if w is not None:
-                    self.werte['L2'].append(('Karte', w))
-                # Select: auf Today nichts, sonst das Detail
+                # Bis die Karte ruht: Dann liegen alle Stempel des Gleitens vor.
+                self.k.warte(r'bh t=\d+ ruhe', stand, 3)
+                st = stempel(self.k.ab(stand))
+                for art, bis in (('Karte', 'bild'), ('Karte neu', 'neu'), ('Karte Ruhe', 'ruhe')):
+                    self.werte['L2'].append((art, spanne(st, 'taste', bis)))
+                # Select: auf Today nichts, sonst das Detail mit Pebbles Uebergang
                 stand = self.k.stand()
                 self.emu.taste('s')
-                if self.k.warte(r'bh t=\d+ (bild|nichts)', stand, 3):
-                    time.sleep(0.2)
+                if self.k.warte(r'bh t=\d+ (neu|nichts)', stand, 3):
+                    time.sleep(0.3)  # Pebbles Uebergang: 7 Bilder zu 33 ms
                     st = stempel(self.k.ab(stand))
-                    w = spanne(st, 'taste', 'bild') if any(x.startswith('detail') for _, x in st) else None
-                    if w is not None:
-                        self.werte['L2'].append(('Detail', w))
+                    if any(x.startswith('detail') for _, x in st):
                         # Getrennt: bis das Detail zu zeichnen beginnt (Fenster, Uebergang), und
                         # das Zeichnen selbst.
-                        self.werte['L2'].append(('Detail bis Zeichnen', spanne(st, 'taste', 'zeichnen')))
-                        self.werte['L2'].append(('Detail zeichnen', spanne(st, 'zeichnen', 'bild')))
+                        for art, von, bis in (('Detail', 'taste', 'bild'),
+                                              ('Detail neu', 'taste', 'neu'),
+                                              ('Detail bis Zeichnen', 'taste', 'zeichnen'),
+                                              ('Detail zeichnen', 'zeichnen', 'neu')):
+                            self.werte['L2'].append((art, spanne(st, von, bis)))
                         self.emu.taste('b')
                         time.sleep(0.6)
         self.app_zu()
+        ruhe = [w for a, w in self.werte['L2'] if a == 'Karte Ruhe']
+        neu = [w for a, w in self.werte['L2'] if a == 'Karte neu']
+        gemessen = [w for w in ruhe if w is not None]
+        self.pruefe(f'L2: jede Karte gleitet mit Pebbles Kurve ({GLEITEN_MS[0]:.0f}-'
+                    f'{GLEITEN_MS[1]:.0f} ms bis zur Ruhe)',
+                    len(gemessen) == runden * 5 and
+                    all(GLEITEN_MS[0] <= w <= GLEITEN_MS[1] for w in gemessen),
+                    f'{len(gemessen)} Wechsel, {min(gemessen, default=0):.1f}-'
+                    f'{max(gemessen, default=0):.1f} ms')
+        self.pruefe('L2: die neue Karte ist schon beim Gleiten zu sehen',
+                    all(n is not None and r is not None and n < r for n, r in zip(neu, ruhe)),
+                    f'nach {min((n for n in neu if n is not None), default=0):.1f}-'
+                    f'{max((n for n in neu if n is not None), default=0):.1f} ms')
 
     def l4(self, minuten=3):
         self.app_auf(f'app launch {APP_HEALTH}')
@@ -423,11 +444,12 @@ def zusammenfassen(m, erster_start_icount):
         return {'n': len(werte), 'max': round(max(werte), 2) if werte else None,
                 'median': round(statistics.median(werte), 2) if werte else None}
     l1_alle = [w for v in m.werte['L1'].values() for w in v]
-    l2 = [w for a, w in m.werte['L2'] if a in ('Karte', 'Detail')]
+    l2 = [w for a, w in m.werte['L2'] if a in ('Karte', 'Detail') and w is not None]
     ergebnis = {
         'L1': {name: kennzahl(v) for name, v in m.werte['L1'].items()},
         'L2': {art: kennzahl([w for a, w in m.werte['L2'] if a == art and w is not None])
-               for art in ('Karte', 'Detail', 'Detail bis Zeichnen', 'Detail zeichnen')},
+               for art in ('Karte', 'Karte neu', 'Karte Ruhe', 'Detail', 'Detail neu',
+                           'Detail bis Zeichnen', 'Detail zeichnen')},
         'L1_erster_start': {'echtzeit': getattr(m, 'erster_start_echtzeit', None),
                             f'icount_shift_{ICOUNT_SHIFT}': erster_start_icount},
         'L4': kennzahl(m.werte['L4']),
