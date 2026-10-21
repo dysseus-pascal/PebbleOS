@@ -236,6 +236,38 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Grundlage): Die Karten gleiten beim Wechsel vertikal wie in Pebbles eigener Health-App
   (`fw/apps/system/health/card_view.c`). Nicht gewählt: B, alle Karten auf einer Seite, die dem
   Finger folgt.
+- **Umgesetzt** in V2 `685b50fe9` (b35):
+  - Je Karte eine Ebene wie bei Pebble. Kurve und Dauer sind Pebbles: moook mit einem Bild in der
+    Mitte, 8 Bilder zu 33 ms = 264 ms. Die Richtung folgt der Taste, Oben von oben, Unten von unten,
+    auch beim Wischen. Eine Taste mitten im Gleiten bricht es ab wie bei Pebble.
+  - Beim Federn am Ende (bis 4 px) trägt das Fenster die Farbe, die an die neue Karte grenzt: oben
+    ihren Kopf, unten den weissen Inhalt. Pebble färbt dafür das Fenster in der Farbe der Karte.
+  - **Details wieder mit Pebbles Übergang** (aus der Health-App, `activity_summary_card.c:196`). AP8
+    hatte ihn für L2 weggelassen; das war eine Massnahme aus der Messung, kein Entscheid des Nutzers.
+    Mit dem Grundsatz gilt Pebbles Verhalten.
+  - **L2** begrenzt jetzt den Anteil der App (`a9133d56e`), weiter mit 30 ms: die Zeit von der
+    Taste bis zum ersten Bild des Gleitens und das Zeichnen des Details. Wann das Neue zu sehen
+    ist, bestimmt Pebble:
+    - Die neue Karte kommt ein Bild nach dem Beginn herein (33 ms).
+    - Pebbles Übergang zum Detail zeichnet sein erstes Bild erst, wenn das Detail hereinkommt, in
+      QEMU nach 40–60 ms (wie schon in AP8).
+    - Diese Zeiten stehen ohne Grenze in `messung.json`. Die alte Grenze für die ganze Zeit hielte
+      nur ein Wechsel ohne Pebbles Animation.
+    - Das erste Gleiten und das erste Detail nach dem Boot zählen nicht: QEMU übersetzt dabei
+      Pebbles Animationscode zum ersten Mal (wie F17).
+    - `qemu_health.py` prüft dazu, dass jede Karte nach 264–330 ms ruht und schon im Gleiten zu
+      sehen ist.
+  - Pebbles Kurve steht nicht im SDK: drei Helfer ohne Systemrechte mehr in `pruefe_ohne_rechte.py`
+    (Pebbles Applib nutzt sie selbst in der App-Task), die Probe der Bausteine benutzt sie.
+  - Nebenbefund `967da424b`: QEMU zählt 1000 Ticks je Sekunde, `qemu_health.py` rechnete mit 1024.
+    Jede QEMU-Zeit war 2,4 % zu klein; kein Urteil kippt.
+  - Nebenbefund `e044bda27`: Die Probe der Bausteine endete seit b34 beim Schliessen an der MPU.
+    Seit Upstream `main` schreibt `menu_layer_destroy` für eine App mit System-ID Kernel-RAM
+    (seitlich laufender Menütext). Die Health-App benutzt keine MenuLayer, Kieselsport läuft mit
+    Systemrechten; betroffen war nur die Probe. Sie kommt jetzt ohne MenuLayer aus, und
+    `pruefe_ohne_rechte.py` meldet `menu_layer_destroy`.
+  - Noch nicht wie Pebble: Pebbles Karten zeigen oben und unten Pfeile (ContentIndicator) und rechts
+    den Punkt für Select; Boulders Karten haben dafür die fünf Punkte im Kopf. Frage an den Nutzer.
 
 ## Vor der ersten Vorabversion (13.10.2026, Abnahme `schritt3-abnahme.md`, Abschnitte 7 und 8)
 - **Upstream v4.40.0** nachgezogen (`0510648c`), wie am 8.10. entschieden.

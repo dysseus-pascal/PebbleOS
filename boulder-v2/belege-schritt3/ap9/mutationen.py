@@ -58,6 +58,10 @@ M = [
      'void bh_daten_laden(BhDaten *d) {\n',
      'void bh_daten_laden(BhDaten *d) {\n  health_service_get_minute_history(NULL, 0, NULL, NULL);\n',
      OHNE_RECHTE),
+    # Seit Upstream main (F39) schreibt menu_layer_destroy mit System-ID Kernel-RAM (b35).
+    ('K2c', 'K2', 'MenuLayer-Abbau ohne Systemrechte erlaubt', 'tools/boulder/pruefe_ohne_rechte.py',
+     "SYSTEM_ID = {'menu_cell_basic_draw', 'menu_layer_destroy'}", "SYSTEM_ID = {'menu_cell_basic_draw'}",
+     werkzeug('test_pruefe_ohne_rechte.py')),
     # K3 Grundsatz
     ('K3a', 'K3', 'Zonen ohne Quelle S6 gezeigt', APP + 'details.c',
      'const bool heute = d->herz_da && d->herz.zonen_tag == d->heute;',
@@ -81,10 +85,11 @@ M = [
      '      "ifdefs": [\n        "CONFIG_BOULDER_HEALTH_APP"\n      ]\n',
      ctest('^test_bh_startmenue_asterix$')),
     # K6 Ladezeit (L3 auf dem Host; L1 als QEMU-Mutation getrennt)
+    # Seit F40 (21.10.) nennt die Zeile die neue Karte, bevor sie gleitet.
     ('K6b', 'K6', 'Taste liest Daten (L3)', APP + 'boulder_health.c',
-     '      BH_PROTOKOLL("karte %s", bh_karte_titel(app->karte));',
+     '      BH_PROTOKOLL("karte %s", bh_karte_titel(neu));',
      '      bh_daten_auffrischen(&app->daten);\n'
-     '      BH_PROTOKOLL("karte %s", bh_karte_titel(app->karte));', ctest('^test_bh_app$')),
+     '      BH_PROTOKOLL("karte %s", bh_karte_titel(neu));', ctest('^test_bh_app$')),
     # K7 Ressourcen (Kernel-Heap als QEMU-Mutation getrennt)
     ('K7a', 'K7', 'Puls-Takt bleibt nach dem Ende', APP + 'boulder_health.c',
      '  prv_puls(app, false);\n  health_service_events_unsubscribe();',
@@ -128,6 +133,25 @@ M = [
     ('S1-4', 'Schritt 1 K4', 'Smart Alarm ohne Bewegung (auch im Tiefschlaf)', VAR + 'wecker.c',
      '  if (s_bewegt & WECKER_S1) {', '  if (true) {', ctest('^test_boulder_wecker')),
     # S1-5 (Velo nie erkannt) entfiel mit F38 (20.10.): Die Velo- und Autoerkennung ist entfernt.
+    # V2, F40 (21.10.): Die Karten gleiten wie in Pebbles Health-App, Details mit Pebbles Uebergang.
+    ('F40a', 'V2 F40', 'Oben laesst die Karte von unten kommen', APP + 'boulder_health.c',
+     'prv_gleiten(app, neu, knopf == BUTTON_ID_UP);', 'prv_gleiten(app, neu, knopf == BUTTON_ID_DOWN);',
+     ctest('^test_bh_app$')),
+    ('F40b', 'V2 F40', 'Gleitkurve mit zwei Bildern in der Mitte statt Pebbles einem', APP + 'boulder_health.c',
+     '#define MITTEL_BILDER 1', '#define MITTEL_BILDER 2', ctest('^test_bh_app$')),
+    ('F40c', 'V2 F40', 'Das Ende des Gleitens versteckt die alten Karten nicht', APP + 'boulder_health.c',
+     '      layer_set_hidden(app->karten[k], true);', '      layer_set_hidden(app->karten[k], false);',
+     ctest('^test_bh_app$')),
+    ('F40d', 'V2 F40', 'Die Karte deckt ihren Inhalt nicht', APP + 'boulder_health.c',
+     '  bh_rechteck(ctx, GRect(0, BH_KOPF_H, r.size.w, r.size.h - BH_KOPF_H), GColorWhite);\n', '',
+     ctest('^test_bh_app$')),
+    ('F40e', 'V2 F40', 'Das Fenster federt oben weiss statt in der Farbe des Kopfes', APP + 'boulder_health.c',
+     'von_oben ? bh_karte_farbe(neu) : GColorWhite', 'GColorWhite', ctest('^test_bh_app$')),
+    ('F40f', 'V2 F40', 'Details ohne Pebbles Uebergang wie bis b34', APP + 'boulder_health.c',
+     'app_window_stack_push(app->detail_fenster, true /* animiert */);',
+     'app_window_stack_push(app->detail_fenster, false /* animiert */);', ctest('^test_bh_app$')),
+    ('F40g', 'V2 F40', 'Pebbles Kurve nicht unter den Helfern ohne Systemrechte',
+     'tools/boulder/pruefe_ohne_rechte.py', "    'interpolate_moook_soft',\n", '', OHNE_RECHTE),
     # Schritt 2
     ('S2-1', 'Schritt 2 V1', 'Velo-Training zaehlt Schritte', VAR + 'sport/plattform.c',
      'ks_schritte_streichen(!art_info(art)->schritte);', 'ks_schritte_streichen(false);',
