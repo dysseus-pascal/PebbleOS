@@ -12,9 +12,9 @@ Startet QEMU ohne Fenster auf einer Kopie des Flash-Abbilds, spielt Pruefdaten e
 Pruefnacht, SpO2, Schritte) und misst:
   L1  Start bis zum ersten Bild mit Werten, je Einstieg 20-mal         <= 50 ms
       (der erste Start nach dem Boot in einem zweiten Boot unter -icount, siehe ICOUNT_SHIFT)
-  L2  Taste bis zum ersten Bild danach                                  <= 30 ms
-      (das Gleiten der Karten oder Pebbles Uebergang zum Detail beginnt, F40), dazu wann die
-      neue Karte oder das Detail zu sehen ist und wann die Karte ruht (siehe GLEITEN_MS)
+  L2  der Anteil der App an einer Taste (F40, siehe L2_ARTEN)             <= 30 ms
+      Taste bis zum ersten Bild des Gleitens und das Zeichnen des Details; dazu, wann die neue
+      Karte und das Detail zu sehen sind und wann die Karte ruht (siehe GLEITEN_MS)
   L4  Auffrischen im Minutentakt bis zum Bild                          <= 30 ms
   L6  jeder Syscall der Daten (Mittel aus 100 Aufrufen)                <= 1 ms
 dazu den Hoechststand des App-Heaps, den Kernel-Heap vor und nach 100 Starts, das Puls-Abo im
@@ -54,6 +54,11 @@ from pebble.commander.exceptions import CommandTimedOut  # noqa: E402
 # Zeit hier 2,4 % zu klein.
 TICKS_HZ = 1000
 ZIELE_MS = {'L1': 50.0, 'L2': 30.0, 'L4': 30.0, 'L6': 1.0}
+# L2 SEIT F40: Die Karten gleiten und die Details kommen mit Pebbles Uebergang. Wann das Neue zu sehen
+# ist, bestimmen Pebbles Kurven (moook): ein Bild (33 ms) nach dem Beginn, und Pebbles Uebergang
+# zeichnet sein erstes Bild erst dann (in QEMU nach 40-60 ms). Die Grenze gilt dem Anteil der App:
+# Taste bis zum ersten Bild des Gleitens und Zeichnen des Details im ersten Bild, das es zeigt.
+L2_ARTEN = ('Karte', 'Detail zeichnen')
 # Die Karten gleiten mit Pebbles Kurve (moook mit einem Bild in der Mitte, F40): 8 Bilder zu 33 ms
 # (animation_interpolate.c). Ihr Ende kommt mit dem Bild danach; mehr als zwei Bilder spaeter hiesse,
 # dass die App das Gleiten aufhaelt.
@@ -282,33 +287,41 @@ class Messung:
                 self.erster_start_echtzeit = werte.pop(0)
             self.werte['L1'][name] = werte
 
+    def blaettern(self):
+        """Unten, bis die Karte ruht, dann Select und Zurueck: [(art, ms)]."""
+        werte = []
+        stand = self.k.stand()
+        self.emu.taste('u')  # Unten blaettert vorwaerts (F23)
+        # Bis die Karte ruht: Dann liegen alle Stempel des Gleitens vor.
+        self.k.warte(r'bh t=\d+ ruhe', stand, 3)
+        st = stempel(self.k.ab(stand))
+        for art, bis in (('Karte', 'bild'), ('Karte neu', 'neu'), ('Karte Ruhe', 'ruhe')):
+            werte.append((art, spanne(st, 'taste', bis)))
+        # Select: auf Today nichts, sonst das Detail mit Pebbles Uebergang
+        stand = self.k.stand()
+        self.emu.taste('s')
+        if self.k.warte(r'bh t=\d+ (neu|nichts)', stand, 3):
+            time.sleep(0.3)  # Pebbles Uebergang: 7 Bilder zu 33 ms
+            st = stempel(self.k.ab(stand))
+            if any(x.startswith('detail') for _, x in st):
+                # Getrennt: bis das Detail zu zeichnen beginnt (Fenster, Uebergang), und das
+                # Zeichnen selbst.
+                for art, von, bis in (('Detail', 'taste', 'bild'), ('Detail neu', 'taste', 'neu'),
+                                      ('Detail bis Zeichnen', 'taste', 'zeichnen'),
+                                      ('Detail zeichnen', 'zeichnen', 'neu')):
+                    werte.append((art, spanne(st, von, bis)))
+                self.emu.taste('b')
+                time.sleep(0.6)
+        return werte
+
     def l2(self, runden=4):
-        st, _ = self.app_auf(f'app launch {APP_HEALTH}')
+        self.app_auf(f'app launch {APP_HEALTH}')
+        # ZUM AUFWAERMEN, nicht gezaehlt: Beim ersten Gleiten und ersten Uebergang nach dem Boot
+        # uebersetzt QEMU Pebbles Animationscode (wie beim ersten Start, F17).
+        self.aufwaermen = self.blaettern()
         for _ in range(runden):
             for _karte in range(5):
-                stand = self.k.stand()
-                self.emu.taste('u')  # Unten blaettert vorwaerts (F23)
-                # Bis die Karte ruht: Dann liegen alle Stempel des Gleitens vor.
-                self.k.warte(r'bh t=\d+ ruhe', stand, 3)
-                st = stempel(self.k.ab(stand))
-                for art, bis in (('Karte', 'bild'), ('Karte neu', 'neu'), ('Karte Ruhe', 'ruhe')):
-                    self.werte['L2'].append((art, spanne(st, 'taste', bis)))
-                # Select: auf Today nichts, sonst das Detail mit Pebbles Uebergang
-                stand = self.k.stand()
-                self.emu.taste('s')
-                if self.k.warte(r'bh t=\d+ (neu|nichts)', stand, 3):
-                    time.sleep(0.3)  # Pebbles Uebergang: 7 Bilder zu 33 ms
-                    st = stempel(self.k.ab(stand))
-                    if any(x.startswith('detail') for _, x in st):
-                        # Getrennt: bis das Detail zu zeichnen beginnt (Fenster, Uebergang), und
-                        # das Zeichnen selbst.
-                        for art, von, bis in (('Detail', 'taste', 'bild'),
-                                              ('Detail neu', 'taste', 'neu'),
-                                              ('Detail bis Zeichnen', 'taste', 'zeichnen'),
-                                              ('Detail zeichnen', 'zeichnen', 'neu')):
-                            self.werte['L2'].append((art, spanne(st, von, bis)))
-                        self.emu.taste('b')
-                        time.sleep(0.6)
+                self.werte['L2'] += self.blaettern()
         self.app_zu()
         ruhe = [w for a, w in self.werte['L2'] if a == 'Karte Ruhe']
         neu = [w for a, w in self.werte['L2'] if a == 'Karte neu']
@@ -444,7 +457,7 @@ def zusammenfassen(m, erster_start_icount):
         return {'n': len(werte), 'max': round(max(werte), 2) if werte else None,
                 'median': round(statistics.median(werte), 2) if werte else None}
     l1_alle = [w for v in m.werte['L1'].values() for w in v]
-    l2 = [w for a, w in m.werte['L2'] if a in ('Karte', 'Detail') and w is not None]
+    l2 = [w for a, w in m.werte['L2'] if a in L2_ARTEN and w is not None]
     ergebnis = {
         'L1': {name: kennzahl(v) for name, v in m.werte['L1'].items()},
         'L2': {art: kennzahl([w for a, w in m.werte['L2'] if a == art and w is not None])
@@ -456,6 +469,7 @@ def zusammenfassen(m, erster_start_icount):
         'L6': {name: round(w, 3) for name, w in m.werte['L6'].items()},
         'app_heap': {'gross': getattr(m, 'heap_gross', None), 'hoechststand': getattr(m, 'heap_hoch', None)},
         'kernel_heap_frei': getattr(m, 'heap_kern', None),
+        'L2_aufwaermen': dict(getattr(m, 'aufwaermen', [])),
         'laengster_callback_ms': round(max(l1_alle + l2 + m.werte['L4']), 2) if l1_alle else None,
         'pruefungen': m.pruefungen,
     }
