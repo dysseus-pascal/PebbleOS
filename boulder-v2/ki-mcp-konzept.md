@@ -194,7 +194,31 @@ Die Review mit `/code-review` fand 15 Befunde und kleinere. Alle sind behoben, a
 - **CI:** Das Bündel wird immer gebaut. Der Release-Job entscheidet nach den Tests; ein lokal
   angelegtes Release bekommt das Bündel, wenn sein Tag auf den gebauten Stand zeigt.
 - **Geprüft:**
-  - 2891 Tests, 11 davon wie bei Core übersprungen.
+  - 2895 Tests nach der Gegenprüfung, 11 davon wie bei Core übersprungen.
   - Der Server im Podman-Container (Temurin 21) mit Lieferungen, Werkzeugen, OAuth, einem Neustart
     und einem Client aus 0.55.0.
   - Der CI-Schritt gegen ein nachgestelltes gh in sechs Fällen.
+
+### Gegenprüfung danach
+
+Eine unabhängige Prüfung der Korrekturen fand fünf Punkte und einen offenen Verdacht:
+
+1. Ein Training, dessen Puls Health Connect nicht lesen liess, wartete auf den nächsten Lauf,
+   ohne Leserecht für den Puls für immer. Jetzt geht ein neues ohne Puls und kommt mit Puls
+   wieder, sobald er lesbar ist; nur ein schon gesendetes wartet (`pulsKennzahlen` gibt null).
+2. Spalten der Uhr (Schritte, Schlaf, Ruhepuls, HRV) kann der Server nicht entfernen. Bleibt so:
+   Sie für massgebend zu erklären löschte nach einer Neuinstallation 180 Tage Schlaf, und Boulders
+   eigenes Archiv behält dieselben alten Werte.
+3. Nach einem neuen MCP-Token sind alle Client-Kennungen ungültig; ein blosses "Connect" endet bei
+   "Unknown client". Das LIESMICH sagt jetzt: Connector entfernen und neu hinzufügen.
+4. Eine neue App gegen einen Server mit 0.55.0 vergass entfernte Trainings: Der alte Server
+   kennt `trainingsEntfernt` nicht und quittiert trotzdem. Jetzt nennt die Quittung
+   `trainingsEntfernt` (Vorgabe null); fehlt das Feld, bleiben die Entfernungen vorgemerkt.
+5. Ein Schub zwischen der Prüfung `nachgestossen` und dem Ende von `doWork` wartet auf den Takt.
+   Millisekunden, nichts geht verloren; im Code benannt.
+
+Offener Verdacht: Health Connect filtert im Hintergrund vielleicht still auf die eigenen Einträge,
+statt abzuweisen. Darum entfernt der Spiegel fremde Trainings nur, wenn er sicher alles lesen
+konnte (von Hand oder mit dem Recht, im Hintergrund zu lesen).
+
+Commits: 71e72a289 (1), 6e4a054e8 (3), c0c1ec8af (4), 397396c2e (5), ec6bdfe0e (Verdacht).
