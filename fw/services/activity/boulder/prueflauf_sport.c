@@ -20,6 +20,8 @@
 //   kieselsport start <art>      wie die App: 0 Laufen, 1 Velo, 2 Wandern, 3 Kraft, 4 MTB, 5 Yoga,
 //                                6 Schwimmen, 7 Atmen
 //   kieselsport pause|weiter|speichern|verwerfen
+//   kieselsport atem <ein> <halten> <aus> <leer> <runden>
+//                                der Rhythmus der Atemuebung wie vom Telefon, mit dessen Grenzen
 //   kieselsport puls <bpm>|profil|aus
 //   kieselsport stand            Kieselsport, Pebbles Training, Zusammenfassung, Stopp, Geber
 //   kieselsport abo              die Abos im HRM-Manager, Sensor an oder aus
@@ -181,6 +183,18 @@ static int prv_verwerfen(const struct pbl_shell *sh, size_t argc, char **argv) {
   return 0;
 }
 
+static int prv_atem(const struct pbl_shell *sh, size_t argc, char **argv) {
+  for (int i = 0; i < AtemWerte; i++) {
+    kieselsport_atem_setze((AtemWert)i, atoi(argv[1 + i]));
+  }
+  Atemrhythmus r;
+  kieselsport_atem(&r);
+  pbl_shell_print(sh, "ATEM %u-%u-%u-%u runden %u", (unsigned)r.wert[AtemEin],
+                  (unsigned)r.wert[AtemHalten], (unsigned)r.wert[AtemAus], (unsigned)r.wert[AtemLeer],
+                  (unsigned)r.wert[AtemRunden]);
+  return 0;
+}
+
 static int prv_puls(const struct pbl_shell *sh, size_t argc, char **argv) {
   if (!strcmp(argv[1], "aus")) {
     prv_geber(false);
@@ -286,6 +300,7 @@ static const struct pbl_shell_cmd sub_kieselsport[] = {
   PBL_SHELL_CMD(weiter, NULL, "Weiter", prv_weiter),
   PBL_SHELL_CMD(speichern, NULL, "Speichern", prv_speichern),
   PBL_SHELL_CMD(verwerfen, NULL, "Verwerfen", prv_verwerfen),
+  PBL_SHELL_CMD_ARG(atem, NULL, "Rhythmus <ein> <halten> <aus> <leer> <runden>", prv_atem, 6, 0),
   PBL_SHELL_CMD_ARG(puls, NULL, "Puls einspeisen <bpm|profil|aus>", prv_puls, 2, 0),
   PBL_SHELL_CMD(stand, NULL, "Kieselsport und Pebbles Training", prv_stand),
   PBL_SHELL_CMD(abo, NULL, "HRM-Abos", prv_abo),
