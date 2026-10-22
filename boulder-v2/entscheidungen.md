@@ -228,6 +228,26 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
   b34 (`schritt3-abnahme.md`, Abschnitt 18).
 
+## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
+- **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
+  intervall. das spart akku. für schlaf hast du vielleicht einen vorschlag wie das umgesetzt werden
+  könnte. zb 1h vor der regulären bett zeit einschalten oder sowtwas“.
+- **Befund:** Zwei der drei Schalter hat Pebble schon. „Blood Oxygen“ ist der Tagesplan
+  (`activity.c`, `prv_spo2_subscription_update`). „Blood O2 During Activity“ misst bei Workouts und
+  erkannten Aktivitäten alle 5 min einen Punkt und hält dafür den Puls bis 35 s an. Boulders
+  Messstufe zog „Blood Oxygen“ bisher auf die Stufe zurück, ausschalten ging nur mit Stufe 1. Für den
+  Schlaf hat Pebble nichts.
+- **F44: Schlaf wie der Nachtpuls** (Empfehlung): SpO2 in der Nachtruhe, also zwischen 20 und 11 Uhr
+  und solange die eben fertige Minute ruhig war (`dauerteil.c`, Spezifikation 5.2). Kein Fenster um
+  eine Bettzeit. Nicht gewählt: nur bei erkanntem Schlaf (`live.c`), feste Zeit ab 1 h vor der
+  üblichen Bettzeit.
+- **F45: Sport wie Pebble, alle Trainings** (Empfehlung): Pebbles „Blood O2 During Activity“
+  unverändert, auch in Kieselsport. Nicht gewählt: nur ruhige Trainings (Yoga, Atmen).
+- **Umsetzung** (ohne Rückfrage): Die Messstufe setzt nur noch die Takte, nicht mehr „Blood Oxygen“
+  an oder aus. Stufe 1 misst SpO2 stündlich, wenn ein Schalter an ist. Der Schlaf-Schalter ist der neue
+  Schlüssel `boulderSpo2Schlaf` (1 Byte), in der App unter Health zwischen Pebbles SpO2-Schaltern und
+  auf der Uhr unter Settings > Health.
+
 ## Symbol von Kieselstrasse und Tagesband beim Öffnen (22.10.2026, Boulder 0.57.1)
 - **Nutzer:** „das kieselstrassen icon... das geht besser und mehr im stil von pebbel. weiter möchte
   ich das dir timelin beim öffnen der app ¾ vergangenheit und ¼ zukunft zeigt.“
