@@ -147,3 +147,54 @@ Gebaut für Boulder 0.55.0:
   - Die Token-Datei geht in kein Backup und zu keinem Geräteumzug mit.
 - **Daten:** liegen auf dem eigenen Server. Cloudflare sieht den Verkehr, weil TLS dort endet.
   Claude bekommt nur, was ein Werkzeug liefert. Nichts geht an Core oder Google.
+
+## 8. Review von 0.55.0 behoben, Fassung 0.56.0 (22.10.2026)
+
+Die Review mit `/code-review` fand 15 Befunde und kleinere. Alle sind behoben, auf
+`claude/exciting-cerf-m8apu2` in Boulder, je mit Test und einem gezielt eingebauten Fehler belegt.
+
+- **Format (`austausch/`):** neu sind `Tag.entfernt`, `Nacht.geladen` und
+  `Lieferung.trainingsEntfernt`, alle mit Vorgabe. Ein Server mit 0.55.0 liest die neue App und
+  umgekehrt.
+- **Server:**
+  - Tage werden zusammengeführt statt ersetzt. `entfernt` löscht einzelne Spalten, ein leerer Tag
+    fällt weg. `trainingsEntfernt` löscht Trainings.
+  - `nacht` nimmt die längste Nacht des Aufwachtags, wie `Gesundheitsrechnung.jeTag`, und sagt,
+    wenn die Uhr nachts lud.
+  - Die Werkzeuge erlauben `bis` bis 366 Tage nach `von`. Eine Ortszeit in der Lücke der
+    Sommerzeit zählt als der Sprung. Die Zone wird einmal je Anfrage gelesen, und die Fehlertexte
+    sind englisch.
+  - Anmeldung: Die Client-Kennung ist Base64(JSON) plus HMAC mit einem Schlüssel aus dem MCP-Token.
+    Registrieren schreibt also nichts, und Clients aus 0.55.0 liest der Server weiter aus der
+    Tabelle. Die Sperre nach 10 Fehlversuchen gilt je Absender (IPv6 je /64); gemerkt werden
+    höchstens 10'000 Absender.
+  - SQLite kommt aus `androidx.sqlite:sqlite-bundled` statt sqlite-jdbc. Das Bündel ist damit
+    16 statt 24 MB gross.
+- **App:**
+  - Der Minutenstand folgt der jüngsten Minute bis jetzt (`HealthDataApi.getLetzteMinuteBis`).
+  - Tage gehen auch ohne ganze Akte. `Trendstand.akteGanz` sagt je Spalte, ob sie ganz gelesen
+    ist; im 180-Tage-Fenster nennt ein Tag eine ganz gelesene, aber fehlende Spalte als entfernt.
+  - Trainings: Der Puls gehört zum Abdruck. Entfernt wird nur im gelesenen Fenster und im
+    Hintergrund ohne Sonderrecht nur Boulders eigene ("@b" im Stand). "Alles" behält die
+    gesendeten mit leerem Abdruck.
+  - Ein **gründlicher Lauf** (einmal am Tag, nach "Alles", für einen neuen Server und mit
+    "Send now") vergleicht Trainings über 90 Tage und alle Nächte. Ein gewöhnlicher vergleicht
+    Trainings über 3 Tage und Nächte über 7 Tage und rechnet die Tage höchstens stündlich.
+  - WorkManager nur über `arbeit()` (try/catch Throwable). `plane` berührt ohne Server
+    WorkManager gar nicht.
+  - Kam ein Schub, während ein Anstoss lief, folgt ihm ein weiterer (`nachgestossen`,
+    APPEND_OR_REPLACE).
+  - Den Sendestand schreibt ein Senden nur unter der Sperre `stand` und nur, wenn die Adresse noch
+    gilt.
+  - Die Felder der Seite hängen nicht mehr an `stand`. Ein Fehler auf dem Telefon gilt nicht als
+    vorübergehend.
+  - Aufgeräumt nach R01, R04, R05, R06 und R09; R02, R03 und R08 betrafen den Server.
+- **LIESMICH:** sagt jetzt, was "Send everything again" zurückbringt. Der Tokenwechsel zeigt das
+  neue Token. Die Sperre gilt je Anschluss, und erst kommt der Server, dann die App.
+- **CI:** Das Bündel wird immer gebaut. Der Release-Job entscheidet nach den Tests; ein lokal
+  angelegtes Release bekommt das Bündel, wenn sein Tag auf den gebauten Stand zeigt.
+- **Geprüft:**
+  - 2891 Tests, 11 davon wie bei Core übersprungen.
+  - Der Server im Podman-Container (Temurin 21) mit Lieferungen, Werkzeugen, OAuth, einem Neustart
+    und einem Client aus 0.55.0.
+  - Der CI-Schritt gegen ein nachgestelltes gh in sechs Fällen.
