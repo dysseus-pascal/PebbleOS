@@ -559,6 +559,66 @@ void test_boulder_messung__schlaf_aus_dem_menue(void) {
 }
 
 // =============================================================================================
+// Pebbles HRM-Manager: Der Schalter "Schlaf" erlaubt SpO2 wie Pebbles eigene Schalter
+
+static void prv_spo2_rueckruf(PebbleHRMEvent *e, void *context) {
+}
+
+// Ein Abo wie Pebbles SpO2-Plan, wenn er misst (activity.c, prv_spo2_set_sampling): SpO2 jede
+// Sekunde, im Hintergrund, also unter Pebbles Maske der Schalter.
+static HRMSessionRef prv_spo2_plan_misst(void) {
+  const HRMSessionRef abo = hrm_manager_subscribe_with_callback(
+      INSTALL_ID_INVALID, 1 /*update_interval_s*/, 0 /*expire_s*/, HRMFeature_SpO2,
+      false /*low_latency*/, prv_spo2_rueckruf, NULL);
+  prv_kernel_bg();
+  return abo;
+}
+
+// Mit Puls: Der Sensor darf an, aber SpO2 nur mit einem Schalter (prv_prefs_allowed_features).
+void test_boulder_messung__schlaf_erlaubt_spo2_im_manager(void) {
+  s_nachtruhe = false; // das Puls-Abo der Variante ruht
+  prv_minute();
+  HRMSessionRef abo = prv_spo2_plan_misst();
+  cl_assert(!s_sensor.an);
+  sys_hrm_manager_unsubscribe(abo);
+  prv_kernel_bg();
+  prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 1);
+  prv_kernel_bg();
+  abo = prv_spo2_plan_misst();
+  cl_assert(s_sensor.an);
+  cl_assert_equal_i(s_sensor.merkmale, HRMFeature_SpO2);
+  // Wieder aus: Beim naechsten Blick des Managers geht der Sensor aus.
+  prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 0);
+  prv_kernel_bg();
+  hrm_manager_handle_prefs_changed();
+  prv_kernel_bg();
+  cl_assert(!s_sensor.an);
+  // Pebbles "Blood Oxygen" wirkt wie bisher.
+  s_spo2_an = true;
+  hrm_manager_handle_prefs_changed();
+  prv_kernel_bg();
+  cl_assert(s_sensor.an);
+  sys_hrm_manager_unsubscribe(abo);
+}
+
+// Ohne Puls und ohne Pebbles SpO2-Schalter darf der Schalter "Schlaf" den Sensor einschalten,
+// wie "Blood Oxygen" (prv_can_turn_sensor_on): Sonst liefe Pebbles Plan nachts ohne Messung.
+void test_boulder_messung__schlaf_schaltet_den_sensor_ohne_puls(void) {
+  s_puls_an = false;
+  prv_minute();
+  HRMSessionRef abo = prv_spo2_plan_misst();
+  cl_assert(!s_sensor.an);
+  sys_hrm_manager_unsubscribe(abo);
+  prv_kernel_bg();
+  prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 1);
+  prv_kernel_bg();
+  abo = prv_spo2_plan_misst();
+  cl_assert(s_sensor.an);
+  cl_assert_equal_i(s_sensor.merkmale, HRMFeature_SpO2);
+  sys_hrm_manager_unsubscribe(abo);
+}
+
+// =============================================================================================
 // T6.1: Puls je Stufe gegen den echten Manager
 
 void test_boulder_messung__puls_je_stufe(void) {

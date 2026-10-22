@@ -211,7 +211,8 @@ add_test(NAME test_boulder_vertraege_liste
 add_test(NAME test_boulder_waechter_gegenproben
   COMMAND ${PYTHON_EXECUTABLE} ${PBL_BASE}/tools/boulder/test_kopie_pruefen.py)
 
-# AP5: Messstufe, Puls-Abo, HRV-Fenster gegen den echten hrm_manager.c
+# AP5: Messstufe, Puls-Abo, HRV-Fenster gegen den echten hrm_manager.c. Mit der Variante wie auf
+# der Uhr: der Manager erlaubt SpO2 dann auch mit dem Schalter "Schlaf" (b37).
 pbl_clar_test(test_boulder_messung
   SOURCES
     fw/services/hrm/hrm_manager.c
@@ -230,7 +231,7 @@ pbl_clar_test(test_boulder_messung
     tests/fakes/fake_events.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
-  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_HRM_HRV
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_HRM_HRV CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   OVERRIDES dummy_board
 )
 

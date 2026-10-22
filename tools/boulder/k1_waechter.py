@@ -84,7 +84,13 @@ PEBBLE = {
     # 08.10.2026 (Entscheid 1 = A): diese drei Funktionen, zusammen hoechstens 20 Zeilen.
     'fw/services/alarms/alarm.c': Stelle(
         20, r'prv_should_smart_alarm_trigger\(|prv_record_alarm_op\(|alarm_init\('),
-    'fw/services/hrm/hrm_manager.c': Stelle(10),                     # E5 HRV-Fix (F2)
+    # E5 HRV-Fix (F2) im Rundruf. Dazu der Schalter "Schlaf" fuer SpO2 (Entscheid vom 22.10.2026):
+    # Pebbles Maske laesst SpO2 fuer Abos im Hintergrund nur mit "Blood Oxygen" oder dem Schalter
+    # fuer Trainings zu, und nur ein solcher Schalter darf den Sensor einschalten. Ohne diese
+    # beiden Stellen bliebe Pebbles Plan im Schlaf ohne Messung.
+    'fw/services/hrm/hrm_manager.c': Stelle(
+        24, r'hrm_manager_new_data_cb\(|prv_can_turn_sensor_on\(|prv_prefs_allowed_features\(',
+        hunks=4),
     'fw/apps/system/settings/health.c': Stelle(40),                  # F3 Menue Messstufe
     # Kieselsport. Der Schalter haelt die vier Boards ohne Variante bei Pebble (Spezifikation G1).
     # P1 Pulskalorien (Start, Pulswert, Schritt-kcal ohne Puls, Stopp) und Verwerfen (F3 = A).

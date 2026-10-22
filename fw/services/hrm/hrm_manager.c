@@ -11,6 +11,9 @@
 #include <pbl/kernel/types.h>
 #include <pbl/logging/logging.h>
 #include <pbl/services/activity/activity.h>
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: Schalter "Schlaf" fuer SpO2
+#include <pbl/services/activity/boulder/messstufe.h>
+#endif
 #include <pbl/services/analytics/analytics.h>
 #include <pbl/services/hrm/hrm_manager.h>
 #include <pbl/services/hrm/hrm_manager_private.h>
@@ -206,6 +209,12 @@ PBL_T_STATIC bool prv_can_turn_sensor_on(void) {
   return true;
 #endif
 
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: "Schlaf" erlaubt SpO2 (siehe unten)
+  if (s_manager_state.enabled_run_level && s_manager_state.enabled_charging_state &&
+      boulder_spo2_schlaf_geladen()) {
+    return true;
+  }
+#endif
   // Keep this in sync with prv_prefs_allowed_features(): a pref that can allow a feature there has
   // to be able to turn the sensor on here, or that feature's reader silently never runs.
   return s_manager_state.enabled_run_level && s_manager_state.enabled_charging_state &&
@@ -227,6 +236,13 @@ static HRMFeature prv_prefs_allowed_features(void) {
       !activity_prefs_blood_oxygen_activity_tracking_is_enabled()) {
     allowed &= ~HRMFeature_SpO2;
   }
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  // Boulder: SpO2 auch mit dem Schalter "Schlaf", wie mit dem fuer Trainings: Wann gemessen wird,
+  // entscheidet Pebbles Plan (activity.c), hier nur, ob ueberhaupt.
+  if (boulder_spo2_schlaf_geladen()) {
+    allowed |= HRMFeature_SpO2;
+  }
+#endif
   // HRV shares the green LED with BPM, so the heart rate pref gates both. Without this an HRV
   // subscriber would light the green path with heart rate monitoring switched off.
   if (!activity_prefs_heart_rate_is_enabled()) {

@@ -68,8 +68,26 @@ def proben_k1():
     yield 'alarm.c zu viele Zeilen', pruefe(hunk('fw/services/alarms/alarm.c', ['+  x();  // Boulder: x'] * 21,
                                                  'void alarm_init(void) {'), [])
     yield 'neue Datei ausserhalb', pruefe('', ['fw/services/activity/neu.c'])
+    yield from proben_spo2(pruefe)
     yield from proben_kieselsport(pruefe)
     yield from proben_health(pruefe)
+
+
+# SpO2 im Schlaf (Entscheid vom 22.10.2026): Maske und Einschalten im HRM-Manager neben F2.
+HRM_C = 'fw/services/hrm/hrm_manager.c'
+MASKE = 'static HRMFeature prv_prefs_allowed_features(void) {'
+
+
+def proben_spo2(pruefe):
+    zeile = ['+  allowed |= HRMFeature_SpO2;  // Boulder: Schlaf']
+    yield 'Maske im HRM-Manager', not pruefe(hunk(HRM_C, zeile, MASKE), [], hunk(HRM_C, zeile, MASKE))
+    yield 'Einschalten im HRM-Manager', not pruefe(
+        hunk(HRM_C, zeile, 'PBL_T_STATIC bool prv_can_turn_sensor_on(void) {'), [])
+    yield 'HRM-Manager andere Funktion', rot(pruefe(
+        hunk(HRM_C, zeile, 'void hrm_manager_enable(bool on) {'), []), 'erlaubt nur')
+    yield 'HRM-Manager zu viele Zeilen', rot(pruefe(hunk(HRM_C, zeile * 25, MASKE), []), 'hoechstens 24')
+    funf = hunks(HRM_C, *[(MASKE, zeile)] * 5)
+    yield 'HRM-Manager fuenfter Hunk', rot(pruefe(funf, [], funf), '5 Hunks')
 
 
 def hunks(datei, *teile):
