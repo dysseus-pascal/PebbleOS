@@ -228,6 +228,25 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
   b34 (`schritt3-abnahme.md`, Abschnitt 18).
 
+## Alle Gesundheitsdaten und die Atemübung (22.10.2026, F41–F43, Boulder 0.57.0, Firmware b36)
+- **Nutzer:** „ich möchte das sämtliche gesundheitsdaten für den mcp zurverfügung stehen. ich meine
+  auch daten die von healthconnect kommen. Dazu möchte ich eine einstellbare pranayama atemübung in
+  kieselsport“.
+- **Daten** (ohne Rückfrage): Der Spiegel schickt jeden Satz aus Health Connect, aus jeder App (alle
+  41 Arten, ohne Routen), dazu die Vorgeschichte (Kiesel-Helper, ältere Sicherungen) und das SpO2
+  der Uhr. Wie, steht in `ki-mcp-konzept.md`, Abschnitt 9.
+- **F41: Eigener Rhythmus** (Empfehlung): Einatmen, Halten, Ausatmen und leer Halten in Sekunden,
+  dazu die Runden. Keine festen Muster zur Auswahl.
+- **F42** (Nutzer): „In boulder ja, aber so wie watchfaces die einstellungen haben.“ Eingestellt
+  wird in Boulder, die Uhr stellt nichts ein. Kieselsport hat in der Liste der Apps „Settings“ wie
+  ein Watchface mit Einstellungsseite (`LockerAppScreen`); es öffnet die Seite Sport.
+- **F43: Als Training speichern** (Empfehlung): wie die anderen Arten. In Health Connect als
+  geführtes Atmen (`EXERCISE_TYPE_GUIDED_BREATHING`), mit Puls und HRV wie Yoga, die Runden und der
+  Rhythmus in der Notiz.
+- **Nähe zu Pebble:** Pebble hat keine Atemübung. Boulder baut sie aus Pebbles Teilen: eine Art von
+  Kieselsport auf Pebbles Workout-Dienst, der Kreis mit Pebbles Kurve (`animation_timing_curve`,
+  ease-in-out), das Brummen als `VibePattern`.
+
 ## Health: Karten gleiten wie bei Pebble (21.10.2026, F40)
 - **Nutzer:** „Können wir in health vertikal scrollen?“ Heute springen Oben/Unten (und Wischen, das
   Pebbles Touch-Brücke als Taste meldet) ohne Übergang zur nächsten Karte; die Details scrollen schon

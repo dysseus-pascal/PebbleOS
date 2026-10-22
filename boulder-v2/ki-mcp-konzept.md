@@ -222,3 +222,53 @@ statt abzuweisen. Darum entfernt der Spiegel fremde Trainings nur, wenn er siche
 konnte (von Hand oder mit dem Recht, im Hintergrund zu lesen).
 
 Commits: 71e72a289 (1), 6e4a054e8 (3), c0c1ec8af (4), 397396c2e (5), ec6bdfe0e (Verdacht).
+
+## 9. Alle Gesundheitsdaten, Fassung 0.57.0 (22.10.2026)
+
+Auftrag: sämtliche Gesundheitsdaten für Claude, auch was andere Apps in Health Connect schreiben
+(Entscheide in `entscheidungen.md`, F41–F43, mit der Atemübung).
+
+- **Format** (`austausch`): Die Lieferung trägt `akte`, `akteEntfernt`, `vorgeschichte` und
+  `sauerstoff`, die Quittung zählt sie (Vorgabe null). Fehlt eine Zahl, war es ein älterer Server:
+  Die App merkt sich nichts als gesendet, meldet „Update the server“ und schickt es danach wieder.
+- **Ein Akteneintrag** ist ein Satz aus Health Connect:
+  - Kennung (die von Health Connect), Art (Klasse ohne „Record“), Beginn, Ende, Versatz, Quelle
+    (Paket der App).
+  - Werte mit der Einheit im Schlüssel: `kg`, `systolic_mmhg`, `kcal`, `mmol_per_l`, `steps`; bei
+    der Ernährung `*_g`, `*_mg` und `*_ug`.
+  - Texte: Namen aus Health Connects Tabellen, Gerät, Art der Aufzeichnung.
+  - Proben (Puls, Tempo, Leistung, Kadenz, Hauttemperatur) und Abschnitte (Schlafphasen,
+    Segmente, Runden). Routen gehen nicht mit.
+- **App** (`Aktenspiegel`, `Aktenwandler`):
+  - Je Art zuerst eine Marke der Changes-API, dann alles ab dem letzten Stand aufsteigend in Seiten
+    zu 1000. Ein Abbruch macht beim Beginn des letzten quittierten Satzes weiter. Danach gehen nur
+    Änderungen und Löschungen.
+  - Die neue Marke gilt erst nach der Quittung. Eine verfallene Marke liest die Art neu.
+  - Ein Stapel hat höchstens 2000 Sätze oder 4 MB.
+  - Im Hintergrund nur mit dem Recht, im Hintergrund zu lesen. Ohne das Recht auf vergangene Daten
+    reicht Health Connect 30 Tage; wird es später erteilt, liest der Spiegel jede Art von vorn.
+  - Boulder fragt beim Start nach allen Arten; eine fehlende ist freiwillig (kein Ausrufezeichen).
+    Die Seite Boulder server zeigt, wie viele freigegeben sind.
+- **Vorgeschichte und SpO2:**
+  - Die Tage aus dem Tagesspeicher gehen mit den Tagen, nur neue und geänderte.
+  - Die SpO2-Messungen der Uhr gehen fortlaufend, mit 15 Minuten Rückblick für spät nachgereichte,
+    ohne Messungen aus der Zukunft, je Lieferung höchstens 5000.
+- **Server:**
+  - Tabellen `akte`, `akte_probe`, `vortag`, `sauerstoff`. Ein geänderter Satz ersetzt seine ganze
+    Probenreihe. Minütlicher Puls einer anderen Uhr braucht rund 30 MB im Jahr.
+  - Werkzeuge `akte`, `akte_eintrag`, `akte_tage` (Viertelstunden auf Ortsdaten, auch über die
+    Zeitumstellung), `akte_verlauf` und `spo2`.
+  - `stand` nennt die Arten mit Zahl, Zeitraum und Quellen.
+  - `tage` mischt die Vorgeschichte wie die Trends der App: Ein Wert der Vorgeschichte gilt nur vor
+    dem ersten eigenen Tag seiner Spalte, „aktiv“ nie. Eine Spalte `source` sagt, woher.
+  - Interne Zähler heissen `#saetze`, `#minuten` und `#proben`: Der Schlüssel `count` eines
+    Satzes stiess mit dem Zähler zusammen.
+- **Geprüft:**
+  - 2926 Tests, 11 davon wie bei Core übersprungen.
+  - Gezielt eingebaute Fehler: Server 10, Aktenspiegel 9, Vorgeschichte und SpO2 5, Atemübung 5,
+    jeder lässt einen Test fallen.
+  - Der Server im Podman-Container: Lieferungen mit allen Teilen, jedes neue Werkzeug, eine
+    Löschung, ein Neustart und `tage` mit Vorgeschichte.
+
+Commits: 6116d54d4 (Format), 251f677b5 (Server), c9e17cfcf (Health Connect), 3b38a8bcc (Vorgeschichte,
+SpO2), cfdb8b339 (Atemübung), 54747cd7e (LIESMICH), 9e7a42774 (Fassung).
