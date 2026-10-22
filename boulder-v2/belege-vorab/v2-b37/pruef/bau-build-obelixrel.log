@@ -1,0 +1,42 @@
+[0/2] Re-checking globbed directories...
+[1/37] Checking the firmware version
+[2/37] Extracting strings into /home/user/pebbleos-v2/build-obelixrel/pebbleos.pot
+[3/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/spo2_plan.c.obj
+[4/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/puls.c.obj
+[5/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/messstufe.c.obj
+[6/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/nacht.c.obj
+[7/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/dauerteil.c.obj
+[8/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/umzug.c.obj
+[9/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/speicher.c.obj
+[10/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/ausgabe.c.obj
+[11/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/schnittstelle.c.obj
+[12/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/naechte.c.obj
+[13/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/activity.c.obj
+[14/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/ziele.c.obj
+[15/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/herz.c.obj
+[16/37] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[17/37] Building C object fw/services/blob_db/CMakeFiles/fw__services__blob_db.dir/settings_blob_db.c.obj
+[18/37] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[19/37] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[20/37] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/woche.c.obj
+[21/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health/daten.c.obj
+[22/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health/nachttage.c.obj
+[23/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health/details.c.obj
+[24/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health/inhalt.c.obj
+[25/37] Building C object fw/services/hrm/CMakeFiles/fw__services__hrm.dir/hrm_manager.c.obj
+[26/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/settings/health.c.obj
+[27/37] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health/boulder_health.c.obj
+[28/37] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:     2130128 B      3068 KB     67.80%
+             RAM:      241952 B       305 KB     77.47%
+[29/37] Generating pebbleos.nohdr.bin
+[30/37] Generating pebbleos.nohdr.hex
+[31/37] Checking resource size
+Resources: [########            ]  38.08% (798641/2097152 bytes)
+
+[32/37] Checking and hashing log strings
+[33/37] Generating pebbleos.bin
+[34/37] Generating fw/loghash_dict.json
+[35/37] Checking syscall definitions
+[36/37] Generating pebbleos.hex

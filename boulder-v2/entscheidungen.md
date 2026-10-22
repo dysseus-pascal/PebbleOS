@@ -283,6 +283,11 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   an oder aus. Stufe 1 misst SpO2 stündlich, wenn ein Schalter an ist. Der Schlaf-Schalter ist der neue
   Schlüssel `boulderSpo2Schlaf` (1 Byte), in der App unter Health zwischen Pebbles SpO2-Schaltern und
   auf der Uhr unter Settings > Health.
+- **Umsetzung b37** (ohne Rückfrage, Abschnitt 21 in `schritt3-abnahme.md`): Damit „Schlaf“ ohne
+  „Blood Oxygen“ wirkt, erlaubt Pebbles HRM-Manager SpO2 mit „Schlaf“ wie mit dem Schalter für
+  Trainings (zwei Blöcke unter dem Variantenschalter, K1 in `hrm_manager.c` von 10 auf 24 Zeilen).
+  Die App zeigt Pebbles „Blood Oxygen“ samt Messrate schon seit 0.54: die Ausblendung aus F3 kam beim
+  Neubau auf Core nicht mit.
 
 ## Symbol von Kieselstrasse und Tagesband beim Öffnen (22.10.2026, Boulder 0.57.1)
 - **Nutzer:** „das kieselstrassen icon... das geht besser und mehr im stil von pebbel. weiter möchte

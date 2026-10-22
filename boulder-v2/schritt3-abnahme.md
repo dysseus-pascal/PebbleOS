@@ -766,3 +766,27 @@ mit Boulder 0.57.0. Belege: `belege-vorab/v2-b36/`.
 - **Mutationen:** 47/47 rot (A1, R1–R7, E1–E2, T1–T2, D1–D4, S1, S1b, S2–S4, P1–P11, L1–L15).
 - **Vorabversion b36:** `normal_obelix_pvt_v4.41.2-b36.pbz` (sha256 `4e010300…f7f615`), Stand
   `214a624cd`. Das Tag `v4.41.2-b36` gibt es nur im Wegwerf-Klon des Baus; es gehört auf `214a624cd`.
+
+## 21. SpO2 nach Schaltern (22.10.2026, `762802af9`, `49e0da937`, `260cfb33a`, `9cb336b3d`, `b4e86c5f0`, `f4f4baed6`)
+
+F44 und F45 („für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
+intervall“, `entscheidungen.md`), mit Boulder 0.58.0. Belege: `belege-vorab/v2-b37/`.
+
+- **Schlaf** (`762802af9`, `9cb336b3d`): neuer Schlüssel `boulderSpo2Schlaf` (1 Byte, Whitelist).
+  Pebbles täglicher SpO2-Plan misst damit auch ohne „Blood Oxygen“, aber nur in Nachtruhe: 20 bis
+  11 Uhr Ortszeit und die eben fertige Minute ruhig, dieselbe Regel wie der Nachtpuls. Die Regel ist
+  eine reine Funktion in `spo2_plan.c`; in `activity.c` stehen sieben Zeilen unter dem
+  Variantenschalter, Pebbles Zeile im `#else`.
+- **HRM-Manager** (`260cfb33a`): Pebbles Manager strich SpO2 aus Abos im Hintergrund, solange weder
+  „Blood Oxygen“ noch der Schalter für Trainings an war, und schaltete den Sensor dafür nicht ein.
+  „Schlaf“ wirkt dort jetzt wie Pebbles Schalter für Trainings, an beiden Stellen (Pebbles Kommentar
+  verlangt beide). K1 erlaubt in `hrm_manager.c` 24 statt 10 Zeilen in höchstens vier Hunks.
+- **Messstufe** (`49e0da937`): setzt nur noch die Takte, nicht mehr „Blood Oxygen“. Stufe 1: SpO2
+  stündlich, wenn ein Schalter an ist.
+- **Uhr** (`b4e86c5f0`, `f4f4baed6`): Herzkarte „off“ nur ohne beide Schalter; Menüzeile „Blood O2
+  During Sleep“ nach „Blood Oxygen“.
+- **Prüfung** auf `f4f4baed6`: acht Bauten ohne Warnung, Host 471/471, alle Werkzeuge grün (im
+  Prüfbau nur die Fehlerprobe rot), 29/29 Mutationen rot, 18 neue Testfälle. QEMU zeigt das Abo:
+  tags mit nur „Schlaf“ nie, nachts ruhig nach 64 s.
+- **Offen:** Gerätetest einer echten Nacht. Wer von b36 auf Stufe 2–5 kommt, hat „Blood Oxygen“ noch
+  an und schaltet es in Boulder aus, wenn er nur nachts messen will.

@@ -1,0 +1,38 @@
+G1   rot (regel_in_allen_faellen, schlaf_tags_nie) Schlaf auch ohne Nachtruhe [fw/services/activity/boulder/spo2_plan.c, test_boulder_spo2_plan]
+G2   rot (regel_in_allen_faellen, intervall_wie_pebble) Intervall zaehlt nicht [fw/services/activity/boulder/spo2_plan.c, test_boulder_spo2_plan]
+G3   rot (regel_in_allen_faellen, nachtruhe_ohne_schalter_nie) Nachtruhe ohne Schalter [fw/services/activity/boulder/spo2_plan.c, test_boulder_spo2_plan]
+G4   rot (nachtruhe_fuer_den_spo2_plan)            Regel ohne die Nachtruhe des Puls-Abos [fw/services/activity/boulder/spo2_plan.c, test_boulder_messung]
+G5   rot (nachtruhe_fuer_den_spo2_plan)            Regel ohne den geladenen Schalter [fw/services/activity/boulder/spo2_plan.c, test_boulder_messung]
+A1   rot (schlaf_in_nachtruhe, takt_der_stufe, ende_der_nachtruhe_beendet_die_messung) Plan fragt nur Pebbles Schalter [fw/services/activity/activity.c, test_boulder_spo2_plan]
+A2   rot (rc=1)                                    Bedingung ohne den Schalter der Variante (K1) [fw/services/activity/activity.c, skript:k1_waechter.py]
+N1   rot (nachtruhe_fuer_den_spo2_plan)            Nachtruhe auch ohne Tracking [fw/services/activity/boulder/puls.c, test_boulder_messung]
+N2   rot (nachtruhe_fuer_den_spo2_plan)            jede Minute mit Tracking ist Nachtruhe [fw/services/activity/boulder/puls.c, test_boulder_messung]
+S1   rot (schlaf_vom_telefon)                      ungueltiger Wert gilt als an [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S2   rot (schlaf_vom_telefon)                      ohne Schluessel an [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S3   rot (schlaf_neu_nach_seinem_ereignis, schlaf_vom_telefon) kein Lesen nach dem eigenen Ereignis [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S4   rot (schlaf_vom_telefon)                      Callback liest den Schalter nicht [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S5   rot (zeile_vor_dem_ersten_lesen)              Menue liest vor dem ersten Lesen nicht [fw/services/activity/boulder/messstufe.c, test_boulder_einstellungen]
+S6   rot (schlaf_aus_dem_menue)                    Schluessel ohne Nullbyte [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S7   rot (schlaf_aus_dem_menue)                    Menue schreibt immer an [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S8   rot (schlaf_aus_dem_menue)                    Schreiben ohne Prefs-Sperre [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+B1   rot (stufe_vom_telefon_setzt_pebbles_werte, regler_zieht_takte_zurueck_nicht_den_schalter) Stufe schaltet Blood Oxygen wieder an [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+B2   rot (regler_zieht_takte_zurueck_nicht_den_schalter) bloodOxygenPreferences loest wieder Lesen aus [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+B3   rot (stufe_vom_telefon_setzt_pebbles_werte)   Stufe 1 ohne SpO2-Takt [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+B4   rot (messstufe_aus_der_app)                   Stufe 1 ohne SpO2-Takt (Lage) [fw/services/activity/boulder/messstufe.c, test_boulder_schnittstelle]
+H1   rot (schlaf_erlaubt_spo2_im_manager)          Maske ohne den Schalter Schlaf [fw/services/hrm/hrm_manager.c, test_boulder_messung]
+H2   rot (schlaf_schaltet_den_sensor_ohne_puls)    Schlaf schaltet den Sensor nicht ein [fw/services/hrm/hrm_manager.c, test_boulder_messung]
+L1   rot (spo2_takt_auch_mit_schlaf)               Lage sagt "off" trotz Schlaf [fw/services/activity/boulder/schnittstelle.c, test_boulder_schnittstelle]
+E1   rot (schlaf_umschalten)                       Select schaltet nur an [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+E2   rot (zeilen)                                  Zeile vor statt nach Blood Oxygen [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+E3   rot (schlaf_umschalten)                       Zeile zeigt Pebbles Schalter [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+W1   rot (rc=1)                                    Schluessel fehlt in der Whitelist [fw/services/blob_db/settings_blob_db.c, skript:vertraege.py]
+W2   rot (rc=1)                                    Schluessel in der Whitelist auskommentiert [fw/services/blob_db/settings_blob_db.c, skript:vertraege.py]
+29/29 rot
+Rueckbau rc=0
+test_boulder_einstellungen nach dem Rueckbau rc=0
+test_boulder_messung nach dem Rueckbau rc=0
+test_boulder_schnittstelle nach dem Rueckbau rc=0
+test_boulder_spo2_plan nach dem Rueckbau rc=0
+skript:k1_waechter.py nach dem Rueckbau rc=0
+skript:vertraege.py nach dem Rueckbau rc=0
+Arbeitsbaum nach dem Rueckbau: 0 Aenderungen

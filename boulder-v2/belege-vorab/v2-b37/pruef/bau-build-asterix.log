@@ -1,0 +1,22 @@
+[0/2] Re-checking globbed directories...
+[1/16] Checking the firmware version
+[2/16] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[3/16] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[4/16] Extracting strings into /home/user/pebbleos-v2/build-asterix/pebbleos.pot
+[5/16] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/settings/health.c.obj
+[6/16] Building C object fw/services/blob_db/CMakeFiles/fw__services__blob_db.dir/settings_blob_db.c.obj
+[7/16] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[8/16] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/activity.c.obj
+[9/16] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:      980219 B       992 KB     96.50%
+             RAM:      106176 B     151296 B     70.18%
+        RETAINED:         256 B        256 B    100.00%
+[10/16] Generating pebbleos.hex
+[11/16] Generating pebbleos.bin
+[12/16] Checking resource size
+Resources: [#############       ]  66.35% (695734/1048576 bytes)
+
+[13/16] Checking and hashing log strings
+[14/16] Generating fw/loghash_dict.json
+[15/16] Checking syscall definitions

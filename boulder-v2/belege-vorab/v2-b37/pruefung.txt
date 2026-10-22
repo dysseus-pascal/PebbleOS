@@ -1,0 +1,30 @@
+Stand f4f4baed6 19:52:30; Arbeitsbaum: 0 Aenderungen; frei 1141 MB
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=25
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=25
+build rc=0 warnungen=0 fehler=0 uebersetzt=25
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=6
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=6
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=6
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=6
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=29
+qemu_image_spi rc=0
+host rc=0 100% tests passed, 0 tests failed out of 471
+frei nach dem Host-Lauf: 892 MB
+rc=0 k1_waechter.py /home/user/pebbleos-v2
+rc=0 kopie_pruefen.py /home/user/pebbleos-v2
+rc=0 vertraege.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py --gegenprobe
+rc=0 prueflauf_daten.py /home/user/pebbleos-v2
+rc=0 pruefe_unbenutzt.py fw/apps/system/boulder_health
+rc=0 pruefe_unbenutzt.py fw/apps/system/kieselsport tests/fw/apps/system_apps/kieselsport
+rc=0 test_kopie_pruefen.py 
+rc=0 test_pruefe_ohne_rechte.py 
+rc=0 test_pruefe_unbenutzt.py 
+rc=0 pruefe_ohne_rechte.py build-obelix
+rc=0 pruefe_ohne_rechte.py build-obelixrel
+rc=0 pruefe_ohne_rechte.py build
+rc=1 pruefe_ohne_rechte.py build-pruef
+rc=0 mehrwort.sh build-obelixrel
+rc=0 pruefe_unbenutzt.py fw/apps/system/kieselstrasse
+Ende 20:02:58; Arbeitsbaum: 0 Aenderungen; frei 892 MB

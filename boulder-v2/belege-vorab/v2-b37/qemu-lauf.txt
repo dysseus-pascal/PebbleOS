@@ -1,0 +1,27 @@
+20:03:40 +    21s tracking: Health Tracking an
+20:03:40 +    22s zeit: Uhr auf 1792677600
+20:03:41 +    22s stufe: Health-App mit S4
+20:03:45 +    26s Beschleunigung (0, -1000, 0) gesendet: die Uhr steht auf der Kante, nicht flach
+20:03:45 +    26s lage: Lage 2: stand 1792677600 fenster 0 nacht 0 schlaeft 0 stufe 4 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0
+20:03:56 +    37s Bild menue_schlaf_aus.png
+20:03:57 +    38s Bild menue_blood_oxygen.png
+20:04:00 +    41s Bild menue_schlaf_an.png
+20:04:02 +    43s Bild menue_schlaf_wieder_aus.png
+20:04:03 +    45s Bild menue_schlaf_wieder_an.png
+20:04:05 +    46s Bild menue_danach_activity.png
+20:04:07 +    48s lage mit Schlaf: Lage 2: stand 1792677610 fenster 1792612800 nacht 2 schlaeft 0 stufe 4 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0
+20:04:07 +    49s abos am Anfang: {1: (86400, 1), 2: (86400, 0), 3: (86400, 0), 4: (86400, 0)}
+20:16:48 +   809s TAGS (14:00, nur Schlaf an): 0 Abfragen mit SpO2 in 13 min: []
+20:16:48 +   809s abos tags: {1: (86400, 1), 2: (86400, 0), 3: (86400, 0), 4: (86400, 0)}
+20:16:48 +   809s zeit: Uhr auf 1792710000
+20:17:52 +   873s NACHTS (23:00, Schlaf an): SpO2-Abo misst nach 64 s: {1: (86400, 1), 2: (1, 4), 3: (86400, 0), 4: (180, 1)}
+20:17:52 +   873s lage nachts: Lage 2: stand 1792710060 fenster 1792699200 nacht 0 schlaeft 0 stufe 4 spo2 10 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0
+20:18:50 +   932s Fenster vorbei nach 122 s seit 23:00: {1: (86400, 1), 2: (86400, 0), 3: (86400, 0), 4: (180, 1)}
+20:19:02 +   943s Bild menue_schlaf_aus_nachts.png
+20:31:12 +  1673s NACHTS OHNE SCHLAF: 0 Abfragen mit SpO2 in 12 min: []
+20:31:12 +  1673s lage ohne Schlaf: Lage 2: stand 1792710850 fenster 1792699200 nacht 0 schlaeft 1 stufe 4 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0
+20:31:12 +  1673s hrm spo2 ohne Schalter: error: blood oxygen monitoring is disabled
+20:31:16 +  1677s Bild menue_schlaf_an_am_ende.png
+20:31:16 +  1677s hrm spo2 mit Schlaf: error: blood oxygen monitoring is disabled
+20:31:18 +  1679s abos am Ende: {1: (86400, 1), 2: (86400, 0), 3: (86400, 0), 4: (180, 1)}
+20:31:18 +  1679s Plan-Abo: ref 2

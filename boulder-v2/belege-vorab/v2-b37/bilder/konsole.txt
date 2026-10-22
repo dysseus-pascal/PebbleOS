@@ -1,0 +1,1 @@
+[20:03:41.037] I - 14:00:00.674 messstufe.c:216> service_activity: Boulder: SpO2 im Schlaf aus

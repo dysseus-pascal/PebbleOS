@@ -1,0 +1,19 @@
+[0/2] Re-checking globbed directories...
+[1/14] Checking the firmware version
+[2/14] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[3/14] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[4/14] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[5/14] Extracting strings into /home/user/pebbleos-v2/build-flint/pebbleos.pot
+[6/14] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/settings/health.c.obj
+[7/14] Building C object fw/services/blob_db/CMakeFiles/fw__services__blob_db.dir/settings_blob_db.c.obj
+[8/14] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/activity.c.obj
+[9/14] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:      979347 B         4 MB     23.35%
+             RAM:       97504 B     151296 B     64.45%
+[10/14] Generating pebbleos.bin
+[11/14] Generating pebbleos.hex
+[12/14] Checking resource size
+Resources: [#######             ]  33.63% (705358/2097152 bytes)
+
+[13/14] Checking syscall definitions

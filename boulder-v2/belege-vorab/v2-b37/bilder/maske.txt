@@ -1,0 +1,4 @@
+20:39:59 tracking: Health Tracking an
+20:39:59 hrm spo2 ohne Schalter: error: blood oxygen monitoring is disabled
+20:40:09 Bild maske_schlaf_an.png
+20:40:29 hrm spo2 mit Schlaf: keine Fehlermeldung; der Befehl wartet auf einen Wert (Zeitlimit der Konsole), QEMUs Sensor liefert keinen
