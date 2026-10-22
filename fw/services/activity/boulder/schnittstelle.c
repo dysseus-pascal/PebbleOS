@@ -65,11 +65,12 @@ static uint16_t prv_maxpuls(void) {
 #endif
 }
 
-// Misst die Uhr SpO2, und wie oft? Die Stufe gibt den Takt, Pebbles Schalter "Blood Oxygen"
-// schaltet ihn ab; den stellt der Nutzer, nicht die Stufe (messstufe.h). Vor dem ersten Lesen
-// der Stufe gilt die Vorgabe, wie im Regler.
+// Misst die Uhr SpO2 nach Pebbles Plan, und wie oft? Die Stufe gibt den Takt. Gemessen wird mit
+// "Blood Oxygen" den ganzen Tag, mit dem Schalter "Schlaf" in der Nacht (spo2_plan.h); ohne beide
+// gar nicht, und die Health-App sagt "off". Die Schalter stellt der Nutzer (messstufe.h). Vor dem
+// ersten Lesen der Stufe gilt die Vorgabe, wie im Regler.
 static uint8_t prv_spo2_takt(uint8_t stufe) {
-  if (!activity_prefs_blood_oxygen_is_enabled()) {
+  if (!activity_prefs_blood_oxygen_is_enabled() && !boulder_spo2_schlaf_geladen()) {
     return 0;
   }
   return boulder_messstufe_werte(stufe)->spo2_min;

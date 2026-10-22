@@ -305,6 +305,37 @@ void test_boulder_schnittstelle__spo2_takt_folgt_pebbles_schalter(void) {
   cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
 }
 
+// Der Schalter "Schlaf" fuer SpO2, wie Boulder ihn in shellpref schreibt.
+static void prv_schlaf_schreiben(uint8_t wert) {
+  SettingsFile f;
+  cl_must_pass(settings_file_open(&f, SHELL_PREFS_FILE_NAME, SHELL_PREFS_FILE_LEN));
+  cl_must_pass(settings_file_set(&f, BOULDER_SPO2_SCHLAF_SCHLUESSEL,
+                                 strlen(BOULDER_SPO2_SCHLAF_SCHLUESSEL) + 1, &wert, 1));
+  settings_file_close(&f);
+}
+
+// Mit dem Schalter "Schlaf" misst die Uhr nachts auch ohne "Blood Oxygen": Die Lage nennt dann den
+// Takt der Stufe. "off" nur, wenn beide Schalter aus sind.
+void test_boulder_schnittstelle__spo2_takt_auch_mit_schlaf(void) {
+  prv_shellpref_schreiben(4);
+  prv_kernel_bg();
+  prv_eine_minute();
+  cl_assert(!s_spo2_an);
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
+  prv_schlaf_schreiben(1);
+  boulder_messstufe_nachlesen();
+  prv_eine_minute();
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 10);
+  s_spo2_an = true;
+  prv_schlaf_schreiben(0);
+  boulder_messstufe_nachlesen();
+  prv_eine_minute();
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 10);
+  s_spo2_an = false;
+  prv_eine_minute();
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
+}
+
 // =============================================================================================
 // S4: Messstufe wie aus Settings -> Health (T6.1 am Host, T6.2)
 
