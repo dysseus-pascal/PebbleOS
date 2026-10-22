@@ -262,6 +262,26 @@ pbl_clar_test(test_boulder_spo2_plan
   OVERRIDES dummy_board
 )
 
+# Settings -> Health (Pebbles settings/health.c): die Zeile "Blood O2 During Sleep" (b37) mit der
+# Variante und der echten messstufe.c auf shellpref, und ohne die Variante Pebbles Menue.
+pbl_clar_test(test_boulder_einstellungen
+  MODULES settings
+  SOURCES
+    fw/apps/system/settings/health.c
+    fw/services/activity/boulder/messstufe.c
+    fw/services/activity/boulder/takt.c
+  DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  OVERRIDES dummy_board
+)
+pbl_clar_test(test_boulder_einstellungen_pebble
+  SOURCE test_boulder_einstellungen.c
+  MODULES settings
+  SOURCES
+    fw/apps/system/settings/health.c
+  DEFINES DUMA_DISABLED CONFIG_HRM
+  OVERRIDES dummy_board
+)
+
 # Die strenge Weckregel (AP7, T4.2): der echte alarm.c mit E4 und als Vergleich unveraendert,
 # mit der echten activity_sessions.c und dem Live-Zustand der Variante.
 # alarm.c bindet der Test selbst ein (#include), damit ein Neustart auch sein RAM loescht.

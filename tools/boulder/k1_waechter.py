@@ -101,7 +101,8 @@ PEBBLE = {
     'fw/services/hrm/hrm_manager.c': Stelle(
         24, r'hrm_manager_new_data_cb\(|prv_can_turn_sensor_on\(|prv_prefs_allowed_features\(',
         hunks=4),
-    'fw/apps/system/settings/health.c': Stelle(40),                  # F3 Menue Messstufe
+    # F3 Menue Messstufe, dazu die Zeile "Blood O2 During Sleep" (Entscheid vom 22.10.2026).
+    'fw/apps/system/settings/health.c': Stelle(47),
     # Kieselsport. Der Schalter haelt die vier Boards ohne Variante bei Pebble (Spezifikation G1).
     # P1 Pulskalorien (Start, Pulswert, Schritt-kcal ohne Puls, Stopp) und Verwerfen (F3 = A).
     'fw/services/activity/workout_service.c': Stelle(

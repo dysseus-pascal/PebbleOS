@@ -79,7 +79,9 @@ enum SettingsHealthItem {
   SettingsHealthHRMonitoringInterval,
   SettingsHealthHRActivityTracking,
   SettingsHealthBloodOxygenEnabled,
-#ifndef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3, kein eigener SpO2-Takt
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3, kein SpO2-Takt
+  SettingsHealthBloodOxygenSleep,
+#else
   SettingsHealthSpO2MonitoringInterval,
 #endif  // Boulder: F3
   SettingsHealthBloodOxygenActivityTracking,
@@ -203,7 +205,13 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
       subtitle = activity_prefs_blood_oxygen_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
       break;
     }
-#ifndef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3, kein eigener SpO2-Takt
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf (messstufe.h); F3
+    case SettingsHealthBloodOxygenSleep: {
+      title = i18n_noop("Blood O2 During Sleep");
+      subtitle = boulder_spo2_schlaf() ? i18n_noop("On") : i18n_noop("Off");
+      break;
+    }
+#else
     case SettingsHealthSpO2MonitoringInterval: {
       title = i18n_noop("SpO2 Monitoring");
       HRMonitoringInterval interval = activity_prefs_get_spo2_measurement_interval();
@@ -268,7 +276,11 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
     case SettingsHealthBloodOxygenEnabled:
       activity_prefs_set_blood_oxygen_enabled(!activity_prefs_blood_oxygen_is_enabled());
       break;
-#ifndef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3, kein eigener SpO2-Takt
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3
+    case SettingsHealthBloodOxygenSleep:
+      boulder_spo2_schlaf_setzen(!boulder_spo2_schlaf());
+      break;
+#else
     case SettingsHealthSpO2MonitoringInterval:
       prv_spo2_interval_menu_push((SettingsHealthData *)context);
       break;
