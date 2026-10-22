@@ -67,6 +67,13 @@ STR(STR_L_BAHNEN,       0,  "LAPS",         "BAHNEN",         "LONGUEURS",    "V
 STR(STR_L_UHR,          0,  "TIME",         "UHRZEIT",        "HEURE",        "ORA",           "HORA")
 STR(STR_PAUSIERT,       0,  "PAUSED",       "PAUSE",          "EN PAUSE",     "IN PAUSA",      "EN PAUSA")
 
+// ---- Die Atemuebung: was gerade zu tun ist, ueber dem Kreis ---------------
+// Ein Wort fuer beide Halten, mit voller und mit leerer Lunge: was zu tun ist,
+// ist dasselbe, und der Kreis zeigt, wie voll.
+STR(STR_ATEM_EIN,       0,  "Inhale",       "Einatmen",       "Inspirez",     "Inspira",       "Inhala")
+STR(STR_ATEM_HALTEN,    0,  "Hold",         "Halten",         "Retenez",      "Trattieni",     "Mantén")
+STR(STR_ATEM_AUS,       0,  "Exhale",       "Ausatmen",       "Expirez",      "Espira",        "Exhala")
+
 // ---- Die Zonen, als Beschriftung des Pulsfelds ----------------------------
 // Statt "PULS" steht im Feld der Name der Zone, in der man gerade ist - wie
 // FAT BURN / ENDURANCE / PERFORMANCE in der Workout-App, nur mit fuenf Zonen.

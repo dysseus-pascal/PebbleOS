@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include "lauf_window.h"
+#include "atem.h"
 #include "telefon.h"
 #include "thema.h"
 #include "texte.h"
@@ -29,6 +30,7 @@
 //
 // DIE ZAHLEN KOMMEN VOM DIENST (boulder/sport/dienst.c). Dieser Schirm misst
 // nichts selbst; er liest zweimal je Sekunde den Stand und schickt Befehle.
+// Einzig den Takt der Atemuebung zaehlt er selbst (siehe dort).
 // Zweimal, damit die Sekunden nicht stolpern: Takt des Dienstes und Takt
 // der Anzeige laufen nicht gleich.
 //
@@ -105,6 +107,36 @@ typedef struct {
 static Gezeigt s_gezeigt;
 static bool s_gezeigt_gilt;
 
+// --- Die Atemuebung (ArtAtem) ---
+//
+// DER TAKT GEHT NACH DER UHR DER APP, nicht nach den Sekunden des Dienstes: Dessen Takt laeuft auf
+// KernelBG und springt um eine Sekunde, ein Einatmen braucht aber seine Millisekunde. Die Uebung
+// steht in ms seit dem ersten Einatmen (atem.h); die Pause haelt sie an.
+static Atemrhythmus s_atem;        //< beim Start gelesen, gilt bis zum Ende
+static bool s_atem_verankert;      //< der Stand der Uebung ist bekannt
+static bool s_atem_laeuft;         //< ihre Uhr laeuft (nicht Pause, nicht fertig)
+static uint32_t s_atem_ms;         //< ihr Stand beim Anker
+static uint64_t s_atem_anker;      //< die Uhr der App beim Anker, ms
+static Atemstand s_atem_gemeldet;  //< die Phase, die zuletzt gebrummt hat
+static AppTimer *s_atem_timer;
+// Nach der eigenen Taste gilt kurz nicht, was der Dienst meldet: sein Stand kann von vor der
+// Taste sein, und die Uhr liefe in der Pause eine Abfrage lang weiter.
+#define ATEM_TASTE_MS 1000
+static uint64_t s_atem_taste_bis;
+// Alle Runden um: Pause und Speichern warten, bis der Dienst die ganze Zeit gezaehlt hat, aber
+// nicht laenger als das.
+#define ATEM_ENDE_WARTEN_MS 5000
+static bool s_atem_ende;
+static uint64_t s_atem_ende_seit;
+
+static uint64_t prv_uhr_ms(void) {
+  return sys_get_ticks() * 1000 / RTC_TICKS_HZ;
+}
+
+static uint32_t prv_atem_jetzt(void) {
+  return s_atem_laeuft ? s_atem_ms + (uint32_t)(prv_uhr_ms() - s_atem_anker) : s_atem_ms;
+}
+
 // --- Stand vom Dienst ---
 
 static void prv_stand_lesen(void);
@@ -165,6 +197,7 @@ typedef struct {
   Feldart gross, links, rechts;
   bool herz;     //< die Pulsseite
   bool kurve;    //< die letzte Minute als Kurve
+  bool atem;     //< der Kreis, der mit dem Atem waechst (nur beim Laufen)
 } Seite;
 
 #define KS_SEITEN_MAX 4
@@ -189,6 +222,10 @@ static int prv_seiten(Seite *aus) {
     case ArtSchwimmen:
       aus[n++] = (Seite){ FeldDauer, FeldBahnen, FeldMeter, false, false };
       aus[n++] = (Seite){ FeldBahnen, FeldMeter, FeldKcal, false, false };
+      break;
+    case ArtAtem:
+      // DER KREIS ZUERST. In der Pause steht dort, was Yoga zeigt.
+      aus[n++] = (Seite){ FeldDauer, FeldHrv, FeldKcal, false, false, true };
       break;
     default:   // Strasse/Gravel, MTB: Zeit, Puls, Kalorien - wenig, aber wahr
       aus[n++] = (Seite){ FeldDauer, FeldKcal, FeldUhr, false, false };
@@ -533,6 +570,26 @@ static void prv_fuss(GContext *ctx, GRect b, int16_t w, const char *fuss) {
 // nach Select, der Countdown 3-2-1. Darunter der Name.
 static uint8_t s_countdown;   //< 3..1 waehrend des Countdowns, sonst 0
 
+// "4-4-4-4  10 x, 2:40": der Rhythmus fett, daneben die Runden und wie lange alles dauert.
+static void prv_rhythmuszeile(GContext *ctx, GRect r, const Atemrhythmus *a) {
+  char rhythmus[16], dauer[12], rest[24];
+  snprintf(rhythmus, sizeof(rhythmus), "%u-%u-%u-%u", (unsigned)a->wert[AtemEin],
+           (unsigned)a->wert[AtemHalten], (unsigned)a->wert[AtemAus], (unsigned)a->wert[AtemLeer]);
+  prv_zeit(dauer, sizeof(dauer), atem_gesamt_ms(a) / 1000);
+  snprintf(rest, sizeof(rest), "%u x, %s", (unsigned)a->wert[AtemRunden], dauer);
+  const char *fett = KS_BREIT ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD;
+  const char *duenn = KS_BREIT ? FONT_KEY_GOTHIC_18 : FONT_KEY_GOTHIC_14;
+  const int16_t luecke = 6;
+  const int16_t b1 = prv_breite(rhythmus, fonts_get_system_font(fett));
+  const int16_t b2 = prv_breite(rest, fonts_get_system_font(duenn));
+  const int16_t x = r.origin.x + (r.size.w - b1 - luecke - b2) / 2;
+  graphics_context_set_text_color(ctx, KS_FARBE_TEXT);
+  prv_text(ctx, rhythmus, fett, GRect(x, r.origin.y, b1 + 2, r.size.h), GTextAlignmentLeft);
+  graphics_context_set_text_color(ctx, KS_FARBE_NEBEN);
+  prv_text(ctx, rest, duenn, GRect(x + b1 + luecke, r.origin.y, b2 + 2, r.size.h),
+           GTextAlignmentLeft);
+}
+
 static void prv_zeichne_bereit(GContext *ctx, GRect b, int16_t w) {
   const GColor grund = thema_sportfarbe(s_art);
   const GColor schrift = gcolor_legible_over(grund);
@@ -547,9 +604,14 @@ static void prv_zeichne_bereit(GContext *ctx, GRect b, int16_t w) {
   graphics_draw_line(ctx, GPoint(PBL_IF_ROUND_ELSE(70, 0), oben + 16), GPoint(w - PBL_IF_ROUND_ELSE(70, 1), oben + 16));
   graphics_context_set_stroke_width(ctx, 1);
 
+  // DIE ATEMUEBUNG NENNT IHREN RHYTHMUS, bevor sie beginnt: eine Zeile mehr unter dem Namen, der
+  // Kreis rueckt dafuer hoeher.
+  const bool atem = s_art == ArtAtem;
+  const int16_t zeile = KS_BREIT ? 22 : 18;
   const int16_t kleiner = w < b.size.h ? w : b.size.h;
   const int16_t r = kleiner * 3 / 10;
-  const GPoint mitte = GPoint(w / 2, oben + 20 + (b.size.h - oben - 20) * 2 / 5);
+  const GPoint mitte =
+      GPoint(w / 2, oben + 20 + (b.size.h - oben - 20 - (atem ? zeile : 0)) * 2 / 5);
   graphics_context_set_fill_color(ctx, grund);
   graphics_fill_circle(ctx, mitte, r);
 #if !PBL_COLOR
@@ -570,10 +632,17 @@ static void prv_zeichne_bereit(GContext *ctx, GRect b, int16_t w) {
   graphics_context_set_text_color(ctx, KS_FARBE_TEXT);
   prv_text(ctx, art_name(s_art), KS_BREIT ? FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD,
            GRect(4, ty, w - 8, 34), GTextAlignmentCenter);
+  int16_t sy = ty + (KS_BREIT ? 30 : 26);
+  if (atem) {
+    Atemrhythmus rhythmus;
+    kieselsport_atem(&rhythmus);
+    prv_rhythmuszeile(ctx, GRect(4, sy, w - 8, zeile), &rhythmus);
+    sy += zeile;
+  }
   if (s_countdown == 0) {
     graphics_context_set_text_color(ctx, KS_FARBE_NEBEN);
-    prv_text(ctx, S(STR_SELECT_STARTET), FONT_KEY_GOTHIC_14,
-             GRect(4, ty + (KS_BREIT ? 30 : 26), w - 8, 18), GTextAlignmentCenter);
+    prv_text(ctx, S(STR_SELECT_STARTET), FONT_KEY_GOTHIC_14, GRect(4, sy, w - 8, 18),
+             GTextAlignmentCenter);
   }
 
   // OHNE TELEFON KEINE STRECKE: das Telefon zeichnet sie auf, die Uhr hat
@@ -764,6 +833,55 @@ static void prv_zeichne_kurvenseite(GContext *ctx, GRect bereich, int16_t rand) 
            GTextAlignmentCenter);
 }
 
+static StringId prv_phasenwort(AtemWert phase) {
+  switch (phase) {
+    case AtemEin: return STR_ATEM_EIN;
+    case AtemAus: return STR_ATEM_AUS;
+    default:      return STR_ATEM_HALTEN;
+  }
+}
+
+// DIE ATEMSEITE: ein Kreis in der Farbe der Art, der mit dem Atem waechst und schrumpft, darin die
+// Sekunden der Phase; darueber, was zu tun ist, darunter die Runde. Der Stand ist der des
+// Augenblicks, in dem gezeichnet wird.
+static void prv_zeichne_atemseite(GContext *ctx, GRect bereich, int16_t rand) {
+  const Atemstand st = atem_stand(&s_atem, prv_atem_jetzt());
+  const int16_t x = bereich.origin.x + rand, breite = bereich.size.w - 2 * rand;
+  const int16_t unten = bereich.origin.y + bereich.size.h;
+  const int16_t wort_h = KS_BREIT ? 28 : 22;
+  const int runde_schrift = KS_SCHRIFTEN - 1;
+  const int16_t runde_h = s_zahlhoehen[runde_schrift];
+
+  graphics_context_set_text_color(ctx, KS_FARBE_TEXT);
+  prv_text(ctx, S(prv_phasenwort(st.phase)),
+           KS_BREIT ? FONT_KEY_GOTHIC_24_BOLD : FONT_KEY_GOTHIC_18_BOLD,
+           GRect(x, bereich.origin.y - 4, breite, wort_h + 4), GTextAlignmentCenter);
+
+  char runde[8];
+  snprintf(runde, sizeof(runde), "%u/%u", (unsigned)st.runde, (unsigned)s_atem.wert[AtemRunden]);
+  prv_zahl(ctx, runde, runde_schrift, GRect(x, unten - runde_h, breite, runde_h), KS_FARBE_NEBEN,
+           GTextAlignmentCenter);
+
+  const int16_t oben_k = bereich.origin.y + wort_h;
+  const int16_t unten_k = unten - runde_h - 4;
+  int16_t r_max = (unten_k - oben_k) / 2;
+  if (r_max > breite / 2) r_max = breite / 2;
+  // Ausgeatmet ein Drittel: klein genug, dass man das Atmen sieht, gross genug fuer die Zahl.
+  const int16_t r_min = r_max / 3;
+  const GPoint mitte = GPoint(bereich.origin.x + bereich.size.w / 2, (oben_k + unten_k) / 2);
+  const GColor farbe = PBL_IF_COLOR_ELSE(thema_sportfarbe(s_art), KS_FARBE_TEXT);
+  graphics_context_set_fill_color(ctx, farbe);
+  graphics_fill_circle(ctx, mitte, (uint16_t)atem_radius(&st, r_min, r_max));
+
+  // Die Schrift passt in den kleinsten Kreis, so bleibt sie, waehrend er atmet. Fett: hell auf
+  // der Farbe liest sich eine duenne Ziffer schlecht.
+  char zahl[4];
+  snprintf(zahl, sizeof(zahl), "%u", (unsigned)atem_rest_s(&st));
+  prv_zahl(ctx, zahl, prv_schrift_fuer("88", r_min * 5 / 4, 2 * r_min - 2),
+           GRect(mitte.x - r_min, mitte.y - r_min, 2 * r_min, 2 * r_min),
+           gcolor_legible_over(farbe), GTextAlignmentCenter);
+}
+
 static void prv_zeichne(Layer *layer, GContext *ctx) {
   // DIE UNVERDECKTE FLAECHE, nicht die ganze: faehrt die Timeline-
   // Schnellansicht von unten herein, schrumpft der Schirm - und alles
@@ -833,10 +951,13 @@ static void prv_zeichne(Layer *layer, GContext *ctx) {
   if (luft < 0) luft = 0;
   int16_t y = oben;
 
+  const bool atemseite = seite->atem && !pause;
   if (seite->herz) {
     prv_zeichne_pulsseite(ctx, GRect(0, y + luft / 2, w, unten - y), rand);
   } else if (seite->kurve) {
     prv_zeichne_kurvenseite(ctx, GRect(0, y, w, unten - y), rand);
+  } else if (atemseite) {
+    prv_zeichne_atemseite(ctx, GRect(0, y, w, unten - y), rand);
   } else {
     if (pause) {
       graphics_context_set_text_color(ctx, KS_FARBE_TEXT);
@@ -866,8 +987,9 @@ static void prv_zeichne(Layer *layer, GContext *ctx) {
   const int16_t ky = unten - klein_h;
   const int16_t kr = PBL_IF_ROUND_ELSE(44, rand);
   const int16_t halb = (w - 2 * kr) / 2;
-  prv_klein(ctx, GRect(kr, ky, halb, klein_h), seite->links, false);
-  prv_klein(ctx, GRect(kr + halb, ky, halb, klein_h), seite->rechts, false);
+  // Auf der Atemseite steht unten die Runde.
+  prv_klein(ctx, GRect(kr, ky, halb, klein_h), atemseite ? FeldKeins : seite->links, false);
+  prv_klein(ctx, GRect(kr + halb, ky, halb, klein_h), atemseite ? FeldKeins : seite->rechts, false);
 
   if (!pause && !fuss) prv_striche(ctx, w, strich_y, anzahl);
 
@@ -882,7 +1004,122 @@ static void prv_zeichne(Layer *layer, GContext *ctx) {
 
 // --- Zum Dienst und zurueck ---
 
-static void prv_start(void) {
+// Pause oder Weiter wie mit Select: der Dienst, gleich das Telefon, der Schirm.
+static void prv_pause_umschalten(void) {
+  kieselsport_pause_umschalten();
+  // Die Meldung ans Telefon gleich, nicht erst nach der Antwort des
+  // Dienstes: die Aufzeichnung soll mit dem Druck anhalten.
+  const bool wird_pause = s.zustand == LaufLaeuft;
+  telefon_melde_zustand(wird_pause ? ZustandPause : ZustandWeiter, (uint8_t)s_art, s.beginn);
+  s.zustand = wird_pause ? LaufPause : LaufLaeuft;
+  s_verwerfen_bis = 0;
+}
+
+// --- Der Takt der Atemuebung ---
+
+static bool prv_atem_sichtbar(void) {
+  if (s_art != ArtAtem || s_bereit || s_speichert || s_gespeichert || s.zustand != LaufLaeuft) {
+    return false;
+  }
+  Seite seiten[KS_SEITEN_MAX];
+  return seiten[s_seite % prv_seiten(seiten)].atem;
+}
+
+// Pause und Speichern, sobald der Dienst die ganze Uebung gezaehlt hat: Seine Sekunden laufen der
+// Uhr der App bis gut eine Sekunde nach, und das Telefon rechnet die Runden aus der Dauer, die er
+// speichert.
+static void prv_atem_ende_pruefen(void) {
+  if (!s_atem_ende) return;
+  const bool gezaehlt = (uint64_t)s.sekunden * 1000 >= atem_gesamt_ms(&s_atem);
+  if (s.zustand == LaufLaeuft && !gezaehlt &&
+      prv_uhr_ms() - s_atem_ende_seit < ATEM_ENDE_WARTEN_MS) {
+    return;
+  }
+  s_atem_ende = false;
+  if (s.zustand == LaufLaeuft) prv_pause_umschalten();
+  kieselsport_speichern();
+}
+
+// ALLE RUNDEN UM: wie Pause und Speichern von Hand, mit dem Endschirm danach. "Speichere" steht
+// gleich da, die Tasten ruhen wie beim Speichern.
+static void prv_atem_beenden(void) {
+  s_atem_ms = prv_atem_jetzt();
+  s_atem_laeuft = false;
+  s_atem_ende = true;
+  s_atem_ende_seit = prv_uhr_ms();
+  s_speichert = true;
+  s_verwerfen_bis = 0;
+  if (s_flaeche) layer_mark_dirty(s_flaeche);
+  prv_atem_ende_pruefen();
+}
+
+// Brummt jede neue Phase, zeichnet, solange die Atemseite steht, und kommt zum naechsten Bild
+// wieder - auf einer anderen Seite erst zum naechsten Wechsel.
+static void prv_atem_takt(void *daten) {
+  s_atem_timer = NULL;
+  if (!s_atem_laeuft) return;
+  const Atemstand st = atem_stand(&s_atem, prv_atem_jetzt());
+  if (st.fertig) {
+    vibes_enqueue_custom_pattern(atem_muster_ende());
+    prv_atem_beenden();
+    return;
+  }
+  if (st.phase != s_atem_gemeldet.phase || st.runde != s_atem_gemeldet.runde) {
+    vibes_enqueue_custom_pattern(atem_muster(st.phase));
+    s_atem_gemeldet = st;
+  }
+  const bool sichtbar = prv_atem_sichtbar();
+  if (sichtbar && s_flaeche) layer_mark_dirty(s_flaeche);
+  s_atem_timer = app_timer_register(sichtbar ? atem_naechstes_bild_ms(&st) : st.rest_ms,
+                                    prv_atem_takt, NULL);
+}
+
+static void prv_atem_neu_stellen(void) {
+  if (s_atem_timer) { app_timer_cancel(s_atem_timer); s_atem_timer = NULL; }
+  prv_atem_takt(NULL);
+}
+
+// Die Uebung steht bei [ms] seit dem ersten Einatmen. Die Phase, die da laeuft, hat schon begonnen
+// und brummt nicht noch einmal - ausser [melden].
+static void prv_atem_beginnen(uint32_t ms, bool laeuft, bool melden) {
+  kieselsport_atem(&s_atem);
+  s_atem_verankert = true;
+  s_atem_ms = ms;
+  s_atem_anker = prv_uhr_ms();
+  s_atem_laeuft = laeuft;
+  s_atem_gemeldet = atem_stand(&s_atem, ms);
+  if (s_atem_gemeldet.fertig) {
+    // Neu geoeffnet, und die Runden sind schon um: gleich zu Ende, ohne Brummen.
+    prv_atem_beenden();
+    return;
+  }
+  if (melden) s_atem_gemeldet.runde = 0;
+  prv_atem_neu_stellen();
+}
+
+// Die Uhr der Uebung steht in der Pause und geht mit dem Weiter weiter, beides ohne Brummen.
+static void prv_atem_folgen(Laufzustand zustand) {
+  if (!s_atem_verankert || s_atem_ende || s_speichert) return;
+  const bool laufen = zustand == LaufLaeuft;
+  if (laufen == s_atem_laeuft) return;
+  s_atem_ms = prv_atem_jetzt();
+  s_atem_anker = prv_uhr_ms();
+  s_atem_laeuft = laufen;
+  prv_atem_neu_stellen();
+}
+
+// Was der Dienst fuer die Uebung heisst: Oeffnet die App mitten in sie hinein, steht sie bei seiner
+// aktiven Zeit. Danach gelten Pause und Weiter von anderswo, und das Ende wartet auf seine Zeit.
+static void prv_atem_dienst(const KsStand *k) {
+  if (!s_atem_verankert) {
+    prv_atem_beginnen(k->t.dauer_s * 1000, k->zustand == LaufLaeuft, false);
+    return;
+  }
+  if (prv_uhr_ms() >= s_atem_taste_bis) prv_atem_folgen(s.zustand);
+  prv_atem_ende_pruefen();
+}
+
+static void prv_start(bool los_gebrummt) {
   const uint32_t beginn = (uint32_t)time(NULL);
   // ERST MELDEN, DANN STARTEN. Jede Sekunde, die das Telefon spaeter
   // anfaengt, fehlt der Strecke am Anfang.
@@ -898,6 +1135,9 @@ static void prv_start(void) {
   s.da = true;
   if (s_abfrage) app_timer_cancel(s_abfrage);
   s_abfrage = app_timer_register(300, prv_abfrage, NULL);
+  // DAS ERSTE EINATMEN BEGINNT MIT DEM "LOS" DES COUNTDOWNS; wer ihn uebersprungen hat, hoert es
+  // vom Einatmen selbst.
+  if (s_art == ArtAtem) prv_atem_beginnen(0, true, !los_gebrummt);
 }
 
 static void prv_zu(void *data) {
@@ -1020,6 +1260,7 @@ static void prv_stand_lesen(void) {
   s.zone = k.zone;
   s.beginn = k.t.beginn;
   memcpy(s_minute, k.minute, sizeof(s_minute));
+  if (s_art == ArtAtem) prv_atem_dienst(&k);
   prv_neu_zeichnen_wenn_anders();
 }
 
@@ -1027,10 +1268,10 @@ static void prv_stand_lesen(void) {
 
 static AppTimer *s_countdown_timer;
 
-static void prv_countdown_ende(void) {
+static void prv_countdown_ende(bool los_gebrummt) {
   if (s_countdown_timer) { app_timer_cancel(s_countdown_timer); s_countdown_timer = NULL; }
   s_countdown = 0;
-  prv_start();
+  prv_start(los_gebrummt);
   if (s_flaeche) layer_mark_dirty(s_flaeche);
 }
 
@@ -1040,7 +1281,7 @@ static void prv_countdown(void *data) {
   if (--s_countdown == 0) {
     // Los: ein langes Brummen, dann laeuft die Zeit.
     vibes_long_pulse();
-    prv_countdown_ende();
+    prv_countdown_ende(true);
     return;
   }
   vibes_short_pulse();
@@ -1056,18 +1297,15 @@ static void prv_select(ClickRecognizerRef anlass, void *context) {
   if (s_bereit) {
     // ERST 3-2-1, WIE IM WORKOUT: Zeit, den Arm zu senken. Ein zweiter
     // Druck waehrend des Countdowns startet sofort.
-    if (s_countdown > 0) { prv_countdown_ende(); return; }
+    if (s_countdown > 0) { prv_countdown_ende(false); return; }
     s_countdown = 3;
     vibes_short_pulse();
     s_countdown_timer = app_timer_register(1000, prv_countdown, NULL);
   } else {
-    kieselsport_pause_umschalten();
-    // Die Meldung ans Telefon gleich, nicht erst nach der Antwort des
-    // Dienstes: die Aufzeichnung soll mit dem Druck anhalten.
-    const bool wird_pause = s.zustand == LaufLaeuft;
-    telefon_melde_zustand(wird_pause ? ZustandPause : ZustandWeiter, (uint8_t)s_art, s.beginn);
-    s.zustand = wird_pause ? LaufPause : LaufLaeuft;
-    s_verwerfen_bis = 0;
+    prv_pause_umschalten();
+    // Die Uebung haelt mit dem Druck an, nicht erst mit dem naechsten Stand des Dienstes.
+    s_atem_taste_bis = prv_uhr_ms() + ATEM_TASTE_MS;
+    prv_atem_folgen(s.zustand);
   }
   layer_mark_dirty(s_flaeche);
 }
@@ -1088,6 +1326,8 @@ static void prv_unten(ClickRecognizerRef anlass, void *context) {
     // BEIM LAUFEN BLAETTERT UNTEN - zur naechsten Seite der Felder. Ein
     // Druck hier kostet nichts; verworfen wird nur aus der Pause.
     s_seite++;
+    // Zurueck auf der Atemseite braucht der Kreis gleich wieder seine Bilder.
+    prv_atem_neu_stellen();
     layer_mark_dirty(s_flaeche);
     return;
   }
@@ -1147,6 +1387,7 @@ static void prv_entladen(Window *fenster) {
   if (s_abfrage) { app_timer_cancel(s_abfrage); s_abfrage = NULL; }
   if (s_zu) { app_timer_cancel(s_zu); s_zu = NULL; }
   if (s_countdown_timer) { app_timer_cancel(s_countdown_timer); s_countdown_timer = NULL; }
+  if (s_atem_timer) { app_timer_cancel(s_atem_timer); s_atem_timer = NULL; }
   s_countdown = 0;
   layer_destroy(s_flaeche);
   s_flaeche = NULL;
@@ -1164,6 +1405,10 @@ static void prv_oeffnen(void) {
   s_gezeigt_gilt = false;
   memset(&s, 0, sizeof(s));
   memset(s_minute, 0, sizeof(s_minute));
+  s_atem_verankert = false;
+  s_atem_laeuft = false;
+  s_atem_ende = false;
+  s_atem_taste_bis = 0;
   // Was vorher zu Ende ging, zaehlt nicht fuer diesen Schirm.
   KsStand k;
   kieselsport_stand(&k);
@@ -1219,6 +1464,16 @@ void lauf_window_zuruecksetzen(void) {
   memset(&s_countdown_timer, 0, sizeof(s_countdown_timer));
   memset(&s_gezeigt, 0, sizeof(s_gezeigt));
   memset(&s_gezeigt_gilt, 0, sizeof(s_gezeigt_gilt));
+  memset(&s_atem, 0, sizeof(s_atem));
+  memset(&s_atem_verankert, 0, sizeof(s_atem_verankert));
+  memset(&s_atem_laeuft, 0, sizeof(s_atem_laeuft));
+  memset(&s_atem_ms, 0, sizeof(s_atem_ms));
+  memset(&s_atem_anker, 0, sizeof(s_atem_anker));
+  memset(&s_atem_gemeldet, 0, sizeof(s_atem_gemeldet));
+  memset(&s_atem_timer, 0, sizeof(s_atem_timer));
+  memset(&s_atem_taste_bis, 0, sizeof(s_atem_taste_bis));
+  memset(&s_atem_ende, 0, sizeof(s_atem_ende));
+  memset(&s_atem_ende_seit, 0, sizeof(s_atem_ende_seit));
 }
 
 #endif  // CONFIG_BOULDER_KIESELSPORT

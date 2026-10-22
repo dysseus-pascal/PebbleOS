@@ -41,11 +41,12 @@ pbl_clar_test(test_kieselsport_einstellungen
 
 # Der laufende Schirm: gezeichnet wird nur, was sich aendert, und der Endschirm geht zu, bevor
 # Pebbles Meldung kommt (V4). Schirm und Grafik sind nachgebaut, der Dienst liefert einen Stand,
-# den der Test stellt.
+# den der Test stellt. Dazu der Takt der Atemuebung nach der Uhr der App.
 pbl_clar_test(test_kieselsport_lauf
   SOURCES
     fw/apps/system/kieselsport/lauf_window.c
     fw/apps/system/kieselsport/art_text.c
+    fw/apps/system/kieselsport/atem.c
     fw/apps/system/kieselsport/texte.c
   DEFINES CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
 )
