@@ -18,7 +18,8 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - ein Hunk einer Kieselsport-Stelle Pebbles Code ausserhalb von
     #ifdef CONFIG_BOULDER_KIESELSPORT aendert (neue Zeile davor, danach oder im #else,
     entfernte Zeile; auch ein Include) - im Registry-JSON: ein neuer Eintrag keinen der
-    App-Schalter (APP_SCHALTER) in "ifdefs" nennt,
+    App-Schalter (APP_SCHALTER) in "ifdefs" nennt; dasselbe mit dem Schalter der Variante
+    fuer eine Stelle, die ihn verlangt (SpO2 im Schlaf),
   - eine eigene Datei in Pebbles Ordnern (EIGENE_DATEIEN) Pebbles Zeilen aendert, kein
     "Boulder:" traegt oder als .c nicht ganz unter dem Schalter steht,
   - ein CMake-Hunk (P7) Pebbles Zeilen entfernt oder als Code etwas anderes bringt als genau
@@ -60,13 +61,16 @@ EIGENE_DATEIEN = (
 )
 
 # Pebble-Datei: hoechstens geaenderte Zeilen, Funktion der Hunks als Regex, hoechstens so
-# viele Hunks (ohne Kontext), ob jeder Hunk den Schalter nennen muss, und fuer CMake der Block,
-# den jeder Hunk genau bringen muss.
+# viele Hunks (ohne Kontext), ob jeder Hunk ganz unter einem Schalter stehen muss (True: der von
+# Kieselsport, sonst sein Name), und fuer CMake der Block, den jeder Hunk genau bringen muss.
 # Die Liste folgt den Entscheidungen (entscheidungen.md; Schritt 1: Spezifikation 2.1, F2, F3;
 # Schritt 2: Spezifikation 2.3, P1-P6; Schritt 3: Spezifikation 7, P7).
 Stelle = collections.namedtuple('Stelle', 'zeilen funktion hunks schalter cmake',
                                 defaults=(None, None, None, None))
 SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
+# Der Schalter der Variante selbst: Ihre Stellen in Pebbles Diensten aendern nur obelix und
+# qemu_emery.
+VARIANTE = 'CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER'
 # Die Schalter der System-Apps in der Registry (P3). Beide haengen an der Variante, jeder neue
 # Eintrag muss einen davon in "ifdefs" tragen: sonst stuende er auf jedem Board.
 APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE')
@@ -88,6 +92,12 @@ PEBBLE = {
     # Pebbles Maske laesst SpO2 fuer Abos im Hintergrund nur mit "Blood Oxygen" oder dem Schalter
     # fuer Trainings zu, und nur ein solcher Schalter darf den Sensor einschalten. Ohne diese
     # beiden Stellen bliebe Pebbles Plan im Schlaf ohne Messung.
+    # SpO2 im Schlaf (Entscheid vom 22.10.2026): Pebbles SpO2-Plan fragt statt "Blood Oxygen" die
+    # Regel der Variante (spo2_plan.h) - die Bedingung am Anfang von prv_spo2_subscription_update
+    # und ihr Include, beides ganz unter dem Schalter der Variante, Pebbles Zeile im #else (ohne
+    # Kontext zaehlt git das #endif danach als eigenen Hunk).
+    'fw/services/activity/activity.c': Stelle(
+        7, r'prv_spo2_subscription_update\(', hunks=3, schalter=VARIANTE),
     'fw/services/hrm/hrm_manager.c': Stelle(
         24, r'hrm_manager_new_data_cb\(|prv_can_turn_sensor_on\(|prv_prefs_allowed_features\(',
         hunks=4),
@@ -132,8 +142,7 @@ EIGENE_BILDER = re.compile(r'^tests/test_images/test_bh_[^/]+\.png$')
 UNVERSIONIERT_FREI = re.compile(r'^build[^/]*/')
 
 HUNK = re.compile(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@ ?(.*)$')
-# Praeprozessor-Zeilen ohne Kommentar. Nur genau "#ifdef SCHALTER" oeffnet den eigenen Block.
-SCHALTER_AUF = re.compile(r'#\s*ifdef\s+' + SCHALTER)
+# Praeprozessor-Zeilen ohne Kommentar. Nur genau "#ifdef <Schalter>" oeffnet den eigenen Block.
 IF = re.compile(r'#\s*if')
 ELSE = re.compile(r'#\s*(?:else|elif)\b')
 ENDIF = re.compile(r'#\s*endif\b')
@@ -172,10 +181,10 @@ def ohne_kommentar(text, kommentar):
     return code.strip(), kommentar
 
 
-def ausserhalb_des_schalters(zeilen):
+def ausserhalb_des_schalters(zeilen, schalter=SCHALTER):
     """Die Zeilen eines Hunks, mit denen Pebbles Code auf jedem Board anders wird.
 
-    Das sind neue Zeilen, die nicht im ersten Zweig eines #ifdef SCHALTER stehen (davor, danach,
+    Das sind neue Zeilen, die nicht im ersten Zweig eines #ifdef <schalter> stehen (davor, danach,
     im #else), und entfernte Zeilen. Kommentare und Leerzeilen aendern keinen Code und zaehlen
     nicht. Gelesen wird das Ergebnis (Kontext und neue Zeilen) mit den offenen #if; ein Hunk ohne
     das eigene #ifdef steht darum ausserhalb. Ein neues #endif ist ueberall erlaubt: git haengt
@@ -183,7 +192,8 @@ def ausserhalb_des_schalters(zeilen):
     neu und muss unter dem Schalter stehen.
     """
     aussen = []
-    offen = []  # je offenes #if: (ist es #ifdef SCHALTER, steht man in seinem ersten Zweig)
+    offen = []  # je offenes #if: (ist es #ifdef <schalter>, steht man in seinem ersten Zweig)
+    auf = re.compile(r'#\s*ifdef\s+' + re.escape(schalter))
     kommentar = False
     for zeile in zeilen:
         art, text = zeile[:1], zeile[1:]
@@ -198,7 +208,7 @@ def ausserhalb_des_schalters(zeilen):
             continue
         neu = art == '+'
         unter = any(schalter and erster for schalter, erster in offen)
-        if SCHALTER_AUF.fullmatch(code):
+        if auf.fullmatch(code):
             offen.append((True, True))
         elif IF.match(code):
             if neu and not unter:
@@ -233,13 +243,13 @@ def json_eintraege(zeilen):
     return eintraege
 
 
-def schalterfehler(pfad, kopf, zeilen):
-    """Ein Hunk einer Kieselsport-Stelle: C ganz unter dem Schalter; im JSON traegt jeder neue
+def schalterfehler(pfad, kopf, zeilen, schalter=SCHALTER):
+    """Ein Hunk einer Stelle mit Schalter: C ganz unter dem Schalter; im JSON traegt jeder neue
     Eintrag einen App-Schalter in "ifdefs" - je Eintrag, weil der Hunk zwei Apps fuehrt."""
     if pfad.endswith(('.c', '.h')):
-        aussen = ausserhalb_des_schalters(zeilen)
+        aussen = ausserhalb_des_schalters(zeilen, schalter)
         if aussen:
-            return [f'{pfad}: Hunk "{kopf}" aendert ausserhalb von #ifdef {SCHALTER}: '
+            return [f'{pfad}: Hunk "{kopf}" aendert ausserhalb von #ifdef {schalter}: '
                     f'"{aussen[0].strip()}"']
         return []
     eintraege = json_eintraege(zeilen)
@@ -355,7 +365,8 @@ def pruefe_diff(diff, unversioniert, diff_u0=None):
                 fehler.append(f'{pfad}: Hunk "{kopf}" ohne "Boulder:"')
             # Mit Kontext: das #ifdef, unter dem eine Zeile steht, und sein #endif gehoeren dazu.
             if stelle.schalter:
-                fehler += schalterfehler(pfad, kopf, zeilen)
+                schalter = SCHALTER if stelle.schalter is True else stelle.schalter
+                fehler += schalterfehler(pfad, kopf, zeilen, schalter)
             if stelle.cmake:
                 fehler += cmake_fehler(pfad, kopf, zeilen, stelle.cmake)
         u0 = ohne_kontext.get(pfad, [])

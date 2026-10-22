@@ -219,6 +219,7 @@ pbl_clar_test(test_boulder_messung
     fw/services/activity/boulder/messstufe.c
     fw/services/activity/boulder/puls.c
     fw/services/activity/boulder/hrv.c
+    fw/services/activity/boulder/spo2_plan.c
     fw/services/activity/boulder/takt.c
     fw/flash_region/flash_region.c
     fw/flash_region/filesystem_regions.c
@@ -232,6 +233,32 @@ pbl_clar_test(test_boulder_messung
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_HRM_HRV CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  OVERRIDES dummy_board
+)
+
+# SpO2 im Schlaf (b37): die Regel (spo2_plan.c) und Pebbles echter SpO2-Plan (activity.c, mit der
+# Variante gebaut wie auf der Uhr) mit Pebbles echten Prefs. Schalter und Nachtruhe kommen aus dem
+# Test; gegen messstufe.c und puls.c prueft sie test_boulder_messung.
+pbl_clar_test(test_boulder_spo2_plan
+  MODULES settings time
+  SOURCES
+    fw/applib/health_service.c
+    fw/services/regular_timer/service.c
+    fw/services/activity/activity.c
+    fw/services/activity/activity_metrics.c
+    fw/services/activity/activity_sessions.c
+    fw/services/activity/activity_calculators.c
+    fw/services/activity/hr_util.c
+    fw/services/activity/boulder/spo2_plan.c
+    fw/shell/normal/prefs.c
+    tests/stubs/stubs_system_resource.c
+    tests/fakes/fake_accel_service.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_rtc.c
+    fw/applib/pbl_std/strftime.c
+    fw/applib/pbl_std/timelocal.c
+  DEFINES DUMA_DISABLED CAPABILITY_HAS_HEALTH_TRACKING=1 CONFIG_HRM
+          CONFIG_SERVICE_ACTIVITY_BATCH_SAMPLES=25 CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   OVERRIDES dummy_board
 )
 

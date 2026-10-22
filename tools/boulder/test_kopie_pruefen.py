@@ -50,7 +50,8 @@ def proben_k1():
     gut = hunk('fw/services/activity/Kconfig', [' x', '+# Boulder: Wahl', '+choice A'])
     yield 'erlaubt', not pruefe(gut, [])
     yield 'eigener Ordner', not pruefe(hunk('fw/services/activity/boulder/x.c', ['+a'] * 500), [])
-    yield 'activity.c', pruefe(hunk('fw/services/activity/activity.c', ['+// Boulder: x']), [])
+    yield 'activity_metrics.c', pruefe(hunk('fw/services/activity/activity_metrics.c',
+                                            ['+// Boulder: x']), [])
     yield 'ohne Marke', pruefe(hunk('fw/services/activity/Kconfig', ['+choice A']), [])
     yield 'zu viele Zeilen', pruefe(hunk('fw/services/activity/CMakeLists.txt',
                                          ['+# Boulder: x'] + ['+y'] * 6), [])
@@ -73,9 +74,20 @@ def proben_k1():
     yield from proben_health(pruefe)
 
 
-# SpO2 im Schlaf (Entscheid vom 22.10.2026): Maske und Einschalten im HRM-Manager neben F2.
+# SpO2 im Schlaf (Entscheid vom 22.10.2026): Maske und Einschalten im HRM-Manager neben F2, die
+# Bedingung in Pebbles SpO2-Plan.
 HRM_C = 'fw/services/hrm/hrm_manager.c'
 MASKE = 'static HRMFeature prv_prefs_allowed_features(void) {'
+ACTIVITY_C = 'fw/services/activity/activity.c'
+PLAN = 'static void prv_spo2_subscription_update(uint32_t now_ts) {'
+PLAN_TOR = ['+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: Schlaf',
+            '+  if (!boulder_spo2_plan_offen(activity_prefs_blood_oxygen_is_enabled()) ||',
+            '+#else',
+            '   if (!activity_prefs_blood_oxygen_is_enabled() ||',
+            '+#endif']
+PLAN_INCLUDE = ['+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: Schlaf',
+                '+#include <pbl/services/activity/boulder/spo2_plan.h>',
+                '+#endif']
 
 
 def proben_spo2(pruefe):
@@ -88,6 +100,27 @@ def proben_spo2(pruefe):
     yield 'HRM-Manager zu viele Zeilen', rot(pruefe(hunk(HRM_C, zeile * 25, MASKE), []), 'hoechstens 24')
     funf = hunks(HRM_C, *[(MASKE, zeile)] * 5)
     yield 'HRM-Manager fuenfter Hunk', rot(pruefe(funf, [], funf), '5 Hunks')
+    # Pebbles SpO2-Plan: die Bedingung ganz unter dem Schalter der Variante, Pebbles Zeile im #else.
+    yield 'SpO2-Plan in activity.c', not pruefe(hunk(ACTIVITY_C, PLAN_TOR, PLAN), [])
+    yield 'SpO2-Plan mit Include', not pruefe(hunk(ACTIVITY_C, PLAN_INCLUDE), [])
+    yield 'SpO2-Plan ohne Schalter', rot(pruefe(
+        hunk(ACTIVITY_C, ['+  x();  // Boulder: Schlaf'], PLAN), []),
+        'ausserhalb von #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER')
+    yield 'SpO2-Plan unter dem Schalter von Kieselsport', rot(pruefe(
+        hunk(ACTIVITY_C, ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: x', '+  x();', '+#endif'],
+             PLAN), []), 'ausserhalb von #ifdef')
+    yield 'SpO2-Plan Include ohne Schalter', rot(pruefe(
+        hunk(ACTIVITY_C, ['+#include <pbl/services/activity/boulder/spo2_plan.h>  // Boulder: x']),
+        []), 'ausserhalb von #ifdef')
+    yield 'SpO2-Plan aendert Pebbles Zeile', rot(pruefe(
+        hunk(ACTIVITY_C, PLAN_TOR[:3] + ['-  if (!activity_prefs_blood_oxygen_is_enabled() ||',
+                                         '+  if (!x() ||', '+#endif'], PLAN), []),
+        'ausserhalb von #ifdef')
+    yield 'activity.c andere Funktion', rot(pruefe(
+        hunk(ACTIVITY_C, PLAN_TOR, 'static void prv_heart_rate_subscription_update(uint32_t now_ts) {'),
+        []), 'erlaubt nur')
+    yield 'activity.c zu viele Zeilen', rot(pruefe(
+        hunk(ACTIVITY_C, PLAN_TOR[:2] + ['+  x();'] * 5 + ['+#endif'], PLAN), []), 'hoechstens 7')
 
 
 def hunks(datei, *teile):

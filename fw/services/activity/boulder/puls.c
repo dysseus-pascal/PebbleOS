@@ -210,6 +210,11 @@ void boulder_puls_stufe_neu(void) {
   boulder_aufgabe_einreihen(&s_aufgabe);
 }
 
+// Wie prv_soll und prv_hrv_im_takt: Ohne Tracking gibt es keine Nachtruhe.
+bool boulder_puls_nachtruhe(void) {
+  return s_tracking && s_nachtruhe;
+}
+
 void boulder_puls_tracking_aus(void) {
   s_tracking = false;
   if (s_hrv.laeuft) {
@@ -263,6 +268,10 @@ void boulder_puls_minute(time_t jetzt_utc, bool nachtruhe) {
 }
 
 void boulder_puls_stufe_neu(void) {
+}
+
+bool boulder_puls_nachtruhe(void) {
+  return false;
 }
 
 void boulder_puls_tracking_aus(void) {

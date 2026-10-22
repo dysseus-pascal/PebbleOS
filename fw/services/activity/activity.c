@@ -14,6 +14,9 @@
 #include <pbl/services/activity/activity_calculators.h>
 #include <pbl/services/activity/activity_insights.h>
 #include <pbl/services/activity/activity_private.h>
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf (spo2_plan.h)
+#include <pbl/services/activity/boulder/spo2_plan.h>
+#endif
 #include <pbl/services/activity/workout_service.h>
 #include <pbl/services/alarms/alarm.h>
 #include <pbl/services/blob_db/health_db.h>
@@ -321,7 +324,11 @@ static void prv_spo2_subscription_update(uint32_t now_ts) {
 #ifdef CONFIG_HRM
   // If blood oxygen monitoring is disabled (master toggle off or "Disabled" interval), make sure
   // we're not sampling and skip.
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: in Nachtruhe auch mit "Schlaf"
+  if (!boulder_spo2_plan_offen(activity_prefs_blood_oxygen_is_enabled()) ||
+#else
   if (!activity_prefs_blood_oxygen_is_enabled() ||
+#endif
       activity_prefs_get_spo2_measurement_interval() == HRMonitoringInterval_Disabled) {
     if (s_activity_state.spo2.currently_sampling) {
       prv_spo2_set_sampling(false, now_ts);

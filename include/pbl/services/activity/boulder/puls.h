@@ -46,6 +46,10 @@ void boulder_puls_minute(time_t jetzt_utc, bool nachtruhe);
 // Die Messstufe hat sich geaendert (messstufe.c, KernelBG).
 void boulder_puls_stufe_neu(void);
 
+// Gilt fuer die laufende Minute Nachtruhe (mit Tracking)? KernelBG, O(1). Pebbles SpO2-Plan
+// fragt sie fuer den Schalter "Schlaf" (spo2_plan.h): dieselbe Nacht wie fuer den Nachtpuls.
+bool boulder_puls_nachtruhe(void);
+
 // deinit: Das Tracking endet. Ein laufendes Fenster zaehlt nicht, das Abo ruht.
 void boulder_puls_tracking_aus(void);
 

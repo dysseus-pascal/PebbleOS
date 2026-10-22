@@ -2,9 +2,12 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // Boulder V2 AP5: Messstufe, Puls-Abo und HRV-Fenster (Spezifikation 9: T6.1-T6.3, F2, F3).
+// Seit b37 dazu der Schalter "Schlaf" fuer SpO2: Lesen und Menue, Pebbles Maske im Manager und die
+// Nachtruhe fuer Pebbles SpO2-Plan (spo2_plan.c).
 //
-// ECHT: hrm_manager.c (mit dem HRV-Fix F2), settings_file.c auf der Flash-Attrappe (die
-// Datei shellpref), und die Variante (messstufe.c, puls.c, hrv.c, takt.c). ATTRAPPEN nur
+// ECHT: hrm_manager.c (mit dem HRV-Fix F2, mit der Variante gebaut wie auf der Uhr),
+// settings_file.c auf der Flash-Attrappe (die Datei shellpref), und die Variante (messstufe.c,
+// puls.c, hrv.c, spo2_plan.c, takt.c). ATTRAPPEN nur
 // fuer die Grenzen: der Sensor-Treiber (liefert erst nach 15 s Anlauf gute Werte, wie das
 // echte Geraet nach dem Einschwingen), der Zeitgeber des Managers, Pebbles Prefs-Setter
 // (zaehlen und reihen ein wie die echten), KernelMain (die BlobDB-Ereignisse gehen an den
@@ -13,15 +16,21 @@
 // (E3) prueft tools/boulder/vertraege.py; hier schreibt das "Telefon" den Schluessel so in
 // shellpref, wie settings_blob_db_insert es tut (mit Nullbyte, prv_canonical_shell_key).
 
-#include "clar.h"
-
 #include "applib/event_service_client.h"
+#include "clar.h"
+#include "fake_app_manager.h"
+#include "fake_events.h"
+#include "fake_pbl_malloc.h"
+#include "fake_rtc.h"
+#include "fake_spi_flash.h"
+#include "fake_system_task.h"
 #include "kernel/events.h"
 #include "pbl/services/activity/activity.h"
 #include "pbl/services/activity/activity_private.h"
 #include "pbl/services/activity/boulder/hrv.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/puls.h"
+#include "pbl/services/activity/boulder/spo2_plan.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/blob_db/api.h"
 #include "pbl/services/filesystem/pfs.h"
@@ -32,20 +41,13 @@
 #include "pbl/util/size.h"
 #include "pbl/util/units.h"
 #include "shell/prefs_private.h"
-#include <pbl/drivers/hrm.h>
-#include <pbl/drivers/rtc.h>
-
-#include "fake_app_manager.h"
-#include "fake_events.h"
-#include "fake_pbl_malloc.h"
-#include "fake_rtc.h"
-#include "fake_spi_flash.h"
-#include "fake_system_task.h"
-
 #include "stubs_accel_manager.h"
 #include "stubs_logging.h"
 
 #include <string.h>
+
+#include <pbl/drivers/hrm.h>
+#include <pbl/drivers/rtc.h>
 
 // =============================================================================================
 // Grenzen
@@ -556,6 +558,39 @@ void test_boulder_messung__schlaf_aus_dem_menue(void) {
   cl_assert_equal_i(wert, 0);
   cl_assert_equal_i(s_schlaf_zum_telefon, 2);
   cl_assert(!boulder_spo2_schlaf_geladen());
+}
+
+// =============================================================================================
+// Pebbles SpO2-Plan fragt den geladenen Schalter und die Nachtruhe des Puls-Abos (spo2_plan.h)
+
+void test_boulder_messung__nachtruhe_fuer_den_spo2_plan(void) {
+  cl_assert(!boulder_puls_nachtruhe()); // vor der ersten Minute
+  prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 1);
+  prv_minute();
+  cl_assert(boulder_spo2_schlaf_geladen());
+  cl_assert(boulder_puls_nachtruhe());
+  cl_assert(boulder_spo2_plan_offen(false));
+  // Die Nachtruhe ist die der laufenden Minute, wie fuer den Nachtpuls.
+  s_nachtruhe = false;
+  prv_minute();
+  cl_assert(!boulder_puls_nachtruhe());
+  cl_assert(!boulder_spo2_plan_offen(false));
+  cl_assert(boulder_spo2_plan_offen(true));
+  s_nachtruhe = true;
+  prv_minute();
+  cl_assert(boulder_spo2_plan_offen(false));
+  // Ohne Tracking keine Nachtruhe, auch wenn die letzte Minute ruhig war.
+  boulder_puls_tracking_aus();
+  prv_kernel_bg();
+  cl_assert(!boulder_puls_nachtruhe());
+  cl_assert(!boulder_spo2_plan_offen(false));
+  prv_minute();
+  cl_assert(boulder_spo2_plan_offen(false));
+  // Der Schalter aus: auch in Nachtruhe zu.
+  prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 0);
+  prv_kernel_bg();
+  cl_assert(boulder_puls_nachtruhe());
+  cl_assert(!boulder_spo2_plan_offen(false));
 }
 
 // =============================================================================================
