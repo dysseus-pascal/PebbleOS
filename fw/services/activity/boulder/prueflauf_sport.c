@@ -18,7 +18,7 @@
 //
 //   kieselsport vorbereiten      Ballast (Heap wie obelix, T7.5) und Aktivitaetsaufzeichnung an
 //   kieselsport start <art>      wie die App: 0 Laufen, 1 Velo, 2 Wandern, 3 Kraft, 4 MTB, 5 Yoga,
-//                                6 Schwimmen
+//                                6 Schwimmen, 7 Atmen
 //   kieselsport pause|weiter|speichern|verwerfen
 //   kieselsport puls <bpm>|profil|aus
 //   kieselsport stand            Kieselsport, Pebbles Training, Zusammenfassung, Stopp, Geber
@@ -53,7 +53,7 @@ static uint32_t s_geber_s;          //< Sekunden seit dem Start des Gebers
 static uint32_t s_geliefert;        //< Werte an den Manager
 static uint32_t s_sensor_an_s;      //< Sekunden, in denen der Manager den Sensor an hatte
 static uint32_t s_letzter_wert_s;   //< Gebersekunde des letzten gelieferten Werts
-static volatile bool s_mit_hrv;     //< Yoga: auch Schlagabstaende (Kieselsports HRV)
+static volatile bool s_mit_hrv;     //< Yoga, Atmen: auch Schlagabstaende (Kieselsports HRV)
 
 // DAS PROFIL EINES LANGEN TRAININGS. Alle zehn Minuten von 100 auf 176 und zurueck: Das geht ueber
 // alle fuenf Zonen hinauf und hinab, also brummt es (Hysterese) und die Pulskalorien aendern sich.
@@ -141,7 +141,7 @@ static int prv_start(const struct pbl_shell *sh, size_t argc, char **argv) {
     pbl_shell_print(sh, "Art %s unbekannt (0-%d)", argv[1], ArtAnzahl - 1);
     return -1;
   }
-  s_mit_hrv = (art == ArtYoga);
+  s_mit_hrv = kieselsport_art_info((Sportart)art)->hrv;
   kieselsport_starte((Sportart)art, 0);
   pbl_shell_print(sh, "Start Art %d eingereiht", art);
   return 0;

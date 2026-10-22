@@ -5,21 +5,23 @@
 
 // Die Reihenfolge ist die des Menues UND die Zahl, die ans Telefon geht.
 static const ArtInfo s_arten[ArtAnzahl] = {
-  // Schritte  Distanz  Reps   Bahnen
-  { true,     true,    false, false },   // Laufen
+  // Schritte  Distanz  Reps   Bahnen  HRV
+  { true,     true,    false, false,  false },   // Laufen
   // STRASSE UND GRAVEL SIND DASSELBE: am Lenker sind Schritte eine
   // Zufallszahl, und ohne GPS gibt es keine Strecke. Bleiben Zeit, Puls und
   // Kalorien - wenig, aber wahr.
-  { false,    false,   false, false },   // Strasse/Gravel
-  { true,     true,    false, false },   // Wandern
+  { false,    false,   false, false,  false },   // Strasse/Gravel
+  { true,     true,    false, false,  false },   // Wandern
   // KRAFT: weder Schritte noch Strecke, dafuer Wiederholungen und die Pause
   // zwischen den Saetzen - und die Pause ist die Zahl, auf die man schaut.
-  { false,    false,   true,  false },   // Kraft
-  { false,    false,   false, false },   // MTB
+  { false,    false,   true,  false,  false },   // Kraft
+  { false,    false,   false, false,  false },   // MTB
   // YOGA: der Puls und die HRV sind die ganze Aussage.
-  { false,    false,   false, false },   // Yoga
+  { false,    false,   false, false,  true  },   // Yoga
   // SCHWIMMEN: die Strecke entsteht aus gezaehlten Bahnen mal Beckenlaenge.
-  { false,    false,   false, true  },   // Schwimmen
+  { false,    false,   false, true,   false },   // Schwimmen
+  // ATMEN: wie Yoga. Die Phasen und Runden zaehlt die App; hier zaehlt nur die Zeit.
+  { false,    false,   false, false,  true  },   // Atmen
 };
 
 const ArtInfo *art_info(Sportart art) {

@@ -146,8 +146,10 @@ static void prv_zonenwechsel(void) {
   // sie beim Sport ueberhaupt anschaut. Nur ein frischer Wert darf brummen: ein alter wechselt
   // keine Zone.
   const int zone = training_puls_frisch() ? prv_zone_mit_abstand(training_puls()) : 0;
-  if (training_zustand() == LaufLaeuft && zone > 0 && s_letzte_zone > 0 &&
-      zone != s_letzte_zone) {
+  // DIE ATEMUEBUNG BRUMMT IHRE PHASEN (die App): ein Zonenwechsel fuehlte sich an wie Einatmen
+  // oder Halten. Die Zone gilt trotzdem weiter fuer die Anzeige.
+  if (training_zustand() == LaufLaeuft && training_art() != ArtAtem && zone > 0 &&
+      s_letzte_zone > 0 && zone != s_letzte_zone) {
     if (zone > s_letzte_zone) {
       prv_brummen_hoch();
     } else {

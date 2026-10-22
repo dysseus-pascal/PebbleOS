@@ -10,7 +10,7 @@
 // Dieselbe Reihenfolge wie Sportart - die Zahl, die ans Telefon geht.
 static const StringId s_namen[ArtAnzahl] = {
   STR_ART_LAUFEN, STR_ART_BIKE, STR_ART_WANDERN, STR_ART_KRAFT,
-  STR_ART_MTB, STR_ART_YOGA, STR_ART_SCHWIMMEN,
+  STR_ART_MTB, STR_ART_YOGA, STR_ART_SCHWIMMEN, STR_ART_ATEM,
 };
 
 const char *art_name(Sportart art) {

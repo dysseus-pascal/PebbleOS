@@ -44,6 +44,9 @@ typedef enum {
   ArtMTB,
   ArtYoga,
   ArtSchwimmen,
+  // Die Atemuebung im Rhythmus vom Telefon (kieselsport_atem). Den Takt gibt die App, der Dienst
+  // misst wie bei Yoga.
+  ArtAtem,
   ArtAnzahl,
 } Sportart;
 
@@ -53,6 +56,7 @@ typedef struct {
   bool distanz;   //< Strecke aus Schritten ableitbar?
   bool reps;      //< Wiederholungen und Pausen zaehlen?
   bool bahnen;    //< Bahnen ueber den Kompass zaehlen?
+  bool hrv;       //< HRV aus den Schlagabstaenden (RMSSD)?
 } ArtInfo;
 
 typedef enum {

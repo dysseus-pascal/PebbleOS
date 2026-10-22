@@ -91,9 +91,19 @@ static const int8_t s_schwimmen[] = {
   ENDE,
 };
 
+// ATMEN: die Lunge - Luftroehre, Bronchien, zwei Fluegel. Die Fluegel bleiben drei Punkte von der
+// Luftroehre weg, sonst laufen sie auf 32 Punkten zusammen.
+static const int8_t s_atem[] = {
+  LZ, 2, 0, -13, 0, -5,
+  LZ, 3, -6, 1, 0, -5, 6, 1,
+  LZ, 10, -3, -5, -6, -9, -9, -9, -12, -3, -13, 4, -12, 9, -9, 11, -5, 11, -3, 8, -3, -5,
+  LZ, 10, 3, -5, 6, -9, 9, -9, 12, -3, 13, 4, 12, 9, 9, 11, 5, 11, 3, 8, 3, -5,
+  ENDE,
+};
+
 // Dieselbe Reihenfolge wie Sportart in kern/art.h.
 static const int8_t *const s_symbole[ArtAnzahl] = {
-  s_laufen, s_bike, s_wandern, s_kraft, s_mtb, s_yoga, s_schwimmen,
+  s_laufen, s_bike, s_wandern, s_kraft, s_mtb, s_yoga, s_schwimmen, s_atem,
 };
 
 static GPoint prv_punkt(GPoint m, int16_t g, int x, int y) {

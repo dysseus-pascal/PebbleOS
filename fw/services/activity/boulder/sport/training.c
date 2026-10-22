@@ -62,8 +62,8 @@ void training_starte_ab(Sportart art, uint32_t beginn) {
   const ArtInfo *info = art_info(art);
   if (info->reps) reps_start();
   if (info->bahnen) bahnen_start();
-  // YOGA MISST HRV. Der Puls bleibt daneben; die Zonen sagen bei Yoga wenig.
-  if (art == ArtYoga) puls_hrv_start();
+  // YOGA UND ATMEN MESSEN HRV. Der Puls bleibt daneben; die Zonen sagen dort wenig.
+  if (info->hrv) puls_hrv_start();
 }
 
 void training_pause_umschalten(void) {
@@ -140,7 +140,7 @@ Trainingsstand training_stand(void) {
     t.bahnen = bahnen_anzahl();
     t.meter = bahnen_meter();
   }
-  if (s_art == ArtYoga) t.hrv_ms = puls_hrv_rmssd();
+  if (info->hrv) t.hrv_ms = puls_hrv_rmssd();
   if (info->schritte) t.schritte = (uint32_t)MAX(s_pebble.schritte, 0);
   if (info->distanz) t.meter = (uint32_t)MAX(s_pebble.meter, 0);
   // KALORIEN GELTEN FUER JEDE ART, aus dem Puls (kalorien.h): beim Krafttraining und auf dem

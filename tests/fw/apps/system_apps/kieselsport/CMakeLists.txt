@@ -50,6 +50,16 @@ pbl_clar_test(test_kieselsport_lauf
   DEFINES CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
 )
 
+# Jede Art hat Namen, Symbol und Farbe: die drei Tabellen der App, einmal ueber alle Arten.
+pbl_clar_test(test_kieselsport_arten
+  SOURCES
+    fw/apps/system/kieselsport/art_text.c
+    fw/apps/system/kieselsport/symbole.c
+    fw/apps/system/kieselsport/texte.c
+    fw/apps/system/kieselsport/thema.c
+  DEFINES CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
+)
+
 # P6 (Entscheid 3 vom 08.10.2026): die Kachel im Startmenue (aus b25). Sie fragt den Dienst nur,
 # solange ein Training laeuft, und zeigt Art und Laufzeit, in der Pause mit "|| ".
 pbl_clar_test(test_kieselsport_kachel

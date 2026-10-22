@@ -338,6 +338,54 @@ void test_kieselsport__yoga_misst_hrv(void) {
   cl_assert_equal_i(prv_sensor_takt(), 0);
 }
 
+// Die Atemuebung misst wie Yoga: Puls mit HRV im allgemeinen Pulsmodell, ohne Schritte, Strecke,
+// Wiederholungen und Bahnen. Den Takt der Phasen kennt nur die App.
+void test_kieselsport__atem_misst_wie_yoga(void) {
+  const ArtInfo *yoga = kieselsport_art_info(ArtYoga);
+  const ArtInfo *atem = kieselsport_art_info(ArtAtem);
+  cl_assert(atem->hrv && yoga->hrv);
+  cl_assert(!atem->schritte && !atem->distanz && !atem->reps && !atem->bahnen);
+  prv_starte(ArtAtem, 0);
+  cl_assert(prv_sensor_hrv());
+  cl_assert_equal_i(prv_sensor_takt(), 1);
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  cl_assert(!s_accel_handler && !s_kompass_handler);
+  for (int i = 0; i < 40; i++) {
+    prv_abstand((i % 2) ? 1040 : 1000);
+  }
+  for (int i = 0; i < 70; i++) {
+    prv_sekunde_mit_puls(64);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.art, ArtAtem);
+  cl_assert_equal_i(s.t.hrv_ms, 40);
+  cl_assert_equal_i(s.t.schritte, 0);
+  cl_assert_equal_i(s.t.meter, 0);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.art, ArtAtem);
+  cl_assert_equal_i(t.hrv_ms, 40);
+  cl_assert_equal_i(t.dauer_s, 70);
+  cl_assert(!prv_sensor_hrv());
+}
+
+// Beim Atmen brummt die App jede Phase; ein Zonenwechsel des Dienstes fuehlte sich an wie Einatmen
+// (einer, 100 ms) oder Halten (zwei kurze). Die Zone selbst gilt weiter.
+void test_kieselsport__atem_brummt_keine_zonen(void) {
+  prv_starte(ArtAtem, 0);
+  for (int i = 0; i < 10; i++) {
+    prv_sekunde_mit_puls(120);  // Zone 2
+  }
+  prv_sekunde_mit_puls(140);  // Zone 3
+  cl_assert_equal_i(prv_stand().zone, 3);
+  prv_sekunde_mit_puls(120);
+  prv_sekunde_mit_puls(160);
+  cl_assert_equal_i(prv_stand().zone, 4);
+  cl_assert_equal_i(s_brumm_zahl, 0);
+}
+
 // b25: archiv_haelt_die_letzten_zwanzig. Das Archiv entfaellt (V7); seine Schluessel bleiben
 // reserviert und werden nie mehr geschrieben, auch nicht nach 22 Trainings.
 void test_kieselsport__archiv_entfaellt(void) {
@@ -458,7 +506,7 @@ void test_kieselsport__t4_1_arten_ohne_schritte(void) {
   // Die Entscheidung des Nutzers (entscheidungen.md, V1), nicht art.c abgeschrieben.
   static const bool ohne[ArtAnzahl] = {
     [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
-    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true,
+    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true, [ArtAtem] = true,
   };
   g_fake_ohne_schritte_beim_aufruf = prv_beim_merker;
   for (int art = 0; art < ArtAnzahl; art++) {

@@ -38,6 +38,7 @@ STR(STR_ART_KRAFT,      0,  "Strength",     "Kraft",          "Muscu",        "P
 STR(STR_ART_MTB,        0,  "MTB",          "MTB",            "VTT",          "MTB",           "MTB")
 STR(STR_ART_YOGA,       0,  "Yoga",         "Yoga",           "Yoga",         "Yoga",          "Yoga")
 STR(STR_ART_SCHWIMMEN,  0,  "Swimming",     "Schwimmen",      "Natation",     "Nuoto",         "Natación")
+STR(STR_ART_ATEM,       0,  "Breathing",    "Atmen",          "Respiration",  "Respiro",       "Respiración")
 // Obertitel im Menue unter Strasse/Gravel und MTB.
 STR(STR_GRUPPE_BIKE,    0,  "Bike",         "Bike",           "Vélo",         "Bici",          "Bici")
 

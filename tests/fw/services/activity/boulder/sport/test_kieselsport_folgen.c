@@ -162,7 +162,7 @@ static void prv_folge_invarianten(void) {
   // mit dem Merker (dauerteil.c). Die Arten nach V1 (entscheidungen.md), nicht aus art.c gelesen.
   static const bool s_ohne[ArtAnzahl] = {
     [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
-    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true,
+    [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true, [ArtAtem] = true,
   };
   const bool gestrichen = pebble && g_fake_ohne_schritte;
   const bool soll = s.zustand == LaufLaeuft && s.art < ArtAnzahl && s_ohne[s.art];

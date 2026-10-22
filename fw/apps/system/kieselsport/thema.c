@@ -38,6 +38,8 @@ GColor thema_sportfarbe(Sportart art) {
     case ArtMTB:       return GColorWindsorTan;
     case ArtYoga:      return GColorPurpureus;
     case ArtSchwimmen: return GColorTiffanyBlue;
+    // Atmen hat in Kiesel-Helper keine Farbe: ein ruhiges Blau, das keine andere Art traegt.
+    case ArtAtem:      return GColorCobaltBlue;
     default:           return KS_FARBE_LEISTE;
   }
 #else
