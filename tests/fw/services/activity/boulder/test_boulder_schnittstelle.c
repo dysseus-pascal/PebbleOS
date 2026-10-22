@@ -191,6 +191,7 @@ void test_boulder_schnittstelle__nacht_von_b24(void) {
 void test_boulder_schnittstelle__lage_nach_dem_boot(void) {
   cl_assert_equal_i(prv_ziele_schicken(1, 7500, 390, 8), S_SUCCESS);
   prv_shellpref_schreiben(4);
+  s_spo2_an = true; // Pebbles "Blood Oxygen", wie es die Stufen 2-5 bis b36 setzten
   s_tracking = false;
   cl_assert(!prv_s2());
   cl_assert_equal_i(s_app_lage->fassung, BOULDER_LAGE_FASSUNG);
@@ -214,7 +215,8 @@ void test_boulder_schnittstelle__lage_nach_dem_boot(void) {
   cl_assert_equal_i(l.ziel_schritte, 7500);
   cl_assert_equal_i(l.ziel_schlaf_min, 390);
   cl_assert_equal_i(l.messstufe, 4);
-  // Stufe 4: SpO2 alle 10 min, sobald der Regler Pebbles Schalter gesetzt hat.
+  // Stufe 4: SpO2 alle 10 min, sobald der Regler Pebbles Takt gesetzt hat.
+  cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_10Min);
   cl_assert(s_spo2_an);
   cl_assert_equal_i(l.spo2_takt_min, 10);
   cl_assert_equal_i(l.nickerchen, 0);
@@ -287,14 +289,17 @@ void test_boulder_schnittstelle__lage_traegt_den_median_der_naechte(void) {
 }
 
 // SpO2 nach Stufe UND Pebbles Schalter: Schaltet jemand "Blood Oxygen" in Pebbles Einstellungen
-// aus, misst die Uhr nicht, bis der Regler ihn zurueckholt - die Lage sagt dann "aus".
+// aus, misst die Uhr nicht - die Lage sagt "aus", auch nach dem naechsten Lesen der Stufe.
 void test_boulder_schnittstelle__spo2_takt_folgt_pebbles_schalter(void) {
+  s_spo2_an = true;
   prv_shellpref_schreiben(4);
   prv_kernel_bg();
   prv_eine_minute();
-  cl_assert(s_spo2_an);
   cl_assert_equal_i(prv_lage().spo2_takt_min, 10);
   s_spo2_an = false;
+  prv_eine_minute();
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
+  boulder_messstufe_nachlesen();
   prv_eine_minute();
   cl_assert(!s_spo2_an);
   cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
@@ -304,6 +309,7 @@ void test_boulder_schnittstelle__spo2_takt_folgt_pebbles_schalter(void) {
 // S4: Messstufe wie aus Settings -> Health (T6.1 am Host, T6.2)
 
 void test_boulder_schnittstelle__messstufe_aus_der_app(void) {
+  s_spo2_an = true;
   prv_kernel_bg();
   prv_eine_minute();
   cl_assert_equal_i(prv_lage().messstufe, MESSSTUFE_VORGABE);
@@ -318,14 +324,15 @@ void test_boulder_schnittstelle__messstufe_aus_der_app(void) {
   cl_assert_equal_i(boulder_messstufe(), 5);
   // Pebbles Takte folgen der Stufe (messstufe.h): Puls am Tag alle 5 min, SpO2 alle 10 min.
   cl_assert_equal_i(s_puls_takt, HRMonitoringInterval_5Min);
-  cl_assert(s_spo2_an);
+  cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_10Min);
   cl_assert_equal_i(prv_lage().spo2_takt_min, 10);
-  // Stufe 1 ist Pebbles Original: kein SpO2.
+  // Stufe 1 misst den Puls wie Pebble, SpO2 jede Stunde; "Blood Oxygen" bleibt an.
   cl_assert(prv_s4(1));
   prv_kernel_bg();
   cl_assert_equal_i(prv_lage().messstufe, 1);
-  cl_assert(!s_spo2_an);
-  cl_assert_equal_i(prv_lage().spo2_takt_min, 0);
+  cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_1Hour);
+  cl_assert(s_spo2_an);
+  cl_assert_equal_i(prv_lage().spo2_takt_min, 60);
 }
 
 void test_boulder_schnittstelle__ungueltige_stufe_aendert_nichts(void) {

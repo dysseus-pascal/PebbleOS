@@ -5,22 +5,27 @@
 
 // Boulder V2: die Messstufe (Spezifikation 5, Entscheidung F3).
 //
-// EIN REGLER STATT VIER SCHALTER. Puls am Tag, Puls in der Nacht, HRV-Fenster und SpO2
+// EIN REGLER STATT VIER TAKTE. Puls am Tag, Puls in der Nacht, HRV-Fenster und SpO2
 // haengen zusammen: wer genauer schlafen messen will, zahlt mit Akku, egal an welcher
 // Stelle. Boulder schreibt die Stufe als 1 Byte unter "boulderMessstufe" (Whitelist E3,
 // Datei shellpref), die Uhr stellt sie im Einstellungsmenue ein (settings/health.c).
 //
-//  Stufe            Puls Nacht  Puls Tag  HRV-Fenster nachts  SpO2
-//  1 Pebble          10 min      10 min    aus                 aus
+//  Stufe            Puls Nacht  Puls Tag  HRV-Fenster nachts  SpO2-Takt
+//  1 Pebble          10 min      10 min    aus                 60 min
 //  2                 10 min      10 min    60 min              60 min
 //  3 (Vorgabe)       5 min       10 min    30 min              30 min
 //  4                 3 min       10 min    15 min              10 min
 //  5                 1 min       5 min     10 min              10 min
 //
 // WER WAS MISST: "Puls Tag" und SpO2 misst Pebble selbst (activity.c) - die Uhr setzt
-// dafuer Pebbles eigene Einstellungen passend zur Stufe (F3). Den dichteren Nachtpuls und
+// dafuer Pebbles Takte passend zur Stufe (F3). Den dichteren Nachtpuls und
 // die HRV-Fenster misst das eine Abo der Variante (puls.c). "Nacht" heisst: im
 // Nachtfenster und die letzte Minute ruhig (VMC <= SCHLAF_SCHWELLE_VMC).
+//
+// OB SPO2 MISST, sagen drei Schalter (Entscheid vom 22.10.2026); die Stufe gibt nur den Takt:
+//   Intervall  Pebbles "Blood Oxygen": den ganzen Tag. Der Nutzer stellt ihn, die Stufe nicht.
+//   Schlaf     Boulders "boulderSpo2Schlaf" (unten): nur in Nachtruhe, wie der Nachtpuls.
+//   Sport      Pebbles "Blood O2 During Activity": Pebbles eigene Messung in jedem Training.
 
 #include "pbl/kernel/compiler.h"
 
@@ -45,7 +50,7 @@ typedef struct {
   uint16_t puls_nacht_s;  //< Takt des Abos der Variante in Nachtruhe
   uint8_t puls_tag_min;   //< Pebbles Puls-Takt (Einstellung "HR Monitoring")
   uint8_t hrv_takt_min;   //< alle so viele Minuten nachts ein Fenster, 0 = keine
-  uint8_t spo2_min;       //< Pebbles SpO2-Takt, 0 = aus
+  uint8_t spo2_min;       //< Pebbles SpO2-Takt
 } BoulderStufe;
 
 // Die Werte einer Stufe; ungueltige Stufen gelten als Vorgabe.

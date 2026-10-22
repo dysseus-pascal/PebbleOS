@@ -307,7 +307,7 @@ void test_bh_karten__night_so_far(void) {
 // Ein Puls, der aelter als eine Viertelstunde ist, zeigt sein Alter statt "now".
 void test_bh_karten__heart_alter_puls(void) {
   s_d.puls_zeit = JETZT - 42 * 60;
-  s_d.lage.spo2_takt_min = 0; // Stufe 1: SpO2 "off"
+  s_d.lage.spo2_takt_min = 0; // SpO2 "off": kein Schalter misst nach Plan
   prv_karte(BhKarteHeart);
   PRUEFE_BILD();
 }

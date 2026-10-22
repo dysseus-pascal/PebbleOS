@@ -36,13 +36,15 @@ PBL_LOG_MODULE_DECLARE(service_activity, CONFIG_SERVICE_ACTIVITY_LOG_LEVEL);
 
 // Stufe 1 zuerst. Unterschied zu b25 (M: messstufe.c:19): Stufe 1 tags 10 statt 30 min -
 // sie ist jetzt Pebbles Original (Kriterium 6).
+// SPO2 AUF JEDER STUFE (Entscheid vom 22.10.2026): Ob SpO2 misst, sagen die Schalter (messstufe.h),
+// die Stufe gibt nur den Takt. Stufe 1 hatte keinen; mit 60 min gelten die Schalter auch dort.
 // STUFE 4 NACHTS ALLE DREI MINUTEN (F38): So oft kam der Wert unter b26 tatsaechlich. b26 gab den
 // Takt an Pebbles eigene Messung, die ihn erst ab dem Ausschalten zaehlt; das eigene Abo haelt ihn
 // genau. Die REM-Regel (schlafanalyse.c, REM_NAH) ist an Naechten mit diesem Takt eingestellt: Mit
 // einem Wert alle zwei Minuten sah sie am 16. und 17.10. 168 und 141 min REM, Fitbit 42 und 76;
 // auf drei Minuten ausgeduennt 93 und 81.
 static const BoulderStufe s_stufen[MESSSTUFE_MAX] = {
-  { .puls_nacht_s = 10 * 60, .puls_tag_min = 10, .hrv_takt_min = 0, .spo2_min = 0 },
+  { .puls_nacht_s = 10 * 60, .puls_tag_min = 10, .hrv_takt_min = 0, .spo2_min = 60 },
   { .puls_nacht_s = 10 * 60, .puls_tag_min = 10, .hrv_takt_min = 60, .spo2_min = 60 },
   { .puls_nacht_s = 5 * 60, .puls_tag_min = 10, .hrv_takt_min = 30, .spo2_min = 30 },
   { .puls_nacht_s = 3 * 60, .puls_tag_min = 10, .hrv_takt_min = 15, .spo2_min = 10 },
@@ -134,11 +136,12 @@ static HRMonitoringInterval prv_intervall(uint8_t minuten) {
   }
 }
 
-// F3: DIE UHR SETZT PEBBLES EIGENE WERTE nach der Stufe - Puls-Takt, SpO2 an/aus und
-// SpO2-Takt. Pebble misst dann selbst (activity.c); die Werte kommen ueber den Minutensatz.
+// F3: DIE UHR SETZT PEBBLES TAKTE nach der Stufe - Puls und SpO2. Pebble misst dann selbst
+// (activity.c); die Werte kommen ueber den Minutensatz. Pebbles Schalter "Blood Oxygen" bleibt
+// beim Nutzer: Er ist der Schalter "Intervall" (messstufe.h).
 // Jeder Setter schreibt shellpref (geht ans Telefon) und reiht nicht verwerfbar ein
-// (hrm_manager_handle_prefs_changed): nur bei Platz, nur wenn anders. Eine eigene Wahl
-// des Nutzers ueberschreibt der Regler beim naechsten Lesen. Rueckgabe: alles gesetzt.
+// (hrm_manager_handle_prefs_changed): nur bei Platz, nur wenn anders. Einen anderen Takt
+// ueberschreibt der Regler beim naechsten Lesen. Rueckgabe: alles gesetzt.
 static bool prv_pebble_werte_setzen(void) {
   const BoulderStufe *w = boulder_messstufe_werte(s_stufe);
   const HRMonitoringInterval puls = prv_intervall(w->puls_tag_min);
@@ -148,19 +151,12 @@ static bool prv_pebble_werte_setzen(void) {
     }
     activity_prefs_set_hrm_measurement_interval(puls);
   }
-  const bool spo2_an = (w->spo2_min != 0);
-  // Erst der Takt, dann an: so misst Pebble nie mit dem alten Takt.
-  if (spo2_an && activity_prefs_get_spo2_measurement_interval() != prv_intervall(w->spo2_min)) {
+  const HRMonitoringInterval spo2 = prv_intervall(w->spo2_min);
+  if (activity_prefs_get_spo2_measurement_interval() != spo2) {
     if (!prv_platz()) {
       return false;
     }
-    activity_prefs_set_spo2_measurement_interval(prv_intervall(w->spo2_min));
-  }
-  if (activity_prefs_blood_oxygen_is_enabled() != spo2_an) {
-    if (!prv_platz()) {
-      return false;
-    }
-    activity_prefs_set_blood_oxygen_enabled(spo2_an);
+    activity_prefs_set_spo2_measurement_interval(spo2);
   }
   return true;
 }
@@ -175,9 +171,10 @@ static bool prv_schluessel(const PebbleBlobDBEvent *b, const char *name) {
   return (b->key_len == n || b->key_len == n + 1) && memcmp(b->key, name, n) == 0;
 }
 
-// KernelMain. Auch Pebbles eigene Puls-/SpO2-Einstellungen: schreibt das Telefon sie
+// KernelMain. Auch Pebbles eigene Takte fuer Puls und SpO2: schreibt das Telefon sie
 // (0.50 legt sie ab und kann sie zurueckschreiben), zieht der Regler sie wieder auf die
 // Stufe. Die Schluessel stehen in prefs.c (PREF_KEY_ACTIVITY_HRM_PREFERENCES usw.).
+// "bloodOxygenPreferences" nicht mehr: Diesen Schalter stellt der Nutzer.
 static void prv_blobdb_ereignis(PebbleEvent *e, void *context) {
   const PebbleBlobDBEvent *b = &e->blob_db;
   if (b->db_id != BlobDBIdSettings || b->type != BlobDBEventTypeInsert || !b->key) {
@@ -185,7 +182,7 @@ static void prv_blobdb_ereignis(PebbleEvent *e, void *context) {
   }
   if (prv_schluessel(b, BOULDER_MESSSTUFE_SCHLUESSEL) ||
       prv_schluessel(b, BOULDER_SPO2_SCHLAF_SCHLUESSEL) || prv_schluessel(b, "hrmPreferences") ||
-      prv_schluessel(b, "spo2Preferences") || prv_schluessel(b, "bloodOxygenPreferences")) {
+      prv_schluessel(b, "spo2Preferences")) {
     s_lesen = true;
     boulder_aufgabe_einreihen(&s_aufgabe);
   }

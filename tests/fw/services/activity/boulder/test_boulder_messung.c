@@ -378,31 +378,35 @@ void test_boulder_messung__cleanup(void) {
 // =============================================================================================
 // F3 und E3: eine Einstellung, Pebbles Werte folgen
 
+// Jede Stufe setzt beide Takte, auch Stufe 1 den von SpO2 (60 min, Entscheid vom 22.10.2026).
 static const struct {
   HRMonitoringInterval puls;
-  bool spo2_an;
   HRMonitoringInterval spo2;
 } s_pebble_soll[MESSSTUFE_MAX] = {
-  { HRMonitoringInterval_10Min, false, HRMonitoringInterval_10Min },
-  { HRMonitoringInterval_10Min, true, HRMonitoringInterval_1Hour },
-  { HRMonitoringInterval_10Min, true, HRMonitoringInterval_30Min },
-  { HRMonitoringInterval_10Min, true, HRMonitoringInterval_10Min },
-  { HRMonitoringInterval_5Min, true, HRMonitoringInterval_10Min },
+  {HRMonitoringInterval_10Min, HRMonitoringInterval_1Hour},
+  {HRMonitoringInterval_10Min, HRMonitoringInterval_1Hour},
+  {HRMonitoringInterval_10Min, HRMonitoringInterval_30Min},
+  {HRMonitoringInterval_10Min, HRMonitoringInterval_10Min},
+  {HRMonitoringInterval_5Min, HRMonitoringInterval_10Min},
 };
 
+// Pebbles Schalter "Blood Oxygen" ist der Schalter "Intervall" des Nutzers: Keine Stufe stellt
+// ihn, weder an noch aus.
 void test_boulder_messung__stufe_vom_telefon_setzt_pebbles_werte(void) {
   // Ohne gespeicherte Stufe gilt 3; das KernelMain-Abo entsteht einmal.
   prv_minute();
   cl_assert_equal_i(boulder_messstufe_geladen(), MESSSTUFE_VORGABE);
   cl_assert_equal_i(s_kernel_main_callbacks, 1);
-  for (uint8_t stufe = MESSSTUFE_MIN; stufe <= MESSSTUFE_MAX; stufe++) {
-    cl_assert_equal_i(prv_telefon_schreibt(BOULDER_MESSSTUFE_SCHLUESSEL, stufe), S_SUCCESS);
-    prv_kernel_bg();
-    cl_assert_equal_i(boulder_messstufe_geladen(), stufe);
-    cl_assert_equal_i(s_puls_takt, s_pebble_soll[stufe - 1].puls);
-    cl_assert_equal_b(s_spo2_an, s_pebble_soll[stufe - 1].spo2_an);
-    if (s_spo2_an) {
+  cl_assert_equal_i(boulder_messstufe_werte(1)->spo2_min, 60);
+  for (int an = 0; an < 2; an++) {
+    s_spo2_an = an;
+    for (uint8_t stufe = MESSSTUFE_MIN; stufe <= MESSSTUFE_MAX; stufe++) {
+      cl_assert_equal_i(prv_telefon_schreibt(BOULDER_MESSSTUFE_SCHLUESSEL, stufe), S_SUCCESS);
+      prv_kernel_bg();
+      cl_assert_equal_i(boulder_messstufe_geladen(), stufe);
+      cl_assert_equal_i(s_puls_takt, s_pebble_soll[stufe - 1].puls);
       cl_assert_equal_i(s_spo2_takt, s_pebble_soll[stufe - 1].spo2);
+      cl_assert_equal_b(s_spo2_an, an);
     }
   }
   cl_assert_equal_i(s_kernel_main_callbacks, 1);
@@ -412,22 +416,36 @@ void test_boulder_messung__stufe_vom_telefon_setzt_pebbles_werte(void) {
   cl_assert_equal_i(boulder_messstufe_geladen(), MESSSTUFE_VORGABE);
 }
 
-void test_boulder_messung__regler_zieht_pebbles_wahl_zurueck(void) {
+// Pebbles Takte vom Telefon (Core-App) zieht der Regler auf die Stufe zurueck, den Schalter
+// "Blood Oxygen" nicht: Ihn stellt der Nutzer (Entscheid vom 22.10.2026).
+void test_boulder_messung__regler_zieht_takte_zurueck_nicht_den_schalter(void) {
+  s_spo2_an = true;
   prv_start(4);
   const int setter = s_setter;
-  // Eine Pebble-Wahl vom Telefon (Core-App) - der Regler stellt die Stufe wieder her.
   s_puls_takt = HRMonitoringInterval_1Hour;
-  s_spo2_an = false;
+  s_spo2_takt = HRMonitoringInterval_Disabled;
   prv_telefon_schreibt("hrmPreferences", 0);
   prv_kernel_bg();
   cl_assert_equal_i(s_puls_takt, HRMonitoringInterval_10Min);
-  cl_assert_equal_b(s_spo2_an, true);
+  cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_10Min);
   // Nichts anders: kein Setter, nichts geht ans Telefon.
   const int danach = s_setter;
   prv_telefon_schreibt("spo2Preferences", 0);
   prv_kernel_bg();
   cl_assert_equal_i(s_setter, danach);
   cl_assert(danach > setter);
+  // Der Nutzer schaltet "Blood Oxygen" am Telefon aus: Das loest kein Lesen aus, und auch das
+  // naechste Lesen (Ablage) laesst ihn aus.
+  s_spo2_an = false;
+  const int gelesen = s_gelesen;
+  prv_telefon_schreibt("bloodOxygenPreferences", 0);
+  prv_minuten(2);
+  cl_assert_equal_i(s_gelesen, gelesen);
+  boulder_messstufe_nachlesen();
+  prv_kernel_bg();
+  cl_assert(s_gelesen > gelesen);
+  cl_assert(!s_spo2_an);
+  cl_assert_equal_i(s_setter, danach);
 }
 
 void test_boulder_messung__menue_speichert_und_geht_ans_telefon(void) {
@@ -628,7 +646,7 @@ void test_boulder_messung__ein_abo_setter_nur_bei_platz(void) {
   cl_assert(s_setter > setter);
   cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_1Hour);
   cl_assert_equal_i(prv_abo_merkmale(NULL), 0);
-  // Dasselbe fuer jeden Setter einzeln: 2 -> 3 nur der SpO2-Takt, 3 -> 1 nur SpO2 aus.
+  // Dasselbe fuer einen Setter allein: 2 -> 3 und 3 -> 1 nur der SpO2-Takt.
   static const uint8_t stufen[] = { 3, 1 };
   for (size_t i = 0; i < ARRAY_LENGTH(stufen); i++) {
     prv_telefon_schreibt(BOULDER_MESSSTUFE_SCHLUESSEL, stufen[i]);
@@ -640,6 +658,7 @@ void test_boulder_messung__ein_abo_setter_nur_bei_platz(void) {
     prv_minuten(1);
     cl_assert_equal_i(s_setter, vorher + 1);
   }
+  cl_assert_equal_i(s_spo2_takt, HRMonitoringInterval_1Hour);
   cl_assert(!s_spo2_an);
 }
 

@@ -66,8 +66,8 @@ static uint16_t prv_maxpuls(void) {
 }
 
 // Misst die Uhr SpO2, und wie oft? Die Stufe gibt den Takt, Pebbles Schalter "Blood Oxygen"
-// kann ihn abschalten (die Stufe zieht ihn beim naechsten Lesen nach, messstufe.c). Vor dem
-// ersten Lesen der Stufe gilt die Vorgabe, wie im Regler.
+// schaltet ihn ab; den stellt der Nutzer, nicht die Stufe (messstufe.h). Vor dem ersten Lesen
+// der Stufe gilt die Vorgabe, wie im Regler.
 static uint8_t prv_spo2_takt(uint8_t stufe) {
   if (!activity_prefs_blood_oxygen_is_enabled()) {
     return 0;
