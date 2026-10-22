@@ -727,3 +727,42 @@ Pebble wie es geht“, `entscheidungen.md`). Belege: `belege-vorab/v2-b35/`.
   Federn, Übergang der Details, Helfer ohne Systemrechte) und K2c (`menu_layer_destroy`).
 - **Vorabversion b35:** `normal_obelix_pvt_v4.41.2-b35.pbz` (sha256 `8911a19d…f68317`), Tag
   `v4.41.2-b35` auf `a9133d56e` (nur lokal).
+
+## 20. Atemübung in Kieselsport (22.10.2026, `4103a43fe`, `26d640de9`, `efe80fc50`, `2a394a0da`, `8b69f42fd`, `214a624cd`)
+
+F41–F43 („Dazu möchte ich eine einstellbare pranayama atemübung in kieselsport“, `entscheidungen.md`),
+mit Boulder 0.57.0. Belege: `belege-vorab/v2-b36/`.
+
+- **Art Atmen** (`efe80fc50`): Art 7, hinten angehängt, damit die Zahlen der anderen bleiben. Puls
+  und HRV wie Yoga, mit Pebbles allgemeiner Pulsszene wie Yoga; keine Schritte, Strecke, Wiederholungen, Bahnen, GPS.
+  Zonenwechsel brummen beim Atmen nicht, sie fühlten sich an wie eine Phase.
+- **Rhythmus** (`26d640de9`): vom Telefon über die Schlüssel 10041–10045, als Zahl mit oder ohne
+  Vorzeichen oder als Text. Der Dienst hält ihn unter Persist 13–17 und prüft die Grenzen, auch beim
+  Laden: Einatmen und Ausatmen 1–60 s, Halten 0–60 s (0 lässt die Phase weg), 1–99 Runden, Vorgabe
+  4-4-4-4 mit 10 Runden. Die Meldung der Einstellungen hängt die fünf Werte hinten an (8 → 13
+  Tupel, rund 135 von 256 Byte); alles davor bleibt bytegleich zu b25.
+- **Takt** (`2a394a0da`, `atem.c`): reine Rechnung aus Rhythmus und Zeit seit dem ersten Einatmen.
+  Der Kreis wächst und schrumpft mit Pebbles `animation_timing_curve` (ease-in-out). Brummen:
+  einatmen kurz, halten zwei sehr kurze, ausatmen lang, Ende zwei kurze und ein langes.
+- **Übung** (`8b69f42fd`):
+  - Der Startschirm nennt den Rhythmus und die Dauer („4-4-4-4  10 x, 2:40“).
+  - Die Atemseite zeigt den Kreis, darin die Sekunden der Phase, darüber was zu tun ist und
+    darunter die Runde.
+  - Der Takt läuft nach der Uhr der App (`sys_get_ticks`), weil der Dienst in ganzen Sekunden
+    springt. Im Atmen gut 15 Bilder je Sekunde, beim Halten eines; die Pause hält ihn an.
+  - Neu geöffnet steht die Übung bei der aktiven Zeit des Dienstes; sind die Runden schon um, endet
+    sie gleich.
+  - Nach der letzten Runde Pause und Speichern wie von Hand. Beides wartet, bis der Dienst die ganze
+    Zeit gezählt hat, höchstens 5 s; so speichert die Uhr Runden × Rundendauer.
+- **Pin** (`4103a43fe`): Die Grenze folgt ArtAnzahl. Mit fest 7 hätte die Uhr den Pin für Atmen (8)
+  still verworfen.
+- **Prüfung** auf `214a624cd`: acht Bauten ohne Warnung, Host 468/468 (nach dem Aufräumen der vollen
+  Platte), alle Werkzeuge grün (im Prüfbau nur die Fehlerprobe rot). 32 neue Testfälle.
+- **QEMU** (Prüfbau, Puls 64):
+  - 10 Runden 4-4-4-4: jede Phase auf ihrer Zeit, gespeichert mit 160 s.
+  - 12 Runden 3-0-3-0: kein Halten, gespeichert mit 72 s.
+  - 31 Runden 1-0-1-0, die App erst nach 66 s geöffnet: beendet gleich, gespeichert mit 1:06.
+  - Keine Messung mit `qemu_health.py`: b36 ändert die Health-App nicht.
+- **Mutationen:** 47/47 rot (A1, R1–R7, E1–E2, T1–T2, D1–D4, S1, S1b, S2–S4, P1–P11, L1–L15).
+- **Vorabversion b36:** `normal_obelix_pvt_v4.41.2-b36.pbz` (sha256 `4e010300…f7f615`), Stand
+  `214a624cd`. Das Tag `v4.41.2-b36` gibt es nur im Wegwerf-Klon des Baus; es gehört auf `214a624cd`.

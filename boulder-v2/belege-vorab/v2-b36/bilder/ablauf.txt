@@ -1,0 +1,13 @@
+15:24:06 kieselsport vorbereiten: ['Ballast da, Aufzeichnung startet']
+15:24:06 kieselsport puls 64: ['Geber 64']
+15:24:18 einatmen.png: aufgenommen bei 1.97 s nach dem ersten Einatmen (Soll 1.8 s)
+15:24:22 halten.png: aufgenommen bei 5.90 s nach dem ersten Einatmen (Soll 5.8 s)
+15:24:26 ausatmen.png: aufgenommen bei 9.91 s nach dem ersten Einatmen (Soll 9.8 s)
+15:24:30 leer.png: aufgenommen bei 13.90 s nach dem ersten Einatmen (Soll 13.8 s)
+15:24:34 runde2_einatmen.png: aufgenommen bei 17.90 s nach dem ersten Einatmen (Soll 17.8 s)
+15:24:36 pulsseite.png: aufgenommen bei 20.10 s nach dem ersten Einatmen (Soll 20.0 s)
+15:24:42 runde2_ausatmen.png: aufgenommen bei 25.92 s nach dem ersten Einatmen (Soll 25.8 s)
+15:24:42 stand: KS zustand 1 art 7 dauer 25 kcal 0 puls 64 frisch 1 zone 0 mittel 64 max 64 ende 0 nr 0 maxpuls 187 | PEBBLE laeuft 1 pause 0 dauer 25 schritte 0 bpm 64 cal 158 | PERSIST wartend 0 beginn 0 dauer 0 kcal 0 stopp 0 kurve 0/0 | GEBER s 36 sensor_an_s 30 geliefert 30 letzter 35 sensor an
+15:26:56 ende.png: aufgenommen bei 160.49 s nach dem ersten Einatmen (Soll 160.4 s)
+15:27:00 gespeichert.png: aufgenommen bei 164.09 s nach dem ersten Einatmen (Soll 164.0 s)
+15:27:00 stand: KS zustand 0 art 7 dauer 160 kcal 1 puls 64 frisch 1 zone 0 mittel 64 max 64 ende 1 nr 1 maxpuls 187 | PEBBLE laeuft 1 pause 1 dauer 160 schritte 0 bpm 64 cal 974 | PERSIST wartend 1 beginn 1792682656 dauer 160 kcal 1 stopp 0 kurve 1/17 | GEBER s 174 sensor_an_s 164 geliefert 164 letzter 169 sensor aus

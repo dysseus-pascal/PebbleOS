@@ -246,6 +246,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **Nähe zu Pebble:** Pebble hat keine Atemübung. Boulder baut sie aus Pebbles Teilen: eine Art von
   Kieselsport auf Pebbles Workout-Dienst, der Kreis mit Pebbles Kurve (`animation_timing_curve`,
   ease-in-out), das Brummen als `VibePattern`.
+- **Umgesetzt** in Boulder 0.57.0 (`cfdb8b339`) und V2 `4103a43fe` bis `214a624cd`, Vorabversion b36
+  (`schritt3-abnahme.md`, Abschnitt 20). Selbst entschieden: Zonenwechsel brummen beim Atmen nicht;
+  das Ende wartet höchstens 5 s, bis der Dienst die ganze Zeit gezählt hat; ein neuer Rhythmus
+  während einer laufenden Übung gilt erst beim nächsten Öffnen der App.
 
 ## Health: Karten gleiten wie bei Pebble (21.10.2026, F40)
 - **Nutzer:** „Können wir in health vertikal scrollen?“ Heute springen Oben/Unten (und Wischen, das

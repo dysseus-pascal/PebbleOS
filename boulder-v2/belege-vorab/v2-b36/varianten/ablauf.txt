@@ -1,0 +1,20 @@
+15:01:29 kieselsport vorbereiten: ['Ballast da, Aufzeichnung startet']
+15:01:29 kieselsport puls 64: ['Geber 64']
+15:01:29 kieselsport atem 3 0 3 0 12: ['ATEM 3-0-3-0 runden 12']
+15:01:39 a_00.png bei 0.40 s
+15:01:39 a_01.png bei 1.06 s
+15:01:40 a_02.png bei 1.78 s
+15:01:41 a_03.png bei 2.42 s
+15:01:41 a_04.png bei 3.13 s
+15:01:42 a_05.png bei 3.80 s
+15:01:43 a_06.png bei 4.40 s
+15:01:43 a_07.png bei 5.08 s
+15:01:44 a_08.png bei 5.72 s
+15:01:45 a_09.png bei 6.40 s
+15:01:45 a_10.png bei 7.07 s
+15:01:46 a_11.png bei 7.73 s
+15:02:54 A stand: KS zustand 0 art 7 dauer 72 kcal 0 puls 64 frisch 1 zone 0 mittel 64 max 64 ende 1 nr 1 maxpuls 187 | PEBBLE laeuft 1 pause 1 dauer 72 schritte 0 bpm 64 cal 432 | PERSIST wartend 1 beginn 1792681298 dauer 72 kcal 0 stopp 0 kurve 1/8 | GEBER s 85 sensor_an_s 75 geliefert 75 letzter 80 sensor aus
+15:02:57 ['ATEM 1-0-1-0 runden 31']
+15:02:57 ['Start Art 7 eingereiht']
+15:04:03 B vor dem Oeffnen: KS zustand 1 art 7 dauer 65 kcal 0 puls 64 frisch 1 zone 0 mittel 64 max 64 ende 1 nr 1 maxpuls 187
+15:04:07 B stand: KS zustand 1 art 7 dauer 69 kcal 0 puls 64 frisch 1 zone 0 mittel 64 max 64 ende 1 nr 1 maxpuls 187 | PEBBLE laeuft 1 pause 0 dauer 69 schritte 0 bpm 64 cal 414 | PERSIST wartend 1 beginn 1792681298 dauer 72 kcal 0 stopp 0 kurve 1/8 | GEBER s 157 sensor_an_s 144 geliefert 144 letzter 156 sensor an

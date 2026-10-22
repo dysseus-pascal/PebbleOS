@@ -1,0 +1,2 @@
+[15:01:38.459] I - 15:01:38.826 dienst.c:522> service_activity: Kieselsport: Training gestartet, Art 7
+[15:02:57.521] I - 15:02:57.845 dienst.c:522> service_activity: Kieselsport: Training gestartet, Art 7
