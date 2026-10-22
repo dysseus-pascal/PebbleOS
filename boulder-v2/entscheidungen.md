@@ -243,9 +243,18 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   jede Fassung erscheint als gewöhnliches Release (die Firmware vorerst mit „Beta“ im Titel). Das
   löst „Jede Fassung erscheint zuerst als Vorabversion“ unter Arbeitsweise ab. Als Vorabversion
   markiert wird ein Release nur noch zum Zurückziehen.
-- **Band, Dauer** (offen): Mockups mit vier Varianten (Pebble 600 ms FastOutSlowIn wie Pebbles
-  Filterzeile und App-Liste, 500 ms FastOutSlowIn, 500 ms EaseInOut, heute 700 ms) liegen dem
-  Nutzer vor.
+- **F49: Band 600 ms wie Pebble** (Empfehlung, aus den Mockups mit vier Varianten): FastOutSlowIn wie
+  Pebbles Filterzeile und App-Liste (`NotificationAppsScreen`, `LockerUtil`), statt 700 ms.
+- **Nutzer:** „main darfst du vorspulen“. Boulders `main` geht nacheinander auf 0.56.0, 0.57.0 und
+  0.57.1; die CI legt jedes Release an. In `boulder-firmware` blockiert die Sicherheitsprüfung den
+  Push auf `main`; der Nutzer muss es dort eigens freigeben.
+- **Nutzer:** „wir brauchen einen neuen signier schlüssel“. Der alte Seed ist nicht greifbar.
+  - Den neuen Seed erzeugt der Nutzer selbst (`openssl rand -hex 32`). Er legt ihn ins Secret
+    und in seine Sicherung, nie in den Chat.
+  - Der Workflow „Schluessel zeigen“ gibt daraus nur Öffentliches aus: den Schlüssel als Hex und
+    PEM und die Testsignatur für `Ed25519Test`.
+  - Die App nimmt den neuen Schlüssel auf und streicht den alten, weil sie keine V1-Firmware mehr
+    anbietet (F26). Das geht in 0.58.0. b36 verlangt dann Mindest-App 0.58.0.
 - **Befund:** Diese Sitzung darf keine Releases anlegen, ändern oder löschen. Die GitHub-API antwortet
   mit 403: „not permitted for this session type“. Darum startet der Nutzer den Workflow von Hand.
   - Der Workflow nimmt Paket und Text aus einem Release-Commit neben `main` (`pakete/<tag>.pbz`,
