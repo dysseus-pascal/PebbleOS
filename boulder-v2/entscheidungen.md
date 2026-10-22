@@ -228,6 +228,26 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
   b34 (`schritt3-abnahme.md`, Abschnitt 18).
 
+## Firmware als Beta, Band gleitet (22.10.2026, F46–F48, Firmware b36, Boulder 0.58.0)
+- **Nutzer:** „uh... eye candy, kannst du das band sorollen lassen? von wo es war zum jetzt kannst
+  du auch gleich für das automatische firmware update sorgen? ich möchte als beta veröffentlichen“.
+- **Band** (ohne Rückfrage): Jedes Öffnen der App lässt das Tagesband in 700 ms (FastOutSlowIn) von
+  seiner Stellung zum Jetzt bei drei Vierteln gleiten, statt es neu zu stellen.
+- **F46: Schlüssel als GitHub-Secret.** Der Seed liegt im Secret `BOULDER_SIGNATUR_SEED` von
+  `boulder-firmware`. Dort signiert der Workflow „Signieren und veroeffentlichen“ dieselbe Aussage
+  wie `release.sh` (b11–b25), nur mit dem Schlüssel zu `signatur.pub`.
+- **F47: Beta für alle Boulder-Nutzer:** ein gewöhnliches Release mit „Beta“ im Titel, die App
+  bleibt, wie sie ist.
+- **F48: b36 jetzt, b37 nach dem Test** (Empfehlung).
+- **Befund:** Diese Sitzung darf keine Releases anlegen, ändern oder löschen. Die GitHub-API antwortet
+  mit 403: „not permitted for this session type“. Darum startet der Nutzer den Workflow von Hand.
+  - Der Workflow nimmt Paket und Text aus einem Release-Commit neben `main` (`pakete/<tag>.pbz`,
+    `pakete/<tag>.md`). Er prüft sie, signiert, legt das Release als Entwurf an und schaltet es frei.
+  - Das Tag hält den Release-Commit.
+  - App-Releases legt weiter Boulders CI an, wenn `main` eine neue Fassung bekommt.
+- **Reihenfolge wie bei `release.sh`:** zuerst ein App-Release ab der Mindest-App (für b36 0.57.0),
+  dann die Firmware. Der Workflow kann das nicht prüfen, weil das Repo der App privat ist.
+
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
   intervall. das spart akku. für schlaf hast du vielleicht einen vorschlag wie das umgesetzt werden
