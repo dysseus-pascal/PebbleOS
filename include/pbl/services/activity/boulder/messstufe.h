@@ -61,13 +61,28 @@ const char **boulder_messstufe_namen(void);
 // folgen im eigenen Callback.
 void boulder_messstufe_setzen(uint8_t stufe);
 
+// SCHALTER "SCHLAF" FUER SPO2 (Entscheid vom 22.10.2026): Pebbles SpO2-Plan misst damit auch
+// ohne "Blood Oxygen", aber nur in Nachtruhe. Boulder schreibt ihn wie die Stufe als 1 Byte in
+// shellpref (Whitelist), 1 = an. Fehlt er oder steht etwas anderes da, ist er aus. Gelesen wird
+// er mit der Stufe, im selben Callback.
+#define BOULDER_SPO2_SCHLAF_SCHLUESSEL "boulderSpo2Schlaf"
+
+// Fuer das Menue (App-Task), wie boulder_messstufe(): Ist er noch nicht gelesen, liest das den
+// Speicher.
+bool boulder_spo2_schlaf(void);
+// Das Menue schaltet ihn: speichern (geht ans Telefon), gelesen wird im eigenen Callback.
+void boulder_spo2_schlaf_setzen(bool an);
+// Der Schalter, wie ihn der Callback zuletzt las; aus, solange er nicht gelesen ist. Ohne Datei,
+// O(1): fuer Pebbles SpO2-Plan und den HRM-Manager.
+bool boulder_spo2_schlaf_geladen(void);
+
 // Dauerteil (KernelBG). Die Stufe, wie sie der Minutenteil verwendet: 0 = noch nicht
 // gelesen. Ohne Datei, O(1).
 uint8_t boulder_messstufe_geladen(void);
 // Minutenteil: steht Arbeit an (erster Start, Lesen nach einem Ereignis, Pebbles Werte
 // noch nicht gesetzt), reiht sie verwerfbar ein. O(1), ohne Heap und Datei.
 void boulder_messstufe_minute(void);
-// Ablage (AP4): zur Sicherheit neu lesen und Pebbles Werte nachziehen.
+// Ablage (AP4): zur Sicherheit Stufe und Schalter neu lesen und Pebbles Werte nachziehen.
 void boulder_messstufe_nachlesen(void);
 
 #ifdef UNITTEST

@@ -76,7 +76,8 @@ CMakeBlock = collections.namedtuple('CMakeBlock', 'schalter inhalt')
 PEBBLE = {
     'fw/services/activity/Kconfig': Stelle(16),                      # E1 Algorithmus-Wahl
     'fw/services/activity/CMakeLists.txt': Stelle(6),                # E2 Quellen
-    'fw/services/blob_db/settings_blob_db.c': Stelle(1),             # E3 Whitelist Messstufe
+    # E3 Whitelist: die Messstufe und der Schalter "Schlaf" fuer SpO2 (Entscheid vom 22.10.2026).
+    'fw/services/blob_db/settings_blob_db.c': Stelle(2),
     # E4 Weckregel, dazu das Nachholen nach einem Neustart (Entscheid 07.10.2026, wecklauf.h).
     # Nach einem Boot fragt alarm.c die Weckregel nie, deshalb kamen mit c1c7b2eb0
     # prv_record_alarm_op (geklungen) und alarm_init (Nachholen) dazu. Vom Nutzer freigegeben am

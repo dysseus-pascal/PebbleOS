@@ -78,6 +78,9 @@ MESSSTUFE_H = 'include/pbl/services/activity/boulder/messstufe.h'
 SETTINGS_BLOB_DB_C = 'fw/services/blob_db/settings_blob_db.c'
 # Schluessel der Messstufe, wie Boulder 0.50 ihn schreibt (B: WatchPrefEntity.kt:571-583).
 SOLL_MESSSTUFE = '"boulderMessstufe"'
+# Der Schalter "Schlaf" fuer SpO2 (Entscheid vom 22.10.2026), wie Boulder ihn schreibt
+# (WatchPrefEntity.kt, BoulderSpo2Schlaf).
+SOLL_SPO2_SCHLAF = '"boulderSpo2Schlaf"'
 
 
 def ohne_kommentare(text):
@@ -186,15 +189,19 @@ def pruefe(repo):
     boulder = defines(lies(NACHT_H), SOLL_BOULDER.keys())
     fehler += vergleiche('Boulder-Tags', boulder, SOLL_BOULDER)
 
-    # AP5/E3: Boulder 0.50 schreibt die Messstufe unter diesem Schluessel (WatchPrefEntity.kt).
-    # Fehlt er in der Whitelist, lehnt die Uhr ihn still ab ("Rejecting non-whitelisted").
+    # AP5/E3: Boulder 0.50 schreibt die Messstufe unter diesem Schluessel (WatchPrefEntity.kt), ab
+    # b37 auch den Schalter "Schlaf". Fehlt einer in der Whitelist, lehnt die Uhr ihn still ab
+    # ("Rejecting non-whitelisted").
     # Hier statt im Host-Test: settings_blob_db.c braucht verschachtelte Funktionen (gcc).
-    m = re.search(r'^\s*#define\s+BOULDER_MESSSTUFE_SCHLUESSEL\s+("[^"]*")', lies(MESSSTUFE_H), re.M)
-    if not m or m.group(1) != SOLL_MESSSTUFE:
-        fehler.append(f'BOULDER_MESSSTUFE_SCHLUESSEL = {m and m.group(1)}, soll {SOLL_MESSSTUFE}')
     liste = re.search(r's_syncable_settings\[\]\s*=\s*\{(.*?)\};', lies(SETTINGS_BLOB_DB_C), re.S)
-    if not liste or SOLL_MESSSTUFE not in re.findall(r'"[^"]*"', liste.group(1)):
-        fehler.append(f'settings_blob_db.c: {SOLL_MESSSTUFE} fehlt in s_syncable_settings (E3)')
+    eintraege = re.findall(r'"[^"]*"', ohne_kommentare(liste.group(1))) if liste else []
+    for name, soll in (('BOULDER_MESSSTUFE_SCHLUESSEL', SOLL_MESSSTUFE),
+                       ('BOULDER_SPO2_SCHLAF_SCHLUESSEL', SOLL_SPO2_SCHLAF)):
+        m = re.search(r'^\s*#define\s+' + name + r'\s+("[^"]*")', lies(MESSSTUFE_H), re.M)
+        if not m or m.group(1) != soll:
+            fehler.append(f'{name} = {m and m.group(1)}, soll {soll}')
+        if soll not in eintraege:
+            fehler.append(f'settings_blob_db.c: {soll} fehlt in s_syncable_settings (E3)')
     return fehler
 
 

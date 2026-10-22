@@ -8,7 +8,8 @@
 // (prefs.c, prefs_private_handle_blob_db_event) - die Variante liest ihn selbst. Lesen
 // oeffnet eine Datei und holt Heap, deshalb nur im eigenen Callback "Boulder Messstufe":
 // nach dem ersten Minutenlauf, nach jedem passenden BlobDB-Ereignis und zur Sicherheit in
-// jeder Ablage (AP4).
+// jeder Ablage (AP4). Den Schalter "Schlaf" fuer SpO2 schreibt Boulder auf demselben Weg; er
+// wird mit der Stufe gelesen.
 //
 // WARUM DAS ABO AUF KERNELMAIN: blob_db_insert meldet PEBBLE_BLOBDB_EVENT auf KernelMain
 // (blob_db/api.c, blob_db_event_put); event_service_client_subscribe endet auf KernelBG in
@@ -53,6 +54,13 @@ static bool s_gestartet;      //< Abo auf KernelMain angestossen
 static bool s_lesen;          //< neu lesen (Ereignis, Menue, Ablage)
 static bool s_pebble_offen;   //< Pebbles Werte noch nicht ganz gesetzt (kein Platz)
 
+// Der Schalter "Schlaf" in einem Byte: Das Menue (App-Task) setzt ihn vorab, KernelBG und der
+// HRM-Manager lesen ihn, und keiner sieht ihn halb geschrieben.
+#define SCHLAF_UNGELESEN 0
+#define SCHLAF_AUS       1
+#define SCHLAF_AN        2
+static uint8_t s_schlaf;
+
 static void prv_messstufe_cb(void *data);
 static BoulderAufgabe s_aufgabe = BOULDER_AUFGABE("Boulder Messstufe", prv_messstufe_cb);
 
@@ -87,6 +95,25 @@ static uint8_t prv_lesen(void) {
     return MESSSTUFE_VORGABE;
   }
   return wert;
+}
+
+// Aus, solange Boulder nichts geschrieben hat: Wer den Schalter nicht kennt, misst wie bisher.
+static bool prv_schlaf_lesen(void) {
+  uint8_t wert = 0;
+  const status_t st =
+      blob_db_read(BlobDBIdSettings, (const uint8_t *)BOULDER_SPO2_SCHLAF_SCHLUESSEL,
+                   strlen(BOULDER_SPO2_SCHLAF_SCHLUESSEL), &wert, sizeof(wert));
+  if (st != S_SUCCESS) {
+    if (st != E_DOES_NOT_EXIST) {
+      PBL_LOG_WRN("Boulder: SpO2 im Schlaf nicht lesbar (%d), gilt aus", (int)st);
+    }
+    return false;
+  }
+  if (wert > 1) {
+    PBL_LOG_WRN("Boulder: SpO2 im Schlaf %d ungueltig, gilt aus", wert);
+    return false;
+  }
+  return wert == 1;
 }
 
 #ifdef CONFIG_HRM
@@ -156,7 +183,8 @@ static void prv_blobdb_ereignis(PebbleEvent *e, void *context) {
   if (b->db_id != BlobDBIdSettings || b->type != BlobDBEventTypeInsert || !b->key) {
     return;
   }
-  if (prv_schluessel(b, BOULDER_MESSSTUFE_SCHLUESSEL) || prv_schluessel(b, "hrmPreferences") ||
+  if (prv_schluessel(b, BOULDER_MESSSTUFE_SCHLUESSEL) ||
+      prv_schluessel(b, BOULDER_SPO2_SCHLAF_SCHLUESSEL) || prv_schluessel(b, "hrmPreferences") ||
       prv_schluessel(b, "spo2Preferences") || prv_schluessel(b, "bloodOxygenPreferences")) {
     s_lesen = true;
     boulder_aufgabe_einreihen(&s_aufgabe);
@@ -186,6 +214,11 @@ static void prv_messstufe_cb(void *data) {
     }
     // Immer: das Menue setzt s_stufe schon vorab fuer die Anzeige.
     s_stufe = neu;
+    const uint8_t schlaf = prv_schlaf_lesen() ? SCHLAF_AN : SCHLAF_AUS;
+    if (schlaf != s_schlaf) {
+      PBL_LOG_INFO("Boulder: SpO2 im Schlaf %s", (schlaf == SCHLAF_AN) ? "an" : "aus");
+    }
+    s_schlaf = schlaf;
     boulder_puls_stufe_neu();
     s_pebble_offen = true;
   }
@@ -214,24 +247,37 @@ uint8_t boulder_messstufe(void) {
   return prv_gueltig(stufe) ? stufe : prv_lesen();
 }
 
+bool boulder_spo2_schlaf_geladen(void) {
+  return s_schlaf == SCHLAF_AN;
+}
+
+bool boulder_spo2_schlaf(void) {
+  const uint8_t schlaf = s_schlaf;
+  return (schlaf == SCHLAF_UNGELESEN) ? prv_schlaf_lesen() : (schlaf == SCHLAF_AN);
+}
+
 // App-Task (Menue). Geschrieben wie Pebbles eigene Prefs: unter der Prefs-Sperre direkt in
 // shellpref, mit Null am Schluessel (settings_blob_db.c, prv_canonical_shell_key). So
 // meldet settings_file die Aenderung, und settings_blob_db gibt sie ans Telefon - ein
 // blob_db_insert dagegen gaelte als vom Telefon und ginge nicht zurueck.
+static status_t prv_schreiben(const char *schluessel, uint8_t wert) {
+  prefs_private_lock();
+  SettingsFile datei;
+  status_t st = settings_file_open(&datei, SHELL_PREFS_FILE_NAME, SHELL_PREFS_FILE_LEN);
+  if (st == S_SUCCESS) {
+    st = settings_file_set(&datei, schluessel, strlen(schluessel) + 1, &wert, sizeof(wert));
+    settings_file_close(&datei);
+  }
+  prefs_private_unlock();
+  return st;
+}
+
 void boulder_messstufe_setzen(uint8_t stufe) {
   if (!prv_gueltig(stufe)) {
     PBL_LOG_WRN("Boulder: Messstufe %d abgelehnt", stufe);
     return;
   }
-  prefs_private_lock();
-  SettingsFile datei;
-  status_t st = settings_file_open(&datei, SHELL_PREFS_FILE_NAME, SHELL_PREFS_FILE_LEN);
-  if (st == S_SUCCESS) {
-    st = settings_file_set(&datei, BOULDER_MESSSTUFE_SCHLUESSEL,
-                           strlen(BOULDER_MESSSTUFE_SCHLUESSEL) + 1, &stufe, sizeof(stufe));
-    settings_file_close(&datei);
-  }
-  prefs_private_unlock();
+  const status_t st = prv_schreiben(BOULDER_MESSSTUFE_SCHLUESSEL, stufe);
   if (st != S_SUCCESS) {
     PBL_LOG_ERR("Boulder: Messstufe %d nicht gespeichert (%d)", stufe, (int)st);
     return;
@@ -241,9 +287,21 @@ void boulder_messstufe_setzen(uint8_t stufe) {
   boulder_aufgabe_einreihen(&s_aufgabe);
 }
 
+void boulder_spo2_schlaf_setzen(bool an) {
+  const status_t st = prv_schreiben(BOULDER_SPO2_SCHLAF_SCHLUESSEL, an ? 1 : 0);
+  if (st != S_SUCCESS) {
+    PBL_LOG_ERR("Boulder: SpO2 im Schlaf nicht gespeichert (%d)", (int)st);
+    return;
+  }
+  s_schlaf = an ? SCHLAF_AN : SCHLAF_AUS; // gleich anzeigen; gelesen wird im Callback
+  s_lesen = true;
+  boulder_aufgabe_einreihen(&s_aufgabe);
+}
+
 #ifdef UNITTEST
 void boulder_messstufe_test_zuruecksetzen(void) {
   s_stufe = 0;
+  s_schlaf = SCHLAF_UNGELESEN;
   s_gestartet = false;
   s_lesen = false;
   s_pebble_offen = false;

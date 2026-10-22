@@ -179,20 +179,30 @@ static status_t prv_shellpref(bool schreiben, const char *schluessel, uint8_t *w
   }
   return st;
 }
+// Die Variante liest ihre beiden Schluessel (Stufe und Schalter "Schlaf") ohne Nullbyte.
+static int s_gelesen;
 status_t blob_db_read(BlobDBId db_id, const uint8_t *key, int key_len, uint8_t *val_out,
                       int val_len) {
   cl_assert_equal_i(db_id, BlobDBIdSettings);
-  cl_assert_equal_i(key_len, strlen(BOULDER_MESSSTUFE_SCHLUESSEL));
   cl_assert_equal_i(val_len, 1);
-  return prv_shellpref(false, BOULDER_MESSSTUFE_SCHLUESSEL, val_out);
+  char schluessel[32];
+  cl_assert(key_len < (int)sizeof(schluessel));
+  memcpy(schluessel, key, key_len);
+  schluessel[key_len] = 0;
+  cl_assert(!strcmp(schluessel, BOULDER_MESSSTUFE_SCHLUESSEL) ||
+            !strcmp(schluessel, BOULDER_SPO2_SCHLAF_SCHLUESSEL));
+  s_gelesen++;
+  return prv_shellpref(false, schluessel, val_out);
 }
 // Was settings_file als geaendert meldet, gibt settings_blob_db ans Telefon (Whitelist).
 static int s_zum_telefon;
+static int s_schlaf_zum_telefon;
+static bool prv_ist(const void *key, int key_len, const char *schluessel) {
+  return key_len == (int)strlen(schluessel) + 1 && memcmp(key, schluessel, key_len) == 0;
+}
 static void prv_geaendert(SettingsFile *file, const void *key, int key_len, time_t zeit) {
-  if (key_len == (int)strlen(BOULDER_MESSSTUFE_SCHLUESSEL) + 1 &&
-      memcmp(key, BOULDER_MESSSTUFE_SCHLUESSEL, key_len) == 0) {
-    s_zum_telefon++;
-  }
+  s_zum_telefon += prv_ist(key, key_len, BOULDER_MESSSTUFE_SCHLUESSEL);
+  s_schlaf_zum_telefon += prv_ist(key, key_len, BOULDER_SPO2_SCHLAF_SCHLUESSEL);
 }
 
 // KernelMain: Abos merken, Callbacks gleich ausfuehren.
@@ -233,21 +243,30 @@ extern HRMSubscriberState *prv_get_subscriber_state_from_ref(HRMSessionRef sessi
 
 static bool s_nachtruhe;
 
+// KernelMain meldet einen Schluessel, den das Telefon in die BlobDB schrieb.
+static void prv_ereignis(const char *schluessel) {
+  PebbleEvent e = {
+    .type = PEBBLE_BLOBDB_EVENT,
+    .blob_db = {
+      .db_id = BlobDBIdSettings,
+      .type = BlobDBEventTypeInsert,
+      .key = (uint8_t *)schluessel,
+      .key_len = (uint8_t)strlen(schluessel)
+    },
+  };
+  for (int i = 0; i < s_abo_anzahl; i++) {
+    if (s_abos[i]->type == PEBBLE_BLOBDB_EVENT) {
+      s_abos[i]->handler(&e, s_abos[i]->context);
+    }
+  }
+}
+
 // Das Telefon schreibt die Stufe (BlobDB), KernelMain meldet es.
 static status_t prv_telefon_schreibt(const char *schluessel, uint8_t wert) {
   s_zum_telefon = 0;
   const status_t st = prv_shellpref(true, schluessel, &wert);
   if (st == S_SUCCESS) {
-    PebbleEvent e = {
-      .type = PEBBLE_BLOBDB_EVENT,
-      .blob_db = { .db_id = BlobDBIdSettings, .type = BlobDBEventTypeInsert,
-                   .key = (uint8_t *)schluessel, .key_len = (uint8_t)strlen(schluessel) },
-    };
-    for (int i = 0; i < s_abo_anzahl; i++) {
-      if (s_abos[i]->type == PEBBLE_BLOBDB_EVENT) {
-        s_abos[i]->handler(&e, s_abos[i]->context);
-      }
-    }
+    prv_ereignis(schluessel);
   }
   return st;
 }
@@ -340,6 +359,8 @@ void test_boulder_messung__initialize(void) {
   s_abo_anzahl = 0;
   s_kernel_main_callbacks = 0;
   s_zum_telefon = 0;
+  s_schlaf_zum_telefon = 0;
+  s_gelesen = 0;
   s_nachtruhe = true;
   settings_file_set_change_callback(prv_geaendert);
   s_prefs_gesperrt = 0;
@@ -431,6 +452,92 @@ void test_boulder_messung__menue_speichert_und_geht_ans_telefon(void) {
   boulder_messstufe_setzen(0);
   prv_kernel_bg();
   cl_assert_equal_i(boulder_messstufe_geladen(), 5);
+}
+
+// =============================================================================================
+// Schalter "Schlaf" fuer SpO2 (Entscheid vom 22.10.2026): wie die Stufe ueber shellpref
+
+// Ohne Schluessel aus. Gelesen wird nur im Callback, und nur 0 und 1 gelten.
+void test_boulder_messung__schlaf_vom_telefon(void) {
+  prv_minute();
+  cl_assert(!boulder_spo2_schlaf_geladen());
+  cl_assert(!boulder_spo2_schlaf());
+  cl_assert_equal_i(prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, 1), S_SUCCESS);
+  cl_assert(!boulder_spo2_schlaf_geladen()); // erst der Callback liest
+  prv_kernel_bg();
+  cl_assert(boulder_spo2_schlaf_geladen());
+  cl_assert(boulder_spo2_schlaf());
+  static const struct {
+    uint8_t wert;
+    bool an;
+  } s_folge[] = {{0, false}, {1, true}, {2, false}, {1, true}, {255, false}};
+  for (size_t i = 0; i < ARRAY_LENGTH(s_folge); i++) {
+    cl_assert_equal_i(prv_telefon_schreibt(BOULDER_SPO2_SCHLAF_SCHLUESSEL, s_folge[i].wert),
+                      S_SUCCESS);
+    s_schlaf_zum_telefon = 0;
+    prv_kernel_bg();
+    cl_assert_equal_b(boulder_spo2_schlaf_geladen(), s_folge[i].an);
+    cl_assert_equal_b(boulder_spo2_schlaf(), s_folge[i].an);
+    // Die Uhr schreibt einen ungueltigen Wert nicht um: nichts geht zurueck ans Telefon.
+    cl_assert_equal_i(s_schlaf_zum_telefon, 0);
+  }
+  // Die Stufe bleibt, wie sie war.
+  cl_assert_equal_i(boulder_messstufe_geladen(), MESSSTUFE_VORGABE);
+}
+
+// Neu gelesen wird nach dem Ereignis zu genau diesem Schluessel, nicht nach einem fremden.
+void test_boulder_messung__schlaf_neu_nach_seinem_ereignis(void) {
+  prv_minute();
+  uint8_t an = 1;
+  cl_assert_equal_i(prv_shellpref(true, BOULDER_SPO2_SCHLAF_SCHLUESSEL, &an), S_SUCCESS);
+  prv_ereignis("lightEnabled");
+  prv_minuten(2);
+  cl_assert(!boulder_spo2_schlaf_geladen());
+  prv_ereignis(BOULDER_SPO2_SCHLAF_SCHLUESSEL);
+  cl_assert(!boulder_spo2_schlaf_geladen());
+  prv_kernel_bg();
+  cl_assert(boulder_spo2_schlaf_geladen());
+}
+
+// Vor dem ersten Lesen gilt im Kern "aus"; das Menue liest die Datei selbst.
+void test_boulder_messung__schlaf_vor_dem_ersten_lesen(void) {
+  uint8_t an = 1;
+  cl_assert_equal_i(prv_shellpref(true, BOULDER_SPO2_SCHLAF_SCHLUESSEL, &an), S_SUCCESS);
+  const int gelesen = s_gelesen;
+  cl_assert(!boulder_spo2_schlaf_geladen());
+  cl_assert_equal_i(s_gelesen, gelesen); // ohne Datei
+  cl_assert(boulder_spo2_schlaf());
+  cl_assert_equal_i(s_gelesen, gelesen + 1);
+  prv_minute();
+  cl_assert(boulder_spo2_schlaf_geladen());
+}
+
+// Das Menue schaltet ihn wie die Stufe: gleich sichtbar, unter dem kanonischen Schluessel, auf
+// dem Weg zum Telefon, und im Callback gelesen.
+void test_boulder_messung__schlaf_aus_dem_menue(void) {
+  prv_start(3);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  boulder_spo2_schlaf_setzen(true);
+  cl_assert(boulder_spo2_schlaf());
+  cl_assert(boulder_spo2_schlaf_geladen());
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  prv_kernel_bg();
+  uint8_t wert = 0;
+  cl_assert_equal_i(prv_shellpref(false, BOULDER_SPO2_SCHLAF_SCHLUESSEL, &wert), S_SUCCESS);
+  cl_assert_equal_i(wert, 1);
+  cl_assert_equal_i(s_prefs_gesperrt, 0);
+  cl_assert_equal_i(s_schlaf_zum_telefon, 1);
+  cl_assert(boulder_spo2_schlaf_geladen());
+  cl_assert_equal_i(boulder_messstufe_geladen(), 3);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  boulder_spo2_schlaf_setzen(false);
+  cl_assert(!boulder_spo2_schlaf());
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_shellpref(false, BOULDER_SPO2_SCHLAF_SCHLUESSEL, &wert), S_SUCCESS);
+  cl_assert_equal_i(wert, 0);
+  cl_assert_equal_i(s_schlaf_zum_telefon, 2);
+  cl_assert(!boulder_spo2_schlaf_geladen());
 }
 
 // =============================================================================================
