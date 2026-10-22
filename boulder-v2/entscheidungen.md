@@ -239,6 +239,13 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **F47: Beta für alle Boulder-Nutzer:** ein gewöhnliches Release mit „Beta“ im Titel, die App
   bleibt, wie sie ist.
 - **F48: b36 jetzt, b37 nach dem Test** (Empfehlung).
+- **Nutzer (22.10.):** „wir können weg von prereleases“. Gelesen als: keine Vorabversionen mehr,
+  jede Fassung erscheint als gewöhnliches Release (die Firmware vorerst mit „Beta“ im Titel). Das
+  löst „Jede Fassung erscheint zuerst als Vorabversion“ unter Arbeitsweise ab. Als Vorabversion
+  markiert wird ein Release nur noch zum Zurückziehen.
+- **Band, Dauer** (offen): Mockups mit vier Varianten (Pebble 600 ms FastOutSlowIn wie Pebbles
+  Filterzeile und App-Liste, 500 ms FastOutSlowIn, 500 ms EaseInOut, heute 700 ms) liegen dem
+  Nutzer vor.
 - **Befund:** Diese Sitzung darf keine Releases anlegen, ändern oder löschen. Die GitHub-API antwortet
   mit 403: „not permitted for this session type“. Darum startet der Nutzer den Workflow von Hand.
   - Der Workflow nimmt Paket und Text aus einem Release-Commit neben `main` (`pakete/<tag>.pbz`,
