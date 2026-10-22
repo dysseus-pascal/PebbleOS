@@ -1463,6 +1463,111 @@ void test_kieselsport__echo_vor_init(void) {
   cl_assert_equal_i(kieselsport_pausenziel(), 60);
 }
 
+// --- Der Rhythmus der Atemuebung, vom Telefon ---
+
+static void prv_atem_ist(int ein, int halten, int aus, int leer, int runden) {
+  Atemrhythmus r;
+  kieselsport_atem(&r);
+  cl_assert_equal_i(r.wert[AtemEin], ein);
+  cl_assert_equal_i(r.wert[AtemHalten], halten);
+  cl_assert_equal_i(r.wert[AtemAus], aus);
+  cl_assert_equal_i(r.wert[AtemLeer], leer);
+  cl_assert_equal_i(r.wert[AtemRunden], runden);
+}
+
+// Ohne Einstellung 4-4-4-4 und zehn Runden. Was das Telefon stellt, liegt unter 13 bis 17 und gilt
+// nach dem Neustart weiter.
+void test_kieselsport__atem_rhythmus_im_persist(void) {
+  prv_atem_ist(4, 4, 4, 4, 10);
+  for (uint32_t key = 13; key <= 17; key++) {
+    cl_assert(!ks_persist_exists(key));
+  }
+  kieselsport_atem_setze(AtemEin, 5);
+  kieselsport_atem_setze(AtemHalten, 0);
+  kieselsport_atem_setze(AtemAus, 7);
+  kieselsport_atem_setze(AtemLeer, 60);
+  kieselsport_atem_setze(AtemRunden, 99);
+  cl_assert_equal_i(s_schreibvorgaenge, 5);
+  cl_assert_equal_i(ks_persist_read_int(13), 5);
+  cl_assert_equal_i(ks_persist_read_int(14), 0);
+  cl_assert_equal_i(ks_persist_read_int(15), 7);
+  cl_assert_equal_i(ks_persist_read_int(16), 60);
+  cl_assert_equal_i(ks_persist_read_int(17), 99);
+  prv_neustart();
+  prv_atem_ist(5, 0, 7, 60, 99);
+}
+
+// Wie die anderen Einstellungen: Unsinn aendert nichts, und ein unveraenderter Wert kommt nicht
+// noch einmal in den Flash. Die Grenzen sind die des Telefons: ein- und ausatmen 1-60 s, halten
+// 0-60 s, 1-99 Runden.
+void test_kieselsport__atem_grenzen_und_nur_was_sich_aendert(void) {
+  static const struct {
+    AtemWert welcher;
+    int32_t unsinn[3];
+    int32_t grenzen[2];
+  } s_faelle[] = {
+    {AtemEin, {0, 61, -5}, {1, 60}},
+    {AtemHalten, {-1, 61, 256}, {0, 60}},
+    {AtemAus, {0, 61, 1000}, {1, 60}},
+    {AtemLeer, {-1, 61, 260}, {0, 60}},
+    {AtemRunden, {0, 100, 265}, {1, 99}},
+  };
+  for (size_t f = 0; f < ARRAY_LENGTH(s_faelle); f++) {
+    const AtemWert w = s_faelle[f].welcher;
+    Atemrhythmus vorher;
+    kieselsport_atem(&vorher);
+    const int schreiben = s_schreibvorgaenge;
+    for (int i = 0; i < 3; i++) {
+      kieselsport_atem_setze(w, s_faelle[f].unsinn[i]);
+      Atemrhythmus r;
+      kieselsport_atem(&r);
+      cl_assert_equal_i(r.wert[w], vorher.wert[w]);
+    }
+    cl_assert_equal_i(s_schreibvorgaenge, schreiben);
+    for (int i = 0; i < 2; i++) {
+      kieselsport_atem_setze(w, s_faelle[f].grenzen[i]);
+      kieselsport_atem_setze(w, s_faelle[f].grenzen[i]);
+      Atemrhythmus r;
+      kieselsport_atem(&r);
+      cl_assert_equal_i(r.wert[w], s_faelle[f].grenzen[i]);
+      cl_assert_equal_i(ks_persist_read_int(PERSIST_ATEM_BASIS + w), s_faelle[f].grenzen[i]);
+    }
+    cl_assert_equal_i(s_schreibvorgaenge, schreiben + 2);
+  }
+  // Kein sechster Wert.
+  const int schreiben = s_schreibvorgaenge;
+  kieselsport_atem_setze(AtemWerte, 5);
+  cl_assert_equal_i(s_schreibvorgaenge, schreiben);
+}
+
+// Was im Persist ausserhalb der Grenzen steht, gilt nicht: dann bleibt die Vorgabe.
+void test_kieselsport__atem_unsinn_im_persist(void) {
+  ks_persist_write_int(PERSIST_ATEM_BASIS + AtemEin, 0);
+  ks_persist_write_int(PERSIST_ATEM_BASIS + AtemLeer, 61);
+  ks_persist_write_int(PERSIST_ATEM_BASIS + AtemRunden, 100);
+  ks_persist_write_int(PERSIST_ATEM_BASIS + AtemAus, 9);
+  prv_neustart();
+  prv_atem_ist(4, 4, 9, 4, 10);
+}
+
+// AP3 fuer den Rhythmus: Kommt das Telefon vor init (KernelBG laeuft unter der App), gilt der Wert
+// aus dem Persist - fuer das Echo und fuer die Rueckkehr zur Vorgabe, die ein Vergleich mit dem RAM
+// fuer "unveraendert" hielte.
+void test_kieselsport__atem_vor_init(void) {
+  ks_persist_write_int(PERSIST_ATEM_BASIS + AtemEin, 7);
+  kieselsport_test_neustart();
+  kieselsport_init_anstossen();
+  prv_atem_ist(7, 4, 4, 4, 10);
+  prv_kernel_bg();
+
+  kieselsport_test_neustart();
+  kieselsport_init_anstossen();
+  kieselsport_atem_setze(AtemEin, 4);
+  prv_kernel_bg();
+  prv_atem_ist(4, 4, 4, 4, 10);
+  cl_assert_equal_i(ks_persist_read_int(PERSIST_ATEM_BASIS + AtemEin), 4);
+}
+
 // Kriterium 7, "Zeit je Callback" (AP7): Jeder Callback des Dienstes misst sich unter eigenem
 // Namen - die Befehle einzeln, der Takt, das Nachsenden und der Pulsrueckruf, der unter der Sperre
 // des HRM-Managers laeuft. `boulder zeiten` und der Diagnosesatz zeigen sie (takt.h).

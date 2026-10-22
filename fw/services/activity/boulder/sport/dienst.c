@@ -11,6 +11,7 @@
 #include "pausen.h"
 #include "puls.h"
 #include "reps.h"
+#include "rhythmus.h"
 #include "training.h"
 #include "wartend.h"
 
@@ -70,6 +71,7 @@ static void prv_einstellungen_laden(void) {
   training_init();
   reps_laden();
   bahnen_laden();
+  rhythmus_laden();
 }
 
 static KsStand s_stand;
@@ -813,6 +815,20 @@ void kieselsport_becken_setze(uint16_t meter) {
   ks_entsperren();
 }
 
+void kieselsport_atem(Atemrhythmus *aus) {
+  ks_sperren();
+  prv_einstellungen_laden();
+  *aus = rhythmus();
+  ks_entsperren();
+}
+
+void kieselsport_atem_setze(AtemWert welcher, int32_t wert) {
+  ks_sperren();
+  prv_einstellungen_laden();
+  rhythmus_setze(welcher, wert);
+  ks_entsperren();
+}
+
 // Zusammenfassung und Kurve liegen nur im Persist, und der hat seine eigene Sperre - fuer das
 // Lesen EINES Schluessels reicht sie. NICHT FUER PRUEFEN UND DANN LOESCHEN: das Vergessen nach
 // einer Bestaetigung prueft erst, ob noch das bestaetigte Training dasteht, und loescht dann
@@ -935,6 +951,7 @@ void kieselsport_test_neustart(void) {
   s_nachsenden_minuten = 0;
   s_aufgabe_takt.steht_an = false;
   s_aufgabe_nachsenden.steht_an = false;
+  rhythmus_test_neustart();
   ks_plattform_test_neustart();
 }
 #endif

@@ -61,6 +61,7 @@ set(kieselsport_dienst
   fw/services/activity/boulder/sport/plattform.c
   fw/services/activity/boulder/sport/puls.c
   fw/services/activity/boulder/sport/reps.c
+  fw/services/activity/boulder/sport/rhythmus.c
   fw/services/activity/boulder/sport/training.c
   fw/services/activity/boulder/sport/wartend.c
   fw/services/activity/boulder/takt.c

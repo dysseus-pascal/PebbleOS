@@ -74,6 +74,16 @@ bool kieselsport_maxpuls_gesetzt(void) { return s_maxpuls_gesetzt; }
 uint16_t kieselsport_becken(void) { return 25; }
 uint16_t kieselsport_pausenziel(void) { return 90; }
 uint8_t kieselsport_empfindlichkeit(void) { return 2; }
+static Atemrhythmus s_atem;
+static int s_atem_aufrufe;
+static AtemWert s_atem_welcher;
+static int32_t s_atem_wert;
+void kieselsport_atem(Atemrhythmus *aus) { *aus = s_atem; }
+void kieselsport_atem_setze(AtemWert welcher, int32_t wert) {
+  s_atem_aufrufe++;
+  s_atem_welcher = welcher;
+  s_atem_wert = wert;
+}
 
 void test_kieselsport_einstellungen__initialize(void) {
   s_art_da = false;
@@ -82,6 +92,8 @@ void test_kieselsport_einstellungen__initialize(void) {
   s_schreibvorgaenge = 0;
   s_maxpuls = 190;
   s_maxpuls_gesetzt = false;
+  s_atem = (Atemrhythmus){.wert = {4, 4, 4, 4, 10}};
+  s_atem_aufrufe = 0;
 }
 
 void test_kieselsport_einstellungen__cleanup(void) {}
@@ -116,20 +128,45 @@ void test_kieselsport_einstellungen__pin_fuer_jede_art(void) {
   cl_assert_equal_i(s_schreibvorgaenge, ArtAnzahl + 1);
 }
 
-// --- Golden-Diktat: bytegleich zu b25 (Kriterium 3) ---
-//
-// Die Meldung der Einstellungen, wie Boulder sie erkennt (MAXPULS da, ART fehlt). DIE SOLL-BYTES
-// KOMMEN NICHT AUS DIESER FIRMWARE: Erzeugt hat sie dieser Test, gebaut gegen einstellungen.c und
-// util/dict.c von b25 (main a7d8b16e1) und gestartet mit KS_GOLDEN_DRUCKEN=1.
+// Der Rhythmus geht unveraendert an den Dienst, auch Unsinn: die Grenzen prueft er (rhythmus.c).
+void test_kieselsport_einstellungen__atem_an_den_dienst(void) {
+  einstellungen_atem(AtemAus, 7);
+  cl_assert_equal_i(s_atem_aufrufe, 1);
+  cl_assert_equal_i(s_atem_welcher, AtemAus);
+  cl_assert_equal_i(s_atem_wert, 7);
+  einstellungen_atem(AtemRunden, 1000);
+  cl_assert_equal_i(s_atem_aufrufe, 2);
+  cl_assert_equal_i(s_atem_welcher, AtemRunden);
+  cl_assert_equal_i(s_atem_wert, 1000);
+  // Den Timeline-Pin der App beruehrt das nicht.
+  cl_assert_equal_i(s_schreibvorgaenge, 0);
+}
 
-#define GOLDEN_EINST_VORGABE \
-  "0818270000030400be00000038270000030400000000001a270000030400190000001b2700000304005a0000" \
+// --- Golden-Diktat: bytegleich zu b25 (Kriterium 3), der Rhythmus dahinter ---
+//
+// Die Meldung der Einstellungen, wie Boulder sie erkennt (MAXPULS da, ART fehlt). DIE BYTES VON
+// b25 KOMMEN NICHT AUS DIESER FIRMWARE: Erzeugt hat sie dieser Test, gebaut gegen einstellungen.c
+// und util/dict.c von b25 (main a7d8b16e1) und gestartet mit KS_GOLDEN_DRUCKEN=1. Seit der
+// Atemuebung haengen fuenf Tupel daran (10041-10045, je int32), und das erste Byte, die Zahl der
+// Tupel, ist 13 statt 8; alles dazwischen steht wie in b25.
+
+#define B25_EINST_VORGABE \
+  "18270000030400be00000038270000030400000000001a270000030400190000001b2700000304005a0000" \
   "001c2700000304000200000022270000030400000000002327000001060031383a3030002727000003040000" \
   "000000"
-#define GOLDEN_EINST_GESETZT \
-  "0818270000030400ac00000038270000030400010000001a270000030400190000001b2700000304005a0000" \
+#define B25_EINST_GESETZT \
+  "18270000030400ac00000038270000030400010000001a270000030400190000001b2700000304005a0000" \
   "001c27000003040002000000222700000304000300000023270000010500373a333000272700000304000000" \
   "0000"
+// 4-4-4-4, zehn Runden, und 6-0-8-2 mit zwoelf.
+#define ATEM_VORGABE \
+  "39270000030400040000003a270000030400040000003b270000030400040000003c27000003040004000000" \
+  "3d2700000304000a000000"
+#define ATEM_GESETZT \
+  "39270000030400060000003a270000030400000000003b270000030400080000003c27000003040002000000" \
+  "3d2700000304000c000000"
+#define GOLDEN_EINST_VORGABE "0d" B25_EINST_VORGABE ATEM_VORGABE
+#define GOLDEN_EINST_GESETZT "0d" B25_EINST_GESETZT ATEM_GESETZT
 
 static void prv_golden(const char *name, const char *soll) {
   static uint8_t puffer[256];
@@ -156,5 +193,6 @@ void test_kieselsport_einstellungen__golden(void) {
   s_maxpuls_gesetzt = true;
   einstellungen_pin_art(3);
   einstellungen_pin_zeit("7:30");
+  s_atem = (Atemrhythmus){.wert = {6, 0, 8, 2, 12}};
   prv_golden("einst_gesetzt", GOLDEN_EINST_GESETZT);
 }

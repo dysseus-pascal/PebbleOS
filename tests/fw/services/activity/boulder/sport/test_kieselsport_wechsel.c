@@ -495,6 +495,12 @@ void test_kieselsport_wechsel__einstellungen_wie_b25(void) {
   cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_BECKEN), 50);
   cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_PIN_ART), 2);
   cl_assert_equal_s(prv_tupel(einst, MESSAGE_KEY_PIN_ZEIT)->value->cstring, "07:30");
+  // b25 kannte keine Atemuebung: ihr Rhythmus ist die Vorgabe, 4-4-4-4 und zehn Runden.
+  cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_ATEM_EIN), 4);
+  cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_ATEM_HALTEN), 4);
+  cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_ATEM_AUS), 4);
+  cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_ATEM_LEER), 4);
+  cl_assert_equal_i(prv_feld(einst, MESSAGE_KEY_ATEM_RUNDEN), 10);
   prv_app_schliesst();
   // Nichts davon wurde umgeschrieben: die Datei haelt b25s Bytes.
   const uint32_t keys[] = {1, 2, 3, 4, 5, 6, 12};

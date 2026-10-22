@@ -294,13 +294,22 @@ static void prv_inbox(DictionaryIterator *iter, void *context) {
     einstellungen_pin_zeit(pin_zeit->value->cstring);
   }
 
+  bool atem = false;
+  for (int i = 0; i < AtemWerte; i++) {
+    Tuple *t = dict_find(iter, MESSAGE_KEY_ATEM_EIN + i);
+    if (t) {
+      einstellungen_atem((AtemWert)i, prv_zahl(t));
+      atem = true;
+    }
+  }
+
   // DIE NACHT KOMMT NICHT MEHR HIERHER: die misst jetzt die Firmware. Was
   // Kiesel-Helper dazu schickt, bleibt liegen - die Antwort sagt ihm, dass
   // sie hier aus ist.
   Tuple *nacht = dict_find(iter, MESSAGE_KEY_NACHT_AN);
 
   // Der neue Stand an beide Seiten - Konfigseite und Kiesel-Helper.
-  if (max || gesetzt || becken || ziel || empf || pin_art || pin_zeit || nacht) {
+  if (max || gesetzt || becken || ziel || empf || pin_art || pin_zeit || nacht || atem) {
     prv_einst_vormerken(300);
   }
 }

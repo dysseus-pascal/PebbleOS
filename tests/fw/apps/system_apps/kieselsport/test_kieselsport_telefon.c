@@ -286,6 +286,14 @@ void einstellungen_pausenziel(int32_t sekunden) {}
 void einstellungen_empfindlichkeit(int32_t stufe) {}
 void einstellungen_pin_art(int32_t art) {}
 void einstellungen_pin_zeit(const char *hhmm) {}
+// Der Rhythmus der Atemuebung: was je Wert zuletzt ankam, -1 = nichts.
+static int32_t s_atem[AtemWerte];
+static int s_atem_aufrufe;
+void einstellungen_atem(AtemWert welcher, int32_t wert) {
+  cl_assert(welcher < AtemWerte);
+  s_atem[welcher] = wert;
+  s_atem_aufrufe++;
+}
 void einstellungen_melden(DictionaryIterator *out) {
   dict_write_int32(out, MESSAGE_KEY_MAXPULS, 179);
   dict_write_int32(out, MESSAGE_KEY_MAXPULS_GESETZT, 0);
@@ -344,6 +352,8 @@ void test_kieselsport_telefon__initialize(void) {
   s_kurve_luecke = false;
   s_alt_zahl = 0;
   s_vermerkt = -1;
+  for (int i = 0; i < AtemWerte; i++) s_atem[i] = -1;
+  s_atem_aufrufe = 0;
   s_fertig = 0;
   telefon_zuruecksetzen();
 }
@@ -596,6 +606,53 @@ void test_kieselsport_telefon__maxpuls_mit_und_ohne_vermerk(void) {
   cl_assert(s_anzahl >= 1);
   cl_assert_equal_i(prv_art(s_anzahl - 1), ArtEinst);
   cl_assert_equal_i(prv_feld(s_anzahl - 1, MESSAGE_KEY_MAXPULS_GESETZT), 0);
+}
+
+// Der Rhythmus der Atemuebung (10041-10045): jeder Schluessel fuer sich, als Zahl mit oder ohne
+// Vorzeichen oder als Text, wie die anderen Einstellungen. Die Grenzen prueft der Dienst; die
+// Antwort traegt danach den Stand, der gilt.
+void test_kieselsport_telefon__atem_rhythmus_vom_telefon(void) {
+  telefon_init();
+  prv_alles_bestaetigen();
+  const int vorher = s_anzahl;
+  static uint8_t puffer[128];
+  DictionaryIterator schreiben, lesen;
+  dict_write_begin(&schreiben, puffer, sizeof(puffer));
+  dict_write_int32(&schreiben, MESSAGE_KEY_ATEM_EIN, 5);
+  dict_write_uint8(&schreiben, MESSAGE_KEY_ATEM_HALTEN, 0);
+  dict_write_int16(&schreiben, MESSAGE_KEY_ATEM_AUS, 7);
+  dict_write_cstring(&schreiben, MESSAGE_KEY_ATEM_LEER, "3");
+  dict_write_uint32(&schreiben, MESSAGE_KEY_ATEM_RUNDEN, 120);
+  dict_read_begin_from_buffer(&lesen, puffer, (uint16_t)dict_write_end(&schreiben));
+  s_bei_eingang(&lesen, NULL);
+  cl_assert_equal_i(s_atem_aufrufe, 5);
+  cl_assert_equal_i(s_atem[AtemEin], 5);
+  cl_assert_equal_i(s_atem[AtemHalten], 0);
+  cl_assert_equal_i(s_atem[AtemAus], 7);
+  cl_assert_equal_i(s_atem[AtemLeer], 3);
+  cl_assert_equal_i(s_atem[AtemRunden], 120);
+  prv_warte(1000);
+  cl_assert_equal_i(s_anzahl, vorher + 1);
+  cl_assert_equal_i(prv_art(s_anzahl - 1), ArtEinst);
+}
+
+// Ein einzelner Schluessel reicht fuer die Antwort; die anderen Werte bleiben unberuehrt.
+void test_kieselsport_telefon__atem_ein_schluessel_allein(void) {
+  telefon_init();
+  prv_alles_bestaetigen();
+  const int vorher = s_anzahl;
+  static uint8_t puffer[32];
+  DictionaryIterator schreiben, lesen;
+  dict_write_begin(&schreiben, puffer, sizeof(puffer));
+  dict_write_int32(&schreiben, MESSAGE_KEY_ATEM_RUNDEN, 6);
+  dict_read_begin_from_buffer(&lesen, puffer, (uint16_t)dict_write_end(&schreiben));
+  s_bei_eingang(&lesen, NULL);
+  cl_assert_equal_i(s_atem_aufrufe, 1);
+  cl_assert_equal_i(s_atem[AtemRunden], 6);
+  cl_assert_equal_i(s_atem[AtemEin], -1);
+  prv_warte(1000);
+  cl_assert_equal_i(s_anzahl, vorher + 1);
+  cl_assert_equal_i(prv_art(s_anzahl - 1), ArtEinst);
 }
 
 // --- Kurve: ein Stueck, das sich nicht lesen laesst ---

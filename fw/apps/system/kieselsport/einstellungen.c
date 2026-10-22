@@ -7,6 +7,13 @@
 #include "einstellungen.h"
 #include "schluessel.h"
 
+// Die App zaehlt die Schluessel des Rhythmus von ATEM_EIN an ab (AtemWert).
+_Static_assert(MESSAGE_KEY_ATEM_HALTEN == MESSAGE_KEY_ATEM_EIN + AtemHalten &&
+                   MESSAGE_KEY_ATEM_AUS == MESSAGE_KEY_ATEM_EIN + AtemAus &&
+                   MESSAGE_KEY_ATEM_LEER == MESSAGE_KEY_ATEM_EIN + AtemLeer &&
+                   MESSAGE_KEY_ATEM_RUNDEN == MESSAGE_KEY_ATEM_EIN + AtemRunden,
+               "Schluessel des Rhythmus in der Folge von AtemWert");
+
 void einstellungen_maxpuls(int32_t schlaege) {
   if (schlaege <= 100 || schlaege >= 240) return;
   kieselsport_maxpuls_alt((uint16_t)schlaege);
@@ -45,6 +52,11 @@ void einstellungen_pin_art(int32_t art) {
   persist_write_int(PERSIST_PIN_ART, art);
 }
 
+void einstellungen_atem(AtemWert welcher, int32_t wert) {
+  // Die Grenzen prueft der Dienst: dieselben gelten fuer das, was er aus dem Persist liest.
+  kieselsport_atem_setze(welcher, wert);
+}
+
 void einstellungen_pin_zeit(const char *hhmm) {
   if (!hhmm) return;
   // Nur "H:MM" oder "HH:MM" - was sonst kommt, ist keine Uhrzeit.
@@ -73,6 +85,13 @@ void einstellungen_melden(DictionaryIterator *out) {
   // mehr Kieselsport. Aus heisst fuer Kiesel-Helper: keine zweite Messung
   // daneben.
   dict_write_int32(out, MESSAGE_KEY_NACHT_AN, 0);
+  // HINTEN ANGEHAENGT, damit alles davor bytegleich zu b25 bleibt. Mit dem
+  // Rhythmus rechnet das Telefon die Runden einer Atemuebung aus ihrer Dauer.
+  Atemrhythmus atem;
+  kieselsport_atem(&atem);
+  for (int i = 0; i < AtemWerte; i++) {
+    dict_write_int32(out, MESSAGE_KEY_ATEM_EIN + i, atem.wert[i]);
+  }
 }
 
 #endif  // CONFIG_BOULDER_KIESELSPORT

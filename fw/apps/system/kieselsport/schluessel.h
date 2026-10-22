@@ -54,6 +54,13 @@
 // Ob der Maximalpuls eingestellt ist (1) oder die Uhr nach dem Alter
 // rechnet (0). In beide Richtungen; ohne ihn gilt MAXPULS wie bisher.
 #define MESSAGE_KEY_MAXPULS_GESETZT 10040
+// Der Rhythmus der Atemuebung in beide Richtungen, ein Schluessel je AtemWert
+// in dessen Reihenfolge: Sekunden je Phase, dann die Runden.
+#define MESSAGE_KEY_ATEM_EIN 10041
+#define MESSAGE_KEY_ATEM_HALTEN 10042
+#define MESSAGE_KEY_ATEM_AUS 10043
+#define MESSAGE_KEY_ATEM_LEER 10044
+#define MESSAGE_KEY_ATEM_RUNDEN 10045
 
 // Was nur die App im Persist haelt: der Timeline-Pin, den die Konfigseite
 // und Kiesel-Helper stellen (PERSIST_PIN_ART, PERSIST_PIN_ZEIT). Die Nummern

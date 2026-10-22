@@ -171,6 +171,27 @@ void kieselsport_pausenziel_setze(uint16_t sekunden);
 uint16_t kieselsport_becken(void);  //< Meter
 void kieselsport_becken_setze(uint16_t meter);
 
+// DER RHYTHMUS DER ATEMUEBUNG: Sekunden je Phase und die Zahl der Runden, eingestellt auf dem
+// Telefon. Die Reihenfolge ist die der Schluessel dort (10041-10045) und im Persist (13-17), die
+// Phasen in der Folge, in der sie geatmet werden.
+typedef enum {
+  AtemEin = 0,  //< einatmen
+  AtemHalten,   //< halten mit voller Lunge, 0 = ohne
+  AtemAus,      //< ausatmen
+  AtemLeer,     //< halten mit leerer Lunge, 0 = ohne
+  AtemRunden,
+  AtemWerte,
+} AtemWert;
+
+typedef struct {
+  uint8_t wert[AtemWerte];
+} Atemrhythmus;
+
+// Ohne Einstellung 4-4-4-4 und zehn Runden.
+void kieselsport_atem(Atemrhythmus *aus);
+// Einatmen und ausatmen 1-60 s, halten 0-60 s, 1-99 Runden. Was ausserhalb liegt, aendert nichts.
+void kieselsport_atem_setze(AtemWert welcher, int32_t wert);
+
 // Das Archiv aus b25 entfaellt (V7): Es wurde nie gelesen. Seine Schluessel 10, 11 und 100-119
 // bleiben reserviert (schluessel.h).
 

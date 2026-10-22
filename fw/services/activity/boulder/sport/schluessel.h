@@ -28,6 +28,9 @@
 // eingestellt hatte (siehe puls.c).
 #define PERSIST_MAXPULS_GESETZT 12
 
+// Der Rhythmus der Atemuebung: 13 bis 17, ein Schluessel je AtemWert in dessen Reihenfolge.
+#define PERSIST_ATEM_BASIS 13
+
 // Die Zusammenfassung, die auf das Telefon wartet (siehe wartend.h).
 #define PERSIST_WARTET 30
 #define PERSIST_WARTET_LISTE_A 31
