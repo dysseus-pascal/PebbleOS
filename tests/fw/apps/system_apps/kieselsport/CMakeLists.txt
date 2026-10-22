@@ -50,6 +50,14 @@ pbl_clar_test(test_kieselsport_lauf
   DEFINES CONFIG_BOULDER_KIESELSPORT _GNU_SOURCE=1
 )
 
+# Die Atemuebung als Rechnung: Phase, Rest, Runde, Ende, der Kreis mit Pebbles echter Kurve.
+pbl_clar_test(test_kieselsport_atem
+  SOURCES
+    fw/apps/system/kieselsport/atem.c
+    fw/applib/ui/animation_timing.c
+  DEFINES CONFIG_BOULDER_KIESELSPORT
+)
+
 # Jede Art hat Namen, Symbol und Farbe: die drei Tabellen der App, einmal ueber alle Arten.
 pbl_clar_test(test_kieselsport_arten
   SOURCES
