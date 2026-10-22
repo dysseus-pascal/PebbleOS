@@ -37,7 +37,8 @@ void einstellungen_empfindlichkeit(int32_t stufe) {
 }
 
 void einstellungen_pin_art(int32_t art) {
-  if (art < 0 || art > 7) return;
+  // 0 ist kein Pin, sonst Art + 1 (der Launch-Code, kieselsport.c): mit jeder Art eine mehr.
+  if (art < 0 || art > ArtAnzahl) return;
   // NUR WAS SICH AENDERT, KOMMT IN DEN FLASH: Boulder schickt beim Speichern
   // alle Einstellungen mit, auch die gleich gebliebenen.
   if (persist_exists(PERSIST_PIN_ART) && persist_read_int(PERSIST_PIN_ART) == art) return;

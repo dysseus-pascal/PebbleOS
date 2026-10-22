@@ -101,9 +101,19 @@ void test_kieselsport_einstellungen__gleicher_pin_schreibt_nichts(void) {
   cl_assert_equal_i(s_art, 0);
   cl_assert_equal_s(s_zeit, "18:00");
   // Unsinn bleibt draussen.
-  einstellungen_pin_art(9);
+  einstellungen_pin_art(ArtAnzahl + 1);
+  einstellungen_pin_art(-1);
   einstellungen_pin_zeit("1830");
   cl_assert_equal_i(s_schreibvorgaenge, 4);
+}
+
+// Der Pin traegt Art + 1 (0 = kein Pin): die letzte Art ist ArtAnzahl, nicht eine feste Zahl.
+void test_kieselsport_einstellungen__pin_fuer_jede_art(void) {
+  for (int32_t pin = 0; pin <= ArtAnzahl; pin++) {
+    einstellungen_pin_art(pin);
+    cl_assert_equal_i(s_art, pin);
+  }
+  cl_assert_equal_i(s_schreibvorgaenge, ArtAnzahl + 1);
 }
 
 // --- Golden-Diktat: bytegleich zu b25 (Kriterium 3) ---
