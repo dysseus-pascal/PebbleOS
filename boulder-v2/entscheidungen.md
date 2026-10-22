@@ -228,6 +228,19 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - Umgesetzt in V2 `97ae1df5` (v4.41.2) und `d5cc0038` (`main`, mit den Anpassungen), Vorabversion
   b34 (`schritt3-abnahme.md`, Abschnitt 18).
 
+## Symbol von Kieselstrasse und Tagesband beim Öffnen (22.10.2026, Boulder 0.57.1)
+- **Nutzer:** „das kieselstrassen icon... das geht besser und mehr im stil von pebbel. weiter möchte
+  ich das dir timelin beim öffnen der app ¾ vergangenheit und ¼ zukunft zeigt.“
+- **Symbol** (ohne Rückfrage, nach dem Grundsatz unter Grundlage): Pebbles `LOCATION`, eine Fahne auf
+  einem Stück Boden (`Pebble_25x25_Location.svg`). Dasselbe zeigt die Uhr im Launcher für
+  Kieselstrasse (`RESOURCE_ID_LOCATION_TINY`). Gezeichnet wie die anderen Symbole der Liste: 114 px,
+  weiss mit 6 px schwarzer Kontur, Grund `#00AA55`. Nicht gewählt: Pebbles grosse Fassung, eine Karte
+  mit Fahne (`Pebble_80x80_Location.svg`).
+- **Tagesband:** Das Jetzt bei drei Vierteln gab es schon (`JETZT_ANTEIL`), aber nur beim ersten
+  Aufbau. Kam die App aus dem Hintergrund, stand das Band, wo es zuletzt war. Jetzt stellt jedes
+  Öffnen der App (ON_START der Activity nach ihrem ON_STOP) das Band neu; dazwischen bleibt es, wo man
+  es hinwischt.
+
 ## Alle Gesundheitsdaten und die Atemübung (22.10.2026, F41–F43, Boulder 0.57.0, Firmware b36)
 - **Nutzer:** „ich möchte das sämtliche gesundheitsdaten für den mcp zurverfügung stehen. ich meine
   auch daten die von healthconnect kommen. Dazu möchte ich eine einstellbare pranayama atemübung in
