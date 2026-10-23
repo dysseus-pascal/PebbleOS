@@ -329,6 +329,11 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   Trainings (zwei Blöcke unter dem Variantenschalter, K1 in `hrm_manager.c` von 10 auf 24 Zeilen).
   Die App zeigt Pebbles „Blood Oxygen“ samt Messrate schon seit 0.54: die Ausblendung aus F3 kam beim
   Neubau auf Core nicht mit.
+- **Veröffentlicht (23.10.):** b37 ist ein Release (Lauf 39942848763, Tag auf `594f628`,
+  Mindest-App 0.58.0, Signatur geprüft). Die Uhr des Nutzers lief schon mit b36, und er wollte
+  den automatischen Firmware-Weg testen. Darum kam b37 als Release vor dem Test auf der Uhr
+  statt als Datei zum Seitenladen; F48 („b37 nach dem Test“) ist damit überholt. Der Release-Text
+  nennt es: „auf einer echten Uhr noch nicht“ geprüft. Zurückziehen ginge über „pre-release“.
 
 ## Symbol von Kieselstrasse und Tagesband beim Öffnen (22.10.2026, Boulder 0.57.1)
 - **Nutzer:** „das kieselstrassen icon... das geht besser und mehr im stil von pebbel. weiter möchte
