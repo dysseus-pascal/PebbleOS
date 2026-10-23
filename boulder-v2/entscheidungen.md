@@ -263,6 +263,12 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   - App-Releases legt weiter Boulders CI an, wenn `main` eine neue Fassung bekommt.
 - **Reihenfolge wie bei `release.sh`:** zuerst ein App-Release ab der Mindest-App (für b36 0.57.0),
   dann die Firmware. Der Workflow kann das nicht prüfen, weil das Repo der App privat ist.
+- **Ergebnis (23.10.):** b36 ist veröffentlicht (Lauf 39907855610, Tag auf dem Release-Commit
+  `2ee6e5a`). Es ist ein gewöhnliches Release mit „Beta“ im Titel und Mindest-App 0.58.0. Paket und
+  Digest stimmen mit dem Release-Commit überein. Die Ed25519-Signatur ist mit dem Schlüssel aus
+  0.58.0 geprüft, die Gegenprobe mit falscher Grösse schlägt fehl.
+  - `signatur.pub` auf `main` trug noch den alten Schlüssel und ist nachgezogen (`05879cb`). Ein
+    Release-Commit für b37 auf dieser Grundlage brach sonst ab.
 
 ## Boulder öffentlich (22./23.10.2026, Boulder 0.58.0)
 - **Nutzer:** „mach das repo öffentlich. schreibe eine fancy read.me mit screenshots und viel hype
