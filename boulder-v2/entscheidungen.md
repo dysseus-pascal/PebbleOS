@@ -304,6 +304,17 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   - Das APK hat versionCode 2632 und dasselbe Zertifikat wie bisher (SHA-256 `212e0ca4…d035`).
     Es installiert sich als Update.
   - Im Repo stehen nur `main`, der Arbeitszweig und `v0.58.0`.
+- **Firmware-Quellcode öffentlich (23.10.):** „jemand hat gesagt die firmeare ist nicht public.
+  korrigiere das“. Den Vorschlag, nur `v2` getrennt zu veröffentlichen, lehnte der Nutzer ab: „nein,
+  einfach auf public setzen.“ Seither ist `dysseus-pascal/PebbleOS` öffentlich, mit Standardzweig
+  `v2` und allen Zweigen samt `notizen`. Die READMEs von Boulder und boulder-firmware verlinken es.
+  - Vorher geprüft: alle Zweige, Tags, Pull Requests und der gelöschte Zweig
+    `v2-wecker-zwischenstand`. Keine Schlüssel, Tokens, Passwörter, Koordinaten oder
+    Telefonnummern.
+  - Name und Adresse in `ideen.md` waren über das Signed-off-by von coredevices/PebbleOS#2314
+    schon öffentlich. Die 13 echten Testnächte bleiben (Nutzerwahl „So lassen“).
+  - Ab jetzt keine Zugangsdaten oder Privates in die Notizen (README dieses Zweigs, Boulders
+    CLAUDE.md).
 
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder

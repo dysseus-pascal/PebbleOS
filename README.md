@@ -1,5 +1,8 @@
 # Boulder-Notizen
 
+Oeffentlich seit 23.10.2026, wie das ganze Repo `dysseus-pascal/PebbleOS`: keine
+Zugangsdaten, Schluessel oder anderes Privates hier ablegen.
+
 Dieser Zweig enthaelt keinen Firmware-Code, nur die Arbeitsnotizen zu Boulder V2
 (Firmware, Zweig `v2`) und zur Boulder-App (V1). Er teilt keine Geschichte mit
 `main` oder `v2`.
