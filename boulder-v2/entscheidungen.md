@@ -334,6 +334,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   den automatischen Firmware-Weg testen. Darum kam b37 als Release vor dem Test auf der Uhr
   statt als Datei zum Seitenladen; F48 („b37 nach dem Test“) ist damit überholt. Der Release-Text
   nennt es: „auf einer echten Uhr noch nicht“ geprüft. Zurückziehen ginge über „pre-release“.
+- **Auf der Uhr (23.10.):** b37 kam über Boulders Update-Weg auf die Uhr des Nutzers (b36 →
+  b37 mit Boulder 0.58.0). Damit ist der ganze Weg auf dem Gerät bestätigt: Release, Abruf,
+  Signatur mit dem neuen Schlüssel, Mindest-App und Installation. Offen ist noch die erste
+  Nacht mit „Blood Oxygen During Sleep“.
 
 ## Symbol von Kieselstrasse und Tagesband beim Öffnen (22.10.2026, Boulder 0.57.1)
 - **Nutzer:** „das kieselstrassen icon... das geht besser und mehr im stil von pebbel. weiter möchte
