@@ -264,6 +264,41 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
 - **Reihenfolge wie bei `release.sh`:** zuerst ein App-Release ab der Mindest-App (für b36 0.57.0),
   dann die Firmware. Der Workflow kann das nicht prüfen, weil das Repo der App privat ist.
 
+## Boulder öffentlich (22./23.10.2026, Boulder 0.58.0)
+- **Nutzer:** „mach das repo öffentlich. schreibe eine fancy read.me mit screenshots und viel hype
+  für das projekt.“ Das README ist englisch, mit 13 Bildern (`docs/readme/`), Links in Pebbles App
+  Store für Drinktervall und SupCycle und einem Abschnitt zu Kieselstrasse mit OsmAnd.
+- **APK-Schlüssel:** Im Repo lag `ci/debug.keystore`, der Schlüssel jedes Boulder-APK. Öffentlich
+  könnte damit jeder ein „Update“ bauen, das sich über Boulder installiert. Nutzerwahl:
+  „Geschichte bereinigen“. Die CI liest ihn seit 0.58.0 aus dem Secret `BOULDER_APK_KEYSTORE`
+  (sha256 der Datei `8398e03d…`). Echte Werte in Tests und Bildern bleiben (Nutzerwahl „So lassen“).
+- **Befund:** Nach dem Umschreiben (git-filter-repo, Force-Push der Zweige) lieferte GitHub die
+  alten Commits samt Schlüssel weiter über ihre Kennung aus. Die Activity-Ansicht nennt die alten
+  Kennungen. Die Tags liessen sich mit dem GITHUB_TOKEN weder umsetzen (PATCH) noch auf alten
+  Commits neu anlegen (POST). Beide Läufe brachen mit 403 „Resource not accessible by integration“
+  ab: Dazwischen sind Workflow-Dateien geändert, und die Berechtigung „workflows“ kann der Token
+  nicht bekommen.
+- **Nutzerwahl: neues Repo** statt eines Tokens mit Workflow-Rechten und einer Bereinigung durch
+  GitHub Support.
+  - Das alte Repo heisst jetzt `Boulder-archiv` und bleibt privat, mit den Releases bis 0.57.1.
+  - Das neue `Boulder` ist öffentlich und hat die ganze bereinigte Geschichte, damit die
+    versionCode weiterzählt. Die CI baut v0.58.0 dort neu, mit versionCode 2632 statt 2629.
+  - Drei Commits vom 25.09. trugen Adressen bei newtnlink.ch. Sie tragen jetzt
+    `noreply@anthropic.com` bzw. die noreply-Adresse von GitHub (Nutzerwahl „Ersetzen“).
+- **Vor dem Push geprüft:**
+  - Kein Commit enthält `ci/debug.keystore` oder dessen Inhalt.
+  - Die 12 505 Dateien der Geschichte enthalten keine privaten Schlüssel und Tokens. Gefunden
+    wurden nur ein Platzhalter und zwei öffentliche Supabase-Anon-Schlüssel von Core.
+  - `libcactus_engine.so` und die iOS-Bibliotheken sind bytegleich mit Cores öffentlichem Repo.
+- **Regel (Boulders CLAUDE.md):** Nie aus dem Archiv oder aus einem Klon von vor dem 23.10. ins
+  neue Repo pushen.
+- **Ergebnis (23.10.):** v0.58.0 ist im neuen Repo veröffentlicht, aus Lauf 39904328182 auf
+  `2adc74da5`. Den Push-Lauf hatte ein „[skip ci]“ in der Geschichte unterdrückt, darum wurde der
+  Bau von Hand gestartet. Der erste Versuch scheiterte am Secret, das ein anderer Schlüssel war.
+  - Das APK hat versionCode 2632 und dasselbe Zertifikat wie bisher (SHA-256 `212e0ca4…d035`).
+    Es installiert sich als Update.
+  - Im Repo stehen nur `main`, der Arbeitszweig und `v0.58.0`.
+
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
   intervall. das spart akku. für schlaf hast du vielleicht einen vorschlag wie das umgesetzt werden
