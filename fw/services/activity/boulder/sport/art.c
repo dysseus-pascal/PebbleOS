@@ -3,7 +3,8 @@
 
 #include "art.h"
 
-// Die Reihenfolge ist die des Menues UND die Zahl, die ans Telefon geht.
+// Die Reihenfolge ist die Zahl, die ans Telefon geht. Das Menue ordnet die Arten selbst
+// (apps/system/kieselsport/art_text.c).
 static const ArtInfo s_arten[ArtAnzahl] = {
   // Schritte  Distanz  Reps   Bahnen  HRV
   { true,     true,    false, false,  false },   // Laufen
@@ -22,6 +23,16 @@ static const ArtInfo s_arten[ArtAnzahl] = {
   { false,    false,   false, true,   false },   // Schwimmen
   // ATMEN: wie Yoga. Die Phasen und Runden zaehlt die App; hier zaehlt nur die Zeit.
   { false,    false,   false, false,  true  },   // Atmen
+  // INDOOR wie Strasse/Gravel: auch auf der Rolle sind Schritte eine Zufallszahl.
+  { false,    false,   false, false,  false },   // Indoor
+  // FREIWASSER: keine Wende, also keine Bahnen, und die Uhr kennt die Strecke nicht. Ob das
+  // Telefon sie aufzeichnet, sagt allein die Zahl der Art; die Uhr misst beide gleich.
+  { false,    false,   false, false,  false },   // Freiwasser
+  { false,    false,   false, false,  false },   // Freiwasser GPS
+  // OFFEN wie Pebbles offenes Training: die Schritte zaehlen wie ohne Training, denn welche
+  // Bewegung es ist, weiss niemand. Eine Strecke gibt es nur vom Telefon.
+  { true,     false,   false, false,  false },   // Offen
+  { true,     false,   false, false,  false },   // Offen GPS
 };
 
 const ArtInfo *art_info(Sportart art) {

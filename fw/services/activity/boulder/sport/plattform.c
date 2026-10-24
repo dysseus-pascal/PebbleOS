@@ -79,9 +79,10 @@ bool ks_workout_starten(Sportart art, uint16_t maxpuls) {
     return false;
   }
   // DIE SZENE (V5): Pebble setzt fuer Open das Modell fuer hohe Belastung. Yoga und Atmen sind Ruhe,
-  // und fuer Schwimmen gibt es kein Modell - sie rechnen wie Yoga und Schwimmen in b25 mit dem
-  // allgemeinen. Den Stopp setzt Pebble selbst zurueck.
-  if (art == ArtYoga || art == ArtSchwimmen || art == ArtAtem) {
+  // und fuer Schwimmen gibt es kein Modell, im Becken wie im Freiwasser - sie rechnen wie Yoga und
+  // Schwimmen in b25 mit dem allgemeinen. Den Stopp setzt Pebble selbst zurueck.
+  if (art == ArtYoga || art == ArtSchwimmen || art == ArtAtem || art == ArtFreiwasser ||
+      art == ArtFreiwasserGps) {
     hrm_manager_set_activity_scene(HRMActivityScene_Default);
   }
   // SCHRITTE NUR BEIM LAUFEN UND WANDERN (V1, vom Nutzer geaendert): Am Lenker, an der Hantel, auf

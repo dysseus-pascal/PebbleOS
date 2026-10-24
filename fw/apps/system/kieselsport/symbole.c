@@ -101,9 +101,43 @@ static const int8_t s_atem[] = {
   ENDE,
 };
 
-// Dieselbe Reihenfolge wie Sportart in kern/art.h.
+// INDOOR: das Bike etwas kleiner in einem Haus. Beim MTB sagt das Gelaende, wo gefahren wird,
+// hier Dach und Waende; ein Dach allein las sich auf 26 Punkten nicht als drinnen. Die Waende
+// stehen am Rand des Rasters: naeher an den Raedern liefen sie in QEMU auf 26 und 64 Punkten mit
+// ihnen zusammen.
+static const int8_t s_indoor[] = {
+  LZ, 5, -14, 12, -14, -2, 0, -13, 14, -2, 14, 12,
+  KR, -6, 7, 8,
+  KR, 6, 7, 8,
+  LZ, 4, -6, 7, -2, 0, 1, 7, -6, 7,
+  LZ, 3, -2, 0, 4, 0, 6, 7,
+  LZ, 2, 4, 0, 1, 7,
+  LZ, 2, -4, -2, -1, -2,
+  ENDE,
+};
+
+// FREIWASSER: der Schwimmer tiefer, dahinter zwei Gipfel wie beim MTB - die Landschaft ist der
+// Unterschied zum Becken. Nur eine Welle: mit beiden lief es auf 26 Punkten zu.
+static const int8_t s_freiwasser[] = {
+  LZ, 5, -13, -5, -8, -12, -4, -8, 0, -11, 4, -6,
+  KV, -4, 0, 5,
+  LZ, 3, -1, 2, 4, -3, 9, 0,
+  LZ, 2, -2, 3, -10, 5,
+  LZ, 7, -12, 9, -8, 7, -4, 9, 0, 7, 4, 9, 8, 7, 12, 9,
+  ENDE,
+};
+
+// OFFEN: das Herz, wie Pebble es fuer sein "Workout" zeigt.
+static const int8_t s_offen[] = {
+  LZ, 11, 0, -6, -3, -10, -8, -11, -12, -7, -12, -2, 0, 11, 12, -2, 12, -7, 8, -11, 3, -10, 0, -6,
+  ENDE,
+};
+
+// Dieselbe Reihenfolge wie Sportart in kern/art.h. Eine Art mit GPS zeigt das Bild ihrer Art ohne;
+// was sie unterscheidet, sagen Name und Farbe.
 static const int8_t *const s_symbole[ArtAnzahl] = {
   s_laufen, s_bike, s_wandern, s_kraft, s_mtb, s_yoga, s_schwimmen, s_atem,
+  s_indoor, s_freiwasser, s_freiwasser, s_offen, s_offen,
 };
 
 static GPoint prv_punkt(GPoint m, int16_t g, int x, int y) {

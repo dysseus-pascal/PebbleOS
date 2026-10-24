@@ -11,5 +11,23 @@
 
 // art_name() steht in kachel.h - die Kachel im Startmenue braucht ihn auch.
 
-// Der Obertitel im Menue - "Bike" bei den beiden, sonst NULL.
+// Der Obertitel im Untermenue: der Name der Gruppe ("Bike", "Swimming"), sonst NULL.
 const char *art_gruppe(Sportart art);
+
+// --- Die Menues ---
+
+// Die Eintraege im Hauptmenue, die ein Untermenue oeffnen. Sie liegen hinter den Arten, damit ein
+// Eintrag beides sein kann.
+#define MENUE_BIKE ArtAnzahl
+#define MENUE_SCHWIMMEN (ArtAnzahl + 1)
+
+uint16_t menue_zeilen(void);
+// Eine Sportart oder eine Gruppe.
+int menue_eintrag(uint16_t zeile);
+bool menue_ist_gruppe(int eintrag);
+
+// Eine Gruppe: ihr Name und ihre Arten in der Reihenfolge des Untermenues. Ihre Zeile im
+// Hauptmenue traegt Bild und Farbe der ersten Art.
+const char *menue_gruppe_name(int gruppe);
+uint16_t menue_gruppe_zeilen(int gruppe);
+Sportart menue_gruppe_art(int gruppe, uint16_t zeile);

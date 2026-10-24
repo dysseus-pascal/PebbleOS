@@ -150,6 +150,30 @@ void test_kieselsport__zonenwechsel_brummt(void) {
   cl_assert_equal_i(s_brumm_zahl, 2);
 }
 
+// Indoor misst wie Strasse/Gravel: ein offenes Training mit dem Modell fuer hohe Belastung, ohne
+// Schritte, Strecke, Wiederholungen, Bahnen und HRV. Eine Strecke gibt es auch auf dem Telefon
+// nicht, Boulder zeichnet fuer Indoor kein GPS auf.
+void test_kieselsport__indoor_misst_wie_strasse(void) {
+  const ArtInfo *indoor = kieselsport_art_info(ArtIndoor);
+  cl_assert(!indoor->schritte && !indoor->distanz && !indoor->reps && !indoor->bahnen &&
+            !indoor->hrv);
+  prv_starte(ArtIndoor, 0);
+  cl_assert_equal_i(s_szene, HRMActivityScene_HighIntensity);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.art, ArtIndoor);
+  cl_assert_equal_i(s.t.schritte, 0);
+  cl_assert_equal_i(s.t.meter, 0);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.art, ArtIndoor);
+  cl_assert_equal_i(t.dauer_s, 60);
+}
+
 void test_kieselsport__pause_haelt_die_zeit_an(void) {
   prv_starte(ArtWandern, 0);
   cl_assert_equal_i(s_szene, HRMActivityScene_Walk);
@@ -298,6 +322,70 @@ static void prv_schwimmen(int sekunden, int32_t richtung) {
     stub_pebble_tasks_set_current(PebbleTask_App);
     prv_sekunde();
   }
+}
+
+// Freiwasser misst wie das Becken mit dem allgemeinen Pulsmodell, aber ohne Bahnen: ohne Wende
+// zaehlte der Kompass nichts, also bleibt er aus. Schritte und Strecke gibt es auch hier nicht.
+void test_kieselsport__freiwasser_ohne_bahnen(void) {
+  const ArtInfo *frei = kieselsport_art_info(ArtFreiwasser);
+  cl_assert(!frei->schritte && !frei->distanz && !frei->reps && !frei->bahnen && !frei->hrv);
+  kieselsport_becken_setze(25);
+  prv_starte(ArtFreiwasser, 0);
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  cl_assert(!s_kompass_handler && !s_accel_handler);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(120);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.art, ArtFreiwasser);
+  cl_assert_equal_i(s.t.bahnen, 0);
+  cl_assert_equal_i(s.t.meter, 0);
+  cl_assert_equal_i(s.t.schritte, 0);
+  prv_speichern();
+  Trainingsstand t;
+  char liste[KS_LISTE_MAX];
+  cl_assert(kieselsport_wartend_laden(&t, liste, sizeof(liste)));
+  cl_assert_equal_i(t.art, ArtFreiwasser);
+  cl_assert_equal_i(t.dauer_s, 60);
+  cl_assert_equal_i(t.bahnen, 0);
+}
+
+// Mit GPS misst die Uhr im Freiwasser genau wie ohne: die Strecke zeichnet allein das Telefon auf,
+// das an der Zahl der Art erkennt, dass es mitschwimmt.
+void test_kieselsport__freiwasser_gps_misst_wie_freiwasser(void) {
+  cl_assert(memcmp(kieselsport_art_info(ArtFreiwasserGps), kieselsport_art_info(ArtFreiwasser),
+                   sizeof(ArtInfo)) == 0);
+  prv_starte(ArtFreiwasserGps, 0);
+  cl_assert_equal_i(s_szene, HRMActivityScene_Default);
+  cl_assert(!s_kompass_handler && !s_accel_handler);
+}
+
+// Das offene Training misst wie Pebbles "Workout": ein offenes Training mit Pebbles Modell fuer
+// hohe Belastung. Die Schritte zaehlen wie ohne Training, eine Strecke kennt die Uhr nicht; mit
+// GPS misst sie gleich.
+void test_kieselsport__offen_wie_pebbles_workout(void) {
+  const ArtInfo *offen = kieselsport_art_info(ArtOffen);
+  cl_assert(offen->schritte);
+  cl_assert(!offen->distanz && !offen->reps && !offen->bahnen && !offen->hrv);
+  cl_assert(memcmp(kieselsport_art_info(ArtOffenGps), offen, sizeof(ArtInfo)) == 0);
+  prv_starte(ArtOffen, BEGINN);
+  cl_assert_equal_i(s_szene, HRMActivityScene_HighIntensity);
+  cl_assert(!s_kompass_handler && !s_accel_handler);
+  for (int i = 0; i < 60; i++) {
+    prv_sekunde_mit_puls(130);
+  }
+  KsStand s = prv_stand();
+  cl_assert_equal_i(s.art, ArtOffen);
+  cl_assert_equal_i(s.t.schritte, 120);
+  cl_assert_equal_i(s.t.meter, 0);
+  prv_pause();
+  prv_sekunden_leer(20);
+  prv_speichern();
+  for (int i = 0; i < 30; i++) {
+    prv_sekunde();
+  }
+  cl_assert_equal_i(prv_sitzungen(), 1);
+  cl_assert_equal_i(prv_sitzung(0)->type, ActivitySessionType_Open);
 }
 
 void test_kieselsport__schwimmen_zaehlt_bahnen(void) {
@@ -498,15 +586,18 @@ static void prv_beim_merker(bool ohne) {
   memcpy(s_beim_merker.erkennung, s_erkennung, sizeof(s_erkennung));
 }
 
-// T4.1, Kieselsports Seite (V1, vom Nutzer geaendert): Schritte zaehlen nur Laufen und Wandern.
-// Fuer Velo, MTB, Kraft, Yoga und Schwimmen setzt Kieselsport nach Pebbles Start den Merker der
-// Variante (D17) - auf KernelBG, ohne seine Sperre (Regel 2.5.2). Die Wirkung (Tagessumme, Minute,
-// Rate) prueft test_boulder_training an der echten Variante.
+// T4.1, Kieselsports Seite (V1, vom Nutzer geaendert): Schritte zaehlen nur Laufen und Wandern,
+// und im offenen Training, das keine Sportart kennt. Fuer Velo, MTB, Indoor, Kraft, Yoga und
+// Schwimmen (Becken und Freiwasser) setzt Kieselsport nach Pebbles Start den Merker der Variante
+// (D17) - auf KernelBG, ohne seine Sperre (Regel 2.5.2). Die Wirkung (Tagessumme, Minute, Rate)
+// prueft test_boulder_training an der echten Variante.
 void test_kieselsport__t4_1_arten_ohne_schritte(void) {
   // Die Entscheidung des Nutzers (entscheidungen.md, V1), nicht art.c abgeschrieben.
   static const bool ohne[ArtAnzahl] = {
     [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
     [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true, [ArtAtem] = true,
+    [ArtIndoor] = true,  [ArtFreiwasser] = true, [ArtFreiwasserGps] = true,
+    [ArtOffen] = false,  [ArtOffenGps] = false,
   };
   g_fake_ohne_schritte_beim_aufruf = prv_beim_merker;
   for (int art = 0; art < ArtAnzahl; art++) {

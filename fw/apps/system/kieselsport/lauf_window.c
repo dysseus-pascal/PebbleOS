@@ -227,7 +227,7 @@ static int prv_seiten(Seite *aus) {
       // DER KREIS ZUERST. In der Pause steht dort, was Yoga zeigt.
       aus[n++] = (Seite){ FeldDauer, FeldHrv, FeldKcal, false, false, true };
       break;
-    default:   // Strasse/Gravel, MTB: Zeit, Puls, Kalorien - wenig, aber wahr
+    default:   // Raeder, Freiwasser, offenes Training: Zeit, Puls, Kalorien - wenig, aber wahr
       aus[n++] = (Seite){ FeldDauer, FeldKcal, FeldUhr, false, false };
       break;
   }

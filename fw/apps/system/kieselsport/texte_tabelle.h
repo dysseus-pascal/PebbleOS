@@ -37,10 +37,19 @@ STR(STR_ART_WANDERN,    0,  "Hiking",       "Wandern",        "Randonnée",    "
 STR(STR_ART_KRAFT,      0,  "Strength",     "Kraft",          "Muscu",        "Pesi",          "Fuerza")
 STR(STR_ART_MTB,        0,  "MTB",          "MTB",            "VTT",          "MTB",           "MTB")
 STR(STR_ART_YOGA,       0,  "Yoga",         "Yoga",           "Yoga",         "Yoga",          "Yoga")
-STR(STR_ART_SCHWIMMEN,  0,  "Swimming",     "Schwimmen",      "Natation",     "Nuoto",         "Natación")
+STR(STR_ART_SCHWIMMEN,  0,  "Pool",         "Becken",         "Piscine",      "Piscina",       "Piscina")
 STR(STR_ART_ATEM,       0,  "Breathing",    "Atmen",          "Respiration",  "Respiro",       "Respiración")
-// Obertitel im Menue unter Strasse/Gravel und MTB.
+STR(STR_ART_INDOOR,     0,  "Indoor",       "Indoor",         "Home trainer", "Rulli",         "Rodillo")
+STR(STR_ART_FREIWASSER, 0,  "Open water",   "Freiwasser",     "Eau libre",    "Acque libere",  "Aguas abiertas")
+// Mit GPS zeichnet das Telefon die Strecke auf. "GPS" steht hinten wie beim Nutzer und muss im
+// Menue der Pebble Time 2 noch ganz zu sehen sein: spanisch darum ohne "Aguas".
+STR(STR_ART_FREIWASSER_GPS, 0, "Open water GPS", "Freiwasser GPS", "Eau libre GPS", "Acque libere GPS", "Abiertas GPS")
+// Ein Training ohne bestimmte Sportart.
+STR(STR_ART_OFFEN,      0,  "Custom",       "Frei",           "Libre",        "Libero",        "Libre")
+STR(STR_ART_OFFEN_GPS,  0,  "Custom GPS",   "Frei GPS",       "Libre GPS",    "Libero GPS",    "Libre GPS")
+// Die Zeilen im Hauptmenue, die ein Untermenue oeffnen, und dort der Obertitel jeder Art.
 STR(STR_GRUPPE_BIKE,    0,  "Bike",         "Bike",           "Vélo",         "Bici",          "Bici")
+STR(STR_GRUPPE_SCHWIMMEN, 0, "Swimming",    "Schwimmen",      "Natation",     "Nuoto",         "Natación")
 
 
 // ---- Startschirm und Laden ------------------------------------------------

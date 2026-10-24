@@ -126,6 +126,12 @@ void symbol_sport(GContext *ctx, Sportart art, GPoint mitte, int16_t groesse, GC
 }
 const char *art_name(Sportart art) { return "?"; }
 const char *art_gruppe(Sportart art) { return NULL; }
+uint16_t menue_zeilen(void) { return 0; }
+int menue_eintrag(uint16_t zeile) { return ArtLaufen; }
+bool menue_ist_gruppe(int eintrag) { return false; }
+const char *menue_gruppe_name(int gruppe) { return "Bike"; }
+uint16_t menue_gruppe_zeilen(int gruppe) { return 0; }
+Sportart menue_gruppe_art(int gruppe, uint16_t zeile) { return ArtBike; }
 
 // --- Hilfen ---
 

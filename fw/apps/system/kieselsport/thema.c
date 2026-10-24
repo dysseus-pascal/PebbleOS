@@ -40,6 +40,16 @@ GColor thema_sportfarbe(Sportart art) {
     case ArtSchwimmen: return GColorTiffanyBlue;
     // Atmen hat in Kiesel-Helper keine Farbe: ein ruhiges Blau, das keine andere Art traegt.
     case ArtAtem:      return GColorCobaltBlue;
+    // Indoor ebenso nicht: ein helleres Orange neben dem Gelb von Strasse/Gravel, damit es als
+    // Rad erkennbar bleibt. Dieselbe Farbe nimmt Boulder.
+    case ArtIndoor:    return GColorRajah;
+    // Freiwasser: ein helleres, klares Blau neben dem Tuerkis des Beckens und dem Blau des Atmens,
+    // mit GPS ein kraeftigeres.
+    case ArtFreiwasser: return GColorVividCerulean;
+    case ArtFreiwasserGps: return GColorBlueMoon;
+    // Das offene Training im Rot von Pebbles Herz fuer das "Workout", mit GPS ins Pink.
+    case ArtOffen:     return GColorFolly;
+    case ArtOffenGps:  return GColorFashionMagenta;
     default:           return KS_FARBE_LEISTE;
   }
 #else

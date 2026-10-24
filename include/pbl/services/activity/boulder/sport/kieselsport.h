@@ -47,6 +47,17 @@ typedef enum {
   // Die Atemuebung im Rhythmus vom Telefon (kieselsport_atem). Den Takt gibt die App, der Dienst
   // misst wie bei Yoga.
   ArtAtem,
+  // Velo auf der Rolle oder dem Hometrainer: misst wie Strasse/Gravel, aber das Telefon zeichnet
+  // keine Strecke auf.
+  ArtIndoor,
+  // Schwimmen im offenen Wasser: ohne Bahnen und ohne Strecke.
+  ArtFreiwasser,
+  // Dasselbe, aber das Telefon zeichnet die Strecke auf: es schwimmt mit, etwa in einer Boje.
+  ArtFreiwasserGps,
+  // Ein Training ohne bestimmte Sportart, wie Pebbles eigenes "Workout" (offenes Training).
+  ArtOffen,
+  // Dasselbe mit Strecke vom Telefon.
+  ArtOffenGps,
   ArtAnzahl,
 } Sportart;
 

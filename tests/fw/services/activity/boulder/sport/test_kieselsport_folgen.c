@@ -163,6 +163,8 @@ static void prv_folge_invarianten(void) {
   static const bool s_ohne[ArtAnzahl] = {
     [ArtLaufen] = false, [ArtBike] = true,  [ArtWandern] = false, [ArtKraft] = true,
     [ArtMTB] = true,     [ArtYoga] = true,  [ArtSchwimmen] = true, [ArtAtem] = true,
+    [ArtIndoor] = true,  [ArtFreiwasser] = true, [ArtFreiwasserGps] = true,
+    [ArtOffen] = false,  [ArtOffenGps] = false,
   };
   const bool gestrichen = pebble && g_fake_ohne_schritte;
   const bool soll = s.zustand == LaufLaeuft && s.art < ArtAnzahl && s_ohne[s.art];
