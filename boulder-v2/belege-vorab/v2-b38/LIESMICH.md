@@ -25,6 +25,7 @@ ohne bestimmten sport typ“. Dazu gehört Boulder 0.59.0.
 | Stand | V2 `637c6fd5e` (Zweig `v2`); Tag `v4.41.2-b38` nur in einem Wegwerf-Klon |
 | Inhalt | `slot0/` und `slot1/` wie bei b37; Manifest `versionTag` v4.41.2-b38, `commit` 637c6fd5e, `hwrev` obelix_pvt (`manifest.txt`) |
 | Bau | `skripte/bundle_b38.sh`, beide Slots ohne Warnung (`bau.txt`) |
+| Release | v4.41.2-b38 in boulder-firmware (24.10.), Tag auf `449680e`; Signatur mit dem Schlüssel aus 0.58.0 geprüft, Gegenprobe rot |
 
 ## Prüfung
 

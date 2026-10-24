@@ -345,6 +345,11 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `8dfdb76ad`; Fassung 0.59.0 in `2e7bd3993`. In der App kommen dazu: Tempo je 100 m im Freiwasser,
   kein Aufstieg beim Schwimmen (die GPS-Höhe rauscht auf dem Wasser), Custom zeigt km/h, und jedes
   „andere Training“ aus Health Connect erscheint als Custom.
+- **Ergebnis (24.10.):** Boulder 0.59.0 ist veröffentlicht, aus CI-Lauf 40087614882 auf
+  `2e7bd3993`: APK mit versionCode 2637 und demselben Zertifikat wie bisher (`212e0ca4…d035`). b38
+  ist veröffentlicht (Tag auf dem Release-Commit `449680e` in boulder-firmware), Beta, Mindest-App
+  0.59.0. Der Digest stimmt mit dem gebauten Paket überein (`a68e1cf7…`). Die Signatur ist mit dem
+  Schlüssel aus 0.58.0 geprüft, die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest.
 
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
