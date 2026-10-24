@@ -790,3 +790,22 @@ intervall“, `entscheidungen.md`), mit Boulder 0.58.0. Belege: `belege-vorab/v2
   tags mit nur „Schlaf“ nie, nachts ruhig nach 64 s.
 - **Offen:** Gerätetest einer echten Nacht. Wer von b36 auf Stufe 2–5 kommt, hat „Blood Oxygen“ noch
   an und schaltet es in Boulder aus, wenn er nur nachts messen will.
+
+## 22. Unterarten in Kieselsport (24.10.2026, `637c6fd5e`)
+
+F50 und F51 (`entscheidungen.md`, „Unterarten in Kieselsport“), mit Boulder 0.59.0 (`464a7466f`,
+`8dfdb76ad`, `2e7bd3993`). Belege: `belege-vorab/v2-b38/`.
+
+- **Menüs** (`art_text.c`, `kieselsport.c`): Das Hauptmenü ordnet sich selbst; „Bike“ und
+  „Swimming“ öffnen ein geteiltes Untermenü, das Pebble beim Zurück entlädt und beim nächsten Zeigen
+  für die gewählte Gruppe neu baut. Custom und Custom GPS stehen am Ende.
+- **Arten 8 bis 12** (`kieselsport.h`, `art.c`, `plattform.c`): Indoor wie Road/Gravel; Open water
+  mit und ohne GPS wie das Becken, aber ohne Bahnen und Kompass; Custom mit und ohne GPS wie Pebbles
+  „Workout“, die Schritte zählen. Art 6 heisst Pool. GPS wählt allein die Zahl (10, 12) auf dem
+  Telefon.
+- **Bilder und Farben** (`symbole.c`, `thema.c`): Rad im Haus (Wände am Rand des Rasters, sonst liefen
+  sie in QEMU mit den Rädern zusammen), Schwimmer vor zwei Gipfeln, Pebbles Herz; jede Art ihre Farbe.
+- **Prüfung** auf `637c6fd5e`: acht Bauten ohne Warnung, Host 471/471, alle Werkzeuge grün (im
+  Prüfbau nur die Fehlerprobe rot), 54/54 Mutationen rot. QEMU: alle Menüs und die Startschirme der
+  neuen Arten. Neu prüft ein Test die Zahlen aller Arten.
+- **Offen:** Gerätetest auf der Uhr, besonders Open water GPS und Custom GPS mit dem Telefon.

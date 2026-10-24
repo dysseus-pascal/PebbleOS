@@ -1,0 +1,32 @@
+host-bau rc=0
+100% tests passed, 0 tests failed out of 471
+ctest-exit 0
+Stand 637c6fd5e 10:19:58; Arbeitsbaum: 0 Aenderungen; frei 3874 MB
+build-obelix rc=0 warnungen=0 fehler=0 uebersetzt=31
+build-obelixrel rc=0 warnungen=0 fehler=0 uebersetzt=31
+build rc=0 warnungen=0 fehler=0 uebersetzt=31
+build-asterix rc=0 warnungen=0 fehler=0 uebersetzt=15
+build-getafix rc=0 warnungen=0 fehler=0 uebersetzt=15
+build-flint rc=0 warnungen=0 fehler=0 uebersetzt=15
+build-gabbro rc=0 warnungen=0 fehler=0 uebersetzt=15
+build-pruef rc=0 warnungen=0 fehler=0 uebersetzt=32
+qemu_image_spi rc=0
+rc=0 k1_waechter.py /home/user/pebbleos-v2
+rc=0 kopie_pruefen.py /home/user/pebbleos-v2
+rc=0 vertraege.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py /home/user/pebbleos-v2
+rc=0 umzug_pruefen.py --gegenprobe
+rc=0 prueflauf_daten.py /home/user/pebbleos-v2
+rc=0 pruefe_unbenutzt.py fw/apps/system/kieselsport tests/fw/apps/system_apps/kieselsport
+rc=0 pruefe_unbenutzt.py fw/apps/system/boulder_health
+rc=0 test_kopie_pruefen.py 
+rc=0 test_pruefe_ohne_rechte.py 
+rc=0 test_pruefe_unbenutzt.py 
+rc=0 pruefe_ohne_rechte.py build-obelix
+rc=0 pruefe_ohne_rechte.py build-obelixrel
+rc=0 pruefe_ohne_rechte.py build
+rc=1 pruefe_ohne_rechte.py build-pruef
+Ende 10:20:35; frei 3874 MB
+10:21:27 20_offen_gps_bereit.png aufgenommen
+10:21:30 21_wieder_bike.png aufgenommen
+10:21:30 QEMU laeuft noch: True

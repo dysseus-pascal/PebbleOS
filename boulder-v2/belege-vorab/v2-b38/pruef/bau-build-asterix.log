@@ -1,0 +1,31 @@
+[0/2] Re-checking globbed directories...
+[1/25] Checking the firmware version
+[2/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/art_text.c.obj
+[3/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/atem.c.obj
+[4/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/einstellungen.c.obj
+[5/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/kieselsport.c.obj
+[6/25] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[7/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/lauf_window.c.obj
+[8/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/meldungen.c.obj
+[9/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/sende_window.c.obj
+[10/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/symbole.c.obj
+[11/25] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[12/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/telefon.c.obj
+[13/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/thema.c.obj
+[14/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/texte.c.obj
+[15/25] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/launcher/default/app_glance_kieselsport.c.obj
+[16/25] Extracting strings into /home/user/pebbleos-v2/build-asterix/pebbleos.pot
+[17/25] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[18/25] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:      980219 B       992 KB     96.50%
+             RAM:      106176 B     151296 B     70.18%
+        RETAINED:         256 B        256 B    100.00%
+[19/25] Generating pebbleos.bin
+[20/25] Generating pebbleos.hex
+[21/25] Checking resource size
+Resources: [#############       ]  66.35% (695734/1048576 bytes)
+
+[22/25] Checking and hashing log strings
+[23/25] Generating fw/loghash_dict.json
+[24/25] Checking syscall definitions

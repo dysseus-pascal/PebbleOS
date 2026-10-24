@@ -1,0 +1,32 @@
+[0/2] Re-checking globbed directories...
+[1/27] Checking the firmware version
+[2/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/art_text.c.obj
+[3/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/einstellungen.c.obj
+[4/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/atem.c.obj
+[5/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/kieselsport.c.obj
+[6/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/lauf_window.c.obj
+[7/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/meldungen.c.obj
+[8/27] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[9/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/sende_window.c.obj
+[10/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/symbole.c.obj
+[11/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/telefon.c.obj
+[12/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/thema.c.obj
+[13/27] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[14/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/texte.c.obj
+[15/27] Extracting strings into /home/user/pebbleos-v2/build-getafix/pebbleos.pot
+[16/27] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/launcher/default/app_glance_kieselsport.c.obj
+[17/27] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[18/27] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:     1862832 B      3068 KB     59.30%
+             RAM:      199616 B       273 KB     71.41%
+[19/27] Generating pebbleos.nohdr.bin
+[20/27] Generating pebbleos.nohdr.hex
+[21/27] Checking resource size
+Resources: [########            ]  38.61% (809695/2097152 bytes)
+
+[22/27] Generating pebbleos.bin
+[23/27] Checking and hashing log strings
+[24/27] Generating fw/loghash_dict.json
+[25/27] Checking syscall definitions
+[26/27] Generating pebbleos.hex

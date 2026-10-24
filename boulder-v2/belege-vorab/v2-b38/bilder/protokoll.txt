@@ -1,0 +1,23 @@
+10:20:56 app launch: OK
+10:20:59 01_haupt_laufen.png aufgenommen
+10:21:00 02_haupt_bike.png aufgenommen
+10:21:03 03_haupt_ende.png aufgenommen
+10:21:06 04_rad_strasse.png aufgenommen
+10:21:08 05_rad_mtb.png aufgenommen
+10:21:09 06_rad_indoor.png aufgenommen
+10:21:10 07_indoor_bereit.png aufgenommen
+10:21:11 08_zurueck_untermenue.png aufgenommen
+10:21:12 09_zurueck_hauptmenue.png aufgenommen
+10:21:14 10_haupt_schwimmen.png aufgenommen
+10:21:16 11_schwimmen_pool.png aufgenommen
+10:21:17 12_schwimmen_freiwasser.png aufgenommen
+10:21:18 13_schwimmen_freiwasser_gps.png aufgenommen
+10:21:19 14_freiwasser_gps_bereit.png aufgenommen
+10:21:20 15_zurueck_schwimmen.png aufgenommen
+10:21:21 16_zurueck_hauptmenue.png aufgenommen
+10:21:23 17_haupt_offen.png aufgenommen
+10:21:24 18_offen_bereit.png aufgenommen
+10:21:26 19_haupt_offen_gps.png aufgenommen
+10:21:27 20_offen_gps_bereit.png aufgenommen
+10:21:30 21_wieder_bike.png aufgenommen
+10:21:30 QEMU laeuft noch: True

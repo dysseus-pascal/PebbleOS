@@ -1,0 +1,45 @@
+[0/2] Re-checking globbed directories...
+[1/40] Checking the firmware version
+[2/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/abschnitt.c.obj
+[3/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/art.c.obj
+[4/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/bahnen.c.obj
+[5/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/dauerteil.c.obj
+[6/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/kurve.c.obj
+[7/40] Extracting strings into /home/user/pebbleos-v2/build-pruef/pebbleos.pot
+[8/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/pausen.c.obj
+[9/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/rhythmus.c.obj
+[10/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/puls.c.obj
+[11/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/reps.c.obj
+[12/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/speicher.c.obj
+[13/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/plattform.c.obj
+[14/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/dienst.c.obj
+[15/40] Building C object fw/applib/CMakeFiles/fw__applib.dir/app_watch_info.c.obj
+[16/40] Building C object fw/comm/CMakeFiles/fw__comm.dir/ble/gap_le_slave_discovery.c.obj
+[17/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/wartend.c.obj
+[18/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/sport/training.c.obj
+[19/40] Building C object fw/system/CMakeFiles/fw__system.dir/version.c.obj
+[20/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/schnittstelle.c.obj
+[21/40] Building C object fw/services/activity/CMakeFiles/fw__services__activity.dir/boulder/prueflauf_sport.c.obj
+[22/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/atem.c.obj
+[23/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/einstellungen.c.obj
+[24/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/meldungen.c.obj
+[25/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/art_text.c.obj
+[26/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/sende_window.c.obj
+[27/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/kieselsport.c.obj
+[28/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/texte.c.obj
+[29/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/thema.c.obj
+[30/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/symbole.c.obj
+[31/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/telefon.c.obj
+[32/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/launcher/default/app_glance_kieselsport.c.obj
+[33/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/launcher/default/app_glance_service.c.obj
+[34/40] Building C object fw/apps/system/CMakeFiles/fw__apps__system.dir/kieselsport/lauf_window.c.obj
+[35/40] Linking C executable pebbleos.elf
+Memory region         Used Size  Region Size  %age Used
+           FLASH:     1923664 B         4 MB     45.86%
+             RAM:      173152 B       305 KB     55.44%
+[36/40] Generating pebbleos.bin
+[37/40] Generating pebbleos.hex
+[38/40] Checking resource size
+Resources: [########            ]  38.08% (798641/2097152 bytes)
+
+[39/40] Checking syscall definitions

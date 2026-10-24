@@ -316,6 +316,36 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   - Ab jetzt keine Zugangsdaten oder Privates in die Notizen (README dieses Zweigs, Boulders
     CLAUDE.md).
 
+## Unterarten in Kieselsport (24.10.2026, F50–F51, Firmware b38, Boulder 0.59.0)
+- **Nutzer:** „In kieselsport möchte ich unterarten im biking menu. gravel/road, MTB, indoor“, dann
+  „schwimmen bekommt indoor und open water“, „open water und open water gps“ und „Mach noch custom
+  und custom gps für treking ohne bestimmten sport typ“.
+- **Menü der Uhr:** Running, Bike, Hiking, Strength, Yoga, Swimming, Breathing, Custom, Custom GPS.
+  „Bike“ öffnet Road/Gravel, MTB und Indoor, „Swimming“ Pool, Open water und Open water GPS. Unter
+  jeder Art einer Gruppe steht deren Name; die Untermenüs haben keinen Titel, beide Gruppen teilen
+  eines.
+- **Neue Arten, hinten angefügt** (die Zahl geht ans Telefon und in die Akte):
+  - 8 Indoor: misst wie Road/Gravel, ohne Schritte und Strecke; Health Connect stationäres
+    Radfahren; nie GPS.
+  - 9 Open water und 10 Open water GPS: allgemeines Pulsmodell wie das Becken, ohne Bahnen; Health
+    Connect Freiwasserschwimmen. Nur 10 zeichnet die Strecke auf.
+  - 11 Custom und 12 Custom GPS: wie Pebbles „Workout“ (offenes Training), die Schritte zählen wie
+    ohne Training; Health Connect anderes Training. Nur 12 zeichnet die Strecke auf.
+  - Art 6 heisst jetzt Pool und bleibt das Schwimmen mit Bahnen.
+- **F50: Pool statt Indoor** (Empfehlung) für das Becken, sonst stünde „Indoor“ zweimal da, etwa auf
+  dem Startschirm und in der Trainingsliste.
+- **F51: GPS als eigene Art.** Auf die Frage nach GPS bei Open water sagte der Nutzer zuerst „mach es
+  optional“, dann „open water und open water gps“. Gewählt wird es auf der Uhr mit der Art, nicht mit
+  einem Schalter in Boulder. Der Grund für „ohne“ als Standard: Liegt das Telefon am Ufer, zählt GPS
+  Messrauschen als Strecke.
+- **Seither prüft ein Test die Zahlen aller Arten** (`test_kieselsport_arten`); bis b37 tat das keiner.
+- Mindest-App für b38: 0.59.0. Ältere Fassungen kennen die Arten 8 bis 12 nicht: Sie trügen sie
+  als unbestimmtes Training ein und zeichneten bei den GPS-Arten keine Strecke auf.
+- Umgesetzt in V2 `637c6fd5e` (`schritt3-abnahme.md`, Abschnitt 22) und Boulder `464a7466f`,
+  `8dfdb76ad`; Fassung 0.59.0 in `2e7bd3993`. In der App kommen dazu: Tempo je 100 m im Freiwasser,
+  kein Aufstieg beim Schwimmen (die GPS-Höhe rauscht auf dem Wasser), Custom zeigt km/h, und jedes
+  „andere Training“ aus Health Connect erscheint als Custom.
+
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
   intervall. das spart akku. für schlaf hast du vielleicht einen vorschlag wie das umgesetzt werden
