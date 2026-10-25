@@ -15,6 +15,7 @@
     abort();                                                     \
   }
 
+NIE(activity_is_hrm_present)
 NIE(activity_prefs_get_workout_app_opened_version)
 NIE(activity_prefs_set_workout_app_opened_version)
 NIE(app_event_loop)
@@ -72,6 +73,7 @@ NIE(window_single_click_subscribe)
 NIE(workout_active_create_for_activity_type)
 NIE(workout_active_window_push)
 NIE(workout_data_fill_metric_value)
+NIE(workout_data_get_hr_samples)
 NIE(workout_data_get_metric_value)
 NIE(workout_data_update)
 NIE(workout_dialog_get_dialog)
@@ -94,5 +96,6 @@ NIE(workout_service_takeover_activity_session)
 NIE(workout_summary_update_activity_type)
 NIE(workout_summary_window_create)
 NIE(workout_summary_window_push)
+NIE(workout_summary_window_remove)
 NIE(workout_utils_find_ongoing_activity_session)
 NIE(workout_utils_get_detection_text_for_activity)
