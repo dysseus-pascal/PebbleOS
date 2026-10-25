@@ -338,8 +338,8 @@ def proben_health(pruefe):
     yield 'Pebbles Health-Tests nicht frei', pruefe('', ['tests/fw/apps/system_apps/health/test_x.c'])
     # Referenzbilder: nur mit dem Praefix der eigenen Tests, nur als .png, nur direkt im Ordner.
     yield 'Bild von test_bh_karten frei', not pruefe(
-        '', ['tests/test_images/test_bh_karten__today~obelix.png'])
-    yield 'fremdes Bild nicht frei', pruefe('', ['tests/test_images/test_health_x~obelix.png'])
+        '', ['tests/test_images/test_bh_karten__today~emery.png'])
+    yield 'fremdes Bild nicht frei', pruefe('', ['tests/test_images/test_health_x~emery.png'])
     yield 'Praefix ohne .png nicht frei', pruefe('', ['tests/test_images/test_bh_x.pbi'])
     yield 'Praefix im Unterordner nicht frei', pruefe('', ['tests/test_images/x/test_bh_x.png'])
     yield 'Pebbles Bild aendern nicht frei', pruefe(hunk('tests/test_images/test_health_x.png', ['+a']), [])

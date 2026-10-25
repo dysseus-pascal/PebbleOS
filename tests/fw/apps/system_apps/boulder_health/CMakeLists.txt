@@ -33,7 +33,7 @@ pbl_clar_test(test_bh_daten
 )
 
 # 2.1-2.3 (AP6): Karten und Details mit Pebbles echter Grafik und Schrift, gegen Bilder in
-# tests/test_images/ (test_bh_karten__*~obelix.png), dazu der Kontrast.
+# tests/test_images/ (test_bh_karten__*~emery.png), dazu der Kontrast.
 pbl_clar_test(test_bh_karten
   SOURCES
     fw/applib/fonts/codepoint.c
@@ -90,7 +90,7 @@ pbl_clar_test(test_bh_karten
     fw/apps/system/boulder_health/rechnung.c
     fw/apps/system/boulder_health/texte.c
     fw/apps/system/boulder_health/zeichnen.c
-  PLATFORMS obelix
+  PLATFORMS emery
   DEFINES CONFIG_BOULDER_HEALTH_APP USE_DISPLAY_PERIMETER_ON_FONT_LAYOUT=1
   OVERRIDES dummy_board
   TEST_IMAGES
