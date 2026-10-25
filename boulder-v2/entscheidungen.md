@@ -8,6 +8,10 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   schon kann oder vormacht, übernimmt Boulder dessen Verhalten, Aussehen und Code-Wege. Eigene Wege
   braucht es nur, wo Pebble nichts bietet. Bei Vorschlägen und Fragen an den Nutzer kommt die Lösung
   nächst an Pebble zuerst.
+- **Ergänzung (Nutzer, 25.10.2026): „ändere aber unseren code so das wir immer so nahe an der
+  vorlage wie möglich bleiben.“** (F52) Neue Boulder-Logik steht in eigenen Dateien; in Pebbles und
+  Cores Dateien bleibt ein Haken, der sie ruft. Wächter halten das fest: `k1_waechter.py` in der
+  Firmware, `tools/boulder/vorlage_waechter.py` in der App (Abschnitt „PebbleOS 4.42 und Core 1.16“).
 - Neubau auf dem aktuellen Stand von Core Devices, für App und Firmware, in den gleichen Repos. App-ID und Signatur bleiben.
 - Brücke bis dahin: Boulder 0.50.0, Firmware b25, SupCycle 0.16.0, Drinktervall 1.21.0 (veröffentlicht 05.10.). Während des Umbaus läuft die Boulder-Firmware auf der Uhr.
 - Datenumzug aus 0.50: einmaliger, aufgesetzter Zusatz, nach dem Release entbehrlich.
@@ -350,6 +354,57 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   ist veröffentlicht (Tag auf dem Release-Commit `449680e` in boulder-firmware), Beta, Mindest-App
   0.59.0. Der Digest stimmt mit dem gebauten Paket überein (`a68e1cf7…`). Die Signatur ist mit dem
   Schlüssel aus 0.58.0 geprüft, die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest.
+
+## PebbleOS 4.42 und Core 1.16, nah an der Vorlage (25.10.2026, F52, Firmware b39, Boulder 0.60.0)
+- **Nutzer:** „okay, zurück zu boulder. was sagt der uostream?“ Die Übersicht: Core 1.16.0.1 (72
+  Commits seit 1.15.0.1, darunter automatische Firmware-Updates und das Ende des JVM-Ziels in
+  libpebble3), PebbleOS v4.42.0 und `main` danach (SpO2-Schalter in einem Satz). Dann: „ja, mach
+  beides. ändere aber unseren code so das wir immer so nahe an der vorlage wie möglich bleiben.“
+- **F52: nah an der Vorlage, immer** (Ergänzung zum Grundsatz vom 21.10.). Neue Boulder-Logik steht
+  in eigenen Dateien; in Pebbles und Cores Dateien bleibt ein Haken, der sie ruft. Ein Wächter hält
+  das fest: in der Firmware wie bisher `k1_waechter.py` (Zeilen, Hunks, Funktionen, Schalter je
+  Pebble-Datei), neu darf eine eigene Datei in Pebbles Ordnern auch unter dem Schalter der Variante
+  stehen. In der App neu `tools/boulder/vorlage_waechter.py` mit `vorlage.txt`: geänderte Zeilen je
+  Core-Datei, genau, in der CI vor den Tests; die Zahlen sollen nur sinken.
+- **Firmware b39** (V2 `2823b3ed1`): v4.42.0 und `main` bis `f7970c345`.
+  - Pebble speichert die SpO2-Schalter seit v4.42 mit dem Takt in einem Satz `spo2Preferences`
+    (3 Byte) und übernimmt beim ersten Start die alten Schlüssel; Boulders Stellen rufen Pebbles
+    umbenannte Funktionen, der Regler hört auf den Satz wie bisher.
+  - Die Zeilen „Precision“ und „SpO2 During Sleep“ stehen jetzt in `boulder_health_zeilen.c`;
+    Pebbles `settings/health.c` hat statt 47 noch 19 Boulder-Zeilen (vier Haken und ein Include,
+    alle unter dem Schalter der Variante), Pebbles Aufzählung und Menüs sind unverändert.
+  - Die Testplattformen heissen nach dem SDK (emery statt obelix), der Startmenü-Test kennt die drei
+    neuen Rufe von Pebbles Workout-App.
+- **Boulder 0.60.0** (`dba1bab49`): Core 1.16.0.1. Cores Geschichte steckt seit dem Neuanlegen des
+  Repos mit anderen Kennungen darin; der Merge `d7292d166` brauchte deshalb einmal ein lokales
+  `git replace --graft`, seither ist `721670d28` die Merge-Basis. Datenbank 1050 (Upstream 50).
+  - Cores automatische Firmware-Updates (aus wie bei Core) gehen nur über den geprüften Weg.
+  - SpO2 nach Firmware: ab v4.42 der Satz mit drei Byte, die alten Schlüssel nicht mehr; darunter
+    ein Byte und die beiden Schlüssel. Eine Zeile von 0.59 ohne die Schalter geht nicht an v4.42,
+    weil die Uhr sie selbst übernommen hat. Cores `HealthSettings.kt`, `HealthSettingsRealDao.kt`
+    und `BlobDB.kt` sind bis auf je einen Haken wieder Cores Fassung (`BoulderSpo2.kt`).
+  - Boulders Datenbanktests laufen als Android-Hosttests unter Robolectric, weil Core das JVM-Ziel
+    entfernt hat. Darum zählt die CI weniger Tests als bei 0.58 (2931): libpebble3 lief bisher auf
+    der JVM und als Hosttest.
+  - Prüfung auf dem Stand von `dba1bab49` ohne die letzte Zeile der Release-Notiz, die die Zahlen
+    nennt: 2802 Tests ohne Fehler, 10 übersprungen (9 wie bei Core, dazu
+    `NachtUmzugTest.echteTelefonKopie` ohne Telefonkopie); `vorlage_waechter.py` grün mit 107
+    Dateien und 4018 Zeilen; 9 Mutationen in `BoulderSpo2.kt`, alle rot (eine überlebte zuerst,
+    der Test für einen Satz mit nur einem Schalter kam dazu).
+- **Mindest-App für b39: 0.60.0.** 0.59.0 schickt den SpO2-Satz mit einem Byte; v4.42 weist ihn ab,
+  Änderungen am Telefon kämen nicht an.
+- **Noch weit von der Vorlage:** In der App weichen 107 Core-Dateien ab, am meisten Cores
+  Datalogging und Health-Parser (Nächte, Quarantäne, SpO2), `Health.kt`, `PlatformHealthSync.kt`
+  und die Einstellungsseite. Sie auf Haken umzubauen ist eigene Arbeit; `vorlage.txt` zeigt, wo.
+- **Ergebnis (25.10.):** Boulder 0.60.0 ist veröffentlicht, aus CI-Lauf 40181643156 auf
+  `dba1bab49`: APK mit versionCode 5037 und demselben Zertifikat wie bisher (`212e0ca4…d035`). Die
+  Zahl springt von 2638, weil Cores 2399 Commits mit ihren eigenen Kennungen dazukamen; sie steigt,
+  das Update geht. Google-Klassen und Manifest-Einträge wie in 0.59.0, die URL-Hosts im Code
+  unverändert. b39 ist veröffentlicht (Lauf 40182768679, Tag auf dem Release-Commit `81bd589` in
+  boulder-firmware), Beta, Mindest-App 0.60.0. Der Digest stimmt mit dem gebauten Paket überein
+  (`bdc8ac38…`). Die Signatur ist mit `signatur.pub` geprüft, demselben Schlüssel wie in
+  `FirmwareSignatur.kt`; die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest,
+  besonders die Übernahme der alten SpO2-Schlüssel beim ersten Start von b39.
 
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder

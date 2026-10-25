@@ -1,0 +1,4 @@
+Stand 2823b3ed1, Arbeitsbaum 0
+host-bau rc=0
+100% tests passed, 0 tests failed out of 473
+ctest-exit 0

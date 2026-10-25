@@ -1,0 +1,6 @@
+ok    TEXT: alle benutzt
+ok    TEXT: eine ID nirgends benutzt
+ok    TEXT: nur im Kommentar
+ok    STR: eine ID nirgends benutzt
+ok    Funktion: nur deklariert und definiert
+ok    Funktion: in einem weiteren Ordner benutzt

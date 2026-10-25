@@ -1,0 +1,23 @@
+H1   rot (zeilen, precision)                                      Zeile HR Monitoring zeigt Pebbles Takt statt der Messstufe [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+H2   rot (zeilen)                                                 Zeile SpO2 Monitoring statt SpO2 im Schlaf [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+H3   rot (precision)                                              Select oeffnet Pebbles Puls-Takt statt der Messstufe [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+H4   rot (schlaf_umschalten)                                      Select oeffnet Pebbles SpO2-Takt statt den Schalter [fw/apps/system/settings/health.c, test_boulder_einstellungen]
+H5   rot (Bau)                                                    der Haken gilt auch ohne die Variante [fw/apps/system/settings/health.c, test_boulder_einstellungen_pebble]
+Z1   rot (precision)                                              Wahl um eine Stufe verschoben [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z2   rot (precision)                                              Name der falschen Stufe [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z3   rot (precision)                                              Auswahl beginnt nicht bei der geltenden Stufe [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z4   rot (precision)                                              Auswahl ohne Precise [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z5   rot (schlaf_umschalten, zeile_vor_dem_ersten_lesen)          SpO2 im Schlaf laesst sich nicht ausschalten [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z6   rot (zeilen, schlaf_umschalten, zeile_vor_dem_ersten_lesen)  Untertitel vertauscht [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+Z7   rot (zeilen)                                                 Titel nicht wie Pebbles SpO2-Zeilen [fw/apps/system/settings/boulder_health_zeilen.c, test_boulder_einstellungen]
+S1   rot (regler_zieht_takte_zurueck_nicht_den_schalter)          Regler hoert den SpO2-Satz des Telefons nicht [fw/services/activity/boulder/messstufe.c, test_boulder_messung]
+S2   rot (alle)                                                   Pebbles SpO2-Plan ohne den Schalter SpO2 [fw/services/activity/activity.c, test_boulder_spo2_plan]
+S3   rot (alle)                                                   Schnittstelle ohne den Schalter SpO2 [fw/services/activity/boulder/schnittstelle.c, test_boulder_schnittstelle]
+15/15 rot
+Rueckbau rc=0
+test_boulder_einstellungen nach dem Rueckbau rc=0
+test_boulder_einstellungen_pebble nach dem Rueckbau rc=0
+test_boulder_messung nach dem Rueckbau rc=0
+test_boulder_schnittstelle nach dem Rueckbau rc=0
+test_boulder_spo2_plan nach dem Rueckbau rc=0
+Arbeitsbaum nach dem Rueckbau: 7 Aenderungen

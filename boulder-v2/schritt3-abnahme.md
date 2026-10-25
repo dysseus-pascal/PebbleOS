@@ -809,3 +809,24 @@ F50 und F51 (`entscheidungen.md`, „Unterarten in Kieselsport“), mit Boulder 
   Prüfbau nur die Fehlerprobe rot), 54/54 Mutationen rot. QEMU: alle Menüs und die Startschirme der
   neuen Arten. Neu prüft ein Test die Zahlen aller Arten.
 - **Offen:** Gerätetest auf der Uhr, besonders Open water GPS und Custom GPS mit dem Telefon.
+
+## 23. PebbleOS 4.42 und nah an der Vorlage (25.10.2026, `09c868b2b`, `12f90a161`, `f3c302d41`, `2823b3ed1`)
+
+F52 (`entscheidungen.md`, „PebbleOS 4.42 und Core 1.16, nah an der Vorlage“), mit Boulder 0.60.0.
+Belege: `belege-vorab/v2-b39/`.
+
+- **Merge** (`09c868b2b`): v4.42.0 und `main` bis `f7970c345`. Pebbles SpO2-Schalter stehen mit dem
+  Takt im Satz `spo2Preferences` (3 Byte); Boulders Stellen rufen Pebbles umbenannte Funktionen,
+  die Zeilentitel heissen wie bei Pebble.
+- **Tests** (`12f90a161`, `f3c302d41`): Testplattformen nach dem SDK (emery statt obelix, die Bilder
+  von `test_bh_karten` heissen `~emery.png`); der Startmenü-Test kennt die neuen Rufe von Pebbles
+  Workout-App.
+- **Haken statt Blöcke** (`2823b3ed1`): „Precision“ und „SpO2 During Sleep“ in
+  `boulder_health_zeilen.c`; Pebbles `settings/health.c` mit vier Haken und einem Include unter dem
+  Schalter der Variante (19 statt 47 Boulder-Zeilen). `k1_waechter.py` kennt eigene Dateien mit
+  ihrem Schalter. Neu prüft `test_boulder_einstellungen__precision` die Zeile Precision ganz.
+- **Prüfung** auf `2823b3ed1`: acht Bauten ohne Warnung, Host 473/473, alle Werkzeuge grün (im
+  Prüfbau nur die Fehlerprobe rot), 15/15 Mutationen rot. QEMU: Einstellungen > Health mit allen
+  Zeilen, SpO2 im Schlaf ein und aus, die Auswahl der Messstufe.
+- **Offen:** Gerätetest auf der Uhr, besonders die Übernahme der alten SpO2-Schlüssel beim ersten
+  Start von b39 und SpO2-Änderungen aus Boulder 0.60.0.

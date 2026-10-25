@@ -1,0 +1,17 @@
+09:09:56 app launch: OK
+09:09:59 01_einstellungen.png aufgenommen
+09:10:05 02_einstellungen_health.png aufgenommen
+09:10:08 03_health_tracking_aus.png aufgenommen
+09:10:09 04_health_tracking_an.png aufgenommen
+09:10:11 05_distanz.png aufgenommen
+09:10:12 06_precision.png aufgenommen
+09:10:14 07_hr_aktivitaet.png aufgenommen
+09:10:15 08_spo2.png aufgenommen
+09:10:17 09_spo2_schlaf.png aufgenommen
+09:10:18 10_spo2_aktivitaet.png aufgenommen
+09:10:20 11_spo2_schlaf_an.png aufgenommen
+09:10:22 12_spo2_schlaf_aus.png aufgenommen
+09:10:25 13_precision_gewaehlt.png aufgenommen
+09:10:27 14_precision_auswahl.png aufgenommen
+09:10:29 15_zurueck_health.png aufgenommen
+09:10:29 QEMU laeuft noch: True
