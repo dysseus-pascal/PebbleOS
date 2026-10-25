@@ -72,6 +72,10 @@ static const char *s_syncable_settings[] = {
   "lightPreset",
 #ifdef CONFIG_BACKLIGHT_HAS_COLOR
   "lightColor",
+  "lightColorDayNightEnabled",
+  "lightColorNight",
+  "lightColorSunriseMinute",
+  "lightColorSunsetMinute",
 #endif
 
   // Language preferences
@@ -109,8 +113,6 @@ static const char *s_syncable_settings[] = {
   "hrmPreferences",
   "heartRatePreferences",
   "spo2Preferences",
-  "bloodOxygenPreferences",
-  "bloodOxygenActivityPreferences",
   "boulderMessstufe",  // Boulder: E3 Messstufe (1 Byte, liest die Variante selbst)
   "boulderSpo2Schlaf", // Boulder: SpO2 im Schlaf (1 Byte, liest die Variante selbst)
 
@@ -144,6 +146,7 @@ static const char *s_syncable_notif_prefs[] = {
   "dndWeekdayScheduleEnabled",
   "dndWeekendSchedule",
   "dndWeekendScheduleEnabled",
+  DND_SCHEDULE_SLOT_KEYS,
   "notifWindowTimeout",
   "notifTextSize",
   "notifDesignStyle",

@@ -83,8 +83,19 @@ static uint32_t s_backlight_timeout_ms = DEFAULT_BACKLIGHT_TIMEOUT_MS;
 static uint8_t s_backlight_intensity; // default set in shell_prefs_init()
 
 #ifdef CONFIG_BACKLIGHT_HAS_COLOR
+#define BACKLIGHT_COLOR_DEFAULT_SUNRISE_MINUTE (6 * PBL_MIN_PER_HOUR)
+#define BACKLIGHT_COLOR_DEFAULT_SUNSET_MINUTE  (18 * PBL_MIN_PER_HOUR)
+
 #define PREF_KEY_BACKLIGHT_COLOR "lightColor"
 static uint32_t s_backlight_color; // default pulled from BOARD_CONFIG in shell_prefs_init()
+#define PREF_KEY_BACKLIGHT_COLOR_DAY_NIGHT_ENABLED "lightColorDayNightEnabled"
+static bool s_backlight_color_day_night_enabled = false;
+#define PREF_KEY_BACKLIGHT_COLOR_NIGHT "lightColorNight"
+static uint32_t s_backlight_color_night; // default pulled from BOARD_CONFIG in shell_prefs_init()
+#define PREF_KEY_BACKLIGHT_COLOR_SUNRISE_MINUTE "lightColorSunriseMinute"
+static uint16_t s_backlight_color_sunrise_minute = BACKLIGHT_COLOR_DEFAULT_SUNRISE_MINUTE;
+#define PREF_KEY_BACKLIGHT_COLOR_SUNSET_MINUTE "lightColorSunsetMinute"
+static uint16_t s_backlight_color_sunset_minute = BACKLIGHT_COLOR_DEFAULT_SUNSET_MINUTE;
 #endif
 
 #define PREF_KEY_BACKLIGHT_MOTION "lightMotion"
@@ -288,21 +299,10 @@ static_assert(sizeof(ActivityHRMSettings) == 3,
 #define PREF_KEY_ACTIVITY_SPO2_PREFERENCES "spo2Preferences"
 static ActivitySpO2Settings s_activity_spo2_preferences = ACTIVITY_SPO2_DEFAULT_PREFERENCES;
 #if !UNITTEST
-static_assert(sizeof(ActivitySpO2Settings) == 1,
-              "sizeof(ActivitySpO2Settings) grew, stored records need migrating!");
+static_assert(sizeof(ActivitySpO2Settings) == 3,
+              "ActivitySpO2Settings changed size; prv_migrate_activity_spo2_prefs() only knows "
+              "the 1 byte interval-only record!");
 #endif
-
-// Blood oxygen on/off. Synced from the phone (and the on-watch toggle) as a
-// single bool byte under its own key, mirroring the mobile app's
-// `bloodOxygenPreferences` blob. Opt-in: default off until enabled.
-#define PREF_KEY_BLOOD_OXYGEN_PREFERENCES "bloodOxygenPreferences"
-static bool s_blood_oxygen_enabled = false;
-
-// Blood oxygen during activities opt-in. Synced from the phone like the other health toggles, and
-// only meaningful when HR-during-activities is on (enforced in the settings UI). Opt-in: default
-// off.
-#define PREF_KEY_BLOOD_OXYGEN_ACTIVITY_PREFERENCES "bloodOxygenActivityPreferences"
-static bool s_blood_oxygen_activity_enabled = false;
 
 #define PREF_KEY_ACTIVITY_HEART_RATE_PREFERENCES "heartRatePreferences"
 static HeartRatePreferences s_activity_hr_preferences = ACTIVITY_HEART_RATE_DEFAULT_PREFERENCES;
@@ -459,7 +459,34 @@ static bool prv_set_s_backlight_intensity(uint8_t *intensity) {
 static bool prv_set_s_backlight_color(uint32_t *rgb_color) {
   // Mask to packed 0x00RRGGBB; ignore any junk in the top byte.
   s_backlight_color = *rgb_color & 0x00FFFFFFU;
+  light_handle_color_prefs_changed();
   return true;
+}
+
+static bool prv_set_s_backlight_color_day_night_enabled(bool *enabled) {
+  s_backlight_color_day_night_enabled = *enabled;
+  light_handle_color_prefs_changed();
+  return true;
+}
+
+static bool prv_set_s_backlight_color_night(uint32_t *rgb_color) {
+  s_backlight_color_night = *rgb_color & 0x00FFFFFFU;
+  light_handle_color_prefs_changed();
+  return true;
+}
+
+static bool prv_set_s_backlight_color_sunrise_minute(uint16_t *minute) {
+  const bool valid = *minute < PBL_MIN_PER_DAY;
+  s_backlight_color_sunrise_minute = valid ? *minute : BACKLIGHT_COLOR_DEFAULT_SUNRISE_MINUTE;
+  light_handle_color_prefs_changed();
+  return valid;
+}
+
+static bool prv_set_s_backlight_color_sunset_minute(uint16_t *minute) {
+  const bool valid = *minute < PBL_MIN_PER_DAY;
+  s_backlight_color_sunset_minute = valid ? *minute : BACKLIGHT_COLOR_DEFAULT_SUNSET_MINUTE;
+  light_handle_color_prefs_changed();
+  return valid;
 }
 #endif
 
@@ -808,24 +835,6 @@ static bool prv_set_s_activity_spo2_preferences(ActivitySpO2Settings *new_settin
   return true;
 }
 
-static bool prv_set_s_blood_oxygen_enabled(bool *enabled) {
-  s_blood_oxygen_enabled = *enabled;
-
-#ifdef CONFIG_HRM
-  hrm_manager_handle_prefs_changed();
-#endif // CONFIG_HRM
-  return true;
-}
-
-static bool prv_set_s_blood_oxygen_activity_enabled(bool *enabled) {
-  s_blood_oxygen_activity_enabled = *enabled;
-
-#ifdef CONFIG_HRM
-  hrm_manager_handle_prefs_changed();
-#endif // CONFIG_HRM
-  return true;
-}
-
 static uint8_t prv_set_s_timeline_settings_opened(uint8_t *version) {
   s_timeline_settings_opened = *version;
   return true;
@@ -1070,6 +1079,48 @@ static void prv_migrate_activity_hrm_prefs(SettingsFile *file) {
   settings_file_set(file, PREF_KEY_ACTIVITY_HRM_PREFERENCES, key_len, &settings, sizeof(settings));
 }
 
+// Locally written keys include the null terminator, phone-originated BlobDB writes may not.
+static bool prv_take_legacy_bool(SettingsFile *file, const char *key, bool *value) {
+  bool found = false;
+  for (size_t key_len = strlen(key); key_len <= strlen(key) + 1; key_len++) {
+    if (settings_file_get_len(file, key, key_len) != (int)sizeof(*value)) {
+      continue;
+    }
+    if (settings_file_get(file, key, key_len, value, sizeof(*value)) == S_SUCCESS) {
+      found = true;
+    }
+    settings_file_delete(file, key, key_len);
+  }
+  return found;
+}
+
+// spo2Preferences started as a 1 byte interval-only record, with the on/off and
+// during-activities toggles stored under keys of their own.
+static void prv_migrate_activity_spo2_prefs(SettingsFile *file) {
+  const size_t key_len = sizeof(PREF_KEY_ACTIVITY_SPO2_PREFERENCES);
+  const int stored_len = settings_file_get_len(file, PREF_KEY_ACTIVITY_SPO2_PREFERENCES, key_len);
+  if (stored_len >= (int)sizeof(ActivitySpO2Settings)) {
+    return;
+  }
+
+  ActivitySpO2Settings settings = ACTIVITY_SPO2_DEFAULT_PREFERENCES;
+  bool migrate = false;
+  if (stored_len == (int)sizeof(settings.measurement_interval)) {
+    migrate = settings_file_get(file, PREF_KEY_ACTIVITY_SPO2_PREFERENCES, key_len,
+                                &settings.measurement_interval,
+                                sizeof(settings.measurement_interval)) == S_SUCCESS;
+  }
+  migrate |= prv_take_legacy_bool(file, "bloodOxygenPreferences", &settings.enabled);
+  migrate |= prv_take_legacy_bool(file, "bloodOxygenActivityPreferences",
+                                  &settings.activity_tracking_enabled);
+  if (!migrate) {
+    return;
+  }
+
+  PBL_LOG_INFO("Migrating %d byte spo2Preferences record", stored_len);
+  settings_file_set(file, PREF_KEY_ACTIVITY_SPO2_PREFERENCES, key_len, &settings, sizeof(settings));
+}
+
 // ------------------------------------------------------------------------------------
 static void prv_pref_set(const char *key, const void *value, size_t val_len);
 
@@ -1083,6 +1134,7 @@ void shell_prefs_init(void) {
   s_backlight_ambient_threshold = BOARD_CONFIG.ambient_light_dark_threshold;
 #ifdef CONFIG_BACKLIGHT_HAS_COLOR
   s_backlight_color = BOARD_CONFIG.backlight_default_color;
+  s_backlight_color_night = BOARD_CONFIG.backlight_default_color;
 #endif
   // Use board-specific default motion sensitivity if provided (non-zero)
   if (BOARD_CONFIG_ACCEL.default_motion_sensitivity != 0) {
@@ -1099,6 +1151,7 @@ void shell_prefs_init(void) {
   prv_convert_deprecated_dynamic_intensity_key(&file);
 #endif
   prv_migrate_activity_hrm_prefs(&file);
+  prv_migrate_activity_spo2_prefs(&file);
 
 #if !TIMELINE_PEEK_WATCHFACE_FIT_SUPPORTED
   {
@@ -1195,6 +1248,10 @@ void shell_prefs_init(void) {
   touch_set_backlight_enabled(s_backlight_touch_wake != BacklightTouchWake_Off);
   touch_service_set_globally_enabled(s_touch_enabled);
   touch_nav_set_enabled(prv_touch_navigation_effective());
+#endif
+
+#ifdef CONFIG_BACKLIGHT_HAS_COLOR
+  light_handle_color_prefs_changed();
 #endif
 }
 
@@ -1484,6 +1541,39 @@ void backlight_set_default_color(uint32_t rgb_color) {
   // Clamp to 24-bit packed RGB; upper byte is unused.
   rgb_color &= 0x00FFFFFFU;
   prv_pref_set(PREF_KEY_BACKLIGHT_COLOR, &rgb_color, sizeof(rgb_color));
+}
+
+bool backlight_day_night_color_is_enabled(void) {
+  return s_backlight_color_day_night_enabled;
+}
+
+void backlight_day_night_color_set_enabled(bool enabled) {
+  prv_pref_set(PREF_KEY_BACKLIGHT_COLOR_DAY_NIGHT_ENABLED, &enabled, sizeof(enabled));
+}
+
+uint32_t backlight_get_night_color(void) {
+  return s_backlight_color_night;
+}
+
+void backlight_set_night_color(uint32_t rgb_color) {
+  rgb_color &= 0x00FFFFFFU;
+  prv_pref_set(PREF_KEY_BACKLIGHT_COLOR_NIGHT, &rgb_color, sizeof(rgb_color));
+}
+
+uint16_t backlight_get_sunrise_minute(void) {
+  return s_backlight_color_sunrise_minute;
+}
+
+void backlight_set_sunrise_minute(uint16_t minute) {
+  prv_pref_set(PREF_KEY_BACKLIGHT_COLOR_SUNRISE_MINUTE, &minute, sizeof(minute));
+}
+
+uint16_t backlight_get_sunset_minute(void) {
+  return s_backlight_color_sunset_minute;
+}
+
+void backlight_set_sunset_minute(uint16_t minute) {
+  prv_pref_set(PREF_KEY_BACKLIGHT_COLOR_SUNSET_MINUTE, &minute, sizeof(minute));
 }
 #endif
 
@@ -2133,25 +2223,32 @@ void activity_prefs_set_hrm_activity_tracking_enabled(bool enabled) {
   }
 }
 
-bool activity_prefs_blood_oxygen_is_enabled(void) {
-  return s_blood_oxygen_enabled;
+bool activity_prefs_spo2_is_enabled(void) {
+  return s_activity_spo2_preferences.enabled;
 }
 
-void activity_prefs_set_blood_oxygen_enabled(bool enabled) {
-  if (s_blood_oxygen_enabled != enabled) {
-    // prv_pref_set runs prv_set_s_blood_oxygen_enabled, which updates the global
-    // and re-evaluates the sensor; writing the key also syncs it to the phone.
-    prv_pref_set(PREF_KEY_BLOOD_OXYGEN_PREFERENCES, &enabled, sizeof(enabled));
+// prv_pref_set runs prv_set_s_activity_spo2_preferences, which re-evaluates the sensor; writing
+// the key also syncs it to the phone.
+static void prv_activity_spo2_prefs_store(void) {
+  prv_pref_set(PREF_KEY_ACTIVITY_SPO2_PREFERENCES, &s_activity_spo2_preferences,
+               sizeof(s_activity_spo2_preferences));
+}
+
+void activity_prefs_set_spo2_enabled(bool enabled) {
+  if (s_activity_spo2_preferences.enabled != enabled) {
+    s_activity_spo2_preferences.enabled = enabled;
+    prv_activity_spo2_prefs_store();
   }
 }
 
-bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) {
-  return s_blood_oxygen_activity_enabled;
+bool activity_prefs_spo2_activity_tracking_is_enabled(void) {
+  return s_activity_spo2_preferences.activity_tracking_enabled;
 }
 
-void activity_prefs_set_blood_oxygen_activity_tracking_enabled(bool enabled) {
-  if (s_blood_oxygen_activity_enabled != enabled) {
-    prv_pref_set(PREF_KEY_BLOOD_OXYGEN_ACTIVITY_PREFERENCES, &enabled, sizeof(enabled));
+void activity_prefs_set_spo2_activity_tracking_enabled(bool enabled) {
+  if (s_activity_spo2_preferences.activity_tracking_enabled != enabled) {
+    s_activity_spo2_preferences.activity_tracking_enabled = enabled;
+    prv_activity_spo2_prefs_store();
   }
 }
 
@@ -2166,9 +2263,7 @@ HRMonitoringInterval activity_prefs_get_spo2_measurement_interval(void) {
 void activity_prefs_set_spo2_measurement_interval(HRMonitoringInterval interval) {
   if (s_activity_spo2_preferences.measurement_interval != (uint8_t)interval) {
     s_activity_spo2_preferences.measurement_interval = (uint8_t)interval;
-    prv_pref_set(PREF_KEY_ACTIVITY_SPO2_PREFERENCES, &s_activity_spo2_preferences,
-                 sizeof(s_activity_spo2_preferences));
-    hrm_manager_handle_prefs_changed();
+    prv_activity_spo2_prefs_store();
   }
 }
 #endif

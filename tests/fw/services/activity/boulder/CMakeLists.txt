@@ -262,7 +262,7 @@ pbl_clar_test(test_boulder_spo2_plan
   OVERRIDES dummy_board
 )
 
-# Settings -> Health (Pebbles settings/health.c): die Zeile "Blood O2 During Sleep" (b37) mit der
+# Settings -> Health (Pebbles settings/health.c): die Zeile "SpO2 During Sleep" (b37) mit der
 # Variante und der echten messstufe.c auf shellpref, und ohne die Variante Pebbles Menue.
 pbl_clar_test(test_boulder_einstellungen
   MODULES settings

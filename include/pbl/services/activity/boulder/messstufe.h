@@ -23,9 +23,9 @@
 // Nachtfenster und die letzte Minute ruhig (VMC <= SCHLAF_SCHWELLE_VMC).
 //
 // OB SPO2 MISST, sagen drei Schalter (Entscheid vom 22.10.2026); die Stufe gibt nur den Takt:
-//   Intervall  Pebbles "Blood Oxygen": den ganzen Tag. Der Nutzer stellt ihn, die Stufe nicht.
+//   Intervall  Pebbles "SpO2": den ganzen Tag. Der Nutzer stellt ihn, die Stufe nicht.
 //   Schlaf     Boulders "boulderSpo2Schlaf" (unten): nur in Nachtruhe, wie der Nachtpuls.
-//   Sport      Pebbles "Blood O2 During Activity": Pebbles eigene Messung in jedem Training.
+//   Sport      Pebbles "SpO2 During Activity": Pebbles eigene Messung in jedem Training.
 
 #include "pbl/kernel/compiler.h"
 
@@ -67,7 +67,7 @@ const char **boulder_messstufe_namen(void);
 void boulder_messstufe_setzen(uint8_t stufe);
 
 // SCHALTER "SCHLAF" FUER SPO2 (Entscheid vom 22.10.2026): Pebbles SpO2-Plan misst damit auch
-// ohne "Blood Oxygen", aber nur in Nachtruhe. Boulder schreibt ihn wie die Stufe als 1 Byte in
+// ohne "SpO2", aber nur in Nachtruhe. Boulder schreibt ihn wie die Stufe als 1 Byte in
 // shellpref (Whitelist), 1 = an. Fehlt er oder steht etwas anderes da, ist er aus. Gelesen wird
 // er mit der Stufe, im selben Callback.
 #define BOULDER_SPO2_SCHLAF_SCHLUESSEL "boulderSpo2Schlaf"

@@ -4,7 +4,7 @@
 // Boulder V2: SpO2 im Schlaf (Entscheid vom 22.10.2026) - wann Pebbles SpO2-Plan misst.
 //
 // DIE REGEL (spo2_plan.c) in allen acht Faellen, dazu Pebbles echter Plan: activity.c mit der
-// Variante gebaut wie auf obelix, mit Pebbles echten Prefs (prefs.c, "Blood Oxygen" und der Takt)
+// Variante gebaut wie auf obelix, mit Pebbles echten Prefs (prefs.c, "SpO2" und der Takt)
 // auf der echten settings_file.c. Der Umbau stammt aus Pebbles test_activity.c (Attrappen,
 // Algorithmus); der Algorithmus meldet die Uhr nicht flach, sonst misst Pebble nie.
 // ATTRAPPEN an der Naht zur Variante: der geladene Schalter "Schlaf" und die Nachtruhe der
@@ -371,7 +371,7 @@ void test_boulder_spo2_plan__initialize(void) {
   activity_init();
   activity_set_enabled(true);
   fake_system_task_callbacks_invoke_pending();
-  activity_prefs_set_blood_oxygen_enabled(false);
+  activity_prefs_set_spo2_enabled(false);
   activity_start_tracking(false /*test_mode*/);
   fake_system_task_callbacks_invoke_pending();
   cl_assert(s_spo2_abo != HRM_INVALID_SESSION_REF);
@@ -431,16 +431,16 @@ void test_boulder_spo2_plan__takt_der_stufe(void) {
   cl_assert(s_spo2_fenster >= 3 && s_spo2_fenster <= 4);
 }
 
-// Nachtruhe ohne "Schlaf" (und ohne "Blood Oxygen"): nie.
+// Nachtruhe ohne "Schlaf" (und ohne "SpO2"): nie.
 void test_boulder_spo2_plan__nachtruhe_ohne_schalter_nie(void) {
   s_nachtruhe = true;
   prv_minuten(120);
   cl_assert_equal_i(s_spo2_fenster, 0);
 }
 
-// "Blood Oxygen" (Intervall) misst wie bei Pebble, tags wie nachts, mit und ohne "Schlaf".
+// "SpO2" (Intervall) misst wie bei Pebble, tags wie nachts, mit und ohne "Schlaf".
 void test_boulder_spo2_plan__intervall_wie_pebble(void) {
-  activity_prefs_set_blood_oxygen_enabled(true);
+  activity_prefs_set_spo2_enabled(true);
   for (int i = 0; i < 4; i++) {
     s_schlaf = i & 1;
     s_nachtruhe = i & 2;
@@ -449,7 +449,7 @@ void test_boulder_spo2_plan__intervall_wie_pebble(void) {
 }
 
 // Endet die Nachtruhe mitten in einer Messung, endet die Messung beim naechsten Wert des Sensors,
-// wie wenn "Blood Oxygen" ausgeht - nicht erst nach Pebbles 45 s ohne guten Wert.
+// wie wenn "SpO2" ausgeht - nicht erst nach Pebbles 45 s ohne guten Wert.
 void test_boulder_spo2_plan__ende_der_nachtruhe_beendet_die_messung(void) {
   s_schlaf = true;
   s_nachtruhe = true;

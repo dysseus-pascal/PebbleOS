@@ -6,15 +6,15 @@
 // Boulder V2: wann Pebbles SpO2-Plan messen darf (Entscheid vom 22.10.2026).
 //
 // Pebbles Plan (activity.c, prv_spo2_subscription_update) misst im Takt der Messstufe, wenn
-// "Blood Oxygen" an ist (Schalter "Intervall"). Mit Boulders Schalter "Schlaf" (messstufe.h)
+// "SpO2" an ist (Schalter "Intervall"). Mit Boulders Schalter "Schlaf" (messstufe.h)
 // darf er auch ohne ihn messen, aber nur in Nachtruhe - dieselbe wie fuer den Nachtpuls
 // (puls.h): im Nachtfenster und die eben fertige Minute ruhig. Alles andere bleibt Pebbles Plan:
 // Takt, Vortritt fuer Puls und Training, flach oder nicht am Arm. Endet die Nachtruhe mitten in
-// einer Messung, endet sie wie bei "Blood Oxygen" aus.
+// einer Messung, endet sie wie bei "SpO2" aus.
 
 #include <stdbool.h>
 
-// Die Regel: `intervall` ist Pebbles "Blood Oxygen", `schlaf` Boulders Schalter, `nachtruhe` die
+// Die Regel: `intervall` ist Pebbles "SpO2", `schlaf` Boulders Schalter, `nachtruhe` die
 // der laufenden Minute.
 bool boulder_spo2_plan(bool intervall, bool schlaf, bool nachtruhe);
 

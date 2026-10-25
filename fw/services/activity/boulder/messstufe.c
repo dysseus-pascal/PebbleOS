@@ -137,7 +137,7 @@ static HRMonitoringInterval prv_intervall(uint8_t minuten) {
 }
 
 // F3: DIE UHR SETZT PEBBLES TAKTE nach der Stufe - Puls und SpO2. Pebble misst dann selbst
-// (activity.c); die Werte kommen ueber den Minutensatz. Pebbles Schalter "Blood Oxygen" bleibt
+// (activity.c); die Werte kommen ueber den Minutensatz. Pebbles Schalter "SpO2" bleibt
 // beim Nutzer: Er ist der Schalter "Intervall" (messstufe.h).
 // Jeder Setter schreibt shellpref (geht ans Telefon) und reiht nicht verwerfbar ein
 // (hrm_manager_handle_prefs_changed): nur bei Platz, nur wenn anders. Einen anderen Takt
@@ -174,7 +174,7 @@ static bool prv_schluessel(const PebbleBlobDBEvent *b, const char *name) {
 // KernelMain. Auch Pebbles eigene Takte fuer Puls und SpO2: schreibt das Telefon sie
 // (0.50 legt sie ab und kann sie zurueckschreiben), zieht der Regler sie wieder auf die
 // Stufe. Die Schluessel stehen in prefs.c (PREF_KEY_ACTIVITY_HRM_PREFERENCES usw.).
-// "bloodOxygenPreferences" nicht mehr: Diesen Schalter stellt der Nutzer.
+// Pebbles Schalter (an, bei Aktivitaet) stehen seit v4.42 mit im Datensatz; sie stellt der Nutzer.
 static void prv_blobdb_ereignis(PebbleEvent *e, void *context) {
   const PebbleBlobDBEvent *b = &e->blob_db;
   if (b->db_id != BlobDBIdSettings || b->type != BlobDBEventTypeInsert || !b->key) {

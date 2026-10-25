@@ -127,10 +127,10 @@ static int s_setter;
 bool activity_prefs_heart_rate_is_enabled(void) {
   return s_puls_an;
 }
-bool activity_prefs_blood_oxygen_is_enabled(void) {
+bool activity_prefs_spo2_is_enabled(void) {
   return s_spo2_an;
 }
-bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) {
+bool activity_prefs_spo2_activity_tracking_is_enabled(void) {
   return false;
 }
 HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
@@ -149,7 +149,7 @@ void activity_prefs_set_spo2_measurement_interval(HRMonitoringInterval i) {
   s_setter++;
   hrm_manager_handle_prefs_changed();
 }
-void activity_prefs_set_blood_oxygen_enabled(bool an) {
+void activity_prefs_set_spo2_enabled(bool an) {
   s_spo2_an = an;
   s_setter++;
   hrm_manager_handle_prefs_changed();
@@ -392,7 +392,7 @@ static const struct {
   {HRMonitoringInterval_5Min, HRMonitoringInterval_10Min},
 };
 
-// Pebbles Schalter "Blood Oxygen" ist der Schalter "Intervall" des Nutzers: Keine Stufe stellt
+// Pebbles Schalter "SpO2" ist der Schalter "Intervall" des Nutzers: Keine Stufe stellt
 // ihn, weder an noch aus.
 void test_boulder_messung__stufe_vom_telefon_setzt_pebbles_werte(void) {
   // Ohne gespeicherte Stufe gilt 3; das KernelMain-Abo entsteht einmal.
@@ -419,7 +419,7 @@ void test_boulder_messung__stufe_vom_telefon_setzt_pebbles_werte(void) {
 }
 
 // Pebbles Takte vom Telefon (Core-App) zieht der Regler auf die Stufe zurueck, den Schalter
-// "Blood Oxygen" nicht: Ihn stellt der Nutzer (Entscheid vom 22.10.2026).
+// "SpO2" nicht: Ihn stellt der Nutzer (Entscheid vom 22.10.2026).
 void test_boulder_messung__regler_zieht_takte_zurueck_nicht_den_schalter(void) {
   s_spo2_an = true;
   prv_start(4);
@@ -436,16 +436,16 @@ void test_boulder_messung__regler_zieht_takte_zurueck_nicht_den_schalter(void) {
   prv_kernel_bg();
   cl_assert_equal_i(s_setter, danach);
   cl_assert(danach > setter);
-  // Der Nutzer schaltet "Blood Oxygen" am Telefon aus: Das loest kein Lesen aus, und auch das
-  // naechste Lesen (Ablage) laesst ihn aus.
+  // Der Nutzer schaltet SpO2 am Telefon aus (seit v4.42 im Datensatz spo2Preferences): Der Regler
+  // liest, laesst den Schalter aus und setzt nichts; auch das naechste Lesen (Ablage) nicht.
   s_spo2_an = false;
   const int gelesen = s_gelesen;
-  prv_telefon_schreibt("bloodOxygenPreferences", 0);
-  prv_minuten(2);
-  cl_assert_equal_i(s_gelesen, gelesen);
-  boulder_messstufe_nachlesen();
+  prv_telefon_schreibt("spo2Preferences", 0);
   prv_kernel_bg();
   cl_assert(s_gelesen > gelesen);
+  cl_assert(!s_spo2_an);
+  boulder_messstufe_nachlesen();
+  prv_kernel_bg();
   cl_assert(!s_spo2_an);
   cl_assert_equal_i(s_setter, danach);
 }
@@ -628,7 +628,7 @@ void test_boulder_messung__schlaf_erlaubt_spo2_im_manager(void) {
   hrm_manager_handle_prefs_changed();
   prv_kernel_bg();
   cl_assert(!s_sensor.an);
-  // Pebbles "Blood Oxygen" wirkt wie bisher.
+  // Pebbles "SpO2" wirkt wie bisher.
   s_spo2_an = true;
   hrm_manager_handle_prefs_changed();
   prv_kernel_bg();
@@ -637,7 +637,7 @@ void test_boulder_messung__schlaf_erlaubt_spo2_im_manager(void) {
 }
 
 // Ohne Puls und ohne Pebbles SpO2-Schalter darf der Schalter "Schlaf" den Sensor einschalten,
-// wie "Blood Oxygen" (prv_can_turn_sensor_on): Sonst liefe Pebbles Plan nachts ohne Messung.
+// wie "SpO2" (prv_can_turn_sensor_on): Sonst liefe Pebbles Plan nachts ohne Messung.
 void test_boulder_messung__schlaf_schaltet_den_sensor_ohne_puls(void) {
   s_puls_an = false;
   prv_minute();

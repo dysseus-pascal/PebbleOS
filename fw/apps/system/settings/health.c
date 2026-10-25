@@ -78,13 +78,13 @@ enum SettingsHealthItem {
 #ifdef CONFIG_HRM
   SettingsHealthHRMonitoringInterval,
   SettingsHealthHRActivityTracking,
-  SettingsHealthBloodOxygenEnabled,
+  SettingsHealthSpO2Enabled,
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3, kein SpO2-Takt
-  SettingsHealthBloodOxygenSleep,
+  SettingsHealthSpO2Sleep,
 #else
   SettingsHealthSpO2MonitoringInterval,
 #endif  // Boulder: F3
-  SettingsHealthBloodOxygenActivityTracking,
+  SettingsHealthSpO2ActivityTracking,
 #endif
   NumSettingsHealthItems
 };
@@ -126,7 +126,7 @@ static void prv_spo2_interval_menu_push(SettingsHealthData *data) {
   const OptionMenuCallbacks callbacks = {
     .select = prv_spo2_interval_menu_select,
   };
-  const char *title = i18n_noop("Blood Oxygen");
+  const char *title = i18n_noop("SpO2 Monitoring");
   settings_option_menu_push(title, OptionMenuContentType_SingleLine, index, &callbacks,
                             ARRAY_LENGTH(s_spo2_interval_labels), true /* icons_enabled */,
                             s_spo2_interval_labels, data);
@@ -200,14 +200,14 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
           activity_prefs_hrm_activity_tracking_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
       break;
     }
-    case SettingsHealthBloodOxygenEnabled: {
-      title = i18n_noop("Blood Oxygen");
-      subtitle = activity_prefs_blood_oxygen_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
+    case SettingsHealthSpO2Enabled: {
+      title = i18n_noop("SpO2");
+      subtitle = activity_prefs_spo2_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
       break;
     }
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf (messstufe.h); F3
-    case SettingsHealthBloodOxygenSleep: {
-      title = i18n_noop("Blood O2 During Sleep");
+    case SettingsHealthSpO2Sleep: {
+      title = i18n_noop("SpO2 During Sleep");
       subtitle = boulder_spo2_schlaf() ? i18n_noop("On") : i18n_noop("Off");
       break;
     }
@@ -220,14 +220,14 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
       break;
     }
 #endif  // Boulder: F3
-    case SettingsHealthBloodOxygenActivityTracking: {
-      title = i18n_noop("Blood O2 During Activity");
+    case SettingsHealthSpO2ActivityTracking: {
+      title = i18n_noop("SpO2 During Activity");
       if (!activity_prefs_hrm_activity_tracking_is_enabled()) {
         // Requires HR During Activity to be on first.
         subtitle = i18n_noop("Needs HR During Activity");
       } else {
-        subtitle = activity_prefs_blood_oxygen_activity_tracking_is_enabled() ? i18n_noop("On")
-                                                                              : i18n_noop("Off");
+        subtitle =
+            activity_prefs_spo2_activity_tracking_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
       }
       break;
     }
@@ -268,16 +268,16 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
       bool new_value = !activity_prefs_hrm_activity_tracking_is_enabled();
       activity_prefs_set_hrm_activity_tracking_enabled(new_value);
       if (!new_value) {
-        // Blood O2 in activity depends on HR in activity; clear it when the parent goes off.
-        activity_prefs_set_blood_oxygen_activity_tracking_enabled(false);
+        // SpO2 in activity depends on HR in activity; clear it when the parent goes off.
+        activity_prefs_set_spo2_activity_tracking_enabled(false);
       }
       break;
     }
-    case SettingsHealthBloodOxygenEnabled:
-      activity_prefs_set_blood_oxygen_enabled(!activity_prefs_blood_oxygen_is_enabled());
+    case SettingsHealthSpO2Enabled:
+      activity_prefs_set_spo2_enabled(!activity_prefs_spo2_is_enabled());
       break;
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3
-    case SettingsHealthBloodOxygenSleep:
+    case SettingsHealthSpO2Sleep:
       boulder_spo2_schlaf_setzen(!boulder_spo2_schlaf());
       break;
 #else
@@ -285,11 +285,11 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
       prv_spo2_interval_menu_push((SettingsHealthData *)context);
       break;
 #endif  // Boulder: F3
-    case SettingsHealthBloodOxygenActivityTracking:
+    case SettingsHealthSpO2ActivityTracking:
       // Only togglable once HR During Activity is on (see draw); otherwise ignore the press.
       if (activity_prefs_hrm_activity_tracking_is_enabled()) {
-        activity_prefs_set_blood_oxygen_activity_tracking_enabled(
-            !activity_prefs_blood_oxygen_activity_tracking_is_enabled());
+        activity_prefs_set_spo2_activity_tracking_enabled(
+            !activity_prefs_spo2_activity_tracking_is_enabled());
       }
       break;
 #endif

@@ -218,8 +218,8 @@ PBL_T_STATIC bool prv_can_turn_sensor_on(void) {
   // Keep this in sync with prv_prefs_allowed_features(): a pref that can allow a feature there has
   // to be able to turn the sensor on here, or that feature's reader silently never runs.
   return s_manager_state.enabled_run_level && s_manager_state.enabled_charging_state &&
-         (activity_prefs_heart_rate_is_enabled() || activity_prefs_blood_oxygen_is_enabled() ||
-          activity_prefs_blood_oxygen_activity_tracking_is_enabled());
+         (activity_prefs_heart_rate_is_enabled() || activity_prefs_spo2_is_enabled() ||
+          activity_prefs_spo2_activity_tracking_is_enabled());
 }
 
 // Features the user prefs currently allow. BPM (green) and SpO2 (red/IR) sampling are each gated on
@@ -232,8 +232,7 @@ static HRMFeature prv_prefs_allowed_features(void) {
   //
   // SpO2 is allowed if daily monitoring is on, OR if the during-activities opt-in is on (it works
   // independently of the daily toggle).
-  if (!activity_prefs_blood_oxygen_is_enabled() &&
-      !activity_prefs_blood_oxygen_activity_tracking_is_enabled()) {
+  if (!activity_prefs_spo2_is_enabled() && !activity_prefs_spo2_activity_tracking_is_enabled()) {
     allowed &= ~HRMFeature_SpO2;
   }
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
@@ -1130,7 +1129,7 @@ static int prv_cmd_hrm_read(const struct pbl_shell *sh, size_t argc, char **argv
 static int prv_cmd_spo2_read(const struct pbl_shell *sh, size_t argc, char **argv) {
   // Console subscribers are subject to the pref mask; a reading would never come.
   if (!(prv_prefs_allowed_features() & HRMFeature_SpO2)) {
-    pbl_shell_error(sh, "blood oxygen monitoring is disabled");
+    pbl_shell_error(sh, "SpO2 monitoring is disabled");
     return -EPERM;
   }
   return prv_console_subscribe(sh, HRMFeature_SpO2, HRMEvent_SpO2);
@@ -1138,7 +1137,7 @@ static int prv_cmd_spo2_read(const struct pbl_shell *sh, size_t argc, char **arg
 
 static const struct pbl_shell_cmd sub_hrm[] = {
   PBL_SHELL_CMD(read, nullptr, "Read the heart rate", prv_cmd_hrm_read),
-  PBL_SHELL_CMD(spo2, nullptr, "Read the blood oxygen level", prv_cmd_spo2_read),
+  PBL_SHELL_CMD(spo2, nullptr, "Read the SpO2 level", prv_cmd_spo2_read),
   PBL_SHELL_SUBCMD_SET_END,
 };
 

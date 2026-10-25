@@ -4,6 +4,7 @@
 #include "app_manager.h"
 
 #include "process_loader.h"
+#include "process_runtime.h"
 
 // Pebble stuff
 #include <pbl/kernel/assert.h>
@@ -29,6 +30,8 @@
 #include <kernel/ui/modals/modal_manager.h>
 #include <kernel/util/segment.h>
 #include <kernel/util/task_init.h>
+#include <popups/mic_banner.h>
+#include <popups/system_obstruction.h>
 #include <popups/timeline/peek.h>
 #include <process_management/app_install_manager.h>
 #include <process_management/app_run_state.h>
@@ -39,6 +42,12 @@
 #include <resource/resource_ids.auto.h>
 #ifndef CONFIG_RECOVERY_FW
 #include <pbl/services/speaker/speaker_service.h>
+#ifdef CONFIG_SERVICE_MIC_STREAM
+#include <pbl/services/mic_stream.h>
+#endif
+#ifdef CONFIG_SERVICE_MIC_CAPTURE
+#include <pbl/services/mic_capture.h>
+#endif
 #endif
 #include <pbl/kernel/syscall.h>
 #include <pbl/logging/logging.h>
@@ -85,6 +94,7 @@ void *volatile g_app_load_address;
 static PBL_MSGQ_DEFINE(s_to_app_event_queue, sizeof(PebbleEvent), MAX_TO_APP_EVENTS);
 static bool s_initialized;
 static ProcessContext s_app_task_context;
+static void *s_app_stack_top;
 static ProcessAppRunLevel s_minimum_run_level;
 
 typedef struct NextApp {
@@ -130,15 +140,18 @@ static void prv_app_task_main(void *entry_point) {
   // about to start the app in earnest. No longer safe to kill.
   s_app_task_context.safe_to_kill = false;
 
+  // Read what the runtime needs while still privileged: these are kernel variables
+  const PebbleProcessMd *app_md = s_app_task_context.app_md;
+  void *stack_top = s_app_stack_top;
+
 #ifdef CONFIG_USERSPACE
   // Enter unprivileged mode!
-  if (s_app_task_context.app_md->is_unprivileged) {
+  if (app_md->is_unprivileged) {
     pbl_user_mode_enter();
   }
 #endif
 
-  const PebbleMain main_func = entry_point;
-  main_func();
+  process_runtime_run(app_md, PebbleTask_App, entry_point, stack_top);
 
   // Clean up after the app.  Remember to put only non-critical cleanup here,
   // as the app may crash or otherwise misbehave. If something really needs to
@@ -193,6 +206,13 @@ void prv_dump_start_app_info(const PebbleProcessMd *app_md) {
 #define APP_STACK_SYSTEM_SIZE (4 * 1024)
 
 static size_t prv_get_app_segment_size(const PebbleProcessMd *app_md) {
+#ifdef CONFIG_SAMSA
+  // The firmware objects an app allocates hold host pointers, twice the size
+  // they are on a watch, so every app gets the largest heap there is.
+  if (app_md->process_storage != ProcessStorageBuiltin) {
+    return CONFIG_APP_RAM_4X_SEGMENT_SIZE;
+  }
+#endif
   switch (process_metadata_get_app_sdk_type(app_md)) {
     case ProcessAppSDKType_Legacy2x:
       return CONFIG_APP_RAM_2X_SEGMENT_SIZE;
@@ -300,6 +320,7 @@ static bool prv_app_start(const PebbleProcessMd *app_md, const void *args,
   // failing when the app hasn't done anything wrong.
   void *stack = memory_segment_split(&app_segment, nullptr, stack_size);
   PBL_ASSERTN(stack);
+  s_app_stack_top = (char *)stack + stack_size;
   s_app_task_context.load_start = app_segment.start;
   g_app_load_address = app_segment.start;
   void *entry_point = process_loader_load(app_md, PebbleTask_App, &app_segment);
@@ -326,7 +347,7 @@ static bool prv_app_start(const PebbleProcessMd *app_md, const void *args,
   const ProcessAppSDKType sdk_type = process_metadata_get_app_sdk_type(app_md);
 
   // The rest of app_ram is available for app_state to use as it sees fit.
-  if (!app_state_configure(&app_ram, sdk_type, timeline_peek_get_obstruction_origin_y())) {
+  if (!app_state_configure(&app_ram, sdk_type, system_obstruction_get_origin_y())) {
     PBL_LOG_ERR("App state configuration failed");
     return false;
   }
@@ -448,6 +469,12 @@ static void prv_app_cleanup(void) {
   vibe_pattern_clear_for_owner(VibePatternOwner_App);
 #ifndef CONFIG_RECOVERY_FW
   speaker_service_stop_for_task(PebbleTask_App);
+#ifdef CONFIG_SERVICE_MIC_STREAM
+  mic_stream_service_stop(PebbleTask_App);
+#endif
+#ifdef CONFIG_SERVICE_MIC_CAPTURE
+  mic_capture_service_stop_for_task(PebbleTask_App);
+#endif
 #endif
 
   app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
@@ -457,6 +484,7 @@ static void prv_app_cleanup(void) {
   app_install_notify_app_closed();
 
   timeline_peek_handle_process_kill();
+  mic_banner_handle_process_kill();
 }
 
 // ---------------------------------------------------------------------------------------------

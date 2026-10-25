@@ -54,7 +54,7 @@ typedef struct {
   uint16_t maxpuls;         //!< wie KsStand.maxpuls (Einstellung oder Tanaka), 0 = keiner
   uint8_t ruhepuls_median;  //!< Median der letzten sieben Naechte (nacht.h), 0 = keiner
   bool schlaeft;            //!< Live-Automat (live.h)
-  uint8_t spo2_takt_min;    //!< SpO2-Takt der Stufe, 0 = weder "Blood Oxygen" noch "Schlaf"
+  uint8_t spo2_takt_min;    //!< SpO2-Takt der Stufe, 0 = weder "SpO2" noch "Schlaf"
   uint8_t nickerchen;       //!< heute gemeldete Nickerchen (im laufenden Fenster)
   uint8_t reserve[2];
 } BoulderLage;

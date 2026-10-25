@@ -89,10 +89,10 @@ PEBBLE = {
     'fw/services/alarms/alarm.c': Stelle(
         20, r'prv_should_smart_alarm_trigger\(|prv_record_alarm_op\(|alarm_init\('),
     # E5 HRV-Fix (F2) im Rundruf. Dazu der Schalter "Schlaf" fuer SpO2 (Entscheid vom 22.10.2026):
-    # Pebbles Maske laesst SpO2 fuer Abos im Hintergrund nur mit "Blood Oxygen" oder dem Schalter
+    # Pebbles Maske laesst SpO2 fuer Abos im Hintergrund nur mit "SpO2" oder dem Schalter
     # fuer Trainings zu, und nur ein solcher Schalter darf den Sensor einschalten. Ohne diese
     # beiden Stellen bliebe Pebbles Plan im Schlaf ohne Messung.
-    # SpO2 im Schlaf (Entscheid vom 22.10.2026): Pebbles SpO2-Plan fragt statt "Blood Oxygen" die
+    # SpO2 im Schlaf (Entscheid vom 22.10.2026): Pebbles SpO2-Plan fragt statt "SpO2" die
     # Regel der Variante (spo2_plan.h) - die Bedingung am Anfang von prv_spo2_subscription_update
     # und ihr Include, beides ganz unter dem Schalter der Variante, Pebbles Zeile im #else (ohne
     # Kontext zaehlt git das #endif danach als eigenen Hunk).
@@ -101,7 +101,7 @@ PEBBLE = {
     'fw/services/hrm/hrm_manager.c': Stelle(
         24, r'hrm_manager_new_data_cb\(|prv_can_turn_sensor_on\(|prv_prefs_allowed_features\(',
         hunks=4),
-    # F3 Menue Messstufe, dazu die Zeile "Blood O2 During Sleep" (Entscheid vom 22.10.2026).
+    # F3 Menue Messstufe, dazu die Zeile "SpO2 During Sleep" (Entscheid vom 22.10.2026).
     'fw/apps/system/settings/health.c': Stelle(47),
     # Kieselsport. Der Schalter haelt die vier Boards ohne Variante bei Pebble (Spezifikation G1).
     # P1 Pulskalorien (Start, Pulswert, Schritt-kcal ohne Puls, Stopp) und Verwerfen (F3 = A).

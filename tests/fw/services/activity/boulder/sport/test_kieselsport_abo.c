@@ -65,8 +65,8 @@ void event_service_client_subscribe(EventServiceInfo *info) {}
 void event_service_client_unsubscribe(EventServiceInfo *info) {}
 
 bool activity_prefs_heart_rate_is_enabled(void) { return true; }
-bool activity_prefs_blood_oxygen_is_enabled(void) { return false; }
-bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) { return false; }
+bool activity_prefs_spo2_is_enabled(void) { return false; }
+bool activity_prefs_spo2_activity_tracking_is_enabled(void) { return false; }
 bool activity_prefs_hrm_activity_tracking_is_enabled(void) { return true; }
 HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
   return HRMonitoringInterval_10Min;

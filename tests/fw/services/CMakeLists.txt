@@ -24,7 +24,7 @@ pbl_clar_test(test_pfs
   SOURCES
     fw/system/hexdump.c
     tests/fakes/fake_rtc.c
-  PLATFORMS obelix
+  PLATFORMS emery
   DEFINES DUMA_DISABLED
   OVERRIDES dummy_board
 )
@@ -39,7 +39,7 @@ pbl_clar_test(test_put_bytes
     tests/fakes/fake_resource_storage.c
     tests/fakes/fake_rtc.c
     tests/fakes/fake_spi_flash.c
-  PLATFORMS obelix gabbro asterix
+  PLATFORMS emery gabbro flint
   OVERRIDES dummy_board
 )
 
@@ -126,6 +126,10 @@ pbl_clar_test(test_compass_cal
 pbl_clar_test(test_light
   SOURCES
     fw/services/light/service.c
+    subsys/cron/cron.c
+    tests/fakes/fake_rtc.c
+  MODULES time
+  DEFINES CONFIG_BACKLIGHT_HAS_COLOR CONFIG_ALS_SCREEN_COMPENSATION
   OVERRIDES getafix_backlight
 )
 
@@ -261,6 +265,20 @@ pbl_clar_test(test_app_cache
   OVERRIDES dummy_board
 )
 
+pbl_clar_test(test_mic_manager
+  SOURCES
+    fw/services/mic_manager/mic_manager.c
+  OVERRIDES dummy_board
+)
+
+pbl_clar_test(test_mic_stream
+  SOURCES
+    fw/services/mic_stream/mic_stream.c
+    fw/services/mic_manager/mic_manager.c
+    tests/fakes/fake_events.c
+  OVERRIDES dummy_board
+)
+
 pbl_clar_test(test_app_install_manager
   MODULES settings rand gtypes
   SOURCES
@@ -315,6 +333,7 @@ pbl_clar_test(test_process_loader_storage
     fw/process_management/pebble_process_md.c
     fw/services/process_management/app_storage.c
     fw/services/process_management/process_loader_storage.c
+    fw/process_management/process_runtime.c
   OVERRIDES dummy_board
 )
 
@@ -345,7 +364,7 @@ pbl_clar_test(test_shared_prf_storage_v3
     fw/services/shared_prf_storage/shared_prf_storage.c
     tests/fakes/fake_flash_region.c
     tests/fakes/fake_spi_flash.c
-  PLATFORMS obelix
+  PLATFORMS emery
   OVERRIDES shared_prf_storage_v3
 )
 
@@ -433,4 +452,40 @@ pbl_clar_test(test_clock_time
   MODULES time
   SOURCES
     tests/fakes/fake_rtc.c
+)
+
+pbl_clar_test(test_system_task
+  SOURCES
+    fw/services/system_task/service.c
+    kernel/tick.c
+    kernel/sched.c
+    kernel/thread.c
+    kernel/mutex.c
+    kernel/sem.c
+    kernel/msgq.c
+    kernel/poll.c
+    kernel/irq.c
+    kernel/debug.c
+    kernel/arch/posix/arch.c
+    kernel/arch/posix/test.c
+  INCLUDES
+    kernel
+    kernel/arch
+    kernel/arch/posix/include
+  DEFINES
+    CONFIG_KERNEL_IDLE_STACK_SIZE=1024
+    CONFIG_TASK_WDT_TIMEOUT_MS=5000
+    CONFIG_SERVICE_SYSTEM_TASK_LOG_LEVEL=0
+    PBL_NO_LINKER_SCRIPT
+)
+
+pbl_clar_test(test_mic_capture
+  SOURCES
+    fw/services/mic_capture/mic_capture.c
+    fw/services/mic_manager/mic_manager.c
+    fw/services/blob_db/app_db.c
+    tests/fakes/fake_events.c
+    tests/fakes/fake_settings_file.c
+  DEFINES CONFIG_SERVICE_MIC_CAPTURE
+  OVERRIDES dummy_board
 )

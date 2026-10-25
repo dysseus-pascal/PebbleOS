@@ -151,15 +151,14 @@ typedef struct PBL_PACKED ActivityHRMSettings {
   bool activity_tracking_enabled;
 } ActivityHRMSettings;
 
-/**
- * @brief Blood oxygen (SpO2) preferences, as stored in prefs.
- *
- * The on/off setting is synced from the phone under its own key
- * (@c PREF_KEY_BLOOD_OXYGEN_PREFERENCES); only the watch-local interval lives here.
- */
+/** @brief SpO2 preferences, as stored in prefs. */
 typedef struct PBL_PACKED ActivitySpO2Settings {
+  /** Background SpO2 monitoring enabled. */
+  bool enabled;
   /** @ref HRMonitoringInterval value. */
   uint8_t measurement_interval;
+  /** SpO2 sampling during detected activities and workouts. */
+  bool activity_tracking_enabled;
 } ActivitySpO2Settings;
 
 /** @brief Default user height, in millimeters (5'3.8", CDC average). */
@@ -209,7 +208,9 @@ typedef struct PBL_PACKED ActivitySpO2Settings {
 /** @brief Initializer for the default @ref ActivitySpO2Settings. */
 #define ACTIVITY_SPO2_DEFAULT_PREFERENCES               \
   {                                                     \
+    .enabled = false,                                   \
     .measurement_interval = HRMonitoringInterval_10Min, \
+    .activity_tracking_enabled = false,                 \
   }
 
 /** @brief Lowest heart rate reading accepted as valid, in beats per minute. */
@@ -769,13 +770,13 @@ uint8_t activity_prefs_heart_get_zone3_threshold(void);
 bool activity_prefs_heart_rate_is_enabled(void);
 
 /**
- * @brief Check whether background blood oxygen (SpO2) monitoring is enabled.
+ * @brief Check whether background SpO2 monitoring is enabled.
  *
  * Declared regardless of @c CONFIG_HRM since the HRM manager gates sensor power on it.
  *
  * @return true if enabled.
  */
-bool activity_prefs_blood_oxygen_is_enabled(void);
+bool activity_prefs_spo2_is_enabled(void);
 
 /**
  * @brief Check whether SpO2 sampling during detected activities is enabled.
@@ -785,7 +786,7 @@ bool activity_prefs_blood_oxygen_is_enabled(void);
  *
  * @return true if enabled.
  */
-bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void);
+bool activity_prefs_spo2_activity_tracking_is_enabled(void);
 
 #ifdef CONFIG_HRM
 /**
@@ -817,20 +818,20 @@ bool activity_prefs_hrm_activity_tracking_is_enabled(void);
 void activity_prefs_set_hrm_activity_tracking_enabled(bool enabled);
 
 /**
- * @brief Enable or disable background blood oxygen (SpO2) monitoring.
+ * @brief Enable or disable background SpO2 monitoring.
  *
  * The setting is synced to the phone.
  *
  * @param enabled If true, enable it.
  */
-void activity_prefs_set_blood_oxygen_enabled(bool enabled);
+void activity_prefs_set_spo2_enabled(bool enabled);
 
 /**
  * @brief Enable or disable SpO2 sampling during detected activities.
  *
  * @param enabled If true, enable it.
  */
-void activity_prefs_set_blood_oxygen_activity_tracking_enabled(bool enabled);
+void activity_prefs_set_spo2_activity_tracking_enabled(bool enabled);
 
 /**
  * @brief Get the background SpO2 measurement interval.

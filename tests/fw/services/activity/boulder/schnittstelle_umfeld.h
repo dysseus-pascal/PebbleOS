@@ -430,7 +430,7 @@ bool activity_prefs_tracking_is_enabled(void) {
   prv_pebble();
   return s_tracking;
 }
-bool activity_prefs_blood_oxygen_is_enabled(void) {
+bool activity_prefs_spo2_is_enabled(void) {
   prv_pebble();
   return s_spo2_an;
 }
@@ -451,7 +451,7 @@ void activity_prefs_set_spo2_measurement_interval(HRMonitoringInterval i) {
   s_spo2_takt = i;
   s_setter++;
 }
-void activity_prefs_set_blood_oxygen_enabled(bool an) {
+void activity_prefs_set_spo2_enabled(bool an) {
   s_spo2_an = an;
   s_setter++;
 }

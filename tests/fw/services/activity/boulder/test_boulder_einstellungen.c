@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // Boulder V2: Settings -> Health auf der Uhr (Pebbles settings/health.c). Seit b37 steht dort mit
-// der Variante die Zeile "Blood O2 During Sleep" direkt nach Pebbles "Blood Oxygen" (Entscheid vom
+// der Variante die Zeile "SpO2 During Sleep" direkt nach Pebbles "SpO2" (Entscheid vom
 // 22.10.2026); Select schaltet sie wie Pebbles Zeile fuer Trainings.
 //
 // ECHT: Pebbles health.c, die Variante messstufe.c und takt.c, settings_file.c auf der
@@ -34,7 +34,7 @@
 
 #include <string.h>
 
-#define TITEL_SCHLAF "Blood O2 During Sleep"
+#define TITEL_SCHLAF "SpO2 During Sleep"
 
 // =============================================================================================
 // Pebbles Einstellungsmenue: das Fenster merkt sich die Rueckrufe, Zeilen zeichnen merkt sich Titel
@@ -92,10 +92,10 @@ void activity_prefs_tracking_set_enabled(bool an) {
 }
 void shell_prefs_set_units_distance(UnitsDistance einheit) {
 }
-bool activity_prefs_blood_oxygen_is_enabled(void) {
+bool activity_prefs_spo2_is_enabled(void) {
   return s_blutsauerstoff;
 }
-void activity_prefs_set_blood_oxygen_enabled(bool an) {
+void activity_prefs_set_spo2_enabled(bool an) {
   s_blutsauerstoff = an;
 }
 bool activity_prefs_hrm_activity_tracking_is_enabled(void) {
@@ -104,10 +104,10 @@ bool activity_prefs_hrm_activity_tracking_is_enabled(void) {
 void activity_prefs_set_hrm_activity_tracking_enabled(bool an) {
   s_puls_im_training = an;
 }
-bool activity_prefs_blood_oxygen_activity_tracking_is_enabled(void) {
+bool activity_prefs_spo2_activity_tracking_is_enabled(void) {
   return s_spo2_im_training;
 }
-void activity_prefs_set_blood_oxygen_activity_tracking_enabled(bool an) {
+void activity_prefs_set_spo2_activity_tracking_enabled(bool an) {
   s_spo2_im_training = an;
 }
 HRMonitoringInterval activity_prefs_get_hrm_measurement_interval(void) {
@@ -210,12 +210,12 @@ void test_boulder_einstellungen__cleanup(void) {
   fake_system_task_callbacks_cleanup();
 }
 
-// Mit der Variante steht die Zeile direkt nach "Blood Oxygen", vor "Blood O2 During Activity", an
+// Mit der Variante steht die Zeile direkt nach "SpO2", vor "SpO2 During Activity", an
 // der Stelle von Pebbles SpO2-Takt (den die Messstufe stellt, F3). Ohne die Variante: Pebbles
 // Menue.
 void test_boulder_einstellungen__zeilen(void) {
   cl_assert_equal_i(s_zeilen, 7);
-  const int blutsauerstoff = prv_finde("Blood Oxygen");
+  const int blutsauerstoff = prv_finde("SpO2");
   cl_assert(blutsauerstoff > 0);
   prv_zeile(blutsauerstoff + 1);
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
@@ -228,14 +228,14 @@ void test_boulder_einstellungen__zeilen(void) {
   cl_assert_equal_i(prv_finde(TITEL_SCHLAF), -1);
   cl_assert(prv_finde("HR Monitoring") >= 0);
 #endif
-  cl_assert_equal_i(prv_finde("Blood O2 During Activity"), blutsauerstoff + 2);
+  cl_assert_equal_i(prv_finde("SpO2 During Activity"), blutsauerstoff + 2);
 }
 
 // Select schaltet die Zeile wie Pebbles Schalter: gespeichert unter dem kanonischen Schluessel
-// (geht ans Telefon), die Zeile zeigt es gleich, das Menue laedt neu; Pebbles "Blood Oxygen"
+// (geht ans Telefon), die Zeile zeigt es gleich, das Menue laedt neu; Pebbles "SpO2"
 // bleibt, wie er ist. Ohne die Variante oeffnet die Zeile Pebbles Auswahl des SpO2-Takts.
 void test_boulder_einstellungen__schlaf_umschalten(void) {
-  const int zeile = prv_finde("Blood Oxygen") + 1;
+  const int zeile = prv_finde("SpO2") + 1;
   uint8_t wert = 0xff;
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   prv_select(zeile);
@@ -259,7 +259,7 @@ void test_boulder_einstellungen__schlaf_umschalten(void) {
   cl_assert(!boulder_spo2_schlaf_geladen());
   cl_assert_equal_i(s_neu_geladen, 2);
   cl_assert_equal_i(s_auswahlmenues, 0);
-  // "Blood Oxygen" schaltet nur Pebbles Schalter.
+  // "SpO2" schaltet nur Pebbles Schalter.
   prv_select(zeile - 1);
   cl_assert(s_blutsauerstoff);
   prv_zeile(zeile);
@@ -278,7 +278,7 @@ void test_boulder_einstellungen__schlaf_umschalten(void) {
 void test_boulder_einstellungen__zeile_vor_dem_ersten_lesen(void) {
   uint8_t an = 1;
   cl_assert_equal_i(prv_shellpref(true, "boulderSpo2Schlaf", &an), S_SUCCESS);
-  const int zeile = prv_finde("Blood Oxygen") + 1;
+  const int zeile = prv_finde("SpO2") + 1;
   prv_zeile(zeile);
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   cl_assert(!boulder_spo2_schlaf_geladen());

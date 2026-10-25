@@ -81,9 +81,9 @@ MASKE = 'static HRMFeature prv_prefs_allowed_features(void) {'
 ACTIVITY_C = 'fw/services/activity/activity.c'
 PLAN = 'static void prv_spo2_subscription_update(uint32_t now_ts) {'
 PLAN_TOR = ['+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: Schlaf',
-            '+  if (!boulder_spo2_plan_offen(activity_prefs_blood_oxygen_is_enabled()) ||',
+            '+  if (!boulder_spo2_plan_offen(activity_prefs_spo2_is_enabled()) ||',
             '+#else',
-            '   if (!activity_prefs_blood_oxygen_is_enabled() ||',
+            '   if (!activity_prefs_spo2_is_enabled() ||',
             '+#endif']
 PLAN_INCLUDE = ['+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: Schlaf',
                 '+#include <pbl/services/activity/boulder/spo2_plan.h>',
@@ -113,7 +113,7 @@ def proben_spo2(pruefe):
         hunk(ACTIVITY_C, ['+#include <pbl/services/activity/boulder/spo2_plan.h>  // Boulder: x']),
         []), 'ausserhalb von #ifdef')
     yield 'SpO2-Plan aendert Pebbles Zeile', rot(pruefe(
-        hunk(ACTIVITY_C, PLAN_TOR[:3] + ['-  if (!activity_prefs_blood_oxygen_is_enabled() ||',
+        hunk(ACTIVITY_C, PLAN_TOR[:3] + ['-  if (!activity_prefs_spo2_is_enabled() ||',
                                          '+  if (!x() ||', '+#endif'], PLAN), []),
         'ausserhalb von #ifdef')
     yield 'activity.c andere Funktion', rot(pruefe(

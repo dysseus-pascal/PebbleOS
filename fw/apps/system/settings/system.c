@@ -9,6 +9,7 @@
 #include "option_menu.h"
 #include "window.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -32,6 +33,7 @@
 #include <applib/ui/dialogs/confirmation_dialog.h>
 #include <applib/ui/dialogs/dialog.h>
 #include <applib/ui/dialogs/expandable_dialog.h>
+#include <applib/ui/dialogs/simple_dialog.h>
 #include <applib/ui/option_menu_window.h>
 #include <applib/ui/ui.h>
 #include <kernel/core_dump.h>
@@ -361,7 +363,7 @@ static void prv_maybe_trigger_core_dump() {
 /////////////////////////////
 
 static void prv_update_als_threshold_label(NumberWindow *number_window, SettingsSystemData *data) {
-  uint32_t current_reading = light_get_ambient_lux();
+  uint32_t current_reading = light_get_ambient_gate_lux();
   uint32_t current_threshold = (uint32_t)number_window_get_value(number_window);
   bool would_backlight_be_on = current_reading <= current_threshold;
 
@@ -401,7 +403,7 @@ static void prv_als_threshold_menu_push(SettingsSystemData *data) {
   sys_psleep(200);
 
   // Get current ambient light reading to show backlight status
-  uint32_t current_reading = light_get_ambient_lux();
+  uint32_t current_reading = light_get_ambient_gate_lux();
   uint32_t current_threshold = backlight_get_ambient_threshold();
   bool would_backlight_be_on = current_reading <= current_threshold;
 
@@ -1249,9 +1251,24 @@ static void prv_push_kcc_window(SystemCertificationData *data) {
 // Callbacks for the main settings filter list menu.
 ////////////////////////////////////////////////////
 
+static void prv_push_unplug_to_shut_down_dialog(void) {
+  SimpleDialog *simple_dialog = simple_dialog_create("Shutdown Unplug");
+  Dialog *dialog = simple_dialog_get_dialog(simple_dialog);
+
+  dialog_set_text(dialog, i18n_get("Disconnect the charger to shut down.", simple_dialog));
+  dialog_set_icon(dialog, RESOURCE_ID_GENERIC_WARNING_LARGE);
+  dialog_set_timeout(dialog, DIALOG_TIMEOUT_INFINITE);
+
+  i18n_free_all(simple_dialog);
+
+  simple_dialog_push(simple_dialog, modal_manager_get_window_stack(ModalPriorityGeneric));
+}
+
 static void prv_shutdown_confirm_cb(ClickRecognizerRef recognizer, void *context) {
   actionable_dialog_pop((ActionableDialog *)context);
-  battery_ui_handle_shut_down();
+  if (battery_ui_handle_shut_down() == -EBUSY) {
+    prv_push_unplug_to_shut_down_dialog();
+  }
 }
 
 static void prv_shutdown_back_cb(ClickRecognizerRef recognizer, void *context) {

@@ -47,6 +47,9 @@
 #include <process_management/app_run_state.h>
 #include <process_management/process_manager.h>
 #include <process_management/worker_manager.h>
+#ifdef CONFIG_SERVICE_MIC_STREAM
+#include <pbl/services/mic_stream.h>
+#endif
 #ifdef CONFIG_TOUCH
 #include <pbl/services/touch/touch.h>
 #include <pbl/services/touch/touch_session.h>
@@ -334,6 +337,7 @@ static PBL_NOINLINE void prv_minimal_event_handler(PebbleEvent *e) {
       } else if (e->touch.event.type == TouchEvent_PositionUpdate) {
         s_touch_contact_engaged = true;
         touch_session_extend();
+        light_touch_moved();
       } else if (e->touch.event.type == TouchEvent_Liftoff) {
         light_touch_up();
         // A contact that neither moved nor formed a gesture is indistinguishable from a false
@@ -519,6 +523,9 @@ static PBL_NOINLINE void prv_extended_event_handler(PebbleEvent *e) {
 
       // TODO: evaluate if these need to change on every time update
       do_not_disturb_handle_clock_change();
+#ifdef CONFIG_BACKLIGHT_HAS_COLOR
+      light_handle_clock_change();
+#endif
 #endif
       return;
     }
@@ -531,6 +538,9 @@ static PBL_NOINLINE void prv_extended_event_handler(PebbleEvent *e) {
       PebbleCommSessionEvent *comm_session_event = &e->bluetooth.comm_session_event;
       debounced_connection_service_handle_event(comm_session_event);
       put_bytes_handle_comm_session_event(comm_session_event);
+#ifdef CONFIG_SERVICE_MIC_STREAM
+      mic_stream_service_handle_comm_session_event(comm_session_event);
+#endif
 #ifndef CONFIG_RECOVERY_FW
       if (comm_session_event->is_system) {
         // tell the phone which app is running

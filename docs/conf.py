@@ -75,8 +75,17 @@ html_context = {
 }
 
 # The firmware build behind the playground, left out of Read the Docs pull
-# request previews
-pbl_playground = os.environ.get("READTHEDOCS_VERSION_TYPE") != "external"
+# request previews unless labelled ci:docs-playground (see .readthedocs.yaml)
+pbl_playground = os.environ.get("READTHEDOCS_VERSION_TYPE") != "external" or (
+    os.path.exists(os.path.join(os.path.dirname(__file__), "..", ".pbl_playground"))
+)
+
+# Boards the playground offers, with their label; the first one is the default
+pbl_playground_boards = {
+    "native_emery/wasm": "Pebble Time 2",
+    "native_gabbro/wasm": "Pebble Round 2",
+    "native_flint/wasm": "Pebble 2 Duo",
+}
 
 # Pages that moved, served as redirects from their old URL
 pbl_redirects = {
