@@ -263,11 +263,13 @@ pbl_clar_test(test_boulder_spo2_plan
 )
 
 # Settings -> Health (Pebbles settings/health.c): die Zeile "SpO2 During Sleep" (b37) mit der
-# Variante und der echten messstufe.c auf shellpref, und ohne die Variante Pebbles Menue.
+# Variante, ihren Zeilen (boulder_health_zeilen.c) und der echten messstufe.c auf shellpref, und
+# ohne die Variante Pebbles Menue.
 pbl_clar_test(test_boulder_einstellungen
   MODULES settings
   SOURCES
     fw/apps/system/settings/health.c
+    fw/apps/system/settings/boulder_health_zeilen.c
     fw/services/activity/boulder/messstufe.c
     fw/services/activity/boulder/takt.c
   DEFINES DUMA_DISABLED CONFIG_HRM CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER

@@ -236,6 +236,12 @@ P6 = ['+#ifdef CONFIG_BOULDER_KIESELSPORT  // Boulder: P6',
       '+#endif']
 KACHEL = 'fw/apps/system/launcher/default/app_glance_kieselsport.c'
 KACHEL_TEXT = '// Boulder: P6\n#ifdef CONFIG_BOULDER_KIESELSPORT\nint x;\n#endif\n'
+# F3: Pebbles Settings > Health ruft die Zeilen der Variante in boulder_health_zeilen.c.
+HEALTH = 'fw/apps/system/settings/health.c'
+ZEILEN = 'fw/apps/system/settings/boulder_health_zeilen.c'
+ZEILEN_TEXT = '// Boulder: F3\n#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER\nint x;\n#endif\n'
+HAKEN = ['+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3',
+         '+      boulder_health_messstufe_zeile(&title, &subtitle);', '+      break;', '+#endif']
 
 
 def proben_startmenue(pruefe):
@@ -289,6 +295,18 @@ def proben_startmenue(pruefe):
     yield 'Kacheldatei aendert Pebbles Zeilen', pruefe(hunk(KACHEL, ['-alt', '+// Boulder: P6',
                                                                      '+#ifdef CONFIG_BOULDER_KIESELSPORT']), [])
     yield 'andere neue Datei im Startmenue', pruefe('', ['fw/apps/system/launcher/default/app_glance_x.c'])
+    # Die Health-Zeilen stehen unter dem Schalter der Variante, nicht unter dem von Kieselsport.
+    yield 'Health-Zeilen', not pruefe(k1_waechter.als_neue_datei(ZEILEN, ZEILEN_TEXT), [])
+    falscher = ZEILEN_TEXT.replace('CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER', 'CONFIG_BOULDER_KIESELSPORT')
+    yield 'Health-Zeilen unter dem Schalter von Kieselsport', rot(
+        pruefe(k1_waechter.als_neue_datei(ZEILEN, falscher), []),
+        'nicht ganz unter #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER')
+    yield 'Health-Haken', not pruefe(hunk(HEALTH, HAKEN, 'static void prv_draw_row_cb('), [])
+    yield 'Health-Haken ohne Schalter', rot(pruefe(hunk(HEALTH, [
+        '+      boulder_health_messstufe_zeile(&title, &subtitle);  // Boulder: F3'],
+        'static void prv_draw_row_cb('), []), 'ausserhalb von #ifdef')
+    yield 'Health-Haken in anderer Funktion', rot(
+        pruefe(hunk(HEALTH, HAKEN, 'static void prv_deinit_cb('), []), 'erlaubt nur')
     yield from proben_arbeitsbaum()
 
 

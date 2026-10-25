@@ -52,14 +52,6 @@ EIGENE_ORDNER = (
     '.claude/settings.json',
 )
 
-# Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht). Die Kachel
-# im Startmenue (P6) steht neben Pebbles Kacheln, weil sie deren Koepfe braucht; die .c baut jedes
-# Board und muss darum ganz unter dem Schalter stehen.
-EIGENE_DATEIEN = (
-    'fw/apps/system/launcher/default/app_glance_kieselsport.c',
-    'fw/apps/system/launcher/default/app_glance_kieselsport.h',
-)
-
 # Pebble-Datei: hoechstens geaenderte Zeilen, Funktion der Hunks als Regex, hoechstens so
 # viele Hunks (ohne Kontext), ob jeder Hunk ganz unter einem Schalter stehen muss (True: der von
 # Kieselsport, sonst sein Name), und fuer CMake der Block, den jeder Hunk genau bringen muss.
@@ -74,6 +66,17 @@ VARIANTE = 'CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER'
 # Die Schalter der System-Apps in der Registry (P3). Beide haengen an der Variante, jeder neue
 # Eintrag muss einen davon in "ifdefs" tragen: sonst stuende er auf jedem Board.
 APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE')
+
+# Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht), mit dem
+# Schalter, unter dem eine .c ganz stehen muss: fw/apps/system/ baut sie auf jedem Board. Die Kachel
+# im Startmenue (P6) steht neben Pebbles Kacheln, weil sie deren Koepfe braucht; die Zeilen der
+# Messstufe und von SpO2 im Schlaf (F3) neben Pebbles settings/health.c, das sie ruft.
+EIGENE_DATEIEN = {
+    'fw/apps/system/launcher/default/app_glance_kieselsport.c': SCHALTER,
+    'fw/apps/system/launcher/default/app_glance_kieselsport.h': SCHALTER,
+    'fw/apps/system/settings/boulder_health_zeilen.c': VARIANTE,
+    'fw/apps/system/settings/boulder_health_zeilen.h': VARIANTE,
+}
 # Ein CMake-Block: if(schalter), darin genau die Zeilen `inhalt`, endif().
 CMakeBlock = collections.namedtuple('CMakeBlock', 'schalter inhalt')
 
@@ -101,8 +104,11 @@ PEBBLE = {
     'fw/services/hrm/hrm_manager.c': Stelle(
         24, r'hrm_manager_new_data_cb\(|prv_can_turn_sensor_on\(|prv_prefs_allowed_features\(',
         hunks=4),
-    # F3 Menue Messstufe, dazu die Zeile "SpO2 During Sleep" (Entscheid vom 22.10.2026).
-    'fw/apps/system/settings/health.c': Stelle(47),
+    # F3 Menue Messstufe, dazu die Zeile "SpO2 During Sleep" (Entscheid vom 22.10.2026): je ein
+    # Haken beim Zeichnen und beim Waehlen der beiden Zeilen und das Include, alles unter dem
+    # Schalter der Variante; die Zeilen selbst stehen in boulder_health_zeilen.c.
+    'fw/apps/system/settings/health.c': Stelle(
+        19, r'prv_draw_row_cb\(|prv_select_click_cb\(', hunks=5, schalter=VARIANTE),
     # Kieselsport. Der Schalter haelt die vier Boards ohne Variante bei Pebble (Spezifikation G1).
     # P1 Pulskalorien (Start, Pulswert, Schritt-kcal ohne Puls, Stopp) und Verwerfen (F3 = A).
     'fw/services/activity/workout_service.c': Stelle(
@@ -298,9 +304,10 @@ def pruefe_eigene_datei(pfad, hunks):
     if not any('Boulder:' in x for x in zeilen):
         fehler.append(f'{pfad}: eigene Datei ohne "Boulder:"')
     if pfad.endswith('.c'):
-        aussen = ausserhalb_des_schalters([x for x in zeilen if x.startswith('+')])
+        schalter = EIGENE_DATEIEN[pfad]
+        aussen = ausserhalb_des_schalters([x for x in zeilen if x.startswith('+')], schalter)
         if aussen:
-            fehler.append(f'{pfad}: eigene Datei nicht ganz unter #ifdef {SCHALTER}: '
+            fehler.append(f'{pfad}: eigene Datei nicht ganz unter #ifdef {schalter}: '
                           f'"{aussen[0].strip()}"')
     return fehler
 

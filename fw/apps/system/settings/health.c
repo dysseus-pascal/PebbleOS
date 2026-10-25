@@ -2,15 +2,15 @@
 
 #include "health.h"
 
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3
+#include "boulder_health_zeilen.h"
+#endif
 #include "menu.h"
 #include "option_menu.h"
 #include "window.h"
 
 #include <pbl/kernel/fatal.h>
 #include <pbl/services/activity/activity.h>
-#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3 Messstufe
-#include <pbl/services/activity/boulder/messstufe.h>
-#endif
 #include <pbl/services/i18n/i18n.h>
 #include <pbl/util/size.h>
 
@@ -28,7 +28,7 @@ static const char *s_units_distance_labels[] = {
   i18n_noop("Miles"),
 };
 
-#if defined(CONFIG_HRM) && !defined(CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER)  // Boulder: F3, Takte nach der Messstufe
+#ifdef CONFIG_HRM
 static const HRMonitoringInterval s_hrm_intervals[] = {
   HRMonitoringInterval_5Min,  HRMonitoringInterval_10Min,    HRMonitoringInterval_30Min,
   HRMonitoringInterval_1Hour, HRMonitoringInterval_Disabled,
@@ -79,17 +79,13 @@ enum SettingsHealthItem {
   SettingsHealthHRMonitoringInterval,
   SettingsHealthHRActivityTracking,
   SettingsHealthSpO2Enabled,
-#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3, kein SpO2-Takt
-  SettingsHealthSpO2Sleep,
-#else
   SettingsHealthSpO2MonitoringInterval,
-#endif  // Boulder: F3
   SettingsHealthSpO2ActivityTracking,
 #endif
   NumSettingsHealthItems
 };
 
-#if defined(CONFIG_HRM) && !defined(CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER)  // Boulder: F3, Takte nach der Messstufe
+#ifdef CONFIG_HRM
 // HRM Interval option menu
 /////////////////////////////
 
@@ -132,21 +128,6 @@ static void prv_spo2_interval_menu_push(SettingsHealthData *data) {
                             s_spo2_interval_labels, data);
 }
 #endif
-#if defined(CONFIG_HRM) && defined(CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER)
-// Boulder: F3 - EINE Einstellung statt Puls- und SpO2-Takt; die Uhr stellt beide selbst nach
-// der Messstufe ein, damit nicht zwei Auswahlen dasselbe behaupten.
-static void prv_messstufe_select(OptionMenu *option_menu, int selection, void *context) {
-  boulder_messstufe_setzen((uint8_t)(selection + MESSSTUFE_MIN));
-  app_window_stack_remove(&option_menu->window, true /*animated*/);
-}
-
-static void prv_messstufe_push(SettingsHealthData *data) {
-  const OptionMenuCallbacks callbacks = { .select = prv_messstufe_select };
-  settings_option_menu_push(BOULDER_MESSSTUFE_TITEL, OptionMenuContentType_SingleLine,
-                            boulder_messstufe() - MESSSTUFE_MIN, &callbacks, MESSSTUFE_MAX,
-                            true /* icons_enabled */, boulder_messstufe_namen(), data);
-}
-#endif
 
 // Menu Callbacks
 /////////////////////////////
@@ -184,14 +165,13 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
 #ifdef CONFIG_HRM
     case SettingsHealthHRMonitoringInterval: {
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3, die Zeile zeigt die Messstufe
-      title = BOULDER_MESSSTUFE_TITEL;
-      subtitle = boulder_messstufe_namen()[boulder_messstufe() - MESSSTUFE_MIN];
-#else
+      boulder_health_messstufe_zeile(&title, &subtitle);
+      break;
+#endif
       title = i18n_noop("HR Monitoring");
       HRMonitoringInterval interval = activity_prefs_get_hrm_measurement_interval();
       int idx = prv_hrm_interval_to_index(interval);
       subtitle = s_hrm_interval_labels[idx];
-#endif  // Boulder: F3
       break;
     }
     case SettingsHealthHRActivityTracking: {
@@ -205,21 +185,17 @@ static void prv_draw_row_cb(SettingsCallbacks *context, GContext *ctx, const Lay
       subtitle = activity_prefs_spo2_is_enabled() ? i18n_noop("On") : i18n_noop("Off");
       break;
     }
-#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf (messstufe.h); F3
-    case SettingsHealthSpO2Sleep: {
-      title = i18n_noop("SpO2 During Sleep");
-      subtitle = boulder_spo2_schlaf() ? i18n_noop("On") : i18n_noop("Off");
-      break;
-    }
-#else
     case SettingsHealthSpO2MonitoringInterval: {
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: SpO2 im Schlaf; F3, den Takt stellt die Messstufe
+      boulder_health_spo2_schlaf_zeile(&title, &subtitle);
+      break;
+#endif
       title = i18n_noop("SpO2 Monitoring");
       HRMonitoringInterval interval = activity_prefs_get_spo2_measurement_interval();
       int idx = prv_spo2_interval_to_index(interval);
       subtitle = s_spo2_interval_labels[idx];
       break;
     }
-#endif  // Boulder: F3
     case SettingsHealthSpO2ActivityTracking: {
       title = i18n_noop("SpO2 During Activity");
       if (!activity_prefs_hrm_activity_tracking_is_enabled()) {
@@ -259,10 +235,10 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
 #ifdef CONFIG_HRM
     case SettingsHealthHRMonitoringInterval:
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: F3, die Messstufe
-      prv_messstufe_push((SettingsHealthData *)context);
-#else
+      boulder_health_messstufe_waehlen(context);
+      break;
+#endif
       prv_hrm_interval_menu_push((SettingsHealthData *)context);
-#endif  // Boulder: F3
       break;
     case SettingsHealthHRActivityTracking: {
       bool new_value = !activity_prefs_hrm_activity_tracking_is_enabled();
@@ -276,15 +252,13 @@ static void prv_select_click_cb(SettingsCallbacks *context, uint16_t row) {
     case SettingsHealthSpO2Enabled:
       activity_prefs_set_spo2_enabled(!activity_prefs_spo2_is_enabled());
       break;
-#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER // Boulder: SpO2 im Schlaf; F3
-    case SettingsHealthSpO2Sleep:
-      boulder_spo2_schlaf_setzen(!boulder_spo2_schlaf());
-      break;
-#else
     case SettingsHealthSpO2MonitoringInterval:
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER  // Boulder: SpO2 im Schlaf; F3
+      boulder_health_spo2_schlaf_waehlen();
+      break;
+#endif
       prv_spo2_interval_menu_push((SettingsHealthData *)context);
       break;
-#endif  // Boulder: F3
     case SettingsHealthSpO2ActivityTracking:
       // Only togglable once HR During Activity is on (see draw); otherwise ignore the press.
       if (activity_prefs_hrm_activity_tracking_is_enabled()) {

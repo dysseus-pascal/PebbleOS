@@ -44,6 +44,10 @@ static SettingsCallbacks *s_menue;
 static int s_neu_geladen;
 static int s_markiert;
 static int s_auswahlmenues;
+static const char *s_auswahl_titel;
+static int s_auswahl_wahl;
+static uint16_t s_auswahl_zeilen;
+static OptionMenuCallbacks s_auswahl_rueckrufe;
 static char s_titel[40];
 static char s_untertitel[40];
 
@@ -68,6 +72,10 @@ OptionMenu *settings_option_menu_push(const char *i18n_title_key,
                                       const OptionMenuCallbacks *callbacks, uint16_t num_rows,
                                       bool icons_enabled, const char **rows, void *context) {
   s_auswahlmenues++;
+  s_auswahl_titel = i18n_title_key;
+  s_auswahl_wahl = choice;
+  s_auswahl_zeilen = num_rows;
+  s_auswahl_rueckrufe = *callbacks;
   return NULL;
 }
 
@@ -194,6 +202,7 @@ void test_boulder_einstellungen__initialize(void) {
   s_neu_geladen = 0;
   s_markiert = 0;
   s_auswahlmenues = 0;
+  s_auswahl_titel = NULL;
 #ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
   boulder_messstufe_test_zuruecksetzen();
 #endif
@@ -270,6 +279,33 @@ void test_boulder_einstellungen__schlaf_umschalten(void) {
   prv_select(zeile);
   cl_assert_equal_i(s_auswahlmenues, 1);
   cl_assert_equal_i(prv_shellpref(false, "boulderSpo2Schlaf", &wert), E_DOES_NOT_EXIST);
+#endif
+}
+
+// Mit der Variante zeigt Pebbles Zeile "HR Monitoring" die Messstufe (F3) und oeffnet ihre Auswahl;
+// die Wahl gilt gleich. Ohne die Variante bleibt es Pebbles Puls-Takt.
+void test_boulder_einstellungen__precision(void) {
+#ifdef CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER
+  const int zeile = prv_finde(BOULDER_MESSSTUFE_TITEL);
+  cl_assert(zeile >= 0);
+  cl_assert_equal_s(s_untertitel, "Balanced");
+  prv_select(zeile);
+  cl_assert_equal_i(s_auswahlmenues, 1);
+  cl_assert_equal_s(s_auswahl_titel, BOULDER_MESSSTUFE_TITEL);
+  cl_assert_equal_i(s_auswahl_wahl, MESSSTUFE_VORGABE - MESSSTUFE_MIN);
+  cl_assert_equal_i(s_auswahl_zeilen, MESSSTUFE_MAX);
+  OptionMenu auswahl = {};
+  s_auswahl_rueckrufe.select(&auswahl, 3, NULL);
+  cl_assert_equal_i(boulder_messstufe(), 4);
+  prv_zeile(zeile);
+  cl_assert_equal_s(s_untertitel, "Detailed");
+#else
+  const int zeile = prv_finde("HR Monitoring");
+  cl_assert(zeile >= 0);
+  cl_assert_equal_s(s_untertitel, "10 Minutes");
+  prv_select(zeile);
+  cl_assert_equal_i(s_auswahlmenues, 1);
+  cl_assert_equal_s(s_auswahl_titel, "HR Monitoring");
 #endif
 }
 
