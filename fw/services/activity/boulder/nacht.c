@@ -11,7 +11,9 @@
 #include "pbl/services/activity/boulder/naechte.h"
 #endif
 #include "pbl/services/activity/boulder/schlafanalyse.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/zyklen.h"
+#include "pbl/util/units.h"
 #include <pbl/logging/logging.h>
 
 #include <string.h>
@@ -37,6 +39,9 @@ static uint16_t s_alt_ab;
 static uint16_t s_alt_auf;
 static uint16_t s_alt_fest;
 static uint16_t s_aufgeben;  //< Takte am Fensterende mit einer nicht ganz geschickten Nacht
+// F54: "Aufgewacht" von Hand - die Nacht ist fertig und endgueltig, als waere man zwei Stunden
+// wach. Bleibt stehen, bis sie es ist (das Datalogging kann sie aufhalten).
+static bool s_von_hand_beendet;
 // V3: die Ruhepulse der letzten sieben Naechte (Kalorien, Maximalpuls).
 static BoulderRuheRing s_ruhe;
 
@@ -58,6 +63,7 @@ void boulder_nacht_zuruecksetzen(void) {
   s_alt_auf = 0;
   s_alt_fest = 0;
   s_aufgeben = 0;
+  s_von_hand_beendet = false;
   memset(&s_ruhe, 0, sizeof(s_ruhe));
   boulder_eingang_neu();
   boulder_nachlauf_neu(0, 0);
@@ -84,10 +90,23 @@ static void prv_fenster_neu(time_t beginn) {
   s_fensterende = false;
   s_alt = false;
   s_aufgeben = 0;
+  s_von_hand_beendet = false;
   boulder_eingang_neu();
   boulder_live_neu();
   boulder_nachlauf_neu(0, 0);
   boulder_zyklen_nacht(beginn, 0);
+}
+
+void boulder_nacht_schliessen(void) {
+  if (s_beginn && s_stufe != NachtErledigt) {
+    s_fensterende = true;
+  }
+}
+
+void boulder_nacht_von_hand_beendet(void) {
+  if (s_beginn && s_stufe != NachtErledigt) {
+    s_von_hand_beendet = true;
+  }
 }
 
 bool boulder_nacht_minute(time_t beginn_utc, int minute, uint16_t vmc, uint8_t puls,
@@ -158,7 +177,7 @@ static void prv_nacht_takt(void) {
   uint16_t auf = 0;
   const bool gesehen = boulder_nachlauf_lauf_aufwachen(&auf);
   // Eine angefangene, nicht ganz geschickte Nacht geht ganz neu (ausgabe.h).
-  bool noetig = s_fensterende || boulder_ausgabe_offen();
+  bool noetig = s_fensterende || s_von_hand_beendet || boulder_ausgabe_offen();
   if (s_stufe == NachtOffen) {
     noetig |= gesehen && vorhanden - auf >= NACHT_WACH_FERTIG;
   } else {
@@ -176,8 +195,12 @@ static void prv_nacht_takt(void) {
   const SchlafErgebnis *e = boulder_nachlauf_endfassung();
   const time_t satz_beginn = s_beginn + (time_t)s_ab * 60;
   const int wach = e->gefunden ? vorhanden - (s_ab + e->aufwachen) : 0;
-  const bool fertig = e->gefunden && (s_fensterende || wach >= NACHT_WACH_FERTIG);
-  bool endgueltig = s_fensterende || (e->gefunden && wach >= NACHT_WACH_ENDGUELTIG);
+  const bool fertig =
+      e->gefunden && (s_fensterende || s_von_hand_beendet || wach >= NACHT_WACH_FERTIG);
+  bool endgueltig =
+      s_fensterende || (e->gefunden && (s_von_hand_beendet || wach >= NACHT_WACH_ENDGUELTIG));
+  // "Aufgewacht" ohne Nacht: nichts abzuschliessen, Schlaf danach rechnet das Fenster wie sonst.
+  s_von_hand_beendet &= e->gefunden;
   // Das NachtBild bei jeder Endfassung (b26), die Datei nur "fertig" und bei Aenderung.
   bool ablage = boulder_ausgabe_bild(satz_beginn, e, fertig);
   if (fertig) {
@@ -217,6 +240,12 @@ static void prv_nacht_takt(void) {
   boulder_zyklen_fest(boulder_nachlauf_fest_bis());
   if (!endgueltig) {
     return;
+  }
+  s_von_hand_beendet = false;
+  // Zwei Stunden wach oder 15 Stunden um: Gehoert die Nacht zum Schlafmodus, endet er (F54).
+  const time_t ende = s_beginn + (time_t)jetzt * PBL_SEC_PER_MIN;
+  if (boulder_schlafmodus_nacht_endgueltig(s_beginn, ende)) {
+    boulder_speicher_anstossen(false);
   }
   boulder_zyklen_endgueltig();
   boulder_ausgabe_endgueltig();

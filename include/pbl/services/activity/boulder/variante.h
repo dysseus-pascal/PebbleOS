@@ -56,6 +56,12 @@ void boulder_dauerteil_tracking_aus(void);
 // der App-Task mit Pebbles Workout-App, von KernelBG mit Kieselsport): nur ein Merker.
 void boulder_dauerteil_training(bool laeuft);
 
+// F53 (schlafmodus.h), KernelBG: den Schlafmodus von Hand starten oder beenden.
+void boulder_dauerteil_schlafmodus(bool an);
+// F53, in "Laden" nach dem Zustand: Gilt jetzt das Fenster von Hand, seinen Eingang aus Pebbles
+// Minutendatei fuellen (init kannte nur das Fenster ab 20 Uhr).
+void boulder_dauerteil_schlafmodus_nachfuellen(void);
+
 // Tests: der Dauerteil wie nach einem Boot (alles Statische auf null; Dateien bleiben). Der
 // naechste init fuellt den Ring und reiht "Laden" ein (AP4).
 void boulder_dauerteil_test_neustart(void);

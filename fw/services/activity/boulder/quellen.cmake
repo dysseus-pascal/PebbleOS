@@ -13,6 +13,7 @@ pbl_library_sources(
   boulder/live.c
   boulder/zyklen.c
   boulder/nacht.c
+  boulder/schlafmodus.c
   boulder/dauerteil.c
   boulder/takt.c
   boulder/messstufe.c

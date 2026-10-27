@@ -170,6 +170,7 @@ pbl_clar_test(test_boulder_zyklen
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/schlafmodus.c
     fw/services/activity/boulder/live.c
     fw/services/activity/boulder/zyklen.c
     fw/services/activity/boulder/eingang.c
@@ -187,6 +188,8 @@ pbl_clar_test(test_boulder_zyklen
     tests/fw/services/activity/boulder/fake_messung.c
   DEFINES DUMA_DISABLED CONFIG_HRM
   OVERRIDES dummy_board
+  # Schlafmodus: das Nachfuellen nach einem Neustart liest die Minuten aus der Referenz.
+  LIBS -Wl,--wrap=boulder_kraepelin_minuten
 )
 
 # Kopie und Original zaehlen gleich: dieselben Pruefkorpus-Laeufe, Ausgabe Zeile fuer Zeile.
@@ -296,6 +299,7 @@ set(boulder_wecker_quellen
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/schlafmodus.c
     fw/services/activity/boulder/live.c
     fw/services/activity/boulder/zyklen.c
     fw/services/activity/boulder/eingang.c
@@ -377,6 +381,7 @@ pbl_clar_test(test_boulder_training
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/schlafmodus.c
     fw/services/activity/boulder/live.c
     fw/services/activity/boulder/zyklen.c
     fw/services/activity/boulder/eingang.c
@@ -426,6 +431,7 @@ set(boulder_schnittstelle_quellen
     fw/services/activity/boulder/takt.c
     fw/services/activity/boulder/dauerteil.c
     fw/services/activity/boulder/nacht.c
+    fw/services/activity/boulder/schlafmodus.c
     fw/services/activity/boulder/live.c
     fw/services/activity/boulder/zyklen.c
     fw/services/activity/boulder/eingang.c

@@ -12,6 +12,7 @@
 #include "pbl/kernel/mutex.h"
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/speicher.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/alarms/alarm.h"
@@ -161,7 +162,10 @@ void boulder_ausgabe_nacht(time_t beginn, const SchlafErgebnis *e) {
     .teile_hrv = (uint8_t)((hrv_anzahl + NACHT_HRV_DLS_FENSTER - 1) / NACHT_HRV_DLS_FENSTER),
     .akku_beginn = prv_bei(s_protokoll.akku, eingeschlafen),
     .akku_ende = battery_get_charge_state().charge_percent,
-    .flags = s_protokoll.geladen ? NACHT_DLS_FLAG_GELADEN : 0,
+    .flags = (uint8_t)((s_protokoll.geladen ? NACHT_DLS_FLAG_GELADEN : 0) |
+                       (boulder_schlafmodus_nacht_von_hand(beginn, eingeschlafen)
+                            ? NACHT_DLS_FLAG_MANUELL
+                            : 0)),
     .messstufe = (stufe != AUSGABE_UNBEKANNT) ? stufe : boulder_messstufe(),
   };
   // b26: ohne Abschnitte trotzdem ein Satz (teile 0).

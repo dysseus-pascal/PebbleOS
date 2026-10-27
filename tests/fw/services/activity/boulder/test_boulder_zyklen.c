@@ -1526,3 +1526,370 @@ void test_boulder_zyklen__umzug_mitten_in_der_nacht(void) {
   // Mindestens eine Nacht hatte vor dem Update HRV-Fenster (sonst prueft das nichts).
   cl_assert(hrv_gleich > 0);
 }
+
+// =============================================================================================
+// Schlafmodus von Hand (F53-F56, schlafmodus.h)
+
+#include "pbl/services/activity/boulder/schlafmodus.h"
+
+// Der Wrap fuer das Nachfuellen nach einem Neustart im Schlafmodus (dauerteil.c): Mit
+// s_hand_quelle kommen die Minuten aus der Referenz wie aus Pebbles Minutendatei, sonst aus der
+// echten Datei der Kopie (die der Test nicht fuellt).
+static bool s_hand_quelle;
+static int s_hand_nachgefuellt;
+bool __real_boulder_kraepelin_minuten(time_t von_utc, time_t bis_utc, BoulderJeMinute je_minute,
+                                      void *kontext);
+bool __wrap_boulder_kraepelin_minuten(time_t von_utc, time_t bis_utc, BoulderJeMinute je_minute,
+                                      void *kontext) {
+  if (!s_hand_quelle) {
+    return __real_boulder_kraepelin_minuten(von_utc, bis_utc, je_minute, kontext);
+  }
+  for (time_t t = von_utc; t < bis_utc; t += PBL_SEC_PER_MIN) {
+    const BoulderMinute minute =
+        prv_eingabe((int)((t - s_ref.beginn_utc) / PBL_SEC_PER_MIN), MINUTEN);
+    je_minute(&minute, kontext);
+    s_hand_nachgefuellt++;
+  }
+  return true;
+}
+
+static void prv_hand(bool an, time_t um) {
+  rtc_set_time(um + 5);
+  boulder_dauerteil_schlafmodus(an);
+  fake_system_task_callbacks_invoke_pending();
+}
+
+// Minute m der Referenz zur Zeit `beginn` + m Minuten (ungueltige bleiben ungueltig); nach der
+// Eingabe wach und unterwegs.
+static void prv_ref_minute(time_t beginn, int m) {
+  if (m >= MINUTEN) {
+    prv_minute(beginn, m, 3000, 82, true);
+  } else {
+    prv_minute(beginn, m, s_ref.vmc[m], s_ref.puls[m], s_ref.gueltig[m]);
+  }
+}
+
+// Minute m der Referenz zur Zeit `zeit`.
+static void prv_ref_minute_um(time_t zeit, int m) {
+  const time_t beginn = zeit - (time_t)m * PBL_SEC_PER_MIN;
+  if (m >= MINUTEN) {
+    prv_minute(beginn, m, 3000, 82, true);
+  } else {
+    prv_minute(beginn, m, s_ref.vmc[m], s_ref.puls[m], s_ref.gueltig[m]);
+  }
+}
+
+// Der zuletzt geschickte Satz 0x4001 (Teil 0); NULL ohne Satz.
+static const NachtDlsRecord *prv_letzte_nacht(void) {
+  for (int i = s_nacht_anzahl - 1; i >= 0; i--) {
+    if (s_nacht[i].teil == 0) {
+      return &s_nacht[i];
+    }
+  }
+  return NULL;
+}
+
+// Die Regeln des Fensters ohne Uhr: an, beendet, bis zum naechsten Fenster ab 20 Uhr, 24 h.
+void test_boulder_zyklen__schlafmodus_fenster(void) {
+  const time_t s = 1790000000;
+  const time_t r = s - 3 * PBL_SEC_PER_HOUR;  // das Fenster ab 20 Uhr, in dem der Start liegt
+  cl_assert_equal_i(boulder_schlafmodus_fenster(s, r), r);
+  cl_assert(boulder_schlafmodus_starten(s));
+  cl_assert(!boulder_schlafmodus_starten(s + 60));  // laeuft schon
+  cl_assert_equal_i(boulder_schlafmodus_fenster(s - 60, r), r);
+  cl_assert_equal_i(boulder_schlafmodus_fenster(s, r), s);
+  cl_assert_equal_i(boulder_schlafmodus_fenster(s + 20 * PBL_SEC_PER_HOUR, r + PBL_SEC_PER_DAY), s);
+  cl_assert_equal_i(boulder_schlafmodus_seit(), s);
+  cl_assert(boulder_schlafmodus_nacht_von_hand(s, s + 3 * PBL_SEC_PER_HOUR));
+  const time_t ende = s + 8 * PBL_SEC_PER_HOUR;
+  cl_assert(boulder_schlafmodus_beenden(ende));
+  cl_assert(!boulder_schlafmodus_beenden(ende + 60));
+  cl_assert_equal_i(boulder_schlafmodus_seit(), 0);
+  // Bis das naechste Fenster ab 20 Uhr beginnt, gilt das von Hand weiter.
+  cl_assert_equal_i(boulder_schlafmodus_fenster(ende + 60, r), s);
+  cl_assert_equal_i(boulder_schlafmodus_fenster(ende + 60, ende + 60), ende + 60);
+  cl_assert_equal_i(boulder_schlafmodus_fenster(ende, ende), ende);
+  // Hoechstens 24 Stunden.
+  cl_assert_equal_i(boulder_schlafmodus_fenster(s + PBL_SEC_PER_DAY, r), r);
+  // Von Hand ist nur die erste Nacht, und nur mit Schlaf vor dem Ende.
+  cl_assert(boulder_schlafmodus_nacht_von_hand(s, ende - 60));
+  cl_assert(!boulder_schlafmodus_nacht_von_hand(s, ende));
+  cl_assert(!boulder_schlafmodus_nacht_von_hand(s + 600, s + 900));
+  // Zwei Stunden ohne Schlaf, und er endet von selbst; mit Schlaf nicht.
+  cl_assert(boulder_schlafmodus_starten(s + PBL_SEC_PER_DAY));
+  cl_assert(!boulder_schlafmodus_minute(s + PBL_SEC_PER_DAY + 118 * 60, false));
+  cl_assert(boulder_schlafmodus_minute(s + PBL_SEC_PER_DAY + 119 * 60, false));
+  cl_assert(!boulder_schlafmodus_aktiv());
+  cl_assert(boulder_schlafmodus_starten(s + 2 * PBL_SEC_PER_DAY));
+  cl_assert(!boulder_schlafmodus_minute(s + 2 * PBL_SEC_PER_DAY + 30 * 60, true));
+  cl_assert(!boulder_schlafmodus_minute(s + 2 * PBL_SEC_PER_DAY + 119 * 60, false));
+  cl_assert(boulder_schlafmodus_aktiv());
+}
+
+// Am Tag, nach einer Nachtschicht: Start um 10 Uhr, eine Dreiviertelstunde vor dem Einschlafen der
+// Referenz, die ab dann weiterlaeuft; kein "Aufgewacht". Die Nacht ist dieselbe wie aus dem
+// Fenster ab 20 Uhr, beginnt beim Start und traegt das Bit; zwei Stunden nach dem Aufwachen endet
+// der Schlafmodus von selbst.
+void test_boulder_zyklen__schlafmodus_am_tag(void) {
+  prv_lade("nacht-2026-09-26");
+  const int ab = 90;
+  cl_assert(s_ref.satz.einschlafen > ab + 30);
+  const time_t start = s_ref.beginn_utc + 14 * PBL_SEC_PER_HOUR;
+  for (int m = 0; m < 14 * 60; m++) {
+    prv_minute(s_ref.beginn_utc, m, 3000, 82, true);
+  }
+  cl_assert_equal_i(s_nacht_anzahl, 0);
+  prv_hand(true, start);
+  cl_assert(boulder_schlafmodus_aktiv());
+  int ende_von_selbst = -1;
+  for (int m = 0; m < s_ref.satz.aufwachen - ab + NACHT_WACH_ENDGUELTIG + 10; m++) {
+    prv_ref_minute_um(start + (time_t)m * PBL_SEC_PER_MIN, ab + m);
+    if (ende_von_selbst < 0 && !boulder_schlafmodus_aktiv()) {
+      ende_von_selbst = m;
+    }
+  }
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  printf("\nSchlafmodus am Tag: ein %d/%d auf %d/%d Schlaf %d/%d, Ende von selbst Minute %d",
+         n->einschlafen, s_ref.satz.einschlafen - ab, n->aufwachen, s_ref.satz.aufwachen - ab,
+         n->schlaf_minuten, s_ref.satz.schlaf_minuten, ende_von_selbst);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(n->flags & NACHT_DLS_FLAG_MANUELL);
+  cl_assert_equal_i(n->einschlafen, s_ref.satz.einschlafen - ab);
+  cl_assert_equal_i(n->aufwachen, s_ref.satz.aufwachen - ab);
+  cl_assert_equal_i(n->schlaf_minuten, s_ref.satz.schlaf_minuten);
+  const int erwartet = s_ref.satz.aufwachen - ab + NACHT_WACH_ENDGUELTIG;
+  cl_assert(ende_von_selbst >= erwartet - 1 && ende_von_selbst <= erwartet + 5);
+  prv_pruefe_log("Schlafmodus am Tag");
+}
+
+// Am Abend: das Fenster ab 20 Uhr laeuft, um 21:30 der Start, die Referenznacht geht weiter,
+// "Aufgewacht" eine Stunde nach dem Aufwachen. Die Nacht beginnt beim Start, sonst wie b26.
+static void prv_abend(int neustart_nach) {
+  prv_lade("nacht-2026-09-26");
+  const int start_m = 90;
+  cl_assert(s_ref.satz.einschlafen > start_m + 30);
+  const time_t start = s_ref.beginn_utc + (time_t)start_m * PBL_SEC_PER_MIN;
+  int m = 0;
+  for (; m < start_m; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  prv_hand(true, start);
+  const int stopp = s_ref.satz.aufwachen + 60;
+  for (; m < stopp; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+    if (m == neustart_nach) {
+      // Ein Neustart wie auf der Uhr: init fuellt das Fenster ab 20 Uhr, "Laden" holt den
+      // Schlafmodus und fuellt sein Fenster aus der Minutendatei nach. Der Boot verschluckt
+      // die Minute m + 1.
+      prv_neustart(m, MINUTEN);
+      cl_assert(boulder_schlafmodus_aktiv());
+      m++;
+    }
+  }
+  prv_hand(false, s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN);
+  cl_assert(!boulder_schlafmodus_aktiv());
+  for (int k = 0; k < 20; k++, m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  printf("\nSchlafmodus am Abend%s: ein %d auf %d Schlaf %d (b26 %d/%d/%d, ab Start %d/%d)",
+         neustart_nach < 0 ? "" : " mit Neustart", n->einschlafen, n->aufwachen,
+         n->schlaf_minuten, s_ref.satz.einschlafen, s_ref.satz.aufwachen,
+         s_ref.satz.schlaf_minuten, s_ref.satz.einschlafen - start_m,
+         s_ref.satz.aufwachen - start_m);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(n->flags & NACHT_DLS_FLAG_MANUELL);
+  cl_assert_equal_i(n->einschlafen, s_ref.satz.einschlafen - start_m);
+  cl_assert_equal_i(n->aufwachen, s_ref.satz.aufwachen - start_m);
+  cl_assert_equal_i(n->schlaf_minuten, s_ref.satz.schlaf_minuten);
+  // Vor dem Start keine Nacht (wach), danach keine zweite.
+  for (int i = 0; i < s_nacht_anzahl; i++) {
+    cl_assert_equal_i(s_nacht[i].beginn_utc, start);
+  }
+  prv_pruefe_log("Schlafmodus am Abend");
+}
+
+void test_boulder_zyklen__schlafmodus_am_abend(void) {
+  prv_abend(-1);
+}
+
+void test_boulder_zyklen__schlafmodus_neustart_im_schlaf(void) {
+  prv_lade("nacht-2026-09-26");
+  const int neustart = s_ref.satz.einschlafen + 200;
+  s_hand_quelle = true;
+  s_hand_nachgefuellt = 0;
+  prv_abend(neustart);
+  s_hand_quelle = false;
+  // Ohne Nachfuellen fehlten die Minuten vom Start bis zum Boot.
+  cl_assert(s_hand_nachgefuellt > 200);
+}
+
+// Vergessen oder aus Versehen: zwei Stunden ohne Schlaf, und der Schlafmodus endet von selbst. Die
+// Nacht danach ist eine gewoehnliche (ohne Bit), aus demselben Fenster, und nichts von ihr fehlt.
+void test_boulder_zyklen__schlafmodus_ohne_schlaf(void) {
+  prv_lade("nacht-2026-09-26");
+  const time_t start = s_ref.beginn_utc - 60 * PBL_SEC_PER_MIN;
+  prv_hand(true, start);
+  for (int m = 0; m < 60; m++) {
+    prv_minute(start, m, 3000, 82, true);
+  }
+  int m = 0;
+  for (; boulder_schlafmodus_aktiv() && m < 120; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  cl_assert(!boulder_schlafmodus_aktiv());
+  cl_assert_equal_i(m, 60);
+  cl_assert(m < s_ref.satz.einschlafen);
+  for (; m < s_ref.satz.aufwachen + NACHT_WACH_ENDGUELTIG + 10; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(!(n->flags & NACHT_DLS_FLAG_MANUELL));
+  cl_assert_equal_i(n->einschlafen, s_ref.satz.einschlafen + 60);
+  cl_assert_equal_i(n->aufwachen, s_ref.satz.aufwachen + 60);
+  cl_assert_equal_i(n->schlaf_minuten, s_ref.satz.schlaf_minuten);
+}
+
+// "Aufgewacht" ohne Nacht (gleich wieder beendet): nichts geschickt, Schlaf danach ist eine
+// gewoehnliche Nacht.
+void test_boulder_zyklen__schlafmodus_gleich_beendet(void) {
+  prv_lade("nacht-2026-09-26");
+  const time_t start = s_ref.beginn_utc + 30 * PBL_SEC_PER_MIN;
+  int m = 0;
+  for (; m < 30; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  prv_hand(true, start);
+  for (; m < 40; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  prv_hand(false, s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN);
+  cl_assert_equal_i(s_nacht_anzahl, 0);
+  for (; m < s_ref.satz.aufwachen + NACHT_WACH_ENDGUELTIG + 10; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(!(n->flags & NACHT_DLS_FLAG_MANUELL));
+  cl_assert_equal_i(n->schlaf_minuten, s_ref.satz.schlaf_minuten);
+}
+
+// Hoechstens 15 Stunden: Danach ist die Nacht endgueltig und der Schlafmodus vorbei, auch ohne
+// "Aufgewacht" und ohne zwei Stunden wach.
+void test_boulder_zyklen__schlafmodus_15_stunden(void) {
+  prv_lade("nacht-2026-09-26");
+  const time_t start = s_ref.beginn_utc + 14 * PBL_SEC_PER_HOUR;
+  prv_hand(true, start);
+  int m = 0;
+  for (; m < NACHT_MINUTEN + 30; m++) {
+    prv_minute(start, m, 0, 52, true);
+  }
+  cl_assert(!boulder_schlafmodus_aktiv());
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(n->flags & NACHT_DLS_FLAG_MANUELL);
+  cl_assert(n->aufwachen <= NACHT_MINUTEN);
+  cl_assert(n->schlaf_minuten > 13 * 60);
+}
+
+// Vor "Laden" (nach einem Neustart am Kabel oder mit Tracking aus): Der Wunsch gilt ab dem Laden,
+// und der Zustand aus der Datei geht ihm nicht vor. Er uebersteht danach einen Neustart.
+void test_boulder_zyklen__schlafmodus_vor_dem_laden(void) {
+  prv_lade("nacht-2026-09-26");
+  for (int m = 0; m < 30; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  fake_system_task_callbacks_invoke_pending();
+  activity_algorithm_deinit();
+  fake_system_task_callbacks_invoke_pending();
+  pbl_cron_deinit();
+  boulder_dauerteil_test_neustart();
+  rtc_set_time(s_ref.beginn_utc + 40 * PBL_SEC_PER_MIN);
+  prv_hand(true, s_ref.beginn_utc + 40 * PBL_SEC_PER_MIN);
+  cl_assert(!boulder_schlafmodus_aktiv());
+  const time_t laden = s_ref.beginn_utc + 52 * PBL_SEC_PER_MIN + 17;
+  rtc_set_time(laden);
+  pbl_cron_init();
+  cl_assert(activity_algorithm_init(&s_rate));
+  fake_system_task_callbacks_invoke_pending();  // "Laden", dann der Wunsch
+  cl_assert(boulder_schlafmodus_aktiv());
+  cl_assert_equal_i(boulder_schlafmodus_seit(), laden - laden % PBL_SEC_PER_MIN);
+  prv_neustart(60, MINUTEN);
+  cl_assert(boulder_schlafmodus_aktiv());
+  cl_assert_equal_i(boulder_schlafmodus_seit(), laden - laden % PBL_SEC_PER_MIN);
+}
+
+// Die Nachtruhe der Messung (Nachtpuls, SpO2 im Schlaf) folgt dem Fenster von Hand, solange er
+// laeuft: um 12 Uhr, nach dem Nachtteil des Fensters ab 20 Uhr. Danach wieder dem ab 20 Uhr, auch
+// wenn das Fenster von Hand bis 20 Uhr weiterlaeuft.
+extern bool g_fake_nachtruhe;
+void test_boulder_zyklen__schlafmodus_nachtruhe_am_tag(void) {
+  prv_lade("nacht-2026-09-26");
+  const int ab = 16 * 60;  // 12 Uhr
+  int m = 0;
+  for (; m < ab; m++) {
+    prv_minute(s_ref.beginn_utc, m, 0, 52, true);
+  }
+  cl_assert(!g_fake_nachtruhe);
+  prv_hand(true, s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN);
+  cl_assert_equal_i(boulder_schlafmodus_seit(), s_ref.beginn_utc + (time_t)ab * PBL_SEC_PER_MIN);
+  for (; m < ab + 60; m++) {
+    prv_minute(s_ref.beginn_utc, m, 0, 52, true);
+    cl_assert(g_fake_nachtruhe);
+  }
+  prv_hand(false, s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN);
+  prv_minute(s_ref.beginn_utc, m, 0, 52, true);
+  cl_assert(!g_fake_nachtruhe);
+}
+
+// Der Start schliesst das laufende Fenster gleich: Schon die erste Minute danach gehoert der Nacht
+// von Hand. Ohne das Schliessen verwuerfe der Lebenslauf sie, bis der Takt das alte Fenster
+// abgeschlossen hat (nacht.c).
+void test_boulder_zyklen__schlafmodus_erste_minute(void) {
+  prv_lade("nacht-2026-09-26");
+  int m = 0;
+  for (; m < 90; m++) {
+    prv_minute(s_ref.beginn_utc, m, 3000, 82, true);
+  }
+  const time_t start = s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN;
+  prv_hand(true, start);
+  prv_minute(s_ref.beginn_utc, m, 40, 60, true);
+  cl_assert_equal_i(boulder_nacht_fenster(), start);
+  const BoulderEingang *e = boulder_eingang();
+  cl_assert_equal_i(e->letzte, 0);
+  cl_assert(e->gueltig[0]);
+  cl_assert_equal_i(e->bewegung[0], 40);
+}
+
+// "Aufgewacht" gleich beim Aufwachen: Die Nacht ist sofort fertig, mit dem Aufwachen der Referenz,
+// nicht erst nach einer Viertelstunde wach.
+void test_boulder_zyklen__schlafmodus_aufgewacht_sofort(void) {
+  prv_lade("nacht-2026-09-26");
+  const int start_m = 90;
+  const time_t start = s_ref.beginn_utc + (time_t)start_m * PBL_SEC_PER_MIN;
+  int m = 0;
+  for (; m < start_m; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  prv_hand(true, start);
+  for (; m < s_ref.satz.aufwachen + 3; m++) {
+    prv_ref_minute(s_ref.beginn_utc, m);
+  }
+  prv_hand(false, s_ref.beginn_utc + (time_t)m * PBL_SEC_PER_MIN);
+  const NachtDlsRecord *n = prv_letzte_nacht();
+  cl_assert(n);
+  printf("\nAufgewacht sofort: ein %d auf %d Schlaf %d (ab Start %d/%d, Schlaf %d)", n->einschlafen,
+         n->aufwachen, n->schlaf_minuten, s_ref.satz.einschlafen - start_m,
+         s_ref.satz.aufwachen - start_m, s_ref.satz.schlaf_minuten);
+  cl_assert_equal_i(n->beginn_utc, start);
+  cl_assert(n->flags & NACHT_DLS_FLAG_MANUELL);
+  cl_assert_equal_i(n->einschlafen, s_ref.satz.einschlafen - start_m);
+  cl_assert(abs(n->aufwachen - (s_ref.satz.aufwachen - start_m)) <= 3);
+  cl_assert(abs(n->schlaf_minuten - s_ref.satz.schlaf_minuten) <= 5);
+}

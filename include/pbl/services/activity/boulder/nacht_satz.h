@@ -50,11 +50,14 @@ typedef struct PBL_PACKED {
   NachtDlsAbschnitt abschnitte[NACHT_DLS_ABSCHNITTE];
   uint8_t akku_beginn;     //< % beim Einschlafen, 0xFF = unbekannt
   uint8_t akku_ende;       //< % als die Nacht fertig war
-  uint8_t flags;           //< NACHT_DLS_FLAG_GELADEN
+  uint8_t flags;           //< NACHT_DLS_FLAG_GELADEN, NACHT_DLS_FLAG_MANUELL
   uint8_t messstufe;       //< 1..5
 } NachtDlsRecord;
 
 #define NACHT_DLS_FLAG_GELADEN 0x01
+// Die Nacht des Schlafmodus von Hand (schlafmodus.h). EIN BIT STATT EINER NEUEN FASSUNG: Boulder
+// nimmt nur Fassung 3 und liest bis 0.60 nur Bit 0 - aeltere Apps sehen eine gewoehnliche Nacht.
+#define NACHT_DLS_FLAG_MANUELL 0x02
 
 #define NACHT_HRV_DLS_VERSION 1
 #define NACHT_HRV_DLS_FENSTER 48

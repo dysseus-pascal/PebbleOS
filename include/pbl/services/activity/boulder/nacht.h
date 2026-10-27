@@ -79,6 +79,12 @@ void boulder_nacht_takt(void);
 
 void boulder_nacht_zuruecksetzen(void);
 
+// Schlafmodus von Hand (schlafmodus.h). Start: das laufende Fenster abschliessen wie an seinem
+// Ende, damit das neue gleich beginnen kann. "Aufgewacht": eine gefundene Nacht ist fertig und
+// endgueltig wie nach zwei Stunden wach, danach waere Schlaf eine Folgenacht. Der Takt macht beides.
+void boulder_nacht_schliessen(void);
+void boulder_nacht_von_hand_beendet(void);
+
 // AP4, nach dem Boot (Spezifikation 7.3): Der erste init beginnt das Fenster ab `beginn` und
 // fuellt seinen Eingang aus Pebbles Minutendatei (D14, boulder_nacht_ring_minute). Bis
 // "Laden" lief, nehmen auch die Minuten des Minutenteils nur diesen Weg - kein Automat, keine

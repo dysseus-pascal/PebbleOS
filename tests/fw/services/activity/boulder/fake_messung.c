@@ -21,9 +21,11 @@ uint8_t boulder_messstufe(void) {
 void boulder_messstufe_nachlesen(void) {
 }
 
+// Die Nachtruhe der letzten Minute (test_boulder_zyklen, Schlafmodus).
+bool g_fake_nachtruhe;
 void boulder_puls_minute(time_t jetzt_utc, bool nachtruhe) {
   (void)jetzt_utc;
-  (void)nachtruhe;
+  g_fake_nachtruhe = nachtruhe;
 }
 
 void boulder_puls_tracking_aus(void) {

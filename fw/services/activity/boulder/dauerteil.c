@@ -52,6 +52,7 @@
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/puls.h"
 #include "pbl/services/activity/boulder/schlafanalyse.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/spo2.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/umzug.h"
@@ -94,7 +95,7 @@ static bool s_aus_prueflauf;
 // Das Nachtfenster, in dem `utc` liegt: ab 20 Uhr Ortszeit, mit dem Versatz AM
 // FENSTERBEGINN (b26, M: nacht.c:193-209) - sonst rutschte der Beginn in der Nacht der
 // Zeitumstellung um drei Uhr um eine Stunde, mitten in der Rechnung.
-static time_t prv_fenster(time_t utc) {
+static time_t prv_fenster_regulaer(time_t utc) {
   const time_t lokal = time_utc_to_local(utc);
   const int minute_des_tages = (int)((lokal % PBL_SEC_PER_DAY) / PBL_SEC_PER_MIN);
   time_t beginn_lokal = lokal - (lokal % PBL_SEC_PER_DAY) + 20 * PBL_SEC_PER_HOUR;
@@ -104,6 +105,12 @@ static time_t prv_fenster(time_t utc) {
   time_t b = utc - (lokal - beginn_lokal);
   b = beginn_lokal - (time_utc_to_local(b) - b);
   return b;
+}
+
+// DIE EINZIGE STELLE, DIE DAS FENSTER BESTIMMT: Mit dem Schlafmodus von Hand beginnt es beim Start
+// (schlafmodus.h), und alles, was hier am Fenster haengt, folgt ihm.
+static time_t prv_fenster(time_t utc) {
+  return boulder_schlafmodus_fenster(utc, prv_fenster_regulaer(utc));
 }
 
 // Der Takt der Nacht in einem eigenen, verwerfbaren Callback (2.4): die Fensterrechnung
@@ -121,6 +128,9 @@ static void prv_nachlauf_cb(void *data) {
 
 static bool s_gestartet;    //< der erste init seit dem Boot war da
 static bool s_laden_offen;  //< "Laden" steht noch aus
+// F53: ein Wunsch an den Schlafmodus vor "Laden" (1 an, -1 aus): Erst "Laden" kennt den Zustand und
+// das laufende Fenster, ein frueherer Start ginge darin unter. Er gilt ab dem Laden.
+static int8_t s_schlafmodus_nach_laden;
 static bool s_test_ohne_cron;  //< Tests, die Pebbles Timer selbst treiben (test_boulder_wecker)
 
 static void prv_takt_cb(void *data);
@@ -163,6 +173,11 @@ static void prv_laden_cb(void *data) {
   }
   s_laden_offen = false;
   boulder_speicher_laden();
+  if (s_schlafmodus_nach_laden) {
+    const bool an = s_schlafmodus_nach_laden > 0;
+    s_schlafmodus_nach_laden = 0;
+    boulder_dauerteil_schlafmodus(an);
+  }
 #ifdef CONFIG_BOULDER_KIESELSPORT
   // KIESELSPORT OHNE PEBBLE-HAKEN (Schritt 2, Regel 2.5.5): Der erste Takt der Variante startet
   // den Dienst, damit Liegengebliebenes nach einem Neustart auch ohne App-Start ans Telefon geht.
@@ -250,9 +265,17 @@ void boulder_dauerteil_minute(const BoulderMinute *minute) {
     boulder_aufgabe_einreihen(&s_aufgabe_nachlauf);
   }
   boulder_zyklen_abschluss_schritt(!boulder_live_schlaeft());
+  if (boulder_schlafmodus_minute(minute->utc, boulder_live_schlaeft())) {
+    boulder_speicher_anstossen(false);
+  }
   // Messung (AP5): die laufende Minute beginnt jetzt. "Nachtruhe" (5.2): im Nachtfenster
   // und die eben fertige Minute ruhig - wer um sieben herumlaeuft, misst mit dem Tagestakt.
-  const int naechste = index + 1;
+  // NACH DEM SCHLAFMODUS DAS FENSTER AB 20 UHR: Das Fenster von Hand laeuft nach seinem Ende bis
+  // 20 Uhr weiter; der dichte Nachtpuls bis 15 Stunden nach dem Start kostete am Tag Akku.
+  const time_t regulaer = prv_fenster_regulaer(minute->utc);
+  const int naechste = boulder_schlafmodus_aktiv()
+                           ? index + 1
+                           : (int)((minute->utc + PBL_SEC_PER_MIN - regulaer) / PBL_SEC_PER_MIN);
   const bool im_nachtfenster = naechste < NACHT_MINUTEN || naechste >= NACHT_FENSTER_MINUTEN;
   boulder_spo2_merken(minute->utc, minute->spo2);
   boulder_messstufe_minute();
@@ -306,6 +329,57 @@ void boulder_dauerteil_ring_minute(const BoulderMinute *minute) {
                             minute->vmc, minute->puls, !minute->nicht_getragen);
 }
 
+// ---------------------------------------------------------------------------------------
+// Schlafmodus von Hand (F53-F56, schlafmodus.h)
+
+void boulder_dauerteil_schlafmodus(bool an) {
+  if (!s_gestartet || s_laden_offen) {
+    s_schlafmodus_nach_laden = an ? 1 : -1;
+    return;
+  }
+  const time_t jetzt = rtc_get_time();
+  const time_t minute = jetzt - (jetzt % PBL_SEC_PER_MIN);
+  if (an) {
+    if (!boulder_schlafmodus_starten(minute)) {
+      return;
+    }
+    // Das alte Fenster gleich abschliessen (Takt unten): Bis es erledigt ist, verwirft der
+    // Lebenslauf die Minuten des neuen (nacht.c), und die erste kommt in einer Minute.
+    boulder_nacht_schliessen();
+  } else {
+    if (!boulder_schlafmodus_beenden(jetzt)) {
+      return;
+    }
+    boulder_nacht_von_hand_beendet();
+  }
+  boulder_aufgabe_einreihen(&s_aufgabe_nachlauf);
+  boulder_speicher_anstossen(false);
+#ifdef CONFIG_BOULDER_HEALTH_APP
+  boulder_lage_veroeffentlichen();
+#endif
+}
+
+// NACH EINEM NEUSTART IM SCHLAFMODUS: init fuellte den Eingang fuer das Fenster ab 20 Uhr, denn den
+// Zustand kennt erst "Laden" (init liest die eigene Datei nicht, Spezifikation 2.4). Gilt jetzt das
+// Fenster von Hand, kommt sein Eingang noch einmal aus Pebbles Minutendatei, wie das Herzband (D18).
+static void prv_ring_von_hand(const BoulderMinute *minute, void *kontext) {
+  boulder_dauerteil_ring_minute(minute);
+}
+
+void boulder_dauerteil_schlafmodus_nachfuellen(void) {
+  const time_t jetzt = rtc_get_time();
+  const time_t beginn = prv_fenster(jetzt);
+  if (beginn == boulder_nacht_fenster() || beginn == prv_fenster_regulaer(jetzt)) {
+    return;
+  }
+  boulder_nacht_ring_neu(beginn);
+  const time_t nacht_ende = beginn + (time_t)NACHT_MINUTEN * PBL_SEC_PER_MIN;
+  const time_t bis = jetzt - (jetzt % PBL_SEC_PER_MIN);
+  boulder_kraepelin_minuten(beginn, (bis < nacht_ende) ? bis : nacht_ende, prv_ring_von_hand,
+                            NULL);
+  PBL_LOG_INFO("Boulder: Eingang des Schlafmodus nachgefuellt");
+}
+
 bool boulder_dauerteil_training_ohne_schritte(void) {
   // Ohne Training gilt der Merker nie: Kam Kieselsports Aufruf erst, als das Training schon
   // wieder zu war, wirkt er nicht, und der naechste Start loescht ihn.
@@ -343,6 +417,7 @@ void boulder_dauerteil_test_neustart(void) {
   s_letzte_minute_utc = 0;
   s_gestartet = false;
   s_laden_offen = false;
+  s_schlafmodus_nach_laden = 0;
   s_aufgabe_nachlauf.steht_an = false;
   s_aufgabe_laden.steht_an = false;
   s_aufgabe_takt.steht_an = false;
@@ -353,6 +428,7 @@ void boulder_dauerteil_test_neustart(void) {
   boulder_ausgabe_test_neustart();
   boulder_speicher_test_neustart();
   boulder_umzug_test_neustart();
+  boulder_schlafmodus_test_neustart();
 #ifdef CONFIG_BOULDER_HEALTH_APP
   boulder_schnittstelle_test_neustart();
   boulder_ziele_test_neustart();

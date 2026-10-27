@@ -11,7 +11,9 @@
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/nachlauf.h"
 #include "pbl/services/activity/boulder/nacht.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/takt.h"
+#include "pbl/services/activity/boulder/variante.h"
 #include "pbl/services/activity/boulder/umzug.h"
 #ifdef CONFIG_BOULDER_HEALTH_APP
 #include "pbl/services/activity/boulder/naechte.h"
@@ -71,6 +73,8 @@ static uint16_t s_buch_bis[BUCH_BLOECKE];
 static uint8_t s_hrv_anzahl[HRV_BLOECKE];
 static uint16_t s_prot_summe[PROT_BLOECKE];
 static uint16_t s_rest_bis;  //< die Minuten davor stehen im Ringrest
+// F53: der Schlafmodus, wie er in der Datei steht.
+static BoulderSchlafmodus s_hand_datei;
 
 static bool s_alles;
 static void prv_ablage_cb(void *data);
@@ -276,6 +280,14 @@ static void prv_ablage_cb(void *data) {
   // AP4: die Woche nach einem Tageswechsel, sonst hoechstens stuendlich (woche.h).
   boulder_woche_ablegen(&datei, rtc_get_time());
 #endif
+  // VOR DEM KOPF: Ein Neustart nach dem Start von Hand soll das Fenster von Hand wiederfinden,
+  // bevor ein Kopf es nennt.
+  BoulderSchlafmodus hand;
+  boulder_schlafmodus_ablage(&hand);
+  if (memcmp(&hand, &s_hand_datei, sizeof(hand)) != 0 &&
+      settings_file_set(&datei, "hand", 4, &hand, sizeof(hand)) == S_SUCCESS) {
+    s_hand_datei = hand;
+  }
   BoulderKopf k;
   prv_kopf(&k);
   if (memcmp(&k, &s_kopf_datei, sizeof(k)) != 0 &&
@@ -376,7 +388,25 @@ static void prv_rest_laden(SettingsFile *datei) {
   }
 }
 
+// F53, vor allem anderen: Der Schlafmodus bestimmt das Fenster, fuer das Buch, HRV und Kopf gelten.
+// Eine eigene Oeffnung, denn das Nachfuellen liest Pebbles Minutendatei.
+static void prv_schlafmodus_laden(void) {
+  SettingsFile datei;
+  if (settings_file_open(&datei, SPEICHER_DATEI, SPEICHER_DATEI_GROESSE) != S_SUCCESS) {
+    return;
+  }
+  BoulderSchlafmodus hand;
+  if (settings_file_get_len(&datei, "hand", 4) == (int)sizeof(hand) &&
+      settings_file_get(&datei, "hand", 4, &hand, sizeof(hand)) == S_SUCCESS) {
+    boulder_schlafmodus_laden(&hand);
+    s_hand_datei = hand;
+  }
+  settings_file_close(&datei);
+  boulder_dauerteil_schlafmodus_nachfuellen();
+}
+
 void boulder_speicher_laden(void) {
+  prv_schlafmodus_laden();
   prv_neues_fenster(boulder_nacht_fenster());
   SettingsFile datei;
   const bool offen =
@@ -444,6 +474,7 @@ void boulder_speicher_laden(void) {
 
 void boulder_speicher_test_neustart(void) {
   prv_neues_fenster(0);
+  memset(&s_hand_datei, 0, sizeof(s_hand_datei));
   memset(&s_kopf_datei, 0, sizeof(s_kopf_datei));
   memset(&s_ruhe_datei, 0, sizeof(s_ruhe_datei));
   s_alles = false;
