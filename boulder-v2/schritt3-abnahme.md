@@ -853,3 +853,24 @@ F53–F56 (`entscheidungen.md`, „Schlafmodus von Hand wie Morpheuz“), mit Bo
   Schlafmodus, „aufgewacht“, der Schalter an und aus und Pebbles Quick-Launch-Auswahl.
 - **Offen:** Gerätetest auf der Uhr: eine echte Nacht von Hand, „aufgewacht“ am Morgen, ein Neustart
   im Schlafmodus und die Nacht in Boulder 0.61.0 und Health Connect.
+
+## 25. Zifferblatt Tagesband (27.10.2026, `7d5d983b1`)
+
+F57 (`entscheidungen.md`, „Zifferblatt Tagesband“). Belege: `belege-vorab/v2-b41/`.
+
+- **Zifferblatt** (`fw/apps/system/boulder_tagesband/`): Zeit und Datum, das Band der letzten 18 und
+  der nächsten 6 Stunden mit der Nacht aus S1 in Phasen, Pebbles Sitzungen, dem laufenden
+  Schlafmodus und dem Puls je Halbstunde aus S6; unten Schritte, Ruhepuls und HRV des heutigen
+  Wachtags, im Schlafmodus „Sleeping since“. Unter der Timeline-Vorschau ohne die untere Zeile.
+- **Daten und Rechte:** über die Datenschicht der Health-App (`bh_daten_laden`, im Minutentakt
+  `bh_daten_auffrischen`, nach dem Boot Nachladen im Sekundenabstand), ohne Systemrechte;
+  `pruefe_ohne_rechte.py` prüft seither auch seine Objekte.
+- **Pebble-Dateien:** nur der Eintrag `BOULDER_TAGESBAND` (-106) in der Registry, unter
+  `CONFIG_BOULDER_TAGESBAND`; die Stelle in `k1_waechter.py` wächst auf 38 Zeilen.
+- **Prüfung** auf `7d5d983b1`: acht Bauten ohne Warnung, Host 478/478, alle Werkzeuge grün (im
+  Prüfbau nur die Fehlerprobe rot), 31/31 Mutationen rot (fünf zuerst nur am Bau, baubar neu
+  formuliert; G7 überlebte, bis die Prüfdaten eine einzelne Halbstunde Puls bekamen). QEMU: das
+  Zifferblatt mit einer Prüfnacht, Pebbles Liste der Zifferblätter, die Wahl als Zifferblatt und der
+  Schlafmodus an und aus.
+- **Offen:** Gerätetest auf der Uhr: das Band über einen ganzen Tag, eine echte Nacht, Akku über
+  24 Stunden mit dem Zifferblatt.

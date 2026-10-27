@@ -1,0 +1,11 @@
+Stand 7d5d983b1, Arbeitsbaum 0 Aenderungen; nach clang-format und den Pulsluecken der Pruefdaten
+build-obelix rc=0 warnungen=0 uebersetzt=6
+build rc=0 warnungen=0 uebersetzt=6
+build-obelixrel rc=0 warnungen=0 uebersetzt=3
+build-pruef rc=0 warnungen=0 uebersetzt=3
+rc=0 pruefe_ohne_rechte.py build-obelix
+rc=0 pruefe_ohne_rechte.py build-obelixrel
+rc=0 pruefe_ohne_rechte.py build
+rc=1 pruefe_ohne_rechte.py build-pruef
+rc=0 k1_waechter.py
+Host: 100% tests passed, 0 tests failed out of 478

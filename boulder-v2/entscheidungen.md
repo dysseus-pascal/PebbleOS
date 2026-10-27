@@ -406,6 +406,51 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `FirmwareSignatur.kt`; die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest,
   besonders die Übernahme der alten SpO2-Schlüssel beim ersten Start von b39.
 
+## Zifferblatt Tagesband (27.10.2026, F57, Firmware b41)
+- **Nutzer:** „mach mir 3 vorschläge für ein digitales watchface das thematisch zu bolder passt“,
+  dann „mach mokups“ und „nimm 1, das Tagesband“. Die Entwürfe (Tagesband, Schichten, Höhenlinien)
+  sind mit Pebbles Grafik und Schriften gezeichnet, Bilder in `belege-vorab/v2-b41/entwurf/`.
+- **F57: Vorschlag 1, das Tagesband.** Oben die Zeit gross wie bei Kickstart (Agency FB 88, mit
+  12 h „PM“ in der dünnen Schrift dahinter), darunter das Datum, dann das Band, unten Schritte,
+  Ruhepuls und HRV. Im Schlafmodus tritt die Zeit zurück, und unten steht „Sleeping since 22:40“.
+- **Ohne Umfrage entschieden, nach dem Grundsatz „so nah an Pebble wie es geht“:**
+  - Ein Zifferblatt in der Firmware wie Kickstart, in einem eigenen Ordner
+    (`fw/apps/system/boulder_tagesband/`), den Pebbles CMake schon mitbaut: keine Pebble-Datei
+    ausser dem Eintrag `BOULDER_TAGESBAND` (-106) in der Registry, unter dem neuen Schalter
+    `CONFIG_BOULDER_TAGESBAND` (hängt an der Health-App, also an Variante und emery).
+  - Ohne Systemrechte wie die Health-App, und es liest über deren Datenschicht (`daten.h`): so zeigen
+    Zifferblatt und App dieselben Werte, und das Zifferblatt braucht keinen neuen Syscall.
+  - Nicht ab Werk: Pebbles Zifferblatt bleibt eingestellt; das Tagesband wählt man unter
+    Settings > Watchfaces. Ohne eigenes Bild: Pebbles Liste zeigt ihr allgemeines Symbol.
+  - Das Band zeigt 18 h zurück und 6 h voraus wie Boulders Tagesband beim Öffnen; Marken um 0, 6, 12
+    und 18 Uhr Ortszeit (12 h: 12a, 6a, 12p, 6p), über die Zeitumstellung richtig. Die Nacht aus S1 in
+    den Farben der Health-App, nur tief in Blau statt OxfordBlue (das auf dem dunklen Band
+    verschwindet); Pebbles Sitzungen: Gehen, Laufen und Trainings grün, Nickerchen hellblau, Pebbles
+    Schlaf nicht (die Nacht kommt mit Phasen aus S1); der laufende Schlafmodus violett schraffiert;
+    der Puls je Halbstunde aus S6 als Linie, mit eigener Skala wie `bh_pulsband`.
+  - Ruhepuls und HRV des heutigen Wachtags nach den Regeln von Today und Night; eine alte Nacht zeigt
+    keinen Wert, sondern einen grauen Strich.
+  - Unter Pebbles Timeline-Vorschau fällt die untere Zeile weg.
+  - Im Minutentakt liest es wie die Health-App (`bh_daten_auffrischen`), nach dem Boot fragt es im
+    Sekundenabstand nach; den Wechsel 12/24 h zeigt es sofort.
+- **Nicht gemacht:** In Boulders Liste der Zifferblätter auf dem Telefon steht das Tagesband nicht
+  (Core führt dort nur seine eigenen); es wird auf der Uhr gewählt.
+- **Umsetzung** (V2 `7d5d983b1`): `band.c` rechnet (Band, Strecken, Puls, Marken, Datum, Zeit,
+  Werte von heute), `bild.c` zeichnet, `tagesband.c` ist der Lebenslauf. Das Datum rechnet es aus der
+  Tageszahl der Health-App, Englisch wie ihre Texte („TUE 27 OCT“).
+- **Mindest-App für b41: 0.61.0** wie bei b40; das Zifferblatt braucht nichts Neues vom Telefon.
+- **Prüfung:** acht Bauten ohne Warnung, Host 478/478, alle Werkzeuge grün, 31/31 Mutationen. Im
+  Emulator mit einer Prüfnacht, in Pebbles Liste der Zifferblätter und im Schlafmodus. Nach einer
+  Prüfnacht im Zeitraffer nahm der Prüfbau den Schlafmodus nicht an (Pebbles Dialog kam, aber kein
+  „Schlafmodus an“ im Protokoll); ohne Prüfnacht ging er wie bei b40. Vermutlich wartet der Wunsch
+  dort auf ein Laden, das der Prüflauf sperrt (`dauerteil.c`, `PRUEFLAUF_SPERRT`); auf der Uhr
+  läuft kein Prüflauf. Nicht weiter verfolgt.
+- **Ergebnis (27.10.):** b41 ist veröffentlicht (Lauf 40591888503, Tag auf dem Release-Commit
+  `15c8f28` in boulder-firmware), Beta, Mindest-App 0.61.0. Der Digest stimmt mit dem gebauten Paket
+  überein (`07b4881f…`), die Signatur ist mit `signatur.pub` geprüft, demselben Schlüssel wie in
+  `FirmwareSignatur.kt`; die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest – das
+  Band über einen ganzen Tag, eine echte Nacht, der Akku über 24 Stunden mit dem Zifferblatt.
+
 ## Schlafmodus von Hand wie Morpheuz (27.10.2026, F53–F56, Firmware b40, Boulder 0.61.0)
 - **Nutzer:** „I went public and got a request: manual sleep mode“, dann „manual mode hast du richtig
   verstanden. morpheus wurde erwähnt“. Gemeint ist ein Schlaf, den man selbst beginnt und beendet,

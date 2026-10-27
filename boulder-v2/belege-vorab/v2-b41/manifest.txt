@@ -1,0 +1,3 @@
+slot0/manifest.json v4.42.0-b41 7d5d983b1 obelix_pvt normal
+slot1/manifest.json v4.42.0-b41 7d5d983b1 obelix_pvt normal
+['slot0/LICENSE', 'slot0/layouts.json.auto', 'slot0/manifest.json', 'slot0/pebbleos.bin', 'slot0/system_resources.pbpack', 'slot1/LICENSE', 'slot1/layouts.json.auto', 'slot1/manifest.json', 'slot1/pebbleos.bin', 'slot1/system_resources.pbpack']

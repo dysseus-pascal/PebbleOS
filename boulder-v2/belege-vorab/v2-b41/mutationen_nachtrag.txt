@@ -1,0 +1,9 @@
+Ausgangslage: gruen
+B8b rot (Bau): Luecke im Puls ueberbrueckt
+G4b rot (test_tagesband_bild_emery): Schlafmodus nicht im Band
+G6b rot (test_tagesband_bild_emery): im Schlafmodus die Werte statt "Sleeping since"
+G7 rot (test_tagesband_bild_emery): einzelne Halbstunde ohne Punkt
+A4b rot (test_tagesband_app): nur eine Nachfrage
+A6b rot (test_tagesband_app): Vorschau nicht erkannt
+Danach: gruen
+6/6 rot

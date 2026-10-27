@@ -1,0 +1,34 @@
+Ausgangslage: gruen
+B1 rot (test_tagesband_band, test_tagesband_bild_emery): Band halb Vergangenheit, halb Zukunft
+B2 rot (test_tagesband_band, test_tagesband_bild_emery): Strecke nicht am linken Rand geschnitten
+B3 rot (test_tagesband_band): Strecke reicht in die Zukunft
+B4 rot (test_tagesband_band): kurze Strecke ohne Mindestbreite
+B5 rot (test_tagesband_band, test_tagesband_bild_emery): tief wie leicht
+B6 rot (test_tagesband_band, test_tagesband_bild_emery): Nickerchen nicht im Band
+B7 rot (test_tagesband_band): Plaetze nach der neuesten Halbstunde (von gestern) gelten
+B8 rot (Bau): Luecke im Puls ueberbrueckt
+B9 rot (test_tagesband_band): laufende Halbstunde hinter dem Jetzt
+B10 rot (test_tagesband_band, test_tagesband_bild_emery): Skala ohne Rand
+B11 rot (test_tagesband_band): Marken ohne Zeitumstellung
+B12 rot (test_tagesband_band): Marke am rechten Rand fehlt
+B13 rot (test_tagesband_band, test_tagesband_bild_emery): a und p vertauscht
+B14 rot (test_tagesband_band, test_tagesband_bild_emery): Datum einen Tag daneben
+B15 rot (test_tagesband_band): 12 h: Mitternacht und Mittag als 0
+B16 rot (test_tagesband_band): Werte einer alten Nacht als heute
+G1 rot (test_tagesband_bild_emery): unter der Vorschau mit Zeile
+G2 rot (test_tagesband_bild_emery): Zeit im Schlafmodus nicht gedimmt
+G3 rot (test_tagesband_bild_emery): fehlender Ruhepuls in Rot
+G4 rot (Bau): Schlafmodus nicht im Band
+G5 rot (test_tagesband_bild_emery): letzte Phase der Nacht fehlt
+G6 rot (Bau): im Schlafmodus die Werte statt "Sleeping since"
+G7 UEBERLEBT: einzelne Halbstunde ohne Punkt
+G8 rot (test_tagesband_bild_emery): HRV 0 statt Strich
+A1 rot (test_tagesband_app): mit Systemrechten
+A2 rot (test_tagesband_app): Wechsel 12/24 h erst mit der naechsten Minute
+A3 rot (test_tagesband_app): kein Nachladen nach dem Boot
+A4 rot (Bau): nur eine Nachfrage
+A5 rot (test_tagesband_app): offener Timer ueberlebt das Ende
+A6 rot (Bau): Vorschau nicht erkannt
+A7 rot (test_tagesband_app): Minutentakt liest nicht
+Danach: gruen
+30/31 rot

@@ -1,0 +1,4 @@
+Ausgangslage: gruen
+B8c rot (test_tagesband_band, test_tagesband_bild_emery): Luecke im Puls ueberbrueckt
+Danach: gruen
+1/1 rot

@@ -1,0 +1,391 @@
+/* Nur lokal: Mockups fuer ein Boulder-Zifferblatt, gezeichnet mit Pebbles Grafik. */
+
+#include <clar.h>
+
+#include <applib/fonts/fonts.h>
+#include <applib/graphics/framebuffer.h>
+#include <applib/graphics/gpath.h>
+#include <applib/graphics/graphics.h>
+#include <applib/graphics/graphics_circle.h>
+#include <applib/graphics/graphics_line.h>
+#include <applib/graphics/text.h>
+#include <fw/graphics/util.h>
+#include <pbl/util/size.h>
+
+#include <fake_spi_flash.h>
+#include <fixtures/load_test_resources.h>
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+static GContext s_ctx;
+static FrameBuffer s_fb;
+
+GContext *graphics_context_get_current_context(void) {
+  return &s_ctx;
+}
+
+void test_boulder_mockup__initialize(void) {
+  framebuffer_init(&s_fb, &(GSize){DISP_COLS, DISP_ROWS});
+  framebuffer_clear(&s_fb);
+  graphics_context_init(&s_ctx, &s_fb, GContextInitializationMode_App);
+  s_app_state_get_graphics_context = &s_ctx;
+  fake_spi_flash_init(0, 0x1000000);
+  pfs_init(false);
+  pfs_format(true);
+  load_resource_fixture_in_flash(RESOURCES_FIXTURE_PATH, SYSTEM_RESOURCES_FIXTURE_NAME, false);
+  resource_init();
+}
+
+void test_boulder_mockup__cleanup(void) {
+}
+
+#define W 200
+#define H 228
+#define BILD() cl_check(gbitmap_pbi_eq(&s_ctx.dest_bitmap, TEST_PBI_FILE))
+
+// --- Helfer ---
+
+static void prv_grund(GColor c) {
+  graphics_context_set_fill_color(&s_ctx, c);
+  graphics_fill_rect(&s_ctx, &GRect(0, 0, W, H));
+}
+
+static void prv_text(const char *t, const char *font, GRect r, GTextAlignment a, GColor c) {
+  graphics_context_set_text_color(&s_ctx, c);
+  graphics_draw_text(&s_ctx, t, fonts_get_system_font(font), r, GTextOverflowModeTrailingEllipsis,
+                     a, NULL);
+}
+
+static void prv_rect(GRect r, GColor c) {
+  graphics_context_set_fill_color(&s_ctx, c);
+  graphics_fill_rect(&s_ctx, &r);
+}
+
+static void prv_linie(GPoint a, GPoint b, GColor c, uint8_t breite) {
+  graphics_context_set_antialiased(&s_ctx, true);
+  graphics_context_set_stroke_color(&s_ctx, c);
+  graphics_context_set_stroke_width(&s_ctx, breite);
+  graphics_draw_line(&s_ctx, a, b);
+}
+
+static void prv_pfad(GPoint *p, int n, GColor fuellung, GColor rand, uint8_t breite) {
+  GPath pfad = {.num_points = (uint32_t)n, .points = p};
+  graphics_context_set_antialiased(&s_ctx, true);
+  if (!gcolor_equal(fuellung, GColorClear)) {
+    graphics_context_set_fill_color(&s_ctx, fuellung);
+    gpath_draw_filled(&s_ctx, &pfad);
+  }
+  if (!gcolor_equal(rand, GColorClear)) {
+    graphics_context_set_stroke_color(&s_ctx, rand);
+    graphics_context_set_stroke_width(&s_ctx, breite);
+    gpath_draw_outline(&s_ctx, &pfad);
+  }
+}
+
+// Herz wie Kickstarts STRIDE_HEART, vereinfacht: zwei Kreise und ein Dreieck.
+static void prv_herz(GPoint m, int r, GColor c) {
+  graphics_context_set_antialiased(&s_ctx, true);
+  graphics_context_set_fill_color(&s_ctx, c);
+  graphics_fill_circle(&s_ctx, GPoint(m.x - r / 2 - 1, m.y - r / 3), (uint16_t)(r / 2 + 1));
+  graphics_fill_circle(&s_ctx, GPoint(m.x + r / 2 + 1, m.y - r / 3), (uint16_t)(r / 2 + 1));
+  GPoint d[] = {{m.x - r - 1, m.y - r / 4}, {m.x + r + 1, m.y - r / 4}, {m.x, m.y + r}};
+  prv_pfad(d, 3, c, GColorClear, 1);
+}
+
+// Mond: ein Kreis, aus dem ein zweiter in der Hintergrundfarbe schneidet.
+static void prv_mond(GPoint m, int r, GColor c, GColor grund) {
+  graphics_context_set_antialiased(&s_ctx, true);
+  graphics_context_set_fill_color(&s_ctx, c);
+  graphics_fill_circle(&s_ctx, m, (uint16_t)r);
+  graphics_context_set_fill_color(&s_ctx, grund);
+  graphics_fill_circle(&s_ctx, GPoint(m.x + r / 2, m.y - r / 3), (uint16_t)r);
+}
+
+// --- Daten des Beispieltags: Di 27.10., letzte Nacht 23:10-06:52 ---
+
+typedef struct {
+  int von, bis;  // Minuten ab Mitternacht des Vortags (Nacht) bzw. des Tags
+  uint8_t phase; // 0 wach, 1 leicht, 2 tief, 3 REM
+} Abschnitt;
+
+// Minuten ab 23:10.
+static const Abschnitt s_nacht[] = {
+  {0, 25, 1},    {25, 75, 2},   {75, 110, 1},  {110, 130, 3}, {130, 170, 1},
+  {170, 205, 2}, {205, 250, 1}, {250, 256, 0}, {256, 285, 3}, {285, 330, 1},
+  {330, 350, 2}, {350, 400, 1}, {400, 430, 3}, {430, 455, 1}, {455, 462, 0},
+};
+
+static GColor prv_phase(uint8_t p) {
+  switch (p) {
+    case 0: return GColorChromeYellow;
+    case 3: return GColorPictonBlue;
+    case 2: return GColorBlue;
+    default: return GColorBlueMoon;
+  }
+}
+
+// Puls je Viertelstunde, Minuten ab 0:00 des Tags (negativ = Vortag).
+static int prv_puls(int min) {
+  // Nacht 23:10-06:52 ruhig, sonst Tag mit zwei Spaziergaengen.
+  const int t = ((min % 1440) + 1440) % 1440;
+  const bool nacht = (t >= 23 * 60 + 10) || (t < 6 * 60 + 52);
+  if (nacht) {
+    return 52 + (int)(4 * sin(t / 37.0)) + ((t / 15) % 3);
+  }
+  if ((t >= 8 * 60 + 5 && t < 8 * 60 + 35) || (t >= 12 * 60 + 15 && t < 12 * 60 + 50)) {
+    return 98 + (int)(8 * sin(t / 7.0));
+  }
+  return 68 + (int)(7 * sin(t / 53.0)) + ((t / 15) % 4);
+}
+
+// --- 1 Tagesband ---
+
+// Das Band: [jetzt - 18 h, jetzt + 6 h] wie Boulders Tagesband beim Oeffnen (3/4 Vergangenheit).
+typedef struct {
+  int jetzt;      // Minuten ab 0:00 des Tags
+  int x0, w;      // Lage des Bands
+  int y_puls, h_puls;
+  int y_band, h_band;
+} Band;
+
+static int prv_x(const Band *b, int min) {
+  const int von = b->jetzt - 18 * 60;
+  return b->x0 + (int)((long)(min - von) * b->w / (24 * 60));
+}
+
+static void prv_block(const Band *b, int von, int bis, GColor c, bool schraffiert) {
+  const int a = prv_x(b, von), e = prv_x(b, bis);
+  const int l = MAX(a, b->x0), r = MIN(e, prv_x(b, b->jetzt));
+  if (r <= l) {
+    return;
+  }
+  prv_rect(GRect(l, b->y_band, r - l, b->h_band), c);
+  if (schraffiert) {
+    for (int x = l - b->h_band; x < r; x += 5) {
+      for (int k = 0; k < b->h_band; k++) {
+        const int px = x + k;
+        if (px >= l && px < r) {
+          prv_rect(GRect(px, b->y_band + b->h_band - 1 - k, 1, 1), GColorImperialPurple);
+        }
+      }
+    }
+  }
+}
+
+static void prv_tagesband(const Band *b, bool schlafmodus, int schlaf_seit) {
+  // Spur und Zukunft
+  prv_rect(GRect(b->x0, b->y_band, b->w, b->h_band), GColorDarkGray);
+  const int jetzt_x = prv_x(b, b->jetzt);
+  prv_rect(GRect(jetzt_x, b->y_band, b->x0 + b->w - jetzt_x, b->h_band), GColorBlack);
+  for (int x = jetzt_x + 2; x < b->x0 + b->w; x += 4) {
+    prv_rect(GRect(x, b->y_band + b->h_band / 2, 2, 1), GColorDarkGray);
+  }
+  // Letzte Nacht (Minuten ab 0:00 des Tags: Beginn -50 = 23:10 des Vortags), und die davor.
+  for (int n = -1; n <= 0; n++) {
+    const int beginn = -50 + n * 1440;
+    for (size_t i = 0; i < ARRAY_LENGTH(s_nacht); i++) {
+      prv_block(b, beginn + s_nacht[i].von, beginn + s_nacht[i].bis, prv_phase(s_nacht[i].phase),
+                false);
+    }
+  }
+  // Spaziergaenge
+  prv_block(b, 8 * 60 + 5, 8 * 60 + 35, GColorJaegerGreen, false);
+  prv_block(b, 12 * 60 + 15, 12 * 60 + 50, GColorJaegerGreen, false);
+  // Schlafmodus: offen ab dem Start
+  if (schlafmodus) {
+    prv_block(b, schlaf_seit, b->jetzt, GColorVividViolet, true);
+  }
+  // Puls als Linie ueber dem Band
+  GPoint vorher = GPointZero;
+  for (int m = b->jetzt - 18 * 60; m <= b->jetzt; m += 15) {
+    const int p = prv_puls(m);
+    const int y = b->y_puls + b->h_puls - (p - 45) * b->h_puls / 70;
+    const GPoint pt = GPoint(prv_x(b, m), y);
+    if (m > b->jetzt - 18 * 60) {
+      prv_linie(vorher, pt, GColorFolly, 1);
+    }
+    vorher = pt;
+  }
+  // Stunden: alle 6 h ein Strich mit Zahl
+  for (int h = -24; h <= 48; h += 6) {
+    const int m = h * 60;
+    if (m < b->jetzt - 18 * 60 || m > b->jetzt + 6 * 60) {
+      continue;
+    }
+    const int x = prv_x(b, m);
+    prv_rect(GRect(x, b->y_band + b->h_band, 1, 3), GColorLightGray);
+    char t[4];
+    snprintf(t, sizeof(t), "%d", ((h % 24) + 24) % 24);
+    prv_text(t, FONT_KEY_GOTHIC_14, GRect(x - 12, b->y_band + b->h_band + 1, 24, 16),
+             GTextAlignmentCenter, GColorLightGray);
+  }
+  // Jetzt
+  prv_rect(GRect(jetzt_x, b->y_puls - 2, 2, b->y_band + b->h_band - b->y_puls + 4), GColorWhite);
+}
+
+static void prv_spalte(int i, const char *label, const char *wert, GColor farbe) {
+  const int bw = (W - 16) / 3;
+  const int x = 8 + i * bw;
+  prv_text(label, FONT_KEY_GOTHIC_14, GRect(x, 184, bw, 16), GTextAlignmentCenter, GColorLightGray);
+  prv_text(wert, FONT_KEY_GOTHIC_24_BOLD, GRect(x, 196, bw, 28), GTextAlignmentCenter, farbe);
+}
+
+static void prv_zeit_farbig(const char *zeit, const char *datum, GColor z, GColor d) {
+  prv_text(zeit, FONT_KEY_AGENCY_FB_88_NUMBERS_AM_PM, GRect(0, 2, W, 96), GTextAlignmentCenter, z);
+  prv_text(datum, FONT_KEY_GOTHIC_18_BOLD, GRect(0, 96, W, 22), GTextAlignmentCenter, d);
+}
+
+static void prv_zeit_gross(const char *zeit, const char *datum) {
+  prv_zeit_farbig(zeit, datum, GColorWhite, GColorLightGray);
+}
+
+void test_boulder_mockup__1_tagesband(void) {
+  prv_grund(GColorBlack);
+  prv_zeit_gross("14:05", "TUE 27 OCT");
+  const Band b = {.jetzt = 14 * 60 + 5, .x0 = 8, .w = 184,
+                  .y_puls = 122, .h_puls = 22, .y_band = 146, .h_band = 14};
+  prv_tagesband(&b, false, 0);
+  prv_spalte(0, "Steps", "6,230", GColorJaegerGreen);
+  prv_spalte(1, "Resting", "52", GColorFolly);
+  prv_spalte(2, "HRV", "48", GColorPictonBlue);
+  BILD();
+}
+
+void test_boulder_mockup__1b_tagesband_schlafmodus(void) {
+  prv_grund(GColorBlack);
+  prv_zeit_farbig("23:15", "TUE 27 OCT", GColorLightGray, GColorDarkGray);
+  const Band b = {.jetzt = 23 * 60 + 15, .x0 = 8, .w = 184,
+                  .y_puls = 122, .h_puls = 22, .y_band = 146, .h_band = 14};
+  prv_tagesband(&b, true, 22 * 60 + 40);
+  prv_mond(GPoint(30, 203), 9, GColorVividViolet, GColorBlack);
+  prv_text("Sleeping since", FONT_KEY_GOTHIC_14, GRect(48, 184, 150, 16), GTextAlignmentLeft,
+           GColorLightGray);
+  prv_text("22:40", FONT_KEY_GOTHIC_24_BOLD, GRect(48, 196, 150, 28), GTextAlignmentLeft,
+           GColorVividViolet);
+  BILD();
+}
+
+// --- 2 Schichten ---
+
+// Eine Schicht von y_oben bis y_unten mit unruhiger Oberkante; links gefuellt bis `anteil`.
+static void prv_schicht(int y_oben, int y_unten, int saat, int anteil_promille, GColor leer,
+                        GColor voll, GColor kante, const char *label, const char *wert) {
+  GPoint p[16];
+  int n = 0;
+  for (int x = 0; x <= W; x += 20) {
+    const int dy = (int)(3 * sin(x * 0.11 + saat) + 2 * sin(x * 0.29 + saat * 2));
+    p[n++] = GPoint(x, y_oben + dy);
+  }
+  p[n++] = GPoint(W, y_unten);
+  p[n++] = GPoint(0, y_unten);
+  prv_pfad(p, n, leer, GColorClear, 1);
+  const int grenze = W * anteil_promille / 1000;
+  GPoint q[16];
+  for (int i = 0; i < n; i++) {
+    q[i] = GPoint(MIN(p[i].x, grenze), p[i].y);
+  }
+  prv_pfad(q, n, voll, GColorClear, 1);
+  // Kante oben ueber die volle Breite, hell, wo gefuellt
+  for (int i = 0; i + 1 < n - 2; i++) {
+    prv_linie(p[i], p[i + 1], (p[i + 1].x <= grenze) ? kante : leer, 2);
+  }
+  prv_text(label, FONT_KEY_GOTHIC_14_BOLD, GRect(8, y_oben + 6, 100, 16), GTextAlignmentLeft,
+           GColorWhite);
+  prv_text(wert, FONT_KEY_GOTHIC_18_BOLD, GRect(96, y_oben + 3, 96, 22), GTextAlignmentRight,
+           GColorWhite);
+}
+
+void test_boulder_mockup__2_schichten(void) {
+  prv_grund(GColorBlack);
+  prv_zeit_gross("14:05", "TUE 27 OCT");
+  prv_schicht(124, 160, 1, 830, GColorBulgarianRose, GColorOrange, GColorChromeYellow, "ZONES",
+              "25 min");
+  prv_schicht(158, 194, 4, 623, GColorDarkGreen, GColorIslamicGreen, GColorGreen, "STEPS",
+              "6,230");
+  prv_schicht(192, 228, 7, 940, GColorImperialPurple, GColorPurple, GColorVividViolet, "SLEEP",
+              "7:32 h");
+  BILD();
+}
+
+// --- 3 Hoehenlinien ---
+
+#define RINGE 8
+#define PI_M 3.14159265358979
+
+static void prv_ring(int k, GPoint *p, int n, int cx, int cy) {
+  // Ring k von aussen (0) nach innen; gleiche Form, kleiner, Mitte wandert zum Gipfel.
+  // Abstand zwischen zwei Ringen mindestens 4 px, sonst laufen die 2-px-Linien zusammen.
+  const double s = 1.0 - k * 0.105;
+  const double mx = cx + k * 1.4, my = cy - k * 0.6;
+  for (int i = 0; i < n; i++) {
+    const double a = 2 * PI_M * i / n;
+    const double f = 1 + 0.11 * sin(2 * a + 0.5) + 0.07 * sin(3 * a + 1.3) + 0.04 * sin(5 * a + 0.2);
+    p[i] = GPoint((int16_t)(mx + 82 * s * f * cos(a)), (int16_t)(my + 55 * s * f * sin(a)));
+  }
+}
+
+static void prv_offen(GPoint *p, int n, GColor rand, uint8_t breite) {
+  GPath pfad = {.num_points = (uint32_t)n, .points = p};
+  graphics_context_set_antialiased(&s_ctx, true);
+  graphics_context_set_stroke_color(&s_ctx, rand);
+  graphics_context_set_stroke_width(&s_ctx, breite);
+  gpath_draw_outline_open(&s_ctx, &pfad);
+}
+
+// anteil: erreichter Teil des Ziels (0..1). Volle Ringe blau, der laufende Ring blau bis zum Rest.
+static void prv_hoehenlinien(double anteil, bool gipfel) {
+  const int cx = 98, cy = 124, n = 48;
+  const double ringe = anteil * RINGE;
+  for (int k = 0; k < RINGE; k++) {
+    GPoint p[49];
+    prv_ring(k, p, n, cx, cy);
+    p[n] = p[0];
+    if (k + 1 <= ringe) {
+      prv_pfad(p, n, GColorClear, GColorVividCerulean, 2);
+    } else {
+      prv_pfad(p, n, GColorClear, GColorDarkGray, 1);
+      const int teil = (int)((ringe - k) * n);
+      if (teil > 0) {
+        prv_offen(p, teil + 1, GColorVividCerulean, 2);
+      }
+    }
+  }
+  // Gipfel: ein kleines Dreieck in der innersten Linie
+  const int gx = cx + (int)((RINGE - 1) * 1.4), gy = cy - (int)((RINGE - 1) * 0.6);
+  GPoint d[] = {{gx - 6, gy + 4}, {gx + 6, gy + 4}, {gx, gy - 7}};
+  prv_pfad(d, 3, gipfel ? GColorYellow : GColorDarkGray, GColorClear, 1);
+}
+
+static void prv_kopf3(const char *zeit) {
+  prv_text(zeit, FONT_KEY_AGENCY_FB_46_NUMBERS_AM_PM, GRect(8, 2, 120, 52), GTextAlignmentLeft,
+           GColorWhite);
+  prv_text("TUE 27", FONT_KEY_GOTHIC_18_BOLD, GRect(110, 6, 82, 22), GTextAlignmentRight,
+           GColorLightGray);
+  prv_herz(GPoint(160, 38), 6, GColorRed);
+  prv_text("72", FONT_KEY_GOTHIC_18_BOLD, GRect(150, 27, 42, 22), GTextAlignmentRight,
+           GColorWhite);
+}
+
+void test_boulder_mockup__3_hoehenlinien(void) {
+  prv_grund(GColorBlack);
+  prv_kopf3("14:05");
+  prv_hoehenlinien(0.623, false);
+  prv_text("6,230", FONT_KEY_GOTHIC_24_BOLD, GRect(4, 198, 100, 28), GTextAlignmentLeft,
+           GColorVividCerulean);
+  prv_text("/ 10k", FONT_KEY_GOTHIC_14, GRect(130, 208, 66, 16), GTextAlignmentRight,
+           GColorLightGray);
+  BILD();
+}
+
+void test_boulder_mockup__3b_hoehenlinien_gipfel(void) {
+  prv_grund(GColorBlack);
+  prv_kopf3("19:40");
+  prv_hoehenlinien(1.0, true);
+  prv_text("10,412", FONT_KEY_GOTHIC_24_BOLD, GRect(4, 198, 100, 28), GTextAlignmentLeft,
+           GColorJaegerGreen);
+  prv_text("TOP", FONT_KEY_GOTHIC_14_BOLD, GRect(130, 208, 66, 16), GTextAlignmentRight,
+           GColorYellow);
+  BILD();
+}
