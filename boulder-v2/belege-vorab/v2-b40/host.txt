@@ -1,0 +1,1012 @@
+Test project /home/user/pebbleos-v2/build-test
+        Start   1: pbl_test_failed_dir
+        Start 223: test_pfs_emery
+        Start 299: test_boulder_wecker_vergleich
+        Start 298: test_boulder_wecker
+        Start 311: test_kieselsport
+        Start  26: test_data_logging
+        Start  19: test_alarm
+        Start  25: test_flash_logging
+  1/474 Test   #1: pbl_test_failed_dir ............................   Passed    0.03 sec
+        Start 363: test_timeline_layouts_emery
+  2/474 Test  #19: test_alarm .....................................   Passed    7.44 sec
+        Start 365: test_timeline_layouts_flint
+  3/474 Test  #25: test_flash_logging .............................   Passed   13.21 sec
+        Start 364: test_timeline_layouts_gabbro
+  4/474 Test #363: test_timeline_layouts_emery ....................   Passed   17.27 sec
+        Start 116: test_timeline_list_view_emery
+  5/474 Test  #26: test_data_logging ..............................   Passed   20.66 sec
+        Start 117: test_timeline_list_view_gabbro
+  6/474 Test #365: test_timeline_layouts_flint ....................   Passed   17.01 sec
+        Start 127: test_workout_active_emery
+  7/474 Test #116: test_timeline_list_view_emery ..................   Passed    8.68 sec
+        Start 118: test_timeline_list_view_flint
+  8/474 Test #364: test_timeline_layouts_gabbro ...................   Passed   13.65 sec
+        Start 293: test_boulder_zyklen
+  9/474 Test #117: test_timeline_list_view_gabbro .................   Passed   11.08 sec
+        Start 393: test_action_menu_window_emery
+ 10/474 Test #127: test_workout_active_emery ......................   Passed    9.08 sec
+        Start  20: test_alarm_smart
+ 11/474 Test #118: test_timeline_list_view_flint ..................   Passed    8.68 sec
+        Start  21: test_battery_monitor
+ 12/474 Test #393: test_action_menu_window_emery ..................   Passed    8.03 sec
+        Start 129: test_workout_active_flint
+ 13/474 Test  #20: test_alarm_smart ...............................   Passed    6.33 sec
+        Start 394: test_action_menu_window_gabbro
+ 14/474 Test  #21: test_battery_monitor ...........................   Passed    5.41 sec
+        Start 395: test_action_menu_window_flint
+ 15/474 Test #395: test_action_menu_window_flint ..................   Passed    4.07 sec
+        Start 304: test_boulder_naechte
+ 16/474 Test #129: test_workout_active_flint ......................   Passed    5.30 sec
+        Start 225: test_put_bytes_gabbro
+ 17/474 Test #394: test_action_menu_window_gabbro .................   Passed    6.13 sec
+        Start 128: test_workout_active_gabbro
+ 18/474 Test #225: test_put_bytes_gabbro ..........................   Passed    3.50 sec
+        Start 224: test_put_bytes_emery
+ 19/474 Test #128: test_workout_active_gabbro .....................   Passed    5.66 sec
+        Start 109: test_launcher_menu_layer_emery
+ 20/474 Test #224: test_put_bytes_emery ...........................   Passed    3.81 sec
+        Start 226: test_put_bytes_flint
+ 21/474 Test #109: test_launcher_menu_layer_emery .................   Passed    3.35 sec
+        Start 111: test_launcher_menu_layer_flint
+ 22/474 Test #226: test_put_bytes_flint ...........................   Passed    3.84 sec
+        Start 357: test_timeline_peek_event
+ 23/474 Test #357: test_timeline_peek_event .......................   Passed    0.34 sec
+        Start 110: test_launcher_menu_layer_gabbro
+ 24/474 Test #111: test_launcher_menu_layer_flint .................   Passed    3.10 sec
+        Start 319: test_timeline
+ 25/474 Test #110: test_launcher_menu_layer_gabbro ................   Passed    3.17 sec
+        Start 467: test_boulder_kraepelin_gleich
+ 26/474 Test #319: test_timeline ..................................   Passed    1.97 sec
+        Start 253: test_app_cache
+ 27/474 Test #293: test_boulder_zyklen ............................   Passed   34.82 sec
+        Start 468: test_boulder_glue_differenz
+ 28/474 Test #253: test_app_cache .................................   Passed    2.97 sec
+        Start 113: test_music_emery
+ 29/474 Test #467: test_boulder_kraepelin_gleich ..................   Passed    5.72 sec
+        Start 147: test_ancs
+ 30/474 Test #113: test_music_emery ...............................   Passed    2.44 sec
+        Start 411: test_timeline_peek_emery
+ 31/474 Test #304: test_boulder_naechte ...........................   Passed   23.16 sec
+        Start  73: test_health_activity_summary_card_emery
+ 32/474 Test #468: test_boulder_glue_differenz ....................   Passed    5.63 sec
+        Start  75: test_health_activity_summary_card_flint
+ 33/474 Test #147: test_ancs ......................................   Passed    2.61 sec
+        Start 403: test_emoji_glyphs
+ 34/474 Test #411: test_timeline_peek_emery .......................   Passed    2.59 sec
+        Start  62: test_bh_karten_emery
+ 35/474 Test #403: test_emoji_glyphs ..............................   Passed    1.08 sec
+        Start 413: test_timeline_peek_flint
+ 36/474 Test  #75: test_health_activity_summary_card_flint ........   Passed    1.82 sec
+        Start 114: test_music_gabbro
+ 37/474 Test  #73: test_health_activity_summary_card_emery ........   Passed    2.26 sec
+        Start 122: test_weather_app_layout_gabbro
+ 38/474 Test #413: test_timeline_peek_flint .......................   Passed    1.76 sec
+        Start  74: test_health_activity_summary_card_gabbro
+ 39/474 Test  #62: test_bh_karten_emery ...........................   Passed    3.13 sec
+        Start 121: test_weather_app_layout_emery
+ 40/474 Test #114: test_music_gabbro ..............................   Passed    2.35 sec
+        Start 392: test_menu_layer_system_cells_flint
+ 41/474 Test #122: test_weather_app_layout_gabbro .................   Passed    2.23 sec
+        Start 390: test_menu_layer_system_cells_emery
+ 42/474 Test #121: test_weather_app_layout_emery ..................   Passed    1.80 sec
+        Start 182: test_graphics_draw_bitmap_emery
+ 43/474 Test  #74: test_health_activity_summary_card_gabbro .......   Passed    2.05 sec
+        Start 412: test_timeline_peek_gabbro
+ 44/474 Test #182: test_graphics_draw_bitmap_emery ................   Passed    0.45 sec
+        Start 313: test_kieselsport_speicher
+ 45/474 Test #392: test_menu_layer_system_cells_flint .............   Passed    1.63 sec
+        Start 123: test_weather_app_layout_flint
+ 46/474 Test #390: test_menu_layer_system_cells_emery .............   Passed    1.97 sec
+        Start  85: test_health_sleep_detail_card_flint
+ 47/474 Test #412: test_timeline_peek_gabbro ......................   Passed    1.95 sec
+        Start  48: test_text_resources
+ 48/474 Test #123: test_weather_app_layout_flint ..................   Passed    1.60 sec
+        Start  83: test_health_sleep_detail_card_emery
+ 49/474 Test  #85: test_health_sleep_detail_card_flint ............   Passed    1.10 sec
+        Start  80: test_health_activity_detail_card_emery
+ 50/474 Test #313: test_kieselsport_speicher ......................   Passed    2.92 sec
+        Start 184: test_graphics_draw_text_flow_gabbro
+ 51/474 Test  #83: test_health_sleep_detail_card_emery ............   Passed    1.14 sec
+        Start 244: test_clock
+ 52/474 Test  #80: test_health_activity_detail_card_emery .........   Passed    1.12 sec
+        Start 391: test_menu_layer_system_cells_gabbro
+ 53/474 Test  #48: test_text_resources ............................   Passed    2.57 sec
+        Start 396: test_notification_window_emery
+ 54/474 Test #184: test_graphics_draw_text_flow_gabbro ............   Passed    1.70 sec
+        Start  82: test_health_activity_detail_card_flint
+ 55/474 Test #244: test_clock .....................................   Passed    1.70 sec
+        Start 276: test_activity
+ 56/474 Test #396: test_notification_window_emery .................   Passed    1.14 sec
+        Start 112: test_music_flint
+ 57/474 Test #391: test_menu_layer_system_cells_gabbro ............   Passed    2.03 sec
+        Start 398: test_notification_window_flint
+ 58/474 Test  #82: test_health_activity_detail_card_flint .........   Passed    1.09 sec
+        Start  89: test_health_detail_card_emery
+ 59/474 Test #112: test_music_flint ...............................   Passed    1.25 sec
+        Start 340: test_session_send_buffer
+ 60/474 Test #398: test_notification_window_flint .................   Passed    1.17 sec
+        Start 287: test_boulder_glue_differenz_original
+ 61/474 Test  #89: test_health_detail_card_emery ..................   Passed    1.34 sec
+        Start  91: test_health_detail_card_flint
+ 62/474 Test #340: test_session_send_buffer .......................   Passed    0.68 sec
+        Start 256: test_app_install_manager
+ 63/474 Test #276: test_activity ..................................   Passed    2.52 sec
+        Start 278: test_kraepelin_algorithm
+ 64/474 Test  #91: test_health_detail_card_flint ..................   Passed    1.17 sec
+        Start 348: test_notification_storage
+ 65/474 Test #256: test_app_install_manager .......................   Passed    1.87 sec
+        Start 414: test_option_menu_window_emery
+ 66/474 Test #278: test_kraepelin_algorithm .......................   Passed    1.82 sec
+        Start 288: test_boulder_glue_differenz_kopie
+ 67/474 Test #287: test_boulder_glue_differenz_original ...........   Passed    2.91 sec
+        Start 399: test_simple_dialog_emery
+ 68/474 Test #348: test_notification_storage ......................   Passed    1.28 sec
+        Start 416: test_option_menu_window_flint
+ 69/474 Test #414: test_option_menu_window_emery ..................   Passed    1.00 sec
+        Start 292: test_boulder_schlafkern
+ 70/474 Test #399: test_simple_dialog_emery .......................   Passed    0.80 sec
+        Start  76: test_health_sleep_summary_card_emery
+ 71/474 Test #416: test_option_menu_window_flint ..................   Passed    0.83 sec
+        Start 136: test_kickstart_flint
+ 72/474 Test  #76: test_health_sleep_summary_card_emery ...........   Passed    1.10 sec
+        Start 279: test_activity_algorithm_kraepelin
+ 73/474 Test #136: test_kickstart_flint ...........................   Passed    1.10 sec
+        Start 134: test_kickstart_emery
+ 74/474 Test #288: test_boulder_glue_differenz_kopie ..............   Passed    2.36 sec
+        Start  77: test_health_sleep_summary_card_gabbro
+ 75/474 Test #279: test_activity_algorithm_kraepelin ..............   Passed    1.13 sec
+        Start 284: test_boulder_kraepelin_algorithm
+ 76/474 Test #134: test_kickstart_emery ...........................   Passed    1.14 sec
+        Start 163: test_graphics_draw_round_rect_8bit_emery
+ 77/474 Test  #77: test_health_sleep_summary_card_gabbro ..........   Passed    1.02 sec
+        Start  78: test_health_sleep_summary_card_flint
+ 78/474 Test #163: test_graphics_draw_round_rect_8bit_emery .......   Passed    0.41 sec
+        Start 257: test_app_menu_data_source
+ 79/474 Test  #78: test_health_sleep_summary_card_flint ...........   Passed    1.04 sec
+        Start 291: test_boulder_schlaf
+ 80/474 Test #257: test_app_menu_data_source ......................   Passed    1.44 sec
+        Start  86: test_health_hr_detail_card_emery
+ 81/474 Test #284: test_boulder_kraepelin_algorithm ...............   Passed    1.92 sec
+        Start 397: test_notification_window_gabbro
+ 82/474 Test #292: test_boulder_schlafkern ........................   Passed    4.69 sec
+        Start 401: test_simple_dialog_flint
+ 83/474 Test  #86: test_health_hr_detail_card_emery ...............   Passed    0.78 sec
+        Start 135: test_kickstart_gabbro
+ 84/474 Test #401: test_simple_dialog_flint .......................   Passed    0.70 sec
+        Start 263: test_do_not_disturb
+ 85/474 Test #397: test_notification_window_gabbro ................   Passed    1.04 sec
+        Start 415: test_option_menu_window_gabbro
+ 86/474 Test #135: test_kickstart_gabbro ..........................   Passed    1.14 sec
+        Start  90: test_health_detail_card_gabbro
+ 87/474 Test #415: test_option_menu_window_gabbro .................   Passed    1.01 sec
+        Start 285: test_boulder_activity_algorithm_kraepelin
+ 88/474 Test #291: test_boulder_schlaf ............................   Passed    3.08 sec
+        Start 321: test_blob_db_sync
+ 89/474 Test  #90: test_health_detail_card_gabbro .................   Passed    0.96 sec
+        Start 164: test_graphics_gpath_8bit_emery
+ 90/474 Test #321: test_blob_db_sync ..............................   Passed    0.55 sec
+        Start  10: test_i18n
+ 91/474 Test #164: test_graphics_gpath_8bit_emery .................   Passed    0.11 sec
+        Start  88: test_health_hr_detail_card_flint
+ 92/474 Test #285: test_boulder_activity_algorithm_kraepelin ......   Passed    1.16 sec
+        Start 161: test_graphics_fill_rect_8bit_emery
+ 93/474 Test #161: test_graphics_fill_rect_8bit_emery .............   Passed    0.26 sec
+        Start 305: test_boulder_woche
+ 94/474 Test  #88: test_health_hr_detail_card_flint ...............   Passed    0.76 sec
+        Start  84: test_health_sleep_detail_card_gabbro
+ 95/474 Test  #10: test_i18n ......................................   Passed    1.10 sec
+        Start 400: test_simple_dialog_gabbro
+ 96/474 Test  #84: test_health_sleep_detail_card_gabbro ...........   Passed    0.82 sec
+        Start 172: test_graphics_draw_rect_1bit_flint
+ 97/474 Test #172: test_graphics_draw_rect_1bit_flint .............   Passed    0.12 sec
+        Start  44: test_persist
+ 98/474 Test #263: test_do_not_disturb ............................   Passed    3.75 sec
+        Start  81: test_health_activity_detail_card_gabbro
+ 99/474 Test #400: test_simple_dialog_gabbro ......................   Passed    0.77 sec
+        Start 462: test_bh_ohne_rechte_gegenproben
+100/474 Test #305: test_boulder_woche .............................   Passed    1.16 sec
+        Start 246: test_wakeup
+101/474 Test  #81: test_health_activity_detail_card_gabbro ........   Passed    0.87 sec
+        Start 470: test_boulder_k1_waechter
+102/474 Test #246: test_wakeup ....................................   Passed    0.76 sec
+        Start  49: test_system_resource_language_fonts
+103/474 Test  #44: test_persist ...................................   Passed    1.46 sec
+        Start 181: test_graphics_draw_text_8bit_emery
+104/474 Test  #49: test_system_resource_language_fonts ............   Passed    0.55 sec
+        Start 150: test_ppogatt_v1
+105/474 Test #181: test_graphics_draw_text_8bit_emery .............   Passed    0.62 sec
+        Start 227: test_language_pack_storage
+106/474 Test #462: test_bh_ohne_rechte_gegenproben ................   Passed    2.02 sec
+        Start 149: test_ppogatt_v0
+107/474 Test #149: test_ppogatt_v0 ................................   Passed    0.34 sec
+        Start 312: test_kieselsport_folgen
+108/474 Test #150: test_ppogatt_v1 ................................   Passed    1.05 sec
+        Start 330: test_weather_db
+109/474 Test #470: test_boulder_k1_waechter .......................   Passed    1.87 sec
+        Start 168: test_graphics_draw_stroke_precise_8bit_emery
+110/474 Test #168: test_graphics_draw_stroke_precise_8bit_emery ...   Passed    0.09 sec
+        Start 126: test_workout_summary_flint
+111/474 Test #227: test_language_pack_storage .....................   Passed    0.79 sec
+        Start 337: test_bluetooth_persistent_storage
+112/474 Test #298: test_boulder_wecker ............................   Passed   95.70 sec
+        Start 124: test_workout_summary_emery
+113/474 Test #299: test_boulder_wecker_vergleich ..................   Passed   95.86 sec
+        Start  87: test_health_hr_detail_card_gabbro
+114/474 Test #126: test_workout_summary_flint .....................   Passed    0.33 sec
+        Start 183: test_graphics_draw_bitmap_flint
+115/474 Test #183: test_graphics_draw_bitmap_flint ................   Passed    0.20 sec
+        Start  72: test_health_card_view_flint
+116/474 Test #124: test_workout_summary_emery .....................   Passed    0.37 sec
+        Start 359: test_timeline_model
+117/474 Test #337: test_bluetooth_persistent_storage ..............   Passed    0.58 sec
+        Start 175: test_graphics_draw_round_rect_1bit_flint
+118/474 Test #330: test_weather_db ................................   Passed    0.76 sec
+        Start 472: test_boulder_waechter_gegenproben
+119/474 Test  #72: test_health_card_view_flint ....................   Passed    0.11 sec
+        Start 355: test_reminders
+120/474 Test #175: test_graphics_draw_round_rect_1bit_flint .......   Passed    0.17 sec
+        Start 160: test_graphics_draw_rect_8bit_emery
+121/474 Test  #87: test_health_hr_detail_card_gabbro ..............   Passed    0.68 sec
+        Start 303: test_boulder_schnittstelle
+122/474 Test #359: test_timeline_model ............................   Passed    0.51 sec
+        Start 295: test_boulder_spo2_plan
+123/474 Test #355: test_reminders .................................   Passed    0.46 sec
+        Start 306: test_boulder_herz
+124/474 Test #160: test_graphics_draw_rect_8bit_emery .............   Passed    0.53 sec
+        Start 132: test_workout_dialog_flint
+125/474 Test #295: test_boulder_spo2_plan .........................   Passed    0.46 sec
+        Start 130: test_workout_dialog_emery
+126/474 Test #132: test_workout_dialog_flint ......................   Passed    0.26 sec
+        Start 402: test_emoji_fonts
+127/474 Test #130: test_workout_dialog_emery ......................   Passed    0.32 sec
+        Start 277: test_activity_insights
+128/474 Test #472: test_boulder_waechter_gegenproben ..............   Passed    1.31 sec
+        Start 474: test_boulder_umzug_aufbau_gegenprobe
+129/474 Test #402: test_emoji_fonts ...............................   Passed    0.45 sec
+        Start 464: test_pruefe_unbenutzt_gegenproben
+130/474 Test #277: test_activity_insights .........................   Passed    0.32 sec
+        Start 105: test_kieselsport_startmenue
+131/474 Test #303: test_boulder_schnittstelle .....................   Passed    1.27 sec
+        Start 201: test_gbitmap_sequence_gabbro
+132/474 Test #312: test_kieselsport_folgen ........................   Passed    2.72 sec
+        Start 200: test_png
+133/474 Test #200: test_png .......................................   Passed    0.16 sec
+        Start 465: test_boulder_apps_unbenutzt
+134/474 Test #464: test_pruefe_unbenutzt_gegenproben ..............   Passed    0.59 sec
+        Start 131: test_workout_dialog_gabbro
+135/474 Test #105: test_kieselsport_startmenue ....................   Passed    0.47 sec
+        Start 106: test_kieselsport_startmenue_ohne_variante
+136/474 Test #306: test_boulder_herz ..............................   Passed    1.54 sec
+        Start 406: test_selection_windows_emery
+137/474 Test #474: test_boulder_umzug_aufbau_gegenprobe ...........   Passed    0.78 sec
+        Start 347: test_alerts_preferences
+138/474 Test #131: test_workout_dialog_gabbro .....................   Passed    0.28 sec
+        Start 162: test_graphics_stroke_circle_8bit_emery
+139/474 Test #406: test_selection_windows_emery ...................   Passed    0.21 sec
+        Start 324: test_app_db
+140/474 Test #162: test_graphics_stroke_circle_8bit_emery .........   Passed    0.10 sec
+        Start  79: test_health_hr_summary_card_flint
+141/474 Test #465: test_boulder_apps_unbenutzt ....................   Passed    0.55 sec
+        Start 125: test_workout_summary_gabbro
+142/474 Test #347: test_alerts_preferences ........................   Passed    0.47 sec
+        Start 327: test_watch_app_prefs_db
+143/474 Test #201: test_gbitmap_sequence_gabbro ...................   Passed    0.91 sec
+        Start 159: test_graphics_draw_stroke_8bit_emery
+144/474 Test #106: test_kieselsport_startmenue_ohne_variante ......   Passed    0.60 sec
+        Start 286: test_boulder_glue
+145/474 Test #159: test_graphics_draw_stroke_8bit_emery ...........   Passed    0.04 sec
+        Start 211: test_graphics_draw_core_emery
+146/474 Test  #79: test_health_hr_summary_card_flint ..............   Passed    0.28 sec
+        Start  35: test_timeline_api
+147/474 Test #211: test_graphics_draw_core_emery ..................   Passed    0.05 sec
+        Start 119: test_timeline_no_events_emery
+148/474 Test #324: test_app_db ....................................   Passed    0.41 sec
+        Start  57: test_qr_code_emery
+149/474 Test  #57: test_qr_code_emery .............................   Passed    0.06 sec
+        Start 294: test_boulder_messung
+150/474 Test #125: test_workout_summary_gabbro ....................   Passed    0.40 sec
+        Start 404: test_expandable_dialog_gabbro
+151/474 Test #327: test_watch_app_prefs_db ........................   Passed    0.37 sec
+        Start 176: test_graphics_gpath_1bit_flint
+152/474 Test  #35: test_timeline_api ..............................   Passed    0.30 sec
+        Start 408: test_selection_windows_flint
+153/474 Test #119: test_timeline_no_events_emery ..................   Passed    0.29 sec
+        Start 173: test_graphics_fill_rect_1bit_flint
+154/474 Test #176: test_graphics_gpath_1bit_flint .................   Passed    0.08 sec
+        Start 265: test_vibe
+155/474 Test #173: test_graphics_fill_rect_1bit_flint .............   Passed    0.10 sec
+        Start 264: test_weather_service
+156/474 Test #408: test_selection_windows_flint ...................   Passed    0.20 sec
+        Start 407: test_selection_windows_gabbro
+157/474 Test #265: test_vibe ......................................   Passed    0.21 sec
+        Start  70: test_health_card_view_emery
+158/474 Test #404: test_expandable_dialog_gabbro ..................   Passed    0.34 sec
+        Start 271: test_hrm_manager
+159/474 Test #264: test_weather_service ...........................   Passed    0.24 sec
+        Start 301: test_boulder_training
+160/474 Test #271: test_hrm_manager ...............................   Passed    0.08 sec
+        Start 120: test_timeline_no_events_gabbro
+161/474 Test  #70: test_health_card_view_emery ....................   Passed    0.11 sec
+        Start 274: test_system_task
+162/474 Test #407: test_selection_windows_gabbro ..................   Passed    0.22 sec
+        Start 326: test_contacts_db
+163/474 Test #274: test_system_task ...............................   Passed    0.06 sec
+        Start 473: test_boulder_umzug_aufbau
+164/474 Test #120: test_timeline_no_events_gabbro .................   Passed    0.20 sec
+        Start 143: test_gatt_client_subscriptions
+165/474 Test #301: test_boulder_training ..........................   Passed    0.30 sec
+        Start 220: test_ancs_pebble_actions
+166/474 Test #326: test_contacts_db ...............................   Passed    0.25 sec
+        Start 329: test_notif_db
+167/474 Test #143: test_gatt_client_subscriptions .................   Passed    0.11 sec
+        Start 180: test_graphics_draw_stroke_precise_1bit_flint
+168/474 Test #180: test_graphics_draw_stroke_precise_1bit_flint ...   Passed    0.03 sec
+        Start 108: test_kieselstrasse_app
+169/474 Test #286: test_boulder_glue ..............................   Passed    1.13 sec
+        Start 463: test_bh_unbenutzt
+170/474 Test #108: test_kieselstrasse_app .........................   Passed    0.14 sec
+        Start 207: test_bitblt_palette_1bit_flint
+171/474 Test #473: test_boulder_umzug_aufbau ......................   Passed    0.43 sec
+        Start 354: test_settings_file
+172/474 Test #207: test_bitblt_palette_1bit_flint .................   Passed    0.03 sec
+        Start 213: test_bitblt
+173/474 Test #329: test_notif_db ..................................   Passed    0.23 sec
+        Start 261: test_shared_prf_storage_v3_emery
+174/474 Test #261: test_shared_prf_storage_v3_emery ...............   Passed    0.02 sec
+        Start 218: test_rand
+175/474 Test #213: test_bitblt ....................................   Passed    0.06 sec
+        Start 139: test_gap_le_advert
+176/474 Test #220: test_ancs_pebble_actions .......................   Passed    0.32 sec
+        Start 466: test_boulder_kieselstrasse_unbenutzt
+177/474 Test #139: test_gap_le_advert .............................   Passed    0.04 sec
+        Start 455: test_crc32
+178/474 Test #455: test_crc32 .....................................   Passed    0.02 sec
+        Start 426: test_mmio
+179/474 Test #426: test_mmio ......................................   Passed    0.01 sec
+        Start  71: test_health_card_view_gabbro
+180/474 Test #218: test_rand ......................................   Passed    0.13 sec
+        Start 235: test_analytics_native
+181/474 Test #235: test_analytics_native ..........................   Passed    0.02 sec
+        Start 368: test_normal_system_app_state_machine
+182/474 Test #368: test_normal_system_app_state_machine ...........   Passed    0.01 sec
+        Start 202: test_pbi
+183/474 Test #466: test_boulder_kieselstrasse_unbenutzt ...........   Passed    0.14 sec
+        Start 331: test_prefs_db
+184/474 Test #202: test_pbi .......................................   Passed    0.04 sec
+        Start 361: test_alarm_layout_emery
+185/474 Test #294: test_boulder_messung ...........................   Passed    1.32 sec
+        Start 165: test_graphics_gtransform_8bit_emery
+186/474 Test #361: test_alarm_layout_emery ........................   Passed    0.02 sec
+        Start 191: test_gbitmap_formats_emery
+187/474 Test  #71: test_health_card_view_gabbro ...................   Passed    0.11 sec
+        Start 314: test_kieselsport_abo
+188/474 Test #165: test_graphics_gtransform_8bit_emery ............   Passed    0.03 sec
+        Start  66: test_bh_startmenue
+189/474 Test #191: test_gbitmap_formats_emery .....................   Passed    0.02 sec
+        Start 418: test_recognizer_manager
+190/474 Test #418: test_recognizer_manager ........................   Passed    0.03 sec
+        Start 248: test_registry_endpoint
+191/474 Test #248: test_registry_endpoint .........................   Passed    0.01 sec
+        Start 383: test_window_stack
+192/474 Test #383: test_window_stack ..............................   Passed    0.03 sec
+        Start 233: test_ping
+193/474 Test #233: test_ping ......................................   Passed    0.01 sec
+        Start 460: test_task_wdt
+194/474 Test #331: test_prefs_db ..................................   Passed    0.15 sec
+        Start 178: test_graphics_context_1bit_flint
+195/474 Test #178: test_graphics_context_1bit_flint ...............   Passed    0.02 sec
+        Start 166: test_graphics_context_8bit_emery
+196/474 Test #166: test_graphics_context_8bit_emery ...............   Passed    0.02 sec
+        Start 254: test_mic_manager
+197/474 Test #254: test_mic_manager ...............................   Passed    0.01 sec
+        Start 469: test_boulder_kopie_pruefen
+198/474 Test #463: test_bh_unbenutzt ..............................   Passed    0.56 sec
+        Start 219: test_mfg_serials_emery
+199/474 Test #219: test_mfg_serials_emery .........................   Passed    0.01 sec
+        Start 171: test_graphics_draw_stroke_1bit_flint
+200/474 Test #460: test_task_wdt ..................................   Passed    0.13 sec
+        Start 382: test_kino_player
+201/474 Test #171: test_graphics_draw_stroke_1bit_flint ...........   Passed    0.02 sec
+        Start 275: test_mic_capture
+202/474 Test #382: test_kino_player ...............................   Passed    0.04 sec
+        Start 142: test_gatt_client_discovery
+203/474 Test #314: test_kieselsport_abo ...........................   Passed    0.27 sec
+        Start 232: test_music_endpoint
+204/474 Test #275: test_mic_capture ...............................   Passed    0.05 sec
+        Start 137: test_ams
+205/474 Test #232: test_music_endpoint ............................   Passed    0.03 sec
+        Start 440: test_bits
+206/474 Test  #66: test_bh_startmenue .............................   Passed    0.29 sec
+        Start 315: test_kieselsport_wechsel
+207/474 Test #440: test_bits ......................................   Passed    0.01 sec
+        Start 425: test_kernel
+208/474 Test #137: test_ams .......................................   Passed    0.04 sec
+        Start 167: test_blending_8bit_emery
+209/474 Test #142: test_gatt_client_discovery .....................   Passed    0.07 sec
+        Start 247: test_migrate_wakeup
+210/474 Test #167: test_blending_8bit_emery .......................   Passed    0.03 sec
+        Start  56: test_dict
+211/474 Test  #56: test_dict ......................................   Passed    0.01 sec
+        Start 378: test_animation
+212/474 Test #378: test_animation .................................   Passed    0.03 sec
+        Start 268: test_vibe_score_info
+213/474 Test #469: test_boulder_kopie_pruefen .....................   Passed    0.24 sec
+        Start 145: test_gatt_service_changed_server
+214/474 Test #268: test_vibe_score_info ...........................   Passed    0.01 sec
+        Start 230: test_contacts
+215/474 Test #247: test_migrate_wakeup ............................   Passed    0.09 sec
+        Start 115: test_notifications_history
+216/474 Test #145: test_gatt_service_changed_server ...............   Passed    0.03 sec
+        Start 151: test_qemu_serial
+217/474 Test #151: test_qemu_serial ...............................   Passed    0.01 sec
+        Start  34: test_phone_formatting
+218/474 Test #115: test_notifications_history .....................   Passed    0.03 sec
+        Start  33: test_pebble_process_md_gabbro
+219/474 Test  #34: test_phone_formatting ..........................   Passed    0.02 sec
+        Start 341: test_session_send_queue
+220/474 Test  #33: test_pebble_process_md_gabbro ..................   Passed    0.01 sec
+        Start 302: test_boulder_diagnose
+221/474 Test #230: test_contacts ..................................   Passed    0.08 sec
+        Start 198: test_gdraw_command_transforms
+222/474 Test #341: test_session_send_queue ........................   Passed    0.03 sec
+        Start 251: test_transcription
+223/474 Test #425: test_kernel ....................................   Passed    0.19 sec
+        Start  67: test_bh_startmenue_asterix
+224/474 Test #198: test_gdraw_command_transforms ..................   Passed    0.03 sec
+        Start  39: test_event_syscalls
+225/474 Test #251: test_transcription .............................   Passed    0.03 sec
+        Start 456: test_crc32_legacy
+226/474 Test #315: test_kieselsport_wechsel .......................   Passed    0.23 sec
+        Start 262: test_app_file
+227/474 Test  #39: test_event_syscalls ............................   Passed    0.02 sec
+        Start 100: test_kieselsport_atem
+228/474 Test #456: test_crc32_legacy ..............................   Passed    0.02 sec
+        Start 369: test_app_idle_timeout
+229/474 Test #262: test_app_file ..................................   Passed    0.02 sec
+        Start 338: test_meta_endpoint
+230/474 Test #100: test_kieselsport_atem ..........................   Passed    0.02 sec
+        Start 342: test_session_receive_router
+231/474 Test #369: test_app_idle_timeout ..........................   Passed    0.02 sec
+        Start 154: test_flash_api
+232/474 Test #338: test_meta_endpoint .............................   Passed    0.02 sec
+        Start 195: test_gdraw_command
+233/474 Test #342: test_session_receive_router ....................   Passed    0.02 sec
+        Start   2: test_device
+234/474 Test #154: test_flash_api .................................   Passed    0.02 sec
+        Start 328: test_reminder_db
+235/474 Test   #2: test_device ....................................   Passed    0.02 sec
+        Start   3: test_clk
+236/474 Test #195: test_gdraw_command .............................   Passed    0.03 sec
+        Start 471: test_boulder_vertraege_liste
+237/474 Test #328: test_reminder_db ...............................   Passed    0.03 sec
+        Start 240: test_phone_call
+238/474 Test   #3: test_clk .......................................   Passed    0.03 sec
+        Start  41: test_app_inbox
+239/474 Test #240: test_phone_call ................................   Passed    0.02 sec
+        Start  46: test_strftime
+240/474 Test  #41: test_app_inbox .................................   Passed    0.03 sec
+        Start   5: test_intc
+241/474 Test  #46: test_strftime ..................................   Passed    0.02 sec
+        Start 356: test_calendar
+242/474 Test   #5: test_intc ......................................   Passed    0.02 sec
+        Start  27: test_memory_layout
+243/474 Test #356: test_calendar ..................................   Passed    0.02 sec
+        Start  43: test_cpu_cache
+244/474 Test #302: test_boulder_diagnose ..........................   Passed    0.23 sec
+        Start 386: test_menu_layer
+245/474 Test  #27: test_memory_layout .............................   Passed    0.03 sec
+        Start 205: test_perimeter_emery
+246/474 Test #471: test_boulder_vertraege_liste ...................   Passed    0.10 sec
+        Start 174: test_graphics_stroke_circle_1bit_flint
+247/474 Test  #43: test_cpu_cache .................................   Passed    0.03 sec
+        Start 177: test_graphics_gtransform_1bit_flint
+248/474 Test #205: test_perimeter_emery ...........................   Passed    0.02 sec
+        Start  53: test_accel_service
+249/474 Test #174: test_graphics_stroke_circle_1bit_flint .........   Passed    0.02 sec
+        Start  13: test_bidi
+250/474 Test #177: test_graphics_gtransform_1bit_flint ............   Passed    0.02 sec
+        Start  30: test_syscall_define
+251/474 Test #386: test_menu_layer ................................   Passed    0.04 sec
+        Start 141: test_gatt_client_accessors
+252/474 Test  #53: test_accel_service .............................   Passed    0.02 sec
+        Start 459: test_log_modules
+253/474 Test  #13: test_bidi ......................................   Passed    0.02 sec
+        Start 217: test_remote_input
+254/474 Test  #30: test_syscall_define ............................   Passed    0.03 sec
+        Start 417: test_recognizer
+255/474 Test #459: test_log_modules ...............................   Passed    0.02 sec
+        Start 351: test_ancs_filtering
+256/474 Test #141: test_gatt_client_accessors .....................   Passed    0.04 sec
+        Start 389: test_menu_text_scroll
+257/474 Test #217: test_remote_input ..............................   Passed    0.03 sec
+        Start   7: test_fake_mutex
+258/474 Test #417: test_recognizer ................................   Passed    0.02 sec
+        Start 228: test_tick_timer
+259/474 Test #351: test_ancs_filtering ............................   Passed    0.02 sec
+        Start 335: test_local_addr
+260/474 Test #389: test_menu_text_scroll ..........................   Passed    0.01 sec
+        Start 322: test_blob_db_endpoint
+261/474 Test   #7: test_fake_mutex ................................   Passed    0.02 sec
+        Start  14: test_arabic_shaping
+262/474 Test #228: test_tick_timer ................................   Passed    0.02 sec
+        Start  54: test_app_glance
+263/474 Test #335: test_local_addr ................................   Passed    0.02 sec
+        Start 325: test_app_glance_db
+264/474 Test #322: test_blob_db_endpoint ..........................   Passed    0.02 sec
+        Start 281: test_hr_util
+265/474 Test  #14: test_arabic_shaping ............................   Passed    0.02 sec
+        Start  28: test_app_manager
+266/474 Test  #54: test_app_glance ................................   Passed    0.02 sec
+        Start 300: test_boulder_umzug_prefs
+267/474 Test #281: test_hr_util ...................................   Passed    0.01 sec
+        Start 433: test_uuid
+268/474 Test #325: test_app_glance_db .............................   Passed    0.02 sec
+        Start 260: test_accel_manager
+269/474 Test #433: test_uuid ......................................   Passed    0.01 sec
+        Start 344: test_default_kernel_receiver
+270/474 Test  #28: test_app_manager ...............................   Passed    0.03 sec
+        Start 158: test_graphics_draw_pixel_8bit_emery
+271/474 Test #260: test_accel_manager .............................   Passed    0.03 sec
+        Start 453: test_crc
+272/474 Test #344: test_default_kernel_receiver ...................   Passed    0.03 sec
+        Start 346: test_health
+273/474 Test #453: test_crc .......................................   Passed    0.02 sec
+        Start  55: test_template_string
+274/474 Test #158: test_graphics_draw_pixel_8bit_emery ............   Passed    0.04 sec
+        Start 242: test_debounced_connection_service
+275/474 Test #300: test_boulder_umzug_prefs .......................   Passed    0.07 sec
+        Start  51: test_unobstructed_area_service
+276/474 Test  #55: test_template_string ...........................   Passed    0.02 sec
+        Start  22: test_alerts
+277/474 Test #242: test_debounced_connection_service ..............   Passed    0.02 sec
+        Start 101: test_kieselsport_arten
+278/474 Test #346: test_health ....................................   Passed    0.05 sec
+        Start 350: test_ancs_notifications_util
+279/474 Test  #51: test_unobstructed_area_service .................   Passed    0.02 sec
+        Start 206: test_perimeter_gabbro
+280/474 Test  #22: test_alerts ....................................   Passed    0.02 sec
+        Start 237: test_light
+281/474 Test #101: test_kieselsport_arten .........................   Passed    0.03 sec
+        Start  96: test_kieselsport_meldungen
+282/474 Test #350: test_ancs_notifications_util ...................   Passed    0.03 sec
+        Start 229: test_cron
+283/474 Test  #67: test_bh_startmenue_asterix .....................   Passed    0.45 sec
+        Start  31: test_pebble_app_info
+284/474 Test #206: test_perimeter_gabbro ..........................   Passed    0.03 sec
+        Start 332: test_ios_notif_pref_db
+285/474 Test  #96: test_kieselsport_meldungen .....................   Passed    0.02 sec
+        Start 316: test_app_message_receiver
+286/474 Test #229: test_cron ......................................   Passed    0.02 sec
+        Start  42: test_app_outbox
+287/474 Test  #31: test_pebble_app_info ...........................   Passed    0.03 sec
+        Start 133: test_workout_utils
+288/474 Test #332: test_ios_notif_pref_db .........................   Passed    0.02 sec
+        Start  58: test_ble_ad_parse
+289/474 Test #316: test_app_message_receiver ......................   Passed    0.03 sec
+        Start 451: test_gmtime
+290/474 Test #237: test_light .....................................   Passed    0.07 sec
+        Start 444: test_buffer
+291/474 Test  #42: test_app_outbox ................................   Passed    0.03 sec
+        Start  11: test_utf8_iterator
+292/474 Test #133: test_workout_utils .............................   Passed    0.03 sec
+        Start 243: test_timeline_item
+293/474 Test  #58: test_ble_ad_parse ..............................   Passed    0.03 sec
+        Start  94: test_health_hr_chart_flint
+294/474 Test #451: test_gmtime ....................................   Passed    0.03 sec
+        Start 249: test_audio_endpoint
+295/474 Test #444: test_buffer ....................................   Passed    0.03 sec
+        Start  37: test_text_layout_8_bit_emery
+296/474 Test  #11: test_utf8_iterator .............................   Passed    0.02 sec
+        Start 208: test_framebuffer_duma_emery
+297/474 Test #243: test_timeline_item .............................   Passed    0.02 sec
+        Start  92: test_health_hr_chart_emery
+298/474 Test  #94: test_health_hr_chart_flint .....................   Passed    0.02 sec
+        Start 421: test_swipe
+299/474 Test  #37: test_text_layout_8_bit_emery ...................   Passed    0.02 sec
+        Start 185: test_graphics_colors
+300/474 Test #208: test_framebuffer_duma_emery ....................   Passed    0.03 sec
+        Start   6: test_reset
+301/474 Test  #92: test_health_hr_chart_emery .....................   Passed    0.02 sec
+        Start 296: test_boulder_einstellungen
+302/474 Test #421: test_swipe .....................................   Passed    0.02 sec
+        Start 231: test_evented_timer
+303/474 Test #249: test_audio_endpoint ............................   Passed    0.04 sec
+        Start 379: test_animation_interpolate
+304/474 Test #185: test_graphics_colors ...........................   Passed    0.03 sec
+        Start 353: test_protobuf_log
+305/474 Test   #6: test_reset .....................................   Passed    0.03 sec
+        Start  40: test_app_message
+306/474 Test #231: test_evented_timer .............................   Passed    0.03 sec
+        Start 187: test_gtypes_gabbro
+307/474 Test #379: test_animation_interpolate .....................   Passed    0.02 sec
+        Start 439: test_bitops
+308/474 Test  #40: test_app_message ...............................   Passed    0.02 sec
+        Start 323: test_blob_db2_endpoint
+309/474 Test #439: test_bitops ....................................   Passed    0.02 sec
+        Start 193: test_gbitmap_processor
+310/474 Test #353: test_protobuf_log ..............................   Passed    0.04 sec
+        Start 280: test_health_util
+311/474 Test #187: test_gtypes_gabbro .............................   Passed    0.04 sec
+        Start 429: test_slist
+312/474 Test #323: test_blob_db2_endpoint .........................   Passed    0.03 sec
+        Start 317: test_app_message_sender
+313/474 Test #193: test_gbitmap_processor .........................   Passed    0.03 sec
+        Start 381: test_kino_reel
+314/474 Test #280: test_health_util ...............................   Passed    0.02 sec
+        Start 376: test_scroll_layer_touch
+315/474 Test #429: test_slist .....................................   Passed    0.02 sec
+        Start 377: test_status_bar_layer
+316/474 Test #317: test_app_message_sender ........................   Passed    0.02 sec
+        Start 282: test_workout_service
+317/474 Test #381: test_kino_reel .................................   Passed    0.02 sec
+        Start 236: test_compass_cal
+318/474 Test #376: test_scroll_layer_touch ........................   Passed    0.03 sec
+        Start 234: test_imaging
+319/474 Test #377: test_status_bar_layer ..........................   Passed    0.03 sec
+        Start 320: test_pin_db
+320/474 Test #282: test_workout_service ...........................   Passed    0.03 sec
+        Start   4: test_gpio
+321/474 Test #236: test_compass_cal ...............................   Passed    0.03 sec
+        Start 144: test_gatt_service_changed_client
+322/474 Test #234: test_imaging ...................................   Passed    0.03 sec
+        Start 367: test_system_theme
+323/474 Test #320: test_pin_db ....................................   Passed    0.04 sec
+        Start  17: test_launcher_app_message
+324/474 Test   #4: test_gpio ......................................   Passed    0.03 sec
+        Start 333: test_health_db
+325/474 Test #144: test_gatt_service_changed_client ...............   Passed    0.04 sec
+        Start 272: test_app_glance_service
+326/474 Test #296: test_boulder_einstellungen .....................   Passed    0.18 sec
+        Start 140: test_bt_conn_mgr
+327/474 Test #367: test_system_theme ..............................   Passed    0.04 sec
+        Start 449: test_shared_cbuf
+328/474 Test  #17: test_launcher_app_message ......................   Passed    0.03 sec
+        Start 107: test_kieselstrasse_weg
+329/474 Test #333: test_health_db .................................   Passed    0.03 sec
+        Start 255: test_mic_stream
+330/474 Test #272: test_app_glance_service ........................   Passed    0.03 sec
+        Start 216: test_interval_timer
+331/474 Test #140: test_bt_conn_mgr ...............................   Passed    0.03 sec
+        Start 297: test_boulder_einstellungen_pebble
+332/474 Test #449: test_shared_cbuf ...............................   Passed    0.03 sec
+        Start 430: test_math
+333/474 Test #107: test_kieselstrasse_weg .........................   Passed    0.03 sec
+        Start 146: test_ancs_util
+334/474 Test #216: test_interval_timer ............................   Passed    0.03 sec
+        Start 190: test_gbitmap_resource_validation
+335/474 Test #255: test_mic_stream ................................   Passed    0.04 sec
+        Start 349: test_ancs_notifications
+336/474 Test #430: test_math ......................................   Passed    0.03 sec
+        Start 152: test_cobs_decode
+337/474 Test #146: test_ancs_util .................................   Passed    0.03 sec
+        Start  93: test_health_hr_chart_gabbro
+338/474 Test #190: test_gbitmap_resource_validation ...............   Passed    0.03 sec
+        Start 148: test_kernel_le_client
+339/474 Test #349: test_ancs_notifications ........................   Passed    0.02 sec
+        Start  18: test_line_layout
+340/474 Test #152: test_cobs_decode ...............................   Passed    0.02 sec
+        Start 366: test_swap_layer_touch
+341/474 Test  #93: test_health_hr_chart_gabbro ....................   Passed    0.02 sec
+        Start 270: test_touch_session
+342/474 Test #148: test_kernel_le_client ..........................   Passed    0.03 sec
+        Start 269: test_touch
+343/474 Test #366: test_swap_layer_touch ..........................   Passed    0.02 sec
+        Start 245: test_timezone_database
+344/474 Test  #18: test_line_layout ...............................   Passed    0.04 sec
+        Start 199: test_pdc
+345/474 Test #270: test_touch_session .............................   Passed    0.03 sec
+        Start 358: test_attribute
+346/474 Test #269: test_touch .....................................   Passed    0.03 sec
+        Start 454: test_crc_hw
+347/474 Test #245: test_timezone_database .........................   Passed    0.03 sec
+        Start 419: test_tap
+348/474 Test #199: test_pdc .......................................   Passed    0.03 sec
+        Start 373: test_layer
+349/474 Test #358: test_attribute .................................   Passed    0.03 sec
+        Start 441: test_misc
+350/474 Test #454: test_crc_hw ....................................   Passed    0.03 sec
+        Start 138: test_ams_util
+351/474 Test #419: test_tap .......................................   Passed    0.02 sec
+        Start  97: test_kieselsport_telefon
+352/474 Test #373: test_layer .....................................   Passed    0.03 sec
+        Start 222: test_language_pack_protocol
+353/474 Test #441: test_misc ......................................   Passed    0.03 sec
+        Start 266: test_vibe_intensity
+354/474 Test #138: test_ams_util ..................................   Passed    0.02 sec
+        Start 458: test_pulse_logging
+355/474 Test  #97: test_kieselsport_telefon .......................   Passed    0.02 sec
+        Start 336: test_bluetooth_persistent_storage_prf_emery
+356/474 Test #222: test_language_pack_protocol ....................   Passed    0.02 sec
+        Start 362: test_alarm_layout_gabbro
+357/474 Test #266: test_vibe_intensity ............................   Passed    0.03 sec
+        Start 252: test_voice_endpoint
+358/474 Test #458: test_pulse_logging .............................   Passed    0.03 sec
+        Start 384: test_modal_touch_nav
+359/474 Test #336: test_bluetooth_persistent_storage_prf_emery ....   Passed    0.03 sec
+        Start  36: test_app_run_state
+360/474 Test #362: test_alarm_layout_gabbro .......................   Passed    0.03 sec
+        Start 309: test_kieselsport_kalorien
+361/474 Test #252: test_voice_endpoint ............................   Passed    0.03 sec
+        Start 258: test_process_loader_storage
+362/474 Test  #36: test_app_run_state .............................   Passed    0.02 sec
+        Start 345: test_compositor
+363/474 Test #384: test_modal_touch_nav ...........................   Passed    0.03 sec
+        Start 238: test_als_screen_compensation
+364/474 Test #297: test_boulder_einstellungen_pebble ..............   Passed    0.23 sec
+        Start 374: test_layer_rect
+365/474 Test #309: test_kieselsport_kalorien ......................   Passed    0.03 sec
+        Start 422: test_recognizer_competition
+366/474 Test #258: test_process_loader_storage ....................   Passed    0.03 sec
+        Start 448: test_stats
+367/474 Test #374: test_layer_rect ................................   Passed    0.01 sec
+        Start 204: test_graphics_text_node
+368/474 Test #238: test_als_screen_compensation ...................   Passed    0.02 sec
+        Start 192: test_gbitmap_formats_gabbro
+369/474 Test #345: test_compositor ................................   Passed    0.03 sec
+        Start  15: test_char_iterator
+370/474 Test #422: test_recognizer_competition ....................   Passed    0.02 sec
+        Start 435: test_keyed_circular_cache
+371/474 Test #448: test_stats .....................................   Passed    0.02 sec
+        Start  99: test_kieselsport_lauf
+372/474 Test #204: test_graphics_text_node ........................   Passed    0.02 sec
+        Start 427: test_circular_buffer
+373/474 Test #192: test_gbitmap_formats_gabbro ....................   Passed    0.02 sec
+        Start 447: test_generic_attr
+374/474 Test  #15: test_char_iterator .............................   Passed    0.02 sec
+        Start   9: test_utf8
+375/474 Test #435: test_keyed_circular_cache ......................   Passed    0.02 sec
+        Start 437: test_sort
+376/474 Test  #99: test_kieselsport_lauf ..........................   Passed    0.02 sec
+        Start 457: test_input
+377/474 Test #427: test_circular_buffer ...........................   Passed    0.02 sec
+        Start 188: test_graphics_circle
+378/474 Test #447: test_generic_attr ..............................   Passed    0.02 sec
+        Start  16: test_word_iterator
+379/474 Test   #9: test_utf8 ......................................   Passed    0.03 sec
+        Start 267: test_vibe_score
+380/474 Test #437: test_sort ......................................   Passed    0.03 sec
+        Start 442: test_ratio
+381/474 Test #457: test_input .....................................   Passed    0.03 sec
+        Start 375: test_scroll_layer
+382/474 Test #188: test_graphics_circle ...........................   Passed    0.03 sec
+        Start 343: test_session_remote_version
+383/474 Test  #16: test_word_iterator .............................   Passed    0.02 sec
+        Start 405: test_text_layer
+384/474 Test #267: test_vibe_score ................................   Passed    0.02 sec
+        Start 259: test_app_fetch_endpoint
+385/474 Test #442: test_ratio .....................................   Passed    0.02 sec
+        Start 428: test_list
+386/474 Test #375: test_scroll_layer ..............................   Passed    0.02 sec
+        Start 214: test_bitblt_palette
+387/474 Test #343: test_session_remote_version ....................   Passed    0.02 sec
+        Start 445: test_string_list
+388/474 Test #405: test_text_layer ................................   Passed    0.02 sec
+        Start 423: test_recognizer_lifecycle
+389/474 Test #259: test_app_fetch_endpoint ........................   Passed    0.02 sec
+        Start 450: test_time
+390/474 Test #428: test_list ......................................   Passed    0.02 sec
+        Start 156: test_accel_qemu
+391/474 Test #445: test_string_list ...............................   Passed    0.02 sec
+        Start 334: test_ble_hrm
+392/474 Test #214: test_bitblt_palette ............................   Passed    0.03 sec
+        Start 203: test_palettized_conversion
+393/474 Test #423: test_recognizer_lifecycle ......................   Passed    0.03 sec
+        Start 432: test_math_fixed
+394/474 Test #450: test_time ......................................   Passed    0.03 sec
+        Start 289: test_boulder_vertraege
+395/474 Test #334: test_ble_hrm ...................................   Passed    0.02 sec
+        Start  50: test_bitmap_layer
+396/474 Test #156: test_accel_qemu ................................   Passed    0.03 sec
+        Start  23: test_tick
+397/474 Test #203: test_palettized_conversion .....................   Passed    0.03 sec
+        Start 273: test_clock_time
+398/474 Test #432: test_math_fixed ................................   Passed    0.02 sec
+        Start  29: test_process_manager
+399/474 Test #289: test_boulder_vertraege .........................   Passed    0.02 sec
+        Start 215: test_raw_image
+400/474 Test  #50: test_bitmap_layer ..............................   Passed    0.02 sec
+        Start 310: test_workout_service_kieselsport
+401/474 Test  #23: test_tick ......................................   Passed    0.02 sec
+        Start 104: test_kieselsport_kachel_haken_ohne_variante
+402/474 Test #273: test_clock_time ................................   Passed    0.02 sec
+        Start 409: test_text_layer_flow
+403/474 Test  #29: test_process_manager ...........................   Passed    0.02 sec
+        Start 239: test_phone_pp
+404/474 Test #215: test_raw_image .................................   Passed    0.02 sec
+        Start 420: test_pan
+405/474 Test #310: test_workout_service_kieselsport ...............   Passed    0.03 sec
+        Start 170: test_graphics_draw_pixel_1bit_flint
+406/474 Test #104: test_kieselsport_kachel_haken_ohne_variante ....   Passed    0.02 sec
+        Start 155: test_flash_erase_emery
+407/474 Test #409: test_text_layer_flow ...........................   Passed    0.03 sec
+        Start 212: test_graphics_draw_implementation
+408/474 Test #239: test_phone_pp ..................................   Passed    0.03 sec
+        Start 461: test_test_infra
+409/474 Test #420: test_pan .......................................   Passed    0.03 sec
+        Start 339: test_session
+410/474 Test #155: test_flash_erase_emery .........................   Passed    0.02 sec
+        Start 452: test_mktime
+411/474 Test #170: test_graphics_draw_pixel_1bit_flint ............   Passed    0.03 sec
+        Start 250: test_speaker_service
+412/474 Test #212: test_graphics_draw_implementation ..............   Passed    0.02 sec
+        Start  52: test_touch_service
+413/474 Test #461: test_test_infra ................................   Passed    0.02 sec
+        Start 153: test_cobs_encode
+414/474 Test #339: test_session ...................................   Passed    0.02 sec
+        Start 434: test_circular_cache
+415/474 Test #452: test_mktime ....................................   Passed    0.02 sec
+        Start 283: test_activity_calculators
+416/474 Test #250: test_speaker_service ...........................   Passed    0.02 sec
+        Start 360: test_timeline_resources
+417/474 Test  #52: test_touch_service .............................   Passed    0.02 sec
+        Start 210: test_framebuffer_legacy_gabbro
+418/474 Test #434: test_circular_cache ............................   Passed    0.02 sec
+        Start  45: test_pbl_std
+419/474 Test #283: test_activity_calculators ......................   Passed    0.02 sec
+        Start 385: test_content_indicator
+420/474 Test #153: test_cobs_encode ...............................   Passed    0.03 sec
+        Start  47: test_text_render
+421/474 Test #360: test_timeline_resources ........................   Passed    0.03 sec
+        Start 307: test_kieselsport_vertrag
+422/474 Test #210: test_framebuffer_legacy_gabbro .................   Passed    0.03 sec
+        Start 436: test_struct
+423/474 Test  #45: test_pbl_std ...................................   Passed    0.03 sec
+        Start   8: test_clar
+424/474 Test #385: test_content_indicator .........................   Passed    0.03 sec
+        Start 209: test_framebuffer_duma_gabbro
+425/474 Test  #47: test_text_render ...............................   Passed    0.03 sec
+        Start  24: test_heap
+426/474 Test #307: test_kieselsport_vertrag .......................   Passed    0.03 sec
+        Start 431: test_string
+427/474 Test #436: test_struct ....................................   Passed    0.03 sec
+        Start  12: test_codepoint
+428/474 Test   #8: test_clar ......................................   Passed    0.03 sec
+        Start  38: test_getting_started_button_combo
+429/474 Test #209: test_framebuffer_duma_gabbro ...................   Passed    0.03 sec
+        Start 443: test_base64
+430/474 Test  #24: test_heap ......................................   Passed    0.03 sec
+        Start 438: test_byteorder
+431/474 Test #431: test_string ....................................   Passed    0.03 sec
+        Start 318: test_app_session_capabilities
+432/474 Test  #12: test_codepoint .................................   Passed    0.02 sec
+        Start 446: test_pstring
+433/474 Test  #38: test_getting_started_button_combo ..............   Passed    0.02 sec
+        Start 221: test_timeline_actions
+434/474 Test #443: test_base64 ....................................   Passed    0.02 sec
+        Start 189: test_gbitmap_data_row_info
+435/474 Test #438: test_byteorder .................................   Passed    0.02 sec
+        Start 380: test_animation_timing
+436/474 Test #318: test_app_session_capabilities ..................   Passed    0.03 sec
+        Start 196: test_gdraw_command_sequence
+437/474 Test #446: test_pstring ...................................   Passed    0.02 sec
+        Start 241: test_regular_timer
+438/474 Test #221: test_timeline_actions ..........................   Passed    0.03 sec
+        Start 370: test_battery_ui_fsm_emery
+439/474 Test #189: test_gbitmap_data_row_info .....................   Passed    0.03 sec
+        Start 197: test_gdraw_command_resources
+440/474 Test #380: test_animation_timing ..........................   Passed    0.02 sec
+        Start 388: test_action_menu_layer_gabbro
+441/474 Test #196: test_gdraw_command_sequence ....................   Passed    0.03 sec
+        Start 410: test_jumboji
+442/474 Test #241: test_regular_timer .............................   Passed    0.02 sec
+        Start 371: test_battery_ui_fsm_percent_emery
+443/474 Test #370: test_battery_ui_fsm_emery ......................   Passed    0.03 sec
+        Start 169: test_framebuffer_1bit_flint
+444/474 Test #197: test_gdraw_command_resources ...................   Passed    0.02 sec
+        Start 424: test_touch_nav
+445/474 Test #388: test_action_menu_layer_gabbro ..................   Passed    0.02 sec
+        Start 352: test_nexmo
+446/474 Test #410: test_jumboji ...................................   Passed    0.02 sec
+        Start 372: test_flash_region_emery
+447/474 Test #371: test_battery_ui_fsm_percent_emery ..............   Passed    0.03 sec
+        Start  32: test_pebble_process_md_emery
+448/474 Test #169: test_framebuffer_1bit_flint ....................   Passed    0.03 sec
+        Start 387: test_action_menu_layer_emery
+449/474 Test #424: test_touch_nav .................................   Passed    0.02 sec
+        Start 194: test_graphics_blending_emery
+450/474 Test #352: test_nexmo .....................................   Passed    0.02 sec
+        Start 103: test_kieselsport_kachel_haken
+451/474 Test #372: test_flash_region_emery ........................   Passed    0.03 sec
+        Start 179: test_blending_1bit_flint
+452/474 Test  #32: test_pebble_process_md_emery ...................   Passed    0.03 sec
+        Start 290: test_boulder_vertraege_ohne_kieselsport
+453/474 Test #387: test_action_menu_layer_emery ...................   Passed    0.03 sec
+        Start 157: test_framebuffer_8bit_emery
+454/474 Test #194: test_graphics_blending_emery ...................   Passed    0.03 sec
+        Start  65: test_bh_einstieg
+455/474 Test #103: test_kieselsport_kachel_haken ..................   Passed    0.03 sec
+        Start 186: test_gtypes_emery
+456/474 Test #179: test_blending_1bit_flint .......................   Passed    0.03 sec
+        Start 102: test_kieselsport_kachel
+457/474 Test #290: test_boulder_vertraege_ohne_kieselsport ........   Passed    0.03 sec
+        Start  60: test_bh_app_zeiten
+458/474 Test #157: test_framebuffer_8bit_emery ....................   Passed    0.03 sec
+        Start  95: test_kieselsport_app
+459/474 Test  #65: test_bh_einstieg ...............................   Passed    0.03 sec
+        Start  98: test_kieselsport_einstellungen
+460/474 Test #186: test_gtypes_emery ..............................   Passed    0.03 sec
+        Start  61: test_bh_daten
+461/474 Test #102: test_kieselsport_kachel ........................   Passed    0.03 sec
+        Start  69: test_bh_einstiege
+462/474 Test  #60: test_bh_app_zeiten .............................   Passed    0.02 sec
+        Start  59: test_bh_app
+463/474 Test  #95: test_kieselsport_app ...........................   Passed    0.03 sec
+        Start  64: test_bh_rechnung
+464/474 Test  #98: test_kieselsport_einstellungen .................   Passed    0.03 sec
+        Start  63: test_bh_grundsatz
+465/474 Test  #61: test_bh_daten ..................................   Passed    0.03 sec
+        Start 308: test_boulder_kalorien
+466/474 Test  #69: test_bh_einstiege ..............................   Passed    0.03 sec
+        Start  68: test_boulder_schlafschalter
+467/474 Test  #59: test_bh_app ....................................   Passed    0.03 sec
+468/474 Test  #64: test_bh_rechnung ...............................   Passed    0.02 sec
+469/474 Test  #63: test_bh_grundsatz ..............................   Passed    0.01 sec
+470/474 Test #308: test_boulder_kalorien ..........................   Passed    0.01 sec
+471/474 Test  #68: test_boulder_schlafschalter ....................   Passed    0.01 sec
+472/474 Test #354: test_settings_file .............................   Passed    2.45 sec
+473/474 Test #311: test_kieselsport ...............................   Passed  125.96 sec
+474/474 Test #223: test_pfs_emery .................................   Passed  145.50 sec
+
+100% tests passed, 0 tests failed out of 474
+
+Label Time Summary:
+emery                                       = 734.66 sec*proc (383 tests)
+flint                                       =  61.10 sec*proc (40 tests)
+gabbro                                      =  66.52 sec*proc (37 tests)
+tests/drivers/base                          =   0.02 sec*proc (1 test)
+tests/drivers/clk                           =   0.03 sec*proc (1 test)
+tests/drivers/gpio                          =   0.03 sec*proc (1 test)
+tests/drivers/intc                          =   0.02 sec*proc (1 test)
+tests/drivers/reset                         =   0.03 sec*proc (1 test)
+tests/fakes_tests                           =   0.02 sec*proc (1 test)
+tests/fw                                    =  55.06 sec*proc (32 tests)
+tests/fw/applib                             =   4.97 sec*proc (18 tests)
+tests/fw/applib/bluetooth                   =   0.03 sec*proc (1 test)
+tests/fw/apps/system_apps/boulder_health    =   4.06 sec*proc (11 tests)
+tests/fw/apps/system_apps/health            =  21.80 sec*proc (25 tests)
+tests/fw/apps/system_apps/kieselsport       =   1.33 sec*proc (12 tests)
+tests/fw/apps/system_apps/kieselstrasse     =   0.18 sec*proc (2 tests)
+tests/fw/apps/system_apps/launcher          =   9.62 sec*proc (3 tests)
+tests/fw/apps/system_apps/music             =   6.05 sec*proc (3 tests)
+tests/fw/apps/system_apps/notifications     =   0.03 sec*proc (1 test)
+tests/fw/apps/system_apps/timeline          =  28.92 sec*proc (5 tests)
+tests/fw/apps/system_apps/weather           =   5.62 sec*proc (3 tests)
+tests/fw/apps/system_apps/workout           =  22.03 sec*proc (10 tests)
+tests/fw/apps/watch/kickstart               =   3.38 sec*proc (3 tests)
+tests/fw/comm                               =   4.49 sec*proc (15 tests)
+tests/fw/console                            =   0.06 sec*proc (2 tests)
+tests/fw/drivers                            =   0.07 sec*proc (3 tests)
+tests/fw/graphics                           =   7.24 sec*proc (59 tests)
+tests/fw/kernel                             =   0.20 sec*proc (3 tests)
+tests/fw/mfg                                =   0.01 sec*proc (1 test)
+tests/fw/pebble_actions                     =   0.35 sec*proc (2 tests)
+tests/fw/services                           = 171.65 sec*proc (54 tests)
+tests/fw/services/activity                  =   5.87 sec*proc (8 tests)
+tests/fw/services/activity/boulder          = 273.62 sec*proc (23 tests)
+tests/fw/services/activity/boulder/sport    = 132.19 sec*proc (9 tests)
+tests/fw/services/app_message               =   0.08 sec*proc (3 tests)
+tests/fw/services/blob_db                   =   4.89 sec*proc (15 tests)
+tests/fw/services/bluetooth                 =   0.65 sec*proc (4 tests)
+tests/fw/services/comm_session              =   0.83 sec*proc (7 tests)
+tests/fw/services/compositor                =   0.03 sec*proc (1 test)
+tests/fw/services/health                    =   0.05 sec*proc (1 test)
+tests/fw/services/notifications             =   1.85 sec*proc (6 tests)
+tests/fw/services/protobuf_log              =   0.04 sec*proc (1 test)
+tests/fw/services/settings                  =   2.45 sec*proc (1 test)
+tests/fw/services/timeline                  =  49.38 sec*proc (12 tests)
+tests/fw/shell                              =   0.04 sec*proc (1 test)
+tests/fw/shell/normal                       =   0.08 sec*proc (4 tests)
+tests/fw/system                             =   0.03 sec*proc (1 test)
+tests/fw/ui                                 =  41.63 sec*proc (44 tests)
+tests/fw/ui/recognizer                      =   0.19 sec*proc (8 tests)
+tests/kernel                                =   0.20 sec*proc (2 tests)
+tests/libutil                               =   0.59 sec*proc (26 tests)
+tests/subsys/crc                            =   0.09 sec*proc (4 tests)
+tests/subsys/input                          =   0.03 sec*proc (1 test)
+tests/subsys/logging                        =   0.05 sec*proc (2 tests)
+tests/subsys/task_wdt                       =   0.13 sec*proc (1 test)
+tests/test_infra                            =   0.02 sec*proc (1 test)
+
+Total Test time (real) = 145.52 sec
+ctest-exit 0

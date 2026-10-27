@@ -406,6 +406,59 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `FirmwareSignatur.kt`; die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest,
   besonders die Übernahme der alten SpO2-Schlüssel beim ersten Start von b39.
 
+## Schlafmodus von Hand wie Morpheuz (27.10.2026, F53–F56, Firmware b40, Boulder 0.61.0)
+- **Nutzer:** „I went public and got a request: manual sleep mode“, dann „manual mode hast du richtig
+  verstanden. morpheus wurde erwähnt“. Gemeint ist ein Schlaf, den man selbst beginnt und beendet,
+  wie mit Morpheuz.
+- **F53: Health-App und Quick Launch.** In Boulders Health-App startet Select lange auf Night den
+  Schlafmodus. Solange er läuft, öffnet die App auf Night mit „Sleeping since 23:10“, und Select
+  heisst „aufgewacht“. Dazu kommt ein Schalter „Toggle Sleep Mode“, gebaut wie Pebbles Schalter für
+  Quiet Time (`fw/apps/system/toggle/`): Er steht unter Settings > Quick Launch > Actions direkt
+  neben „Toggle Quiet Time“, zeigt Pebbles Dialog „Sleep Mode Started/Ended“ mit Pebbles Symbol für
+  den Schlaf und kehrt zum Zifferblatt zurück. Auch die Health-App öffnet ihn (S8), so gibt es nur
+  einen Dialog. Nicht gewählt: nur Health-App, nur Quick Launch.
+- **F54: Ende nach 2 h wach** (Empfehlung): Es endet mit „Aufgewacht“. Vergisst man das, endet der
+  Schlafmodus mit der Nacht wie sonst, also nach zwei Stunden wach, spätestens nach 15 Stunden.
+  Ohne Umfrage dazu: Schläft der Live-Automat in den zwei Stunden nach dem Start nie, endet er
+  ebenfalls (aus Versehen gestartet); sonst schnitte die Nacht von Hand die nächste gewöhnliche ab.
+  Nicht gewählt: nur von Hand.
+- **F55: nur messen.** Quiet Time bleibt, wie der Nutzer sie eingestellt hat (wie Morpheuz). Nicht
+  gewählt: Quiet Time mitschalten wie Fitbit und Garmin.
+- **F56: das Telefon später** (Empfehlung). Boulder zeigt solche Nächte mit „Manual“ und gibt sie an
+  Health Connect als aktiv aufgezeichneten Schlaf; starten und beenden geht vorerst nur auf der Uhr.
+- **Umsetzung Firmware** (V2 `20aa3bb86`, `3ed44d560`):
+  - Ein eigenes Nachtfenster: Mit dem Start beginnt es in dieser Minute statt um 20 Uhr, auch am Tag.
+    `prv_fenster` in `dauerteil.c` bleibt die einzige Stelle, die das Fenster bestimmt; Rechnung,
+    Live-Automat, Pebbles Sitzungen, Nachtruhe der Messung, Weckregel und Ablage folgen ihm. Nach dem
+    Ende gilt das Fenster von Hand bis zum nächsten ab 20 Uhr weiter (eine Folgenacht wie sonst),
+    höchstens 24 Stunden; die Nachtruhe der Messung aber nur, solange er läuft.
+  - Der Start schliesst das laufende Fenster gleich wie an seinem Ende; „Aufgewacht“ macht eine
+    gefundene Nacht fertig und endgültig wie zwei Stunden wach.
+  - Der Nachtsatz 0x4001 trägt die Nacht mit Bit 0x02 in `flags`; die Fassung bleibt 3, ältere Apps
+    sehen eine gewöhnliche Nacht.
+  - Der Zustand steht in `boulder_v2` unter `hand`. Nach einem Neustart holt „Laden“ ihn vor allem
+    anderen und füllt den Eingang des Fensters von Hand aus Pebbles Minutendatei nach. Ein Wunsch
+    vor dem ersten „Laden“ (am Kabel nach einem Neustart, Tracking aus) gilt ab dem Laden.
+  - Die Lage ist Fassung 3 (28 Byte, dazu der Start), S8 `sys_boulder_schlafmodus_umschalten` öffnet
+    den Schalter nur, wenn der Stand der App stimmt. Der Schalter ist `BOULDER_SCHLAF` (-105) in der
+    Registry, nur mit der Variante.
+- **Umsetzung App** (Boulder `2fdec7438`, Fassung 0.61.0 in `fcd366a1b`): `NachtParser` liest das
+  Bit, `boulder.db` wird Fassung 2 (Spalte `boulder_nacht.manuell`, AutoMigration 1 → 2); die
+  Nachtansicht schreibt „Manual“ hinter das Urteil, das Tagesband „manual“ hinter die Dauer.
+  Health Connect: `Metadata.activelyRecorded` mit derselben Kennung. Der Spiegel zum Server trägt
+  das Bit noch nicht.
+- **Mindest-App für b40: 0.61.0.** Ältere Apps nähmen die Nächte an, zeigten sie aber als gewöhnliche.
+- **Prüfung:** Firmware auf `3ed44d560` mit acht Bauten ohne Warnung, Host 474/474, allen Werkzeugen
+  und 32/32 Mutationen (zwei überlebten zuerst; die Tests „erste Minute“ und „aufgewacht sofort“ kamen
+  dazu). Im Emulator Select lange, die App im Schlafmodus, „aufgewacht“ und der Schalter in Quick
+  Launch. App: 2810 Tests (10 übersprungen wie bei 0.60.0), `vorlage_waechter.py` unverändert grün.
+- **Ergebnis (27.10.):** Boulder 0.61.0 ist veröffentlicht, aus CI-Lauf 40509335266 auf `fcd366a1b`:
+  APK mit versionCode 5040 und demselben Zertifikat wie bisher (`212e0ca4…d035`). b40 ist
+  veröffentlicht (Lauf 40511275403, Tag auf dem Release-Commit `a1d325c` in boulder-firmware), Beta,
+  Mindest-App 0.61.0. Der Digest stimmt mit dem gebauten Paket überein (`da48e507…`), die Signatur
+  ist mit `signatur.pub` geprüft, die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest,
+  besonders eine echte Nacht von Hand, „aufgewacht“ am Morgen und ein Neustart im Schlafmodus.
+
 ## SpO2 nach Schaltern: Schlaf, Sport, Intervall (22.10.2026, F44–F45, Boulder 0.58.0, Firmware b37)
 - **Nutzer:** „für spo2 möchte ich in den einstellungen checkboxen für für schlaf, sport oder
   intervall. das spart akku. für schlaf hast du vielleicht einen vorschlag wie das umgesetzt werden

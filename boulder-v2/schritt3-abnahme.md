@@ -830,3 +830,26 @@ Belege: `belege-vorab/v2-b39/`.
   Zeilen, SpO2 im Schlaf ein und aus, die Auswahl der Messstufe.
 - **Offen:** Gerätetest auf der Uhr, besonders die Übernahme der alten SpO2-Schlüssel beim ersten
   Start von b39 und SpO2-Änderungen aus Boulder 0.60.0.
+
+## 24. Schlafmodus von Hand (27.10.2026, `20aa3bb86`, `3ed44d560`)
+
+F53–F56 (`entscheidungen.md`, „Schlafmodus von Hand wie Morpheuz“), mit Boulder 0.61.0 (`2fdec7438`,
+`fcd366a1b`). Belege: `belege-vorab/v2-b40/`.
+
+- **Fenster von Hand** (`schlafmodus.c`, `dauerteil.c`): Mit dem Start beginnt das Nachtfenster in
+  dieser Minute; `prv_fenster` bleibt die einzige Stelle. Nach dem Ende gilt es bis zum nächsten
+  Fenster ab 20 Uhr weiter, höchstens 24 Stunden; die Nachtruhe der Messung folgt ihm nur, solange er
+  läuft.
+- **Ende** (`nacht.c`, `schlafmodus.c`): „aufgewacht“ macht die Nacht fertig und endgültig; sonst
+  endet er mit der endgültigen Nacht oder nach zwei Stunden ohne Schlaf.
+- **Nachtsatz** (`ausgabe.c`): Bit 0x02 in `flags`, Fassung 3 bleibt.
+- **Neustart** (`speicher.c`): Zustand unter `hand`, „Laden“ holt ihn zuerst und füllt den Eingang
+  des Fensters von Hand nach; ein Wunsch vor „Laden“ gilt ab dem Laden.
+- **Bedienung** (`boulder_health.c`, `inhalt.c`, `boulder_schlaf.c`, `schnittstelle.c`): Select lange
+  auf Night, im Schlafmodus „Sleeping since“ und Select für „aufgewacht“, beides über S8 und den
+  Schalter „Toggle Sleep Mode“ für Quick Launch (Registry -105). Lage Fassung 3 (28 Byte).
+- **Prüfung** auf `3ed44d560`: acht Bauten ohne Warnung, Host 474/474, alle Werkzeuge grün (im
+  Prüfbau nur die Fehlerprobe rot), 32/32 Mutationen rot. QEMU: Select lange, die Health-App im
+  Schlafmodus, „aufgewacht“, der Schalter an und aus und Pebbles Quick-Launch-Auswahl.
+- **Offen:** Gerätetest auf der Uhr: eine echte Nacht von Hand, „aufgewacht“ am Morgen, ein Neustart
+  im Schlafmodus und die Nacht in Boulder 0.61.0 und Health Connect.

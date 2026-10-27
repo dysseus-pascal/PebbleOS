@@ -1,0 +1,4 @@
+== slot0/manifest.json
+{'versionTag': 'v4.42.0-b40', 'commit': '3ed44d560', 'hwrev': 'obelix_pvt', 'size': 2160928}
+== slot1/manifest.json
+{'versionTag': 'v4.42.0-b40', 'commit': '3ed44d560', 'hwrev': 'obelix_pvt', 'size': 2160928}

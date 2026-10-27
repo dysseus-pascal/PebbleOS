@@ -1,0 +1,46 @@
+S1   rot (schlafmodus_fenster, schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_ohne_schlaf, schlafmodus_15_stunden, schlafmodus_nachtruhe_am_tag) laufender Schlafmodus ohne eigenes Fenster [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S2   rot (schlafmodus_fenster)                                    nach dem Ende kein Fenster ab 20 Uhr bis 24 h [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S3   rot (schlafmodus_fenster)                                    Bit nur, solange er laeuft [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S4   rot (schlafmodus_fenster, schlafmodus_ohne_schlaf)           Ende ohne Schlaf erst nach vier Stunden [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S5   rot (schlafmodus_fenster, schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_15_stunden) Schlaf seit dem Start vergessen [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S6   rot (schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_vor_dem_laden) jede endgueltige Nacht beendet ihn, auch die alte [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+S7   rot (schlafmodus_aus_der_app)                                aus der App verwerfbar eingereiht [fw/services/activity/boulder/schlafmodus.c, test_boulder_schnittstelle]
+S8   rot (schlafmodus_neustart_im_schlaf, schlafmodus_vor_dem_laden) Zustand aus der Datei nie geladen [fw/services/activity/boulder/schlafmodus.c, test_boulder_zyklen]
+D1   rot (schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_ohne_schlaf, schlafmodus_gleich_beendet, schlafmodus_15_stunden, schlafmodus_nachtruhe_am_tag) Fenster nie von Hand [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D2   rot (schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_15_stunden) Schlaf des Live-Automaten zaehlt nicht [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D3   rot (schlafmodus_nachtruhe_am_tag)                           Nachtruhe der Messung nur ab 20 Uhr [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D4   GRUEN                                                        Start schliesst das alte Fenster nicht [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D5   rot (schlafmodus_am_abend, schlafmodus_neustart_im_schlaf)   "Aufgewacht" schliesst die Nacht nicht [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D6   rot (schlafmodus_vor_dem_laden)                              Wunsch vor dem Laden nicht aufgeschoben [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+D7   rot (schlafmodus_neustart_im_schlaf)                         Eingang nach dem Neustart nicht nachgefuellt [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+N1   GRUEN                                                        "Aufgewacht" macht die Nacht nicht fertig [fw/services/activity/boulder/nacht.c, test_boulder_zyklen]
+N2   rot (schlafmodus_am_abend, schlafmodus_neustart_im_schlaf)   "Aufgewacht" macht die Nacht nicht endgueltig [fw/services/activity/boulder/nacht.c, test_boulder_zyklen]
+N3   rot (schlafmodus_am_tag, schlafmodus_15_stunden)             endgueltige Nacht beendet ihn nicht [fw/services/activity/boulder/nacht.c, test_boulder_zyklen]
+A1   rot (schlafmodus_am_tag, schlafmodus_am_abend, schlafmodus_neustart_im_schlaf, schlafmodus_15_stunden) ohne Bit 0x02 [fw/services/activity/boulder/ausgabe.c, test_boulder_zyklen]
+P1   rot (schlafmodus_neustart_im_schlaf, schlafmodus_vor_dem_laden) Zustand unter falschem Schluessel abgelegt [fw/services/activity/boulder/speicher.c, test_boulder_zyklen]
+P2   rot (Bau)                                                    "Laden" ohne den Schlafmodus [fw/services/activity/boulder/speicher.c, test_boulder_zyklen]
+I1   rot (schlafmodus_aus_der_app)                                Lage ohne den Start [fw/services/activity/boulder/schnittstelle.c, test_boulder_schnittstelle]
+I2   rot (schlafmodus_aus_der_app)                                S8 schaltet auch gegen den Stand der App [fw/services/activity/boulder/schnittstelle.c, test_boulder_schnittstelle]
+H1   rot (schlafmodus_laeuft, schlafmodus_endete_eben)            App oeffnet im Schlafmodus nicht auf Night [fw/apps/system/boulder_health/boulder_health.c, test_bh_app]
+H2   rot (schlafmodus_laeuft, schlafmodus_endete_eben)            Select beendet ihn nicht [fw/apps/system/boulder_health/boulder_health.c, test_bh_app]
+H3   rot (schlafmodus_starten)                                    Select lange auf jeder Karte [fw/apps/system/boulder_health/boulder_health.c, test_bh_app]
+H4   rot (schlafmodus_starten, schlafmodus_laeuft)                S8 mit dem falschen Stand [fw/apps/system/boulder_health/boulder_health.c, test_bh_app]
+H5   rot (Bau)                                                    Select lange nicht angemeldet [fw/apps/system/boulder_health/boulder_health.c, test_bh_app]
+C1   rot (Bau)                                                    Night zeigt den Schlafmodus nicht [fw/apps/system/boulder_health/inhalt.c, test_bh_karten_emery]
+T1   rot (alle)                                                   Schalter liest den Stand verkehrt [fw/apps/system/boulder_schlaf/boulder_schlaf.c, test_boulder_schlafschalter]
+T2   rot (alle)                                                   S8 oeffnet die falsche App [fw/apps/system/boulder_schlaf/boulder_schlaf.c, test_boulder_schlafschalter]
+T3   rot (alle)                                                   Schalter endet nicht zum Zifferblatt [fw/apps/system/boulder_schlaf/boulder_schlaf.c, test_boulder_schlafschalter]
+30/32 rot
+Rueckbau rc=0
+test_bh_app nach dem Rueckbau rc=0
+test_bh_karten_emery nach dem Rueckbau rc=0
+test_boulder_schlafschalter nach dem Rueckbau rc=0
+test_boulder_schnittstelle nach dem Rueckbau rc=0
+test_boulder_zyklen nach dem Rueckbau rc=0
+Arbeitsbaum nach dem Rueckbau: 32 Aenderungen
+D4   rot (schlafmodus_erste_minute)                               Start schliesst das alte Fenster nicht [fw/services/activity/boulder/dauerteil.c, test_boulder_zyklen]
+N1   rot (schlafmodus_aufgewacht_sofort)                          "Aufgewacht" macht die Nacht nicht fertig [fw/services/activity/boulder/nacht.c, test_boulder_zyklen]
+2/2 rot
+Rueckbau rc=0
+test_boulder_zyklen nach dem Rueckbau rc=0
+Arbeitsbaum nach dem Rueckbau: 32 Aenderungen

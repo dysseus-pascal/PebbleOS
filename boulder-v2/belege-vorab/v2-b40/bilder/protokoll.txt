@@ -1,0 +1,25 @@
+13:01:36 boulder tracking: Health Tracking an
+13:01:37 boulder zeit 1791748800: Uhr auf 1791748800
+13:02:47 boulder lage: Lage 3: stand 1791748870 fenster 1791748800 nacht 0 schlaeft 0 stufe 3 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0 | Lage schlafmodus 0
+13:02:47 OK   vorher kein Schlafmodus
+13:02:47 app launch -82: OK
+13:02:50 01_today.png aufgenommen
+13:02:52 02_night.png aufgenommen
+13:02:52 button hold 2 1000: 
+13:02:54 03_lang_gestartet.png aufgenommen
+13:02:57 boulder lage: Lage 3: stand 1791748876 fenster 1791748800 nacht 2 schlaeft 0 stufe 3 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0 | Lage schlafmodus 1791748860
+13:02:57 OK   Select lange startet ihn (1791748860)
+13:02:58 04_zifferblatt_danach.png aufgenommen
+13:02:58 app launch -82: OK
+13:03:01 05_health_im_schlafmodus.png aufgenommen
+13:03:02 06_select_beendet.png aufgenommen
+13:03:05 boulder lage: Lage 3: stand 1791748885 fenster 1791748800 nacht 2 schlaeft 0 stufe 3 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0 | Lage schlafmodus 0
+13:03:05 OK   Select beendet ihn
+13:03:05 app launch -105: OK
+13:03:06 07_quick_launch_an.png aufgenommen
+13:03:09 boulder lage: Lage 3: stand 1791748889 fenster 1791748800 nacht 2 schlaeft 0 stufe 3 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0 | Lage schlafmodus 1791748860
+13:03:09 OK   der Schalter startet ihn
+13:03:09 app launch -105: OK
+13:03:10 08_quick_launch_aus.png aufgenommen
+13:03:13 boulder lage: Lage 3: stand 1791748893 fenster 1791748800 nacht 2 schlaeft 0 stufe 3 spo2 0 min | Lage ziele 10000 480 maxpuls 187 ruhepuls 0 nickerchen 0 | Lage schlafmodus 0
+13:03:13 OK   der Schalter beendet ihn
