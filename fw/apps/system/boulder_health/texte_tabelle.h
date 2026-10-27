@@ -68,6 +68,10 @@ TEXT(BhTNoNight, "No night")
 TEXT(BhTNoSessions, "No sessions today")
 TEXT(BhTOff, "off")
 
+// Der Schlafmodus auf Night (F53)
+TEXT(BhTSleepingSince, "Sleeping since")
+TEXT(BhTSelectWhenAwake, "Press Select when you wake up")
+
 // Arten der Sitzungen
 TEXT(BhTWalk, "Walk")
 TEXT(BhTRun, "Run")

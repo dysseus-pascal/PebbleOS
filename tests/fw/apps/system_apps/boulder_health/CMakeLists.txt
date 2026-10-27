@@ -172,7 +172,8 @@ foreach(board obelix asterix)
     # Die Schalter von obelix, nach denen die JSON fragt (boards/obelix/defconfig, Kconfig der
     # Variante); die Demo-Apps sind auf keinem Board an.
     file(WRITE ${ziel}/konfig
-      "CONFIG_HRM=y\nCONFIG_TOUCH=y\nCONFIG_BOULDER_KIESELSPORT=y\nCONFIG_BOULDER_HEALTH_APP=y\n")
+      "CONFIG_HRM=y\nCONFIG_TOUCH=y\nCONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER=y\n"
+      "CONFIG_BOULDER_KIESELSPORT=y\nCONFIG_BOULDER_KIESELSTRASSE=y\nCONFIG_BOULDER_HEALTH_APP=y\n")
   else()
     file(WRITE ${ziel}/konfig "")
   endif()
@@ -210,6 +211,16 @@ pbl_clar_test(test_bh_startmenue_asterix
   DEFINES _GNU_SOURCE=1 ${bh_registry_asterix}
   OVERRIDES ../fw/apps/system_apps/boulder_health/registry
   DEPENDS bh_registry_asterix
+)
+
+# F53: Pebbles Schalter fuer den Schlafmodus in Quick Launch (fw/apps/system/boulder_schlaf/), mit
+# der Registry von obelix wie test_bh_startmenue.
+pbl_clar_test(test_boulder_schlafschalter
+  SOURCES
+    fw/apps/system/boulder_schlaf/boulder_schlaf.c
+  DEFINES CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER ${bh_registry_obelix}
+  OVERRIDES ../fw/apps/system_apps/boulder_health/registry
+  DEPENDS bh_registry_obelix
 )
 
 # T3.2, T3.3, T3.4 durch Pebbles echten Code: jede Quick-Launch-Geste am Zifferblatt

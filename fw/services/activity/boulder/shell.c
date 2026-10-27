@@ -297,6 +297,7 @@ static int prv_lage(const struct pbl_shell *sh, size_t argc, char **argv) {
                   l.nacht_stufe, l.schlaeft, l.messstufe, l.spo2_takt_min);
   pbl_shell_print(sh, "Lage ziele %u %u maxpuls %u ruhepuls %u nickerchen %u", l.ziel_schritte,
                   l.ziel_schlaf_min, l.maxpuls, l.ruhepuls_median, l.nickerchen);
+  pbl_shell_print(sh, "Lage schlafmodus %lu", (unsigned long)l.schlafmodus_seit);
   return 0;
 }
 

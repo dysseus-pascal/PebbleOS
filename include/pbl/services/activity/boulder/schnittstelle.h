@@ -5,7 +5,7 @@
 
 // Boulder V2, Schritt 3: die Schnittstelle der Variante zur eigenen Health-App (Spezifikation
 // Schritt 3, 3.1-3.4; AP2: S1-S4, die Lage, der Weg der Ziele; AP3: S5, die Naechte; AP4: S6 und
-// S7, Herzband und Woche).
+// S7, Herzband und Woche; F53: S8, der Schlafmodus).
 //
 // WARUM SYSCALLS: Die Health-App laeuft ohne Systemrechte. Was die Variante weiss, liegt in
 // Kernel-RAM, das die App nicht lesen darf. Jeder Syscall prueft den Puffer der App, nimmt
@@ -22,7 +22,8 @@
 // system_task_add_callback_droppable fuellt (3.1, Regel 6). Darum system_task_add_callback aus
 // der App-Task in deren eigene Schlange, ein Merker je Auftrag, hoechstens zwei Auftraege.
 //
-// Die Strukturen sind die Fassung 2 aus 3.3; ihre Groessen und Versaetze stehen unten fest.
+// Die Strukturen sind die aus 3.3, die Lage in Fassung 3 (F53: der Schlafmodus); ihre Groessen und
+// Versaetze stehen unten fest.
 
 #include "pbl/services/activity/boulder/nacht_satz.h"
 #include "pbl/services/activity/boulder/spo2.h"
@@ -40,7 +41,7 @@ typedef enum {
   BoulderLesenSpaeter, //!< seit dem Boot noch nicht geladen; KernelBG laedt es, in 1 s erneut
 } BoulderLesen;
 
-#define BOULDER_LAGE_FASSUNG 2
+#define BOULDER_LAGE_FASSUNG 3
 
 typedef struct {
   uint8_t fassung;          //!< BOULDER_LAGE_FASSUNG
@@ -57,15 +58,17 @@ typedef struct {
   uint8_t spo2_takt_min;    //!< SpO2-Takt der Stufe, 0 = weder "SpO2" noch "Schlaf"
   uint8_t nickerchen;       //!< heute gemeldete Nickerchen (im laufenden Fenster)
   uint8_t reserve[2];
+  uint32_t schlafmodus_seit; //!< Start des laufenden Schlafmodus (schlafmodus.h), 0 = keiner
 } BoulderLage;
 
-_Static_assert(sizeof(BoulderLage) == 24, "BoulderLage: 24 B (Spezifikation 3.3)");
+_Static_assert(sizeof(BoulderLage) == 28, "BoulderLage: 24 B aus 3.3 und der Schlafmodus");
 _Static_assert(offsetof(BoulderLage, stand_utc) == 4, "BoulderLage: stand_utc");
 _Static_assert(offsetof(BoulderLage, fenster_utc) == 8, "BoulderLage: fenster_utc");
 _Static_assert(offsetof(BoulderLage, ziel_schritte) == 12, "BoulderLage: ziel_schritte");
 _Static_assert(offsetof(BoulderLage, maxpuls) == 16, "BoulderLage: maxpuls");
 _Static_assert(offsetof(BoulderLage, ruhepuls_median) == 18, "BoulderLage: ruhepuls_median");
 _Static_assert(offsetof(BoulderLage, spo2_takt_min) == 20, "BoulderLage: spo2_takt_min");
+_Static_assert(offsetof(BoulderLage, schlafmodus_seit) == 24, "BoulderLage: schlafmodus_seit");
 
 // Der Wert des Schluessels "boulder_ziele" in der BlobDB Health (F10 = A), little endian. Das
 // Telefon schreibt ihn (Boulder 0.53), die Uhr liest ihn nur (ziele.h).
@@ -161,7 +164,7 @@ typedef struct {
 _Static_assert(sizeof(BoulderWoche) == 28, "BoulderWoche: 28 B (3.3)");
 _Static_assert(offsetof(BoulderWoche, schritte) == 4, "BoulderWoche: schritte");
 
-// --- Die Syscalls der App (S1-S7) -------------------------------------------------------------
+// --- Die Syscalls der App (S1-S8) -------------------------------------------------------------
 
 // S1: die letzte Nacht als Block mit Phasen. Ohne Datei: Ist das Bild seit dem Boot noch nicht
 // geladen, laedt es ein Auftrag auf KernelBG, und die Antwort ist BoulderLesenSpaeter.
@@ -189,6 +192,11 @@ bool sys_boulder_herz(BoulderHerz *aus);
 // S7: die Schritte der Vortage (woche.h). Rueckgabe false, solange "Laden" die Woche seit dem
 // Boot nicht gelesen hat; *aus ist dann leer.
 bool sys_boulder_woche(BoulderWoche *aus);
+
+// S8 (F53): den Schlafmodus umschalten wie Pebbles Quick Launch - die App endet, Pebbles Dialog des
+// Schalters zeigt das Ergebnis. Nur, solange er laeuft oder nicht, wie die App ihn zeigt (`laeuft`):
+// Sonst false, und nichts geschieht (er endete eben von selbst; die App liest die Lage neu).
+bool sys_boulder_schlafmodus_umschalten(bool laeuft);
 
 // --- Kern ------------------------------------------------------------------------------------
 

@@ -69,6 +69,7 @@ static int s_fenster_offen;
 static ClickConfigProvider s_tasten_anmelden[FENSTER_MAX];
 static WindowHandlers s_handler[FENSTER_MAX];
 static ClickHandler s_klick[FENSTER_MAX][NUM_BUTTONS];
+static ClickHandler s_lang[FENSTER_MAX][NUM_BUTTONS]; //< window_long_click_subscribe
 static int s_anmelden; //< Fenster, dessen Tasten gerade angemeldet werden
 static int s_stapel[FENSTER_MAX];
 static int s_stapel_n;
@@ -146,6 +147,10 @@ static uint8_t s_offen_beim_laden; //< BhQuelle-Bits nach Phase 1
 static bool s_tracking;            //< Pebbles Schalter, wie die Lage ihn meldet
 static int s_nachfragen_bis_da;    //< nach so vielen Nachfragen ist alles da
 static uint8_t s_gesetzte_stufe;
+static uint32_t s_schlafmodus_seit; //< F53: wie die Lage ihn meldet, 0 = keiner
+static bool s_umschalten_geht;      //< Antwort von S8
+static int s_umgeschaltet;          //< Aufrufe von S8
+static bool s_umschalten_laeuft;    //< was die App S8 zuletzt als Stand gab
 static BhKarte s_inhalt_karte;
 static BhDetail s_detail_gezeichnet;
 static uint8_t s_auswahl_gezeichnet;
@@ -168,7 +173,7 @@ static int s_offene_punkte;
 static int s_bilder;
 
 // Die Eingaben, die die Ereignisschleife zwischen den Bildern macht: 'o' Oben, 'u' Unten,
-// 's' Select, 'x' Zurueck, 'm' eine Minute, 'M' ein Takt ohne Minute, 'n' der Timer des Nachladens,
+// 's' Select, 'h' Select lange, 'x' Zurueck, 'm' eine Minute, 'M' ein Takt ohne Minute, 'n' der Timer des Nachladens,
 // 'q' der Timer, der den Puls live beendet.
 static const char *s_druecke;
 
@@ -229,6 +234,7 @@ Window *window_create(void) {
       s_tasten_anmelden[i] = NULL;
       memset(&s_handler[i], 0, sizeof(s_handler[i]));
       memset(s_klick[i], 0, sizeof(s_klick[i]));
+      memset(s_lang[i], 0, sizeof(s_lang[i]));
       s_fenster_offen++;
       s_letztes_fenster = i;
       return &s_fenster[i];
@@ -260,6 +266,11 @@ void window_single_click_subscribe(ButtonId button_id, ClickHandler handler) {
 void window_single_repeating_click_subscribe(ButtonId button_id, uint16_t repeat_interval_ms,
                                              ClickHandler handler) {
   s_klick[s_anmelden][button_id] = handler;
+}
+void window_long_click_subscribe(ButtonId button_id, uint16_t delay_ms, ClickHandler down_handler,
+                                 ClickHandler up_handler) {
+  cl_assert(up_handler == NULL);
+  s_lang[s_anmelden][button_id] = down_handler;
 }
 ButtonId click_recognizer_get_button_id(ClickRecognizerRef recognizer) {
   return *(ButtonId *)recognizer;
@@ -481,6 +492,12 @@ bool sys_boulder_messstufe_setzen(uint8_t stufe) {
   s_gesetzte_stufe = stufe;
   return stufe >= 1 && stufe <= 5;
 }
+bool sys_boulder_schlafmodus_umschalten(bool laeuft) {
+  prv_merke('Z');
+  s_umgeschaltet++;
+  s_umschalten_laeuft = laeuft;
+  return s_umschalten_geht;
+}
 
 // Animationen. Die Kurve rechnet hier geradlinig; welche Pebble-Kurve die App setzt, zeigt das
 // Argument fuer die Mitte.
@@ -553,6 +570,7 @@ void bh_daten_laden(BhDaten *d) {
   d->offen = s_offen_beim_laden;
   d->lage.messstufe = 3;
   d->lage.tracking = s_tracking;
+  d->lage.schlafmodus_seit = s_schlafmodus_seit;
 }
 bool bh_daten_nachladen(BhDaten *d) {
   prv_merke('N');
@@ -740,6 +758,11 @@ void app_event_loop(void) {
         return;
       }
       app_window_stack_pop(true);
+    } else if (*t == 'h') {
+      ButtonId knopf = BUTTON_ID_SELECT;
+      if (s_lang[oben][knopf]) {
+        s_lang[oben][knopf](&knopf, &s_fenster[oben]);
+      }
     } else {
       ButtonId knopf = (*t == 'o') ? BUTTON_ID_UP : (*t == 'u') ? BUTTON_ID_DOWN : BUTTON_ID_SELECT;
       if (s_klick[oben][knopf]) {
@@ -791,6 +814,7 @@ void test_bh_app__initialize(void) {
   memset(s_fenster_belegt, 0, sizeof(s_fenster_belegt));
   memset(s_tasten_anmelden, 0, sizeof(s_tasten_anmelden));
   memset(s_klick, 0, sizeof(s_klick));
+  memset(s_lang, 0, sizeof(s_lang));
   s_fenster_offen = 0;
   s_stapel_n = 0;
   s_letztes_fenster = 0;
@@ -825,6 +849,10 @@ void test_bh_app__initialize(void) {
   s_tracking = true;
   s_nachfragen_bis_da = 1;
   s_gesetzte_stufe = 0;
+  s_schlafmodus_seit = 0;
+  s_umschalten_geht = true;
+  s_umgeschaltet = 0;
+  s_umschalten_laeuft = false;
   s_inhalt_karte = BhKartenAnzahl;
   s_detail_gezeichnet = BhDetailKeins;
   s_auswahl_gezeichnet = 0xFF;
@@ -1424,4 +1452,74 @@ void test_bh_app__gleiten_ohne_lesen(void) {
   prv_starten();
   const char *nach_dem_start = strchr(s_reihe, 'e');
   cl_assert(strpbrk(nach_dem_start, "RBQADNFP") == NULL);
+}
+
+// --- Schlafmodus (F53) ---
+
+// Select lange auf Night startet ihn ueber S8 (Pebbles Schalter zeigt den Dialog); auf den anderen
+// Karten und mit Tracking aus geschieht nichts.
+void test_bh_app__schlafmodus_starten(void) {
+  s_druecke = "uh";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 1);
+  cl_assert(!s_umschalten_laeuft);
+  cl_assert_equal_i(s_detail_gezeichnet, BhDetailKeins);
+  cl_assert_equal_i(s_offen, 0);
+
+  static const char *const nichts[] = {"h", "uuh", "uuuh", "uuuuh"};
+  for (size_t i = 0; i < sizeof(nichts) / sizeof(nichts[0]); i++) {
+    test_bh_app__initialize();
+    s_druecke = nichts[i];
+    prv_starten();
+    cl_assert_equal_i(s_umgeschaltet, 0);
+  }
+  test_bh_app__initialize();
+  s_tracking = false;
+  s_druecke = "uh";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 0);
+}
+
+// Solange er laeuft, oeffnet die App auf Night, und Select heisst "aufgewacht" statt Detail; Select
+// lange beendet ihn ebenso.
+void test_bh_app__schlafmodus_laeuft(void) {
+  s_schlafmodus_seit = 1791748800;
+  prv_starten();
+  cl_assert_equal_i(s_inhalt_karte, BhKarteNight);
+
+  test_bh_app__initialize();
+  s_schlafmodus_seit = 1791748800;
+  s_druecke = "s";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 1);
+  cl_assert(s_umschalten_laeuft);
+  cl_assert_equal_i(s_detail_gezeichnet, BhDetailKeins);
+
+  test_bh_app__initialize();
+  s_schlafmodus_seit = 1791748800;
+  s_druecke = "h";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 1);
+  cl_assert(s_umschalten_laeuft);
+
+  // Auf den anderen Karten oeffnet Select das Detail wie sonst.
+  test_bh_app__initialize();
+  s_schlafmodus_seit = 1791748800;
+  s_druecke = "us";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 0);
+  cl_assert_equal_i(s_detail_gezeichnet, BhDetailHeart);
+}
+
+// Endete er eben von selbst (S8 schaltet nicht), liest die App die Lage neu und zeichnet.
+void test_bh_app__schlafmodus_endete_eben(void) {
+  s_schlafmodus_seit = 1791748800;
+  s_umschalten_geht = false;
+  s_druecke = "s";
+  prv_starten();
+  cl_assert_equal_i(s_umgeschaltet, 1);
+  const char *taste = strchr(s_reihe, 'Z');
+  cl_assert(taste != NULL);
+  cl_assert(strchr(taste, 'F') != NULL);
+  cl_assert(strchr(taste, 'd') != NULL);
 }

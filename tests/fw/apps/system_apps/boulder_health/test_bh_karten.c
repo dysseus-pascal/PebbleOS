@@ -297,6 +297,19 @@ void test_bh_karten__activity_meilen(void) {
   PRUEFE_BILD();
 }
 
+// F53: Solange der Schlafmodus laeuft, zeigt Night nur ihn, mit dem Start in Ortszeit (22:00).
+void test_bh_karten__night_schlafmodus(void) {
+  s_d.lage.schlafmodus_seit = NACHT_BEGINN;
+  prv_karte(BhKarteNight);
+  PRUEFE_BILD();
+}
+void test_bh_karten__night_schlafmodus_12h(void) {
+  s_d.lage.schlafmodus_seit = NACHT_BEGINN + 75 * 60;
+  s_d.h24 = false;
+  prv_karte(BhKarteNight);
+  PRUEFE_BILD();
+}
+
 // Die Nacht laeuft noch: "so far" statt Urteil; Today zeigt sie als Nacht von heute.
 void test_bh_karten__night_so_far(void) {
   s_d.nacht.fertig = false;

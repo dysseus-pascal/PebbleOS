@@ -40,6 +40,7 @@
 #include "pbl/services/activity/boulder/nacht.h"
 #include "pbl/services/activity/boulder/nacht_satz.h"
 #include "pbl/services/activity/boulder/puls.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/schnittstelle.h"
 #include "pbl/services/activity/boulder/spo2.h"
 #include "pbl/services/activity/boulder/takt.h"
@@ -805,6 +806,19 @@ static bool prv_s4(uint8_t stufe) {
   return r;
 }
 
+// S8 oeffnet Pebbles Schalter fuer den Schlafmodus (boulder_schlaf.c): hier nur gezaehlt.
+static int s_schalter_geoeffnet;
+void boulder_schlaf_oeffnen(void) {
+  s_schalter_geoeffnet++;
+}
+
+static bool prv_s8(bool laeuft) {
+  prv_app_beginn();
+  const bool r = sys_boulder_schlafmodus_umschalten(laeuft);
+  prv_app_ende();
+  return r;
+}
+
 // Nach einem Abbruch (pbl_syscall_fail) wieder als KernelBG.
 static void prv_app_abbruch(void) {
   s_im_syscall = false;
@@ -888,6 +902,7 @@ static void prv_umfeld_beginn(void) {
   stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
   memset(&s_state, 0, sizeof(s_state));
   memset(s_app_ram, 0, sizeof(s_app_ram));
+  s_schalter_geoeffnet = 0;
   s_gehalten_anzahl = 0;
   s_blatt_verstoss = 0;
   s_pebble_unter_sperre = 0;

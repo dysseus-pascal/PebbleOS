@@ -294,7 +294,36 @@ static void prv_today(GContext *ctx, const BhDaten *d) {
 
 // --- Night ---
 
+// F53: Solange der Schlafmodus laeuft, zeigt Night nur ihn; Select beendet ihn (boulder_health.c).
+static void prv_schlafmodus(GContext *ctx, GRect flaeche, const BhDaten *d) {
+  bh_schreiben(ctx, bh_text(BhTSleepingSince), BhSchriftG18Fett, GRect(BH_RAND, 52, INNEN, 24),
+               GTextAlignmentCenter, BH_GRAU);
+  const time_t seit = (time_t)d->lage.schlafmodus_seit;
+  char zeit[12];
+  bh_uhrzeit((uint16_t)((((int64_t)seit + bh_ortsversatz(seit)) % S_JE_TAG) / 60), d->h24, zeit,
+             sizeof(zeit));
+  // "11:10 PM": AM/PM klein neben den Ziffern wie die Einheiten der anderen Karten.
+  char *leer = strchr(zeit, ' ');
+  const char *einheit = NULL;
+  if (leer) {
+    *leer = '\0';
+    einheit = leer + 1;
+  }
+  int16_t breite = bh_textbreite(zeit, BhSchriftL38);
+  if (einheit) {
+    breite += 3 + bh_textbreite(einheit, BhSchriftG18Fett);
+  }
+  bh_zahl_mit_einheit(ctx, zeit, einheit, BhSchriftL38,
+                      GPoint((flaeche.size.w - breite) / 2, 76), GColorBlack);
+  bh_schreiben(ctx, bh_text(BhTSelectWhenAwake), BhSchriftG18, GRect(BH_RAND, 164, INNEN, 44),
+               GTextAlignmentCenter, BH_GRAU);
+}
+
 static void prv_night(GContext *ctx, GRect flaeche, const BhDaten *d) {
+  if (d->lage.schlafmodus_seit) {
+    prv_schlafmodus(ctx, flaeche, d);
+    return;
+  }
   if (!bh_nacht_da(d)) {
     bh_schreiben(
         ctx,

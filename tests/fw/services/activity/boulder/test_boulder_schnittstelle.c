@@ -449,6 +449,38 @@ void test_boulder_schnittstelle__volle_schlange_der_app_verliert_nichts(void) {
 }
 
 // =============================================================================================
+// S8 (F53): der Schlafmodus aus der Health-App
+
+// Pebbles Schalter oeffnet nur, wenn er laeuft oder nicht, wie die App es zeigt. Die Lage traegt
+// den Start, gleich nach dem Schalten.
+void test_boulder_schnittstelle__schlafmodus_aus_der_app(void) {
+  prv_kernel_bg();
+  prv_eine_minute();
+  cl_assert_equal_i(prv_lage().schlafmodus_seit, 0);
+  cl_assert(!prv_s8(true));
+  cl_assert_equal_i(s_schalter_geoeffnet, 0);
+  cl_assert(prv_s8(false));
+  cl_assert_equal_i(s_schalter_geoeffnet, 1);
+  // Der Schalter schaltet aus der App-Task, mit einem Auftrag in ihrer Schlange.
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  boulder_schlafmodus_schalten(true);
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  cl_assert_equal_i(s_app_n, 1);
+  cl_assert_equal_i(prv_lage().schlafmodus_seit, 0);
+  prv_kernel_bg();
+  const time_t jetzt = rtc_get_time();
+  cl_assert_equal_i(prv_lage().schlafmodus_seit, jetzt - jetzt % PBL_SEC_PER_MIN);
+  cl_assert(!prv_s8(false));
+  cl_assert(prv_s8(true));
+  cl_assert_equal_i(s_schalter_geoeffnet, 2);
+  stub_pebble_tasks_set_current(PebbleTask_App);
+  boulder_schlafmodus_schalten(false);
+  stub_pebble_tasks_set_current(PebbleTask_KernelBackground);
+  prv_kernel_bg();
+  cl_assert_equal_i(prv_lage().schlafmodus_seit, 0);
+}
+
+// =============================================================================================
 // T6.3: die Ziele ueber die echte BlobDB Health
 
 static BoulderLage prv_nach_ereignis(void) {

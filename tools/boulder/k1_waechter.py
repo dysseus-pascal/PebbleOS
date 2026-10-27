@@ -25,7 +25,8 @@ Zeile, mit Kontext die Funktion drei Zeilen davor. Rot (Rueckgabe 1), wenn
   - ein CMake-Hunk (P7) Pebbles Zeilen entfernt oder als Code etwas anderes bringt als genau
     if(<Schalter>), die erlaubten Zeilen und endif(),
   - der Remote `upstream` fehlt.
-Die eigenen Ordner der Variante, von Kieselsport, Kieselstrasse und der Health-App sind frei.
+Die eigenen Ordner der Variante, von Kieselsport, Kieselstrasse, der Health-App und des Schalters fuer
+den Schlafmodus sind frei.
 """
 import collections
 import pathlib
@@ -48,6 +49,8 @@ EIGENE_ORDNER = (
     # Kieselstrasse (F6, aus b26): eine System-App ohne Dienst und ohne Pebble-Haken.
     'fw/apps/system/kieselstrasse/',
     'tests/fw/apps/system_apps/kieselstrasse/',
+    # Der Schlafmodus als Schalter fuer Quick Launch (F53), gebaut wie Pebbles fw/apps/system/toggle/.
+    'fw/apps/system/boulder_schlaf/',
     # Kein Firmware-Code: meldet tools/boulder/sitzung-start.sh als Start-Hook der Cloud-Sitzungen an.
     '.claude/settings.json',
 )
@@ -63,9 +66,10 @@ SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
 # Der Schalter der Variante selbst: Ihre Stellen in Pebbles Diensten aendern nur obelix und
 # qemu_emery.
 VARIANTE = 'CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER'
-# Die Schalter der System-Apps in der Registry (P3). Beide haengen an der Variante, jeder neue
-# Eintrag muss einen davon in "ifdefs" tragen: sonst stuende er auf jedem Board.
-APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE')
+# Die Schalter der System-Apps in der Registry (P3). Alle haengen an der Variante (der Schalter des
+# Schlafmodus, F53, ist sie selbst); jeder neue Eintrag muss einen davon in "ifdefs" tragen: sonst
+# stuende er auf jedem Board.
+APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE', VARIANTE)
 
 # Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht), mit dem
 # Schalter, unter dem eine .c ganz stehen muss: fw/apps/system/ baut sie auf jedem Board. Die Kachel
@@ -119,7 +123,7 @@ PEBBLE = {
         4, r'workout_app_get_info\(', hunks=1, schalter=True),
     # P3 Registry-Eintraege (JSON ohne Kommentare: "Boulder:" steht im Schluessel "kommentar"):
     # Kieselsport und Kieselstrasse (F6) nebeneinander in einem Hunk, je zehn Zeilen.
-    'fw/shell/normal/system_app_registry_list.json': Stelle(20, hunks=1, schalter=True),
+    'fw/shell/normal/system_app_registry_list.json': Stelle(30, hunks=1, schalter=True),
     # P4 DLS 84 Fassung 7 mit `manual` (F4 = A).
     'include/pbl/services/activity/activity_private.h': Stelle(10, schalter=True),
     'fw/services/activity/activity_sessions.c': Stelle(

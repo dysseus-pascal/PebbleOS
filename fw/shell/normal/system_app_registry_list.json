@@ -417,6 +417,15 @@
       ]
     },
     {
+      "kommentar": "Boulder: F53, der Schlafmodus als Schalter fuer Quick Launch - nur mit der Variante",
+      "id": -105,
+      "enum": "BOULDER_SCHLAF",
+      "md_fn": "boulder_schlaf_get_app_info",
+      "ifdefs": [
+        "CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER"
+      ]
+    },
+    {
       "id": -61,
       "enum": "SWAP_LAYER",
       "md_fn": "swap_layer_demo_get_app_info",

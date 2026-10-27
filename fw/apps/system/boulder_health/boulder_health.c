@@ -52,7 +52,7 @@
 // LADEN (Spezifikation Schritt 3, 2.6.2): Phase 0 liest den Start, Phase 1 alle Daten vor dem
 // ersten Bild, Phase 2 fehlendes nach. Danach liest nur der Minutentakt; eine Taste liest nichts
 // (L3). Die einzige Schreibung an einer Taste ist der Puls-Takt beim Wechsel auf die Karte Heart
-// oder weg von ihr (V3) und das Setzen der Messstufe in Precision.
+// oder weg von ihr (V3), das Setzen der Messstufe in Precision und der Schlafmodus auf Night (F53).
 
 // V3: Puls im Sekundentakt nur auf Heart und hoechstens so lange.
 #define PULS_LIVE_MS (2 * 60 * 1000)
@@ -405,9 +405,33 @@ static void prv_blaettern(ClickRecognizerRef anlass, void *kontext) {
   }
 }
 
+// F53: Pebbles Schalter aus Quick Launch zeigt den Dialog, die App endet mit seinem Start. Endete
+// der Schlafmodus eben von selbst, schaltet S8 nicht; dann liest die App ausnahmsweise an der Taste.
+static void prv_schlafmodus(BhApp *app) {
+  const bool laeuft = app->daten.lage.schlafmodus_seit != 0;
+  BH_PROTOKOLL("schlafmodus %s", laeuft ? "aus" : "an");
+  if (!sys_boulder_schlafmodus_umschalten(laeuft)) {
+    bh_daten_auffrischen(&app->daten);
+    prv_neu_zeichnen(app);
+  }
+}
+
+// Select lange auf Night: den Schlafmodus starten (oder beenden).
+static void prv_lang(ClickRecognizerRef anlass, void *kontext) {
+  BhApp *app = prv_app();
+  if (app->karte == BhKarteNight && app->daten.lage.tracking) {
+    prv_schlafmodus(app);
+  }
+}
+
 static void prv_auswaehlen(ClickRecognizerRef anlass, void *kontext) {
   BhApp *app = prv_app();
   BH_ZEIT("taste");
+  // Im Schlafmodus zeigt Night nur ihn, und Select heisst "aufgewacht".
+  if (app->karte == BhKarteNight && app->daten.lage.tracking && app->daten.lage.schlafmodus_seit) {
+    prv_schlafmodus(app);
+    return;
+  }
   const BhDetail detail = bh_detail_von(app->karte);
   // Today hat kein Detail (F12). Mit Tracking aus zeigt keine Karte Werte (2.1), also auch kein
   // Detail; Precision bleibt bedienbar.
@@ -431,6 +455,7 @@ static void prv_tasten(void *kontext) {
   window_single_click_subscribe(BUTTON_ID_UP, prv_blaettern);
   window_single_click_subscribe(BUTTON_ID_DOWN, prv_blaettern);
   window_single_click_subscribe(BUTTON_ID_SELECT, prv_auswaehlen);
+  window_long_click_subscribe(BUTTON_ID_SELECT, 0 /* Pebbles Vorgabe */, prv_lang, NULL);
 }
 
 static void prv_start(void) {
@@ -450,6 +475,10 @@ static void prv_start(void) {
   // Phase 1: alle Daten vor dem ersten Bild; fehlendes holt Phase 2.
   bh_daten_laden(&app->daten);
   BH_ZEIT("daten");
+  // F53: Im Schlafmodus oeffnet die App auf Night, die nur ihn zeigt.
+  if (app->daten.lage.schlafmodus_seit) {
+    app->karte = BhKarteNight;
+  }
   if (app->daten.offen) {
     app->nachladen = app_timer_register(BH_NACHLADEN_MS, prv_nachladen, NULL);
   }

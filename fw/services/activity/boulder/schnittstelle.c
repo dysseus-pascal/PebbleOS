@@ -2,12 +2,13 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 // Boulder V2, Schritt 3: die Schnittstelle zur Health-App (schnittstelle.h; Spezifikation
-// Schritt 3, 3.1-3.4; AP2: S1-S4, AP3: S5, AP4: S6 und S7). Nur mit der eigenen Health-App; ohne
-// den Schalter bleibt die Datei leer.
+// Schritt 3, 3.1-3.4; AP2: S1-S4, AP3: S5, AP4: S6 und S7; F53: S8). Nur mit der eigenen
+// Health-App; ohne den Schalter bleibt die Datei leer.
 #ifdef CONFIG_BOULDER_HEALTH_APP
 
 #include "pbl/services/activity/boulder/schnittstelle.h"
 
+#include "apps/system/boulder_schlaf/boulder_schlaf.h"
 #include "kernel/pebble_tasks.h"
 #include "pbl/kernel/mutex.h"
 #include "pbl/services/activity/activity.h"
@@ -17,6 +18,7 @@
 #include "pbl/services/activity/boulder/messstufe.h"
 #include "pbl/services/activity/boulder/naechte.h"
 #include "pbl/services/activity/boulder/nacht.h"
+#include "pbl/services/activity/boulder/schlafmodus.h"
 #include "pbl/services/activity/boulder/takt.h"
 #include "pbl/services/activity/boulder/woche.h"
 #include "pbl/services/activity/boulder/ziele.h"
@@ -99,6 +101,7 @@ void boulder_lage_veroeffentlichen(void) {
     .schlaeft = boulder_live_schlaeft(),
     .spo2_takt_min = prv_spo2_takt(stufe),
     .nickerchen = (uint8_t)MIN(gemeldet - s_nickerchen_basis, UINT8_MAX),
+    .schlafmodus_seit = (uint32_t)boulder_schlafmodus_seit(),
   };
   pbl_mutex_lock(&s_lage_sperre, PBL_FOREVER);
   s_lage = neu;
@@ -224,6 +227,14 @@ PBL_SYSCALL(bool, sys_boulder_messstufe_setzen, (VAL, uint8_t, stufe)) {
   // Erst der Wunsch, dann der Auftrag: Steht er schon an, setzt sein Lauf diesen Wunsch.
   s_wunsch_stufe = stufe;
   prv_aus_der_app(&s_auftrag_stufe);
+  return true;
+}
+
+PBL_SYSCALL(bool, sys_boulder_schlafmodus_umschalten, (VAL, bool, laeuft)) {
+  if (boulder_schlafmodus_aktiv() != laeuft) {
+    return false;
+  }
+  boulder_schlaf_oeffnen();
   return true;
 }
 
