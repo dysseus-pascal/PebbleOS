@@ -426,6 +426,15 @@
       ]
     },
     {
+      "kommentar": "Boulder: das Zifferblatt Tagesband - nur mit dem Schalter (an der Health-App)",
+      "id": -106,
+      "enum": "BOULDER_TAGESBAND",
+      "md_fn": "boulder_tagesband_get_app_info",
+      "ifdefs": [
+        "CONFIG_BOULDER_TAGESBAND"
+      ]
+    },
+    {
       "id": -61,
       "enum": "SWAP_LAYER",
       "md_fn": "swap_layer_demo_get_app_info",

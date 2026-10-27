@@ -51,6 +51,10 @@ EIGENE_ORDNER = (
     'tests/fw/apps/system_apps/kieselstrasse/',
     # Der Schlafmodus als Schalter fuer Quick Launch (F53), gebaut wie Pebbles fw/apps/system/toggle/.
     'fw/apps/system/boulder_schlaf/',
+    # Das Zifferblatt Tagesband: ohne Pebble-Haken; fw/apps/system/ baut jede .c, die Datei steht
+    # ganz unter ihrem Schalter.
+    'fw/apps/system/boulder_tagesband/',
+    'tests/fw/apps/system_apps/boulder_tagesband/',
     # Kein Firmware-Code: meldet tools/boulder/sitzung-start.sh als Start-Hook der Cloud-Sitzungen an.
     '.claude/settings.json',
 )
@@ -67,9 +71,10 @@ SCHALTER = 'CONFIG_BOULDER_KIESELSPORT'
 # qemu_emery.
 VARIANTE = 'CONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER'
 # Die Schalter der System-Apps in der Registry (P3). Alle haengen an der Variante (der Schalter des
-# Schlafmodus, F53, ist sie selbst); jeder neue Eintrag muss einen davon in "ifdefs" tragen: sonst
-# stuende er auf jedem Board.
-APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE', VARIANTE)
+# Schlafmodus, F53, ist sie selbst; das Tagesband an der Health-App und damit an ihr); jeder neue
+# Eintrag muss einen davon in "ifdefs" tragen: sonst stuende er auf jedem Board.
+APP_SCHALTER = ('CONFIG_BOULDER_KIESELSPORT', 'CONFIG_BOULDER_KIESELSTRASSE', VARIANTE,
+                'CONFIG_BOULDER_TAGESBAND')
 
 # Eigene Dateien in Pebbles Ordnern: ganz von Boulder, neu (upstream gibt es sie nicht), mit dem
 # Schalter, unter dem eine .c ganz stehen muss: fw/apps/system/ baut sie auf jedem Board. Die Kachel
@@ -122,8 +127,9 @@ PEBBLE = {
     'fw/apps/system/workout/workout.c': Stelle(
         4, r'workout_app_get_info\(', hunks=1, schalter=True),
     # P3 Registry-Eintraege (JSON ohne Kommentare: "Boulder:" steht im Schluessel "kommentar"):
-    # Kieselsport und Kieselstrasse (F6) nebeneinander in einem Hunk, je zehn Zeilen.
-    'fw/shell/normal/system_app_registry_list.json': Stelle(30, hunks=1, schalter=True),
+    # Kieselsport und Kieselstrasse (F6) je zehn Zeilen, der Schlafmodus (F53) und das Tagesband
+    # je neun, nebeneinander in einem Hunk.
+    'fw/shell/normal/system_app_registry_list.json': Stelle(38, hunks=1, schalter=True),
     # P4 DLS 84 Fassung 7 mit `manual` (F4 = A).
     'include/pbl/services/activity/activity_private.h': Stelle(10, schalter=True),
     'fw/services/activity/activity_sessions.c': Stelle(
@@ -144,10 +150,10 @@ PEBBLE = {
         'CONFIG_BOULDER_HEALTH_APP', ('list(FILTER source EXCLUDE REGEX "/apps/system/health/")',))),
 }
 
-# Referenzbilder der eigenen Bildtests (test_bh_karten): Pebbles Testgeruest liest Bilder nur aus
-# tests/test_images/ (tests/CMakeLists.txt), darum liegen sie dort; der Name sagt, dass sie Boulders
-# sind. Pebble hat kein Bild mit diesem Praefix.
-EIGENE_BILDER = re.compile(r'^tests/test_images/test_bh_[^/]+\.png$')
+# Referenzbilder der eigenen Bildtests (test_bh_karten, test_tagesband_bild): Pebbles Testgeruest
+# liest Bilder nur aus tests/test_images/ (tests/CMakeLists.txt), darum liegen sie dort; der Name
+# sagt, dass sie Boulders sind. Pebble hat kein Bild mit diesen Praefixen.
+EIGENE_BILDER = re.compile(r'^tests/test_images/test_(bh|tagesband)_[^/]+\.png$')
 
 # Unversioniertes, das nicht zum Quellbaum gehoert (Bauordner im Worktree).
 UNVERSIONIERT_FREI = re.compile(r'^build[^/]*/')

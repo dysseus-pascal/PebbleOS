@@ -158,18 +158,24 @@ ABBILD = ''.join(f'__attribute__((section(".syscall_text.{n}"))) void {n}(void) 
                  for n in sorted(SYSCALLS))
 
 
-def bauordner(quelle, mit_app=True, abbild=ABBILD):
-    """main() an einem Bauordner: build.ninja linkt das Objekt (oder nicht) in pebbleos.elf."""
+def bauordner(quelle, mit_app=True, abbild=ABBILD, mit_zifferblatt=True,
+              zifferblatt='int boulder_tagesband_get_app_info(void) { return 1; }\n'):
+    """main() an einem Bauordner: build.ninja linkt die Objekte (oder nicht) in pebbleos.elf."""
     with tempfile.TemporaryDirectory() as tmp:
         if abbild is not None:
             os.replace(uebersetze(tmp, 'abbild', abbild), os.path.join(tmp, 'pebbleos.elf'))
-        rel = 'fw/apps/system/CMakeFiles/fw__apps__system.dir/boulder_health'
+        basis = 'fw/apps/system/CMakeFiles/fw__apps__system.dir'
+        rel = f'{basis}/boulder_health'
         os.makedirs(os.path.join(tmp, rel))
         uebersetze(os.path.join(tmp, rel), 'x', quelle)
         # Ein zweites Objekt im Ordner, das nicht gelinkt wird (altes Objekt einer geloeschten
         # Datei): Es zaehlt nicht.
         uebersetze(os.path.join(tmp, rel), 'alt', aufruf('kernel_malloc', 'void *', 'unsigned'))
-        app = f' {rel}/x.c.obj' if mit_app else ''
+        blatt = f'{basis}/boulder_tagesband'
+        os.makedirs(os.path.join(tmp, blatt))
+        uebersetze(os.path.join(tmp, blatt), 'z', zifferblatt)
+        app = (f' {rel}/x.c.obj' if mit_app else '') + (
+            f' {blatt}/z.c.obj' if mit_zifferblatt else '')
         with open(os.path.join(tmp, 'build.ninja'), 'w') as f:
             f.write(f'build pebbleos.elf: C_EXECUTABLE_LINKER fw/a.c.obj{app} fw/b.c.obj\n')
         with contextlib.redirect_stdout(io.StringIO()):
@@ -181,6 +187,10 @@ def proben_bauordner():
         'int health_app_get_info(void) { return 1; }\n') == 0
     yield 'Bauordner: gelinktes Objekt rot', bauordner(aufruf('boulder_nacht_letzte')) == 1
     yield 'Bauordner: App nicht gelinkt', bauordner('int x(void) { return 1; }\n', False) == 1
+    yield 'Bauordner: Zifferblatt nicht gelinkt', bauordner(
+        'int x(void) { return 1; }\n', mit_zifferblatt=False) == 1
+    yield 'Bauordner: Zifferblatt rot', bauordner(
+        'int x(void) { return 1; }\n', zifferblatt=aufruf('boulder_nacht_letzte')) == 1
     yield 'Bauordner: Syscall aus dem Abbild gruen', bauordner(
         aufruf('sys_boulder_lage', 'int', 'void *')) == 0
     yield 'Bauordner: ohne Abbild rot', bauordner(

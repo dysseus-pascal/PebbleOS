@@ -84,6 +84,7 @@ ANDERE(quick_launch_nothing_get_app_info)
 ANDERE(kieselsport_app_get_info)
 ANDERE(kieselstrasse_app_get_info)
 ANDERE(boulder_schlaf_get_app_info)
+ANDERE(boulder_tagesband_get_app_info)
 ANDERE(touch_toggle_get_app_info)
 // Sports ist nur sichtbar, solange eine Sport-App mit der Uhr spricht (workout/sports.c:339).
 static const PebbleProcessMdSystem s_sports = {

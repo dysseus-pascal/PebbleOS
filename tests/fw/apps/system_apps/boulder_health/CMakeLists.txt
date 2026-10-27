@@ -173,7 +173,8 @@ foreach(board obelix asterix)
     # Variante); die Demo-Apps sind auf keinem Board an.
     file(WRITE ${ziel}/konfig
       "CONFIG_HRM=y\nCONFIG_TOUCH=y\nCONFIG_SERVICE_ACTIVITY_ALGORITHM_BOULDER=y\n"
-      "CONFIG_BOULDER_KIESELSPORT=y\nCONFIG_BOULDER_KIESELSTRASSE=y\nCONFIG_BOULDER_HEALTH_APP=y\n")
+      "CONFIG_BOULDER_KIESELSPORT=y\nCONFIG_BOULDER_KIESELSTRASSE=y\nCONFIG_BOULDER_HEALTH_APP=y\n"
+      "CONFIG_BOULDER_TAGESBAND=y\n")
   else()
     file(WRITE ${ziel}/konfig "")
   endif()

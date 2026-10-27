@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 dysseus-pascal
 # SPDX-License-Identifier: Apache-2.0
-"""Boulder: Die Health-App ohne Systemrechte, geprueft an ihren Objektdateien (Schritt 3, 3.7.5, T2.2).
+"""Boulder: Apps ohne Systemrechte, geprueft an ihren Objektdateien (Schritt 3, 3.7.5, T2.2).
 
 Aufruf: pruefe_ohne_rechte.py <bauordner> [<repo>]
 
-Liest aus <bauordner>/build.ninja, welche Objekte von fw/apps/system/boulder_health/ in
-pebbleos.elf gelinkt werden, und prueft jedes. Rot (Rueckgabe 1), wenn
+Liest aus <bauordner>/build.ninja, welche Objekte der Health-App (fw/apps/system/boulder_health/)
+und des Zifferblatts Tagesband (fw/apps/system/boulder_tagesband/) in pebbleos.elf gelinkt werden,
+und prueft jedes. Rot (Rueckgabe 1), wenn
   - ein Objekt beschreibbaren Speicher anlegt: ein Symbol oder Bytes in einem beschreibbaren
     Abschnitt (.data, .bss, ...) oder ein COMMON-Symbol. Ohne Systemrechte laege das in
     .kernel_bss, das die App nicht schreiben darf (BP 6.2);
@@ -19,7 +20,7 @@ pebbleos.elf gelinkt werden, und prueft jedes. Rot (Rueckgabe 1), wenn
     sys_msg_protocol_msg_callback);
   - die App etwas von der roten Liste (L5) ruft, auch wenn es sonst erlaubt waere;
   - die App eine SDK-Funktion ruft, die fuer eine App mit System-ID Kernel-RAM braucht (SYSTEM_ID);
-  - keine Objektdatei der App gelinkt ist oder keine ein Symbol definiert.
+  - von einem der Ordner keine Objektdatei gelinkt ist oder keine ein Symbol definiert.
 """
 import json
 import pathlib
@@ -27,7 +28,8 @@ import re
 import struct
 import sys
 
-APP_ORDNER = '/fw__apps__system.dir/boulder_health/'
+# Das Zifferblatt liest ueber die Datenschicht der Health-App und laeuft wie sie ohne Systemrechte.
+APP_ORDNER = ('/fw__apps__system.dir/boulder_health/', '/fw__apps__system.dir/boulder_tagesband/')
 
 # Helfer ausserhalb des SDK, die eine eingebaute App ohne Systemrechte rufen darf (Spezifikation
 # 3.7.5). Jeder laeuft ohne Syscall in der App-Task und schreibt nur App-Speicher.
@@ -201,12 +203,12 @@ def pruefe(objekte, sdk, syscalls):
     return befunde, bool(definiert) or any(offen.values())
 
 
-def objekte_im_bau(bau):
-    """Die Objekte der App, die in pebbleos.elf gelinkt werden (aus build.ninja)."""
+def objekte_im_bau(bau, ordner):
+    """Die Objekte eines Ordners, die in pebbleos.elf gelinkt werden (aus build.ninja)."""
     for zeile in (pathlib.Path(bau) / 'build.ninja').read_text().splitlines():
         if zeile.startswith('build pebbleos.elf:'):
             return sorted(str(pathlib.Path(bau) / t) for t in zeile.split()
-                          if APP_ORDNER in t and t.endswith('.obj'))
+                          if ordner in t and t.endswith('.obj'))
     return []
 
 
@@ -216,10 +218,13 @@ def main(argv):
         return 2
     bau = argv[1]
     repo = argv[2] if len(argv) == 3 else pathlib.Path(__file__).resolve().parents[2]
-    objekte = objekte_im_bau(bau)
-    if not objekte:
-        print(f'ROT {bau}: keine Objektdatei der Health-App in pebbleos.elf gelinkt')
-        return 1
+    objekte = []
+    for ordner in APP_ORDNER:
+        gelinkt = objekte_im_bau(bau, ordner)
+        if not gelinkt:
+            print(f'ROT {bau}: keine Objektdatei aus {ordner} in pebbleos.elf gelinkt')
+            return 1
+        objekte += gelinkt
     elf = pathlib.Path(bau) / 'pebbleos.elf'
     syscalls = syscalls_im_abbild(elf) if elf.exists() else set()
     if not syscalls:
@@ -227,11 +232,11 @@ def main(argv):
         return 1
     befunde, gebaut = pruefe(objekte, sdk_namen(repo), syscalls)
     if not gebaut:
-        print(f'ROT {bau}: die Objekte der Health-App sind leer (Schalter aus?)')
+        print(f'ROT {bau}: die Objekte der Apps sind leer (Schalter aus?)')
         return 1
     rot = 0
     for o in objekte:
-        kurz = o.split(APP_ORDNER)[-1]
+        kurz = o.split('/fw__apps__system.dir/')[-1]
         if befunde[o]:
             rot = 1
             for m in befunde[o]:

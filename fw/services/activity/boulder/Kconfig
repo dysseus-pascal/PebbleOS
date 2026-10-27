@@ -36,6 +36,16 @@ config BOULDER_HEALTH_APP
       ihr; PLATFORM_EMERY, weil die Karten fuer 200x228 gebaut sind. Die anderen Boards behalten
       Pebbles App.
 
+config BOULDER_TAGESBAND
+    bool "Boulder: Zifferblatt Tagesband"
+    default y
+    depends on BOULDER_HEALTH_APP
+    help
+      Das Zifferblatt Tagesband in fw/apps/system/boulder_tagesband/: Zeit, Datum und das Band der
+      letzten 18 Stunden mit Nacht, Sitzungen und Puls, darunter Schritte, Ruhepuls und HRV. Es
+      liest ueber die Datenschicht der Health-App und haengt darum an ihr. Waehlbar unter
+      Settings -> Watchfaces; das Zifferblatt ab Werk bleibt Pebbles.
+
 config BOULDER_HEALTH_ZEITEN
     bool "Boulder: Zeitstempel der Health-App (nur QEMU-Pruefbau)"
     depends on BOULDER_HEALTH_APP && QEMU
