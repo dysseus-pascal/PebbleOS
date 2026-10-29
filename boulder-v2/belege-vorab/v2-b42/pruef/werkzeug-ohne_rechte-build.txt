@@ -1,0 +1,15 @@
+ok  boulder_health/boulder_health.c.obj
+ok  boulder_health/daten.c.obj
+ok  boulder_health/details.c.obj
+ok  boulder_health/einstieg.c.obj
+ok  boulder_health/fehlerprobe.c.obj
+ok  boulder_health/inhalt.c.obj
+ok  boulder_health/karten.c.obj
+ok  boulder_health/nachttage.c.obj
+ok  boulder_health/probe.c.obj
+ok  boulder_health/rechnung.c.obj
+ok  boulder_health/texte.c.obj
+ok  boulder_health/zeichnen.c.obj
+ok  boulder_tagesband/band.c.obj
+ok  boulder_tagesband/bild.c.obj
+ok  boulder_tagesband/tagesband.c.obj

@@ -406,6 +406,44 @@ Stand: 05.10.2026. Quelle: Diskussion mit dem Nutzer. Unterlagen zu den Schlaf-/
   `FirmwareSignatur.kt`; die Gegenprobe mit falscher Grösse schlägt fehl. Offen: Gerätetest,
   besonders die Übernahme der alten SpO2-Schlüssel beim ersten Start von b39.
 
+## PebbleOS 4.43 und Core 1.16.0.4 (29.10.2026, Firmware b42, Boulder 0.62.0)
+- **Nutzer:** „upsteam“. Die Übersicht: Core 1.16.0.4 (65 Commits seit 1.16.0.1) und PebbleOS
+  v4.43.0 mit `main` danach (176 Commits seit b41). Gewählt: „Releases + FW main“, App zuerst.
+- **Boulder 0.62.0** (`79f2cb36b`, Merge `7d5c9cd66`): Core 1.16.0.4, sieben Konflikte, jeweils Cores
+  Fassung mit Boulders Haken. Keine Migration in `libpebble3.db` (bleibt 1050). Cores Abgleich der
+  App-Rechte über Firestore und der Umzug der Beispiel-Plugins in den Store warten auf eine
+  Anmeldung, die Boulder nicht hat (F25 A), und bleiben still. Keine neuen Wege zu Fehlerberichten.
+  - **Eigenbau-Haken** (`1a4d3ee9a`): Core meldet seit 1.16.0.4 kein Firmware-Update und spielt keins
+    automatisch auf, wenn die laufende Firmware ein Suffix trägt. Jede Boulder-Fassung heisst
+    `vX.Y.Z-bN`; ohne Haken wären Hinweis und automatisches Update für alle Boulder-Uhren
+    ausgefallen. `istEigenbau()` nimmt genau `bN` aus, ein Entwicklungsbau bleibt Eigenbau.
+    Gegenprobe mit drei eingebauten Fehlern, alle rot.
+  - „Respect Phone Do Not Disturb“ ist jetzt eine Einstellung der Uhr: das Telefon schickt stumm
+    zugestellte Benachrichtigungen mit dem Vermerk SILENT, statt sie zurückzuhalten; erst
+    PebbleOS v4.43 (b42) wertet ihn aus. Mit älterer Firmware vibrieren solche Benachrichtigungen.
+  - Zwei exportierte Aliase für Cores Datei-Öffnen in der Ausfuhrliste; sie führen in Boulders
+    unveränderten Datei-Weg (Rückfrage für Firmware und Sprachpaket).
+  - Prüfung: 2933 Tests (10 übersprungen, 9 wie bei Core), `vorlage_waechter.py` grün (108 Dateien,
+    4025 Zeilen), Release-APK mit dem festen Schlüssel.
+- **Firmware b42** (V2 `b013cc1a5`): v4.43.0 und `main` bis `4f874566a`. Neu bei Pebble: Treiber
+  der Pebble Time 2 auf Pebbles Gerätemodell, Benachrichtigungen still bei Stille am Telefon
+  (`notifRespectPhoneSilence`), Wecker von Apps beenden den Stationär-Modus, die Ruhezeit schaltet
+  Alarme nicht mehr stumm, BLE 45–60 ms mit Latenz 4.
+  - **Kraepelin-Kopie:** Upstream beendet laufende Geh- und Laufsitzungen bei Trainingsstart und
+    Zeitsprung. Per `git merge-file` übernommen, D11 sitzt jetzt in `prv_end_step_activity`.
+    Pebbles Aufruf gibt `nullptr` als Kontext, Boulders Rückruf puffert dorthin (D1): ohne Anpassung
+    Absturz beim Trainingsstart während eines erkannten Spaziergangs. Puffer auf dem Stack, Meldung
+    nach `prv_unlock()`; neuer Test `training_beendet_spaziergang`, Gegenprobe rot.
+- **Mindest-App für b42: 0.61.0.** Nichts in b42 braucht 0.62; die stille Zustellung schaltet erst
+  0.62 ein.
+- **Ergebnis (29.10.):** Boulder 0.62.0 ist veröffentlicht, aus CI-Lauf 40948631045 auf
+  `79f2cb36b`: APK mit versionCode 5108 und demselben Zertifikat (`212e0ca4…d035`); neue
+  Netzadresse im APK gegenüber 0.61.0 nur `index.repebble.com` (Verweis im ausgesteckten
+  Index-Teil). b42 ist veröffentlicht (Lauf 40952730039, Tag auf dem Release-Commit `5e537e3` in
+  boulder-firmware), Beta, Mindest-App 0.61.0; Digest wie gebaut (`139070b8…`), Signatur mit
+  `signatur.pub` geprüft, Gegenprobe rot. Belege `belege-vorab/v2-b42/`. Offen: Gerätetest, vor
+  allem die neuen Treiber der Pebble Time 2 und die stille Zustellung mit 0.62.
+
 ## Zifferblatt Tagesband (27.10.2026, F57, Firmware b41)
 - **Nutzer:** „mach mir 3 vorschläge für ein digitales watchface das thematisch zu bolder passt“,
   dann „mach mokups“ und „nimm 1, das Tagesband“. Die Entwürfe (Tagesband, Schichten, Höhenlinien)

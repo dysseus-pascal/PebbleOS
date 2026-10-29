@@ -1,0 +1,19 @@
+Gegenprobe zum D1-Block in activity_algorithm_enable_activity_tracking (b013cc1a5), Test test_boulder_glue
+Je ein Fehler eingebaut, test_boulder_glue gebaut und laufen lassen, Datei danach zurueck (cmp gleich).
+
+N1 Pebbles nullptr als Kontext statt des Puffers:
+  -> Absturz im Test (Segmentation fault, rc=139), beim Melden des beendeten Spaziergangs
+
+N2 Meldungen vor prv_unlock() abgeben (unter der Kraepelin-Sperre):
+  1) Failure:
+test::boulder::glue::training_beendet_spaziergang (no description) [/home/user/pebbleos-v2/tests/fw/services/activity/boulder/test_boulder_glue.c:509] [-t9]
+  Not True: s_verstoesse == 0
+  1  NOT ==  0
+
+N3 Meldungen nie abgeben:
+  1) Failure:
+test::boulder::glue::training_beendet_spaziergang (no description) [/home/user/pebbleos-v2/tests/fw/services/activity/boulder/test_boulder_glue.c:506] [-t9]
+  Expression is not true: !gehen->ongoing
+
+
+Danach: test_boulder_glue gruen (rc=0).

@@ -1,0 +1,56 @@
+[20:44:11.785] I - 20:44:11.129 api.c:226> service_blob_db: blob_db_compact_growable_dbs: app_db -> 0
+[20:44:11.786] I - 20:44:11.134 api.c:226> service_blob_db: blob_db_compact_growable_dbs: reminder_db -> 0
+[20:44:11.788] I - 20:44:11.138 api.c:226> service_blob_db: blob_db_compact_growable_dbs: weather_db -> 0
+[20:44:11.789] I - 20:44:11.140 api.c:226> service_blob_db: blob_db_compact_growable_dbs: ios_notif_pref_db -> 0
+[20:44:11.829] I - 20:44:11.146 api.c:226> service_blob_db: blob_db_compact_growable_dbs: contacts_db -> 0
+[20:44:11.831] I - 20:44:11.149 api.c:226> service_blob_db: blob_db_compact_growable_dbs: watch_app_prefs_db -> 0
+[20:44:11.832] I - 20:44:11.154 api.c:226> service_blob_db: blob_db_compact_growable_dbs: health_db -> 0
+[20:44:11.833] I - 20:44:11.160 api.c:226> service_blob_db: blob_db_compact_growable_dbs: app_glance_db -> 0
+[20:44:11.833] I - 20:44:11.161 api.c:228> service_blob_db: blob_db_compact_growable_dbs: done
+[20:44:11.834] E - 20:44:11.163 event.c:77> service_timeline: Not setting timer
+[20:44:11.836] I - 20:44:11.163 local_addr.c:27> service_bluetooth: Pausing address cycling (pinned_addr=00:00:00:00:00:00)
+[20:44:11.836] I - 20:44:11.165 gap_le_advert.c:425> bt: Scheduling advertising job: DIS
+[20:44:11.933] I - 20:44:11.249 activity.c:1248> service_activity: Activity tracking started
+[20:44:11.934] I - 20:44:11.253 naechte.c:175> service_activity: Boulder: 0 Naechte geladen
+[20:44:11.935] I - 20:44:11.254 woche.c:146> service_activity: Boulder: Woche bis Tag 0, Spiegel Tag 0 mit 0 Schritten
+[20:44:11.936] I - 20:44:11.254 speicher.c:449> service_activity: Boulder: kein Kopf in boulder_v2
+[20:44:11.938] I - 20:44:11.257 speicher.c:470> service_activity: Boulder: geladen (neu, Buch fest bis 0)
+[20:44:11.983] I - 20:00:00.303 herz.c:283> service_activity: Boulder: Herz nachgerechnet, 0 Minuten, Grenzen 111/136/162
+[20:44:11.984] E - 20:00:00.307 event.c:77> service_timeline: Not setting timer
+[20:44:12.114] I - 20:00:01.431 prueflauf.c:172> service_activity: Boulder Pruefbau: Heap 131068 B, Ballast 60636 B (geholt), Ziel 70432 B
+[20:44:12.161] D - 20:00:01.475 testinfra.c:13> Ready for communication.
+[20:44:20.908] W - 20:00:09.265 service.c:790> service_accel_manager: Accel subscriber fell behind, truncating data
+[20:44:24.976] I - 20:00:13.333 thm_kraepelin.c:570> service_activity: Compacting minute file from 1040 records to 520
+[20:44:26.482] I - 20:00:15.840 prueflauf.c:237> service_activity: Boulder Pruefbau 0: 1140 Minuten ab 1791662400
+[20:44:26.493] I - 20:00:15.850 messstufe.c:210> service_activity: Boulder: Messstufe 3
+[20:44:26.494] I - 20:00:15.851 messstufe.c:216> service_activity: Boulder: SpO2 im Schlaf aus
+[20:44:26.682] I - 20:00:15.040 vity_sessions.c:187> service_activity: Adding activity session 1, start_time: 1791670620
+[20:44:26.825] I - 20:00:15.182 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791671280
+[20:44:26.916] I - 20:00:15.273 vity_sessions.c:187> service_activity: Adding activity session 1, start_time: 1791675900
+[20:44:27.024] I - 20:00:16.379 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791678480
+[20:44:27.071] I - 20:00:16.429 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791680340
+[20:44:27.104] I - 20:00:16.461 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791681300
+[20:44:27.190] I - 20:00:16.547 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791683940
+[20:44:27.386] I - 20:00:16.744 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791689280
+[20:44:27.410] I - 20:00:16.768 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791690360
+[20:44:27.472] I - 20:00:16.830 vity_sessions.c:187> service_activity: Adding activity session 2, start_time: 1791691020
+[20:44:27.703] I - 20:00:16.060 nacht.c:208> service_activity: Boulder: Nacht fertig, 490 min Schlaf
+[20:44:27.704] I - 20:00:16.062 ausgabe.c:175> service_activity: Boulder: Nacht senden, 490 min Schlaf, 1+1 Teile
+[20:44:27.789] I - 20:00:16.145 herz.c:283> service_activity: Boulder: Herz nachgerechnet, 2879 Minuten, Grenzen 106/133/160
+[20:44:28.020] I - 20:00:17.377 naechte.c:126> service_activity: Boulder: Nacht fuer Wachtag 9780 (490 min, HRV 56, Ruhepuls 52), 1 Tage
+[20:44:28.621] I - 20:00:17.978 prueflauf.c:113> service_activity: Boulder Pruefbau 0 fertig: 1140 Minuten in 2139 ms; geschickt Nacht 1791662400, Schla
+[20:45:11.697] I - 20:01:00.008 ivity_metrics.c:254> service_activity: resetting metrics for new day
+[20:45:11.699] W - 20:01:00.037 lin_algorithm.c:2165> service_activity: Resetting state due to time travel
+[20:45:11.701] I - 20:01:00.044 vity_sessions.c:278> service_activity: Logging activity event 1, start_time: 1791670620, elapsed_min: 55, end_time: 17916739
+[20:45:11.703] I - 20:01:00.045 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791671280, elapsed_min: 9, end_time: 179167182
+[20:45:11.704] I - 20:01:00.046 vity_sessions.c:278> service_activity: Logging activity event 1, start_time: 1791675900, elapsed_min: 435, end_time: 1791702
+[20:45:11.706] I - 20:01:00.047 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791678480, elapsed_min: 10, end_time: 17916790
+[20:45:11.707] I - 20:01:00.047 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791680340, elapsed_min: 5, end_time: 179168064
+[20:45:11.710] I - 20:01:00.048 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791681300, elapsed_min: 5, end_time: 179168160
+[20:45:11.712] I - 20:01:00.049 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791683940, elapsed_min: 9, end_time: 179168448
+[20:45:11.714] I - 20:01:00.049 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791689280, elapsed_min: 12, end_time: 17916900
+[20:45:11.715] I - 20:01:00.050 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791690360, elapsed_min: 5, end_time: 179169066
+[20:45:11.716] I - 20:01:00.055 vity_sessions.c:278> service_activity: Logging activity event 2, start_time: 1791691020, elapsed_min: 11, end_time: 17916916
+[20:45:18.521] I - 20:01:07.836 app_manager.c:779> Next app overridden with watchface because action was performed successfully
+[20:45:18.522] I - 20:01:07.838 app_manager.c:779> Next app overridden with watchface because action was performed successfully
+[20:45:21.616] I - 20:01:10.972 diagnose.c:59> service_activity: Boulder Diagnose Tag 20755: laengster Schritt 32 ms (Herz nachrechne), Minutenteil 2 

@@ -1,0 +1,3 @@
+slot0/manifest.json versionTag v4.43.0-b42 commit e5ab5baad hwrev obelix_pvt type normal size 2165920
+slot1/manifest.json versionTag v4.43.0-b42 commit e5ab5baad hwrev obelix_pvt type normal size 2165920
+Dateien: 10 ['slot0', 'slot1']

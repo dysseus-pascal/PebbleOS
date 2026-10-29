@@ -1,0 +1,9 @@
+Lage 3: stand 1791748860 fenster 1791748800 nacht 0 schlaeft 0 stufe 3 spo2 0 min
+Lage ziele 10000 480 maxpuls 187 ruhepuls 52 nickerchen 0
+Lage schlafmodus 0
+Naechte 1: anzahl 1 neu 0 min 490/490
+Nacht 0: tag 9780 hrv 56 ruhepuls 52
+Lage 3: stand 1791748870 fenster 1791748800 nacht 0 schlaeft 0 stufe 3 spo2 0 min
+Lage ziele 10000 480 maxpuls 187 ruhepuls 52 nickerchen 0
+Lage schlafmodus 0
+laeuft True

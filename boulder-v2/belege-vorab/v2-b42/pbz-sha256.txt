@@ -1,0 +1,1 @@
+139070b824d13ed30cffb62b46efc0f7e00390caec61f573667716c6efdd9cbb  /home/user/pebbleos-v2/build-boulder/normal_obelix_pvt_v4.43.0-b42.pbz
