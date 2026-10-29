@@ -76,7 +76,7 @@ FARBE = re.compile(r'\x1b\[[0-9;]*m')
 
 
 class Emulator:
-    """QEMU ohne Fenster: Tasten ueber den Monitor, Bilder ueber pbl screenshot."""
+    """QEMU ohne Fenster: Tasten ueber den Monitor, Bilder ueber pbl emulator screenshot."""
 
     def __init__(self, bau, arbeit, icount=None):
         self.bau = bau
@@ -138,7 +138,7 @@ class Emulator:
         s.close()
 
     def bild(self, pfad):
-        subprocess.run(['pbl', 'screenshot', '-b', str(self.bau), '--output', str(pfad)],
+        subprocess.run(['pbl', 'emulator', 'screenshot', '-b', str(self.bau), '--output', str(pfad)],
                        check=True, capture_output=True, cwd=REPO)
 
 
