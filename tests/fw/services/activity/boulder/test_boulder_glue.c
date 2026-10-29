@@ -491,6 +491,26 @@ void test_boulder_glue__sperr_reihenfolge(void) {
   cl_assert_equal_i(s_tiefe, 0);
 }
 
+// D1: Ein Training schaltet die Auto-Erkennung ab; seit Pebbles main nach v4.43 endet dabei der
+// laufende Spaziergang und wird gemeldet - auch hier erst nach dem Entsperren.
+void test_boulder_glue__training_beendet_spaziergang(void) {
+  prv_minuten(5, 0);
+  const time_t start = rtc_get_time();
+  prv_minuten(15, 100);
+  cl_assert(prv_sitzung(ActivitySessionType_Walk, start)->ongoing);
+  const uint16_t laenge = prv_sitzung(ActivitySessionType_Walk, start)->length_min;
+
+  activity_algorithm_enable_activity_tracking(false);
+
+  const ActivitySession *gehen = prv_sitzung(ActivitySessionType_Walk, start);
+  cl_assert(!gehen->ongoing);
+  cl_assert(gehen->length_min >= laenge);
+  cl_assert_equal_i(gehen->step_data.steps, 1500);
+  cl_assert_equal_i(s_verstoesse, 0);
+  cl_assert_equal_i(s_tiefe, 0);
+  activity_algorithm_enable_activity_tracking(true);
+}
+
 // ---------------------------------------------------------------------------------------------
 // T7.1/T7.2: der Minutenteil holt keinen Heap, oeffnet keine Datei, legt keine DLS-Sitzung
 // an. Geschrieben wird trotzdem - in den Callbacks. D2: der Satz geht an den Dauerteil.

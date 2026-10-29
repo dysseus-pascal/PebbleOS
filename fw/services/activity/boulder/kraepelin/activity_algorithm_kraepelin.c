@@ -1316,9 +1316,15 @@ void activity_algorithm_enable_activity_tracking(bool enable) {
     return;
   }
 
-  kalg_enable_activity_tracking(s_alg_state->k_state, enable);
+  /* Boulder: D1 beendete Gehsitzungen erst nach dem Entsperren melden; der Puffer liegt auf dem
+   * Stack, denn App-Task und KernelBG kommen hier an */
+  BoulderMeldungen meldungen = {};
+  kalg_enable_activity_tracking(s_alg_state->k_state, enable, prv_create_activity_session_cb,
+                                &meldungen);
 
   prv_unlock();
+  prv_meldungen_abgeben(&meldungen);
+  /* Boulder: Ende D1 */
 }
 
 bool activity_algorithm_activity_hrm_is_active(void) {
